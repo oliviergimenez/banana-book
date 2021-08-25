@@ -6,8 +6,8 @@
 \documentclass[
   12pt,
 ]{krantz}
+\usepackage{amsmath,amssymb}
 \usepackage{lmodern}
-\usepackage{amssymb,amsmath}
 \usepackage{ifxetex,ifluatex}
 \ifnum 0\ifxetex 1\fi\ifluatex 1\fi=0 % if pdftex
   \usepackage[T1]{fontenc}
@@ -87,7 +87,8 @@
 \newcommand{\VariableTok}[1]{\textcolor[rgb]{0.00,0.00,0.00}{#1}}
 \newcommand{\VerbatimStringTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
 \newcommand{\WarningTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
-\usepackage{longtable,booktabs}
+\usepackage{longtable,booktabs,array}
+\usepackage{calc} % for calculating minipage widths
 % Correct order of tables after \paragraph or \subparagraph
 \usepackage{etoolbox}
 \makeatletter
@@ -217,12 +218,15 @@
 \makeatother
 
 \frontmatter
+\ifluatex
+  \usepackage{selnolig}  % disable illegal ligatures
+\fi
 \usepackage[]{natbib}
 \bibliographystyle{plainnat}
 
 \title{Bayesian Analysis of Capture-Recapture Data with Hidden Markov Models -- Theory and Case Studies in R}
 \author{Olivier Gimenez}
-\date{2021-05-03}
+\date{2021-08-25}
 
 \begin{document}
 \maketitle
@@ -242,6 +246,18 @@
 }
 \listoftables
 \listoffigures
+\hypertarget{welcome}{%
+\chapter*{Welcome}\label{welcome}}
+
+
+Welcome to the website of the book \emph{Bayesian Analysis of Capture-Recapture Data with Hidden Markov Models -- Theory and Case Studies in R} by \href{https://www.linkedin.com/in/keith-mcnulty/}{Olivier Gimenez}. Note that the book is also available in \href{https://github.com/oliviergimenez/banana-book/raw/master/docs/bayesHMMcapturerecapture.pdf}{PDF format}.
+
+I'm currently writing this book, and I welcome any feedback or requests for content \href{https://github.com/oliviergimenez/banana-book/issues}{here}.
+
+Many thanks!
+
+\emph{Last updated: August 25, 2021}
+
 \hypertarget{preface}{%
 \chapter*{Preface}\label{preface}}
 
@@ -275,37 +291,45 @@ The R session information when compiling this book is shown below:
 
 \begin{Shaded}
 \begin{Highlighting}[]
-\KeywordTok{sessionInfo}\NormalTok{()}
+\FunctionTok{sessionInfo}\NormalTok{()}
+\DocumentationTok{\#\# R version 4.1.0 (2021{-}05{-}18)}
+\DocumentationTok{\#\# Platform: x86\_64{-}apple{-}darwin17.0 (64{-}bit)}
+\DocumentationTok{\#\# Running under: macOS Catalina 10.15.7}
+\DocumentationTok{\#\# }
+\DocumentationTok{\#\# Matrix products: default}
+\DocumentationTok{\#\# BLAS:   /System/Library/Frameworks/Accelerate.framework/Versions/A/Frameworks/vecLib.framework/Versions/A/libBLAS.dylib}
+\DocumentationTok{\#\# LAPACK: /Library/Frameworks/R.framework/Versions/4.1/Resources/lib/libRlapack.dylib}
+\DocumentationTok{\#\# }
+\DocumentationTok{\#\# locale:}
+\DocumentationTok{\#\# [1] fr\_FR.UTF{-}8/fr\_FR.UTF{-}8/fr\_FR.UTF{-}8/C/C/fr\_FR.UTF{-}8}
+\DocumentationTok{\#\# }
+\DocumentationTok{\#\# attached base packages:}
+\DocumentationTok{\#\# [1] stats     graphics  grDevices utils     datasets }
+\DocumentationTok{\#\# [6] methods   base     }
+\DocumentationTok{\#\# }
+\DocumentationTok{\#\# loaded via a namespace (and not attached):}
+\DocumentationTok{\#\#  [1] Rcpp\_1.0.7        rstudioapi\_0.13  }
+\DocumentationTok{\#\#  [3] servr\_0.23        knitr\_1.33       }
+\DocumentationTok{\#\#  [5] xml2\_1.3.2        magrittr\_2.0.1   }
+\DocumentationTok{\#\#  [7] downlit\_0.2.1     R6\_2.5.0         }
+\DocumentationTok{\#\#  [9] rlang\_0.4.11      fansi\_0.5.0      }
+\DocumentationTok{\#\# [11] highr\_0.9         stringr\_1.4.0    }
+\DocumentationTok{\#\# [13] tools\_4.1.0       xfun\_0.25        }
+\DocumentationTok{\#\# [15] utf8\_1.2.2        jquerylib\_0.1.4  }
+\DocumentationTok{\#\# [17] htmltools\_0.5.1.1 ellipsis\_0.3.2   }
+\DocumentationTok{\#\# [19] yaml\_2.2.1        digest\_0.6.27    }
+\DocumentationTok{\#\# [21] tibble\_3.1.3      lifecycle\_1.0.0  }
+\DocumentationTok{\#\# [23] crayon\_1.4.1      bookdown\_0.23    }
+\DocumentationTok{\#\# [25] later\_1.2.0       promises\_1.2.0.1 }
+\DocumentationTok{\#\# [27] vctrs\_0.3.8       sass\_0.4.0       }
+\DocumentationTok{\#\# [29] fs\_1.5.0          mime\_0.11        }
+\DocumentationTok{\#\# [31] evaluate\_0.14     rmarkdown\_2.10   }
+\DocumentationTok{\#\# [33] stringi\_1.7.3     compiler\_4.1.0   }
+\DocumentationTok{\#\# [35] bslib\_0.2.5.1     pillar\_1.6.2     }
+\DocumentationTok{\#\# [37] jsonlite\_1.7.2    httpuv\_1.6.1     }
+\DocumentationTok{\#\# [39] pkgconfig\_2.0.3}
 \end{Highlighting}
 \end{Shaded}
-
-\begin{verbatim}
-## R version 4.0.2 (2020-06-22)
-## Platform: x86_64-apple-darwin17.0 (64-bit)
-## Running under: macOS Catalina 10.15.7
-## 
-## Matrix products: default
-## BLAS:   /Library/Frameworks/R.framework/Versions/4.0/Resources/lib/libRblas.dylib
-## LAPACK: /Library/Frameworks/R.framework/Versions/4.0/Resources/lib/libRlapack.dylib
-## 
-## locale:
-## [1] fr_FR.UTF-8/fr_FR.UTF-8/fr_FR.UTF-8/C/fr_FR.UTF-8/fr_FR.UTF-8
-## 
-## attached base packages:
-## [1] stats     graphics  grDevices utils     datasets 
-## [6] methods   base     
-## 
-## loaded via a namespace (and not attached):
-##  [1] bookdown_0.22        digest_0.6.27       
-##  [3] magrittr_2.0.1       evaluate_0.14       
-##  [5] rlang_0.4.10.9002    stringi_1.5.3       
-##  [7] cli_2.4.0            rstudioapi_0.13     
-##  [9] rmarkdown_2.7        tools_4.0.2         
-## [11] stringr_1.4.0        glue_1.4.2          
-## [13] xfun_0.22            yaml_2.2.1          
-## [15] fastmap_1.1.0        compiler_4.0.2      
-## [17] htmltools_0.5.1.9002 knitr_1.33
-\end{verbatim}
 
 We do not add prompts (\texttt{\textgreater{}} and \texttt{+}) to R source code in this book, and we comment out the text output with two hashes \texttt{\#\#} by default, as you can see from the R session information above. This is for your convenience when you want to copy and run the code (the text output will be ignored since it is commented out). Package names are in bold text (e.g., \textbf{nimble}), and inline code and filenames are formatted in a typewriter font (e.g., \texttt{knitr::knit(\textquotesingle{}foo.Rmd\textquotesingle{})}). Function names are followed by parentheses (e.g., \texttt{nimble::nimbleCode()}). The double-colon operator \texttt{::} means accessing an object from a package.
 
@@ -313,7 +337,7 @@ We do not add prompts (\texttt{\textgreater{}} and \texttt{+}) to R source code 
 \section*{Acknowledgments}\label{acknowledgments}}
 
 
-CNRS. Jean-Do. Roger. Rémi. My students. Chloé, Sarah, Perry, Daniel. Rob Chapman \& Hall/CRC. Workshop attendees. Feedback from. Proofreading by. My family.
+CNRS. Jean-Do. Roger. Rémi. My students. Chloé, Sarah, Perry, Daniel. Rob Chapman \& Hall/CRC. Workshop attendees. Feedback from. FIP radio. Marc Kéry for his support and advice on how to write a book. Proofreading by. My family.
 
 \begin{flushright}
 Olivier Gimenez
@@ -346,8 +370,8 @@ Figures and tables with captions will be placed in \texttt{figure} and \texttt{t
 
 \begin{Shaded}
 \begin{Highlighting}[]
-\KeywordTok{par}\NormalTok{(}\DataTypeTok{mar =} \KeywordTok{c}\NormalTok{(}\DecValTok{4}\NormalTok{, }\DecValTok{4}\NormalTok{, }\FloatTok{.1}\NormalTok{, }\FloatTok{.1}\NormalTok{))}
-\KeywordTok{plot}\NormalTok{(pressure, }\DataTypeTok{type =} \StringTok{\textquotesingle{}b\textquotesingle{}}\NormalTok{, }\DataTypeTok{pch =} \DecValTok{19}\NormalTok{)}
+\FunctionTok{par}\NormalTok{(}\AttributeTok{mar =} \FunctionTok{c}\NormalTok{(}\DecValTok{4}\NormalTok{, }\DecValTok{4}\NormalTok{, .}\DecValTok{1}\NormalTok{, .}\DecValTok{1}\NormalTok{))}
+\FunctionTok{plot}\NormalTok{(pressure, }\AttributeTok{type =} \StringTok{\textquotesingle{}b\textquotesingle{}}\NormalTok{, }\AttributeTok{pch =} \DecValTok{19}\NormalTok{)}
 \end{Highlighting}
 \end{Shaded}
 
@@ -364,9 +388,9 @@ Reference a figure by its code chunk label with the \texttt{fig:} prefix, e.g., 
 
 \begin{Shaded}
 \begin{Highlighting}[]
-\NormalTok{knitr}\OperatorTok{::}\KeywordTok{kable}\NormalTok{(}
-  \KeywordTok{head}\NormalTok{(iris, }\DecValTok{20}\NormalTok{), }\DataTypeTok{caption =} \StringTok{\textquotesingle{}Here is a nice table!\textquotesingle{}}\NormalTok{,}
-  \DataTypeTok{booktabs =} \OtherTok{TRUE}
+\NormalTok{knitr}\SpecialCharTok{::}\FunctionTok{kable}\NormalTok{(}
+  \FunctionTok{head}\NormalTok{(iris, }\DecValTok{20}\NormalTok{), }\AttributeTok{caption =} \StringTok{\textquotesingle{}Here is a nice table!\textquotesingle{}}\NormalTok{,}
+  \AttributeTok{booktabs =} \ConstantTok{TRUE}
 \NormalTok{)}
 \end{Highlighting}
 \end{Shaded}
@@ -413,6 +437,8 @@ You can write citations, too. For example, we are using the \textbf{bookdown} pa
 
 \hypertarget{hmmcapturerecapture}{%
 \chapter{Hidden Markov models}\label{hmmcapturerecapture}}
+
+\citet{heller_novel_2021}
 
 \hypertarget{survival}{%
 \chapter{Survival}\label{survival}}
