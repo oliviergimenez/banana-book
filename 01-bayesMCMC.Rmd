@@ -94,6 +94,572 @@ y <- 19 # nb of success
 n <- 57 # nb of attempts
 ```
 
+Our model:
+  
+  \begin{align*}
+y &\sim \text{Binomial}(n, \theta) &\text{[likelihood]}
+\\
+\theta &\sim \text{Beta}(1, 1) &\text{[prior for }\theta \text{]} \\ 
+\end{align*}
+
+## Beta prior
+  
+```{r, echo = FALSE}
+a <- 1; b <- 1; p <- seq(0,1,.002); prior <- dbeta(p,a,b)
+dfprior <- data.frame(p = p, prior = prior) 
+dfprior %>%
+  ggplot() + 
+  geom_line(aes(x = p, y = prior), 
+            size = 1.5,
+            color = wesanderson::wes_palettes$Royal1[1])
+#plot(p, dbeta(p,a,b), type='l', lwd=3)
+```
+
+## Apply Bayes theorem
+  
+Likelihood times the prior: $\Pr(\text{data} \mid \theta) \; \Pr(\theta)$
+```{r}
+numerator <- function(p) dbinom(y,n,p) * dbeta(p,a,b)
+```
+
+Averaged likelihood: $\Pr(\text{data}) = \int{L(\theta \mid \text{data}) \; \Pr(\theta) d\theta}$
+```{r}
+denominator <- integrate(numerator,0,1)$value
+```
+
+## Posterior via numerical integration
+  
+```{r, echo = FALSE}
+numerical_posterior <- data.frame(p = p, posterior = numerator(p)/denominator) 
+numerical_posterior %>%
+  ggplot() + 
+  geom_line(aes(x = p, y = posterior), 
+            size = 1.5, 
+            col = wesanderson::wes_palettes$Royal1[2], 
+            alpha = 0.5)
+```
+
+
+## Superimpose explicit posterior
+  
+```{r, echo = FALSE}
+explicit_posterior <- dbeta(p, y + a, n - y + b)
+dfexpposterior <- data.frame(p = p, explicit_posterior = explicit_posterior)
+ggplot() + 
+  geom_line(data = numerical_posterior, 
+            aes(x = p, y = posterior), 
+            size = 1.5, 
+            col = wesanderson::wes_palettes$Royal1[2],
+            alpha = 0.5) + 
+  geom_line(data = dfexpposterior, 
+            aes(x = p, y = explicit_posterior),
+            size = 1.5, 
+            col = wesanderson::wes_palettes$Royal1[3], 
+            linetype = "dashed")
+```
+
+## And the prior
+  
+```{r, echo = FALSE}
+ggplot() + 
+  geom_line(data = numerical_posterior, 
+            aes(x = p, y = posterior), 
+            size = 1.5, 
+            col = wesanderson::wes_palettes$Royal1[2], 
+            alpha = 0.5) + 
+  geom_line(data = dfexpposterior, 
+            aes(x = p, y = explicit_posterior),
+            col = wesanderson::wes_palettes$Royal1[3], 
+            size = 1.5, 
+            linetype = "dashed") + 
+  geom_line(data = dfprior,
+            aes(x = p, y = prior),
+            col = wesanderson::wes_palettes$Royal1[1],
+            size = 1.5)
+```
+
+## What if multiple parameters?
+  
+Example of a linear regression with parameters $\alpha$, $\beta$ and $\sigma$ to be estimated. 
+
+Bayes' theorem says:
+
+$$ P(\alpha, \beta, \sigma \mid \text{data}) = \frac{ P(\text{data} \mid \alpha, \beta, \sigma) \, P(\alpha, \beta, \sigma)}{\iiint \, P(\text{data} \mid \alpha, \beta, \sigma) \, P(\alpha, \beta, \sigma) \,d\alpha \,d\beta \,d\sigma} $$
+
+Do we really wish to calculate a 3D integral?
+
+## Bayesian computation
+
+In the early 1990s, statisticians rediscovered work from the 1950's in physics.
+
+```{r}
+knitr::include_graphics("images/metropolis.png")
+```
+
+Use stochastic simulation to draw samples from posterior distributions.
+
+Avoid explicit calculation of integrals in Bayes formula.
+
+Instead, approx. posterior w/ some precision by drawing large samples.
+
+Markov chain Monte Carlo (MCMC) gives a boost to Bayesian statistics!
+
+## Why are MCMC methods so useful?
+
++ MCMC are stochastic algorithms to produce sequence of dependent random numbers from a Markov chain.
+
++ A Markov chain is a discrete sequence of states, in which the probability of an event depends only on the state in the previous event.
+
++ A Markov chain has an equilibrium (aka stationary) distribution.
+
++ Equilibrium distribution is the desired posterior distribution!
+
++ Several ways of constructing these chains: e.g., Metropolis-Hastings, Gibbs sampler.
+
++ How to implement them in practice?!
+
+## The Metropolis algorithm
+
++ Let's go back to animal survival estimation.
+
++ We illustrate sampling from the posterior distribution. 
+
++ We write functions in `R` for the likelihood, the prior and the posterior.
+
+```{r}
+# survival data, 19 "success" out of 57 "attempts"
+survived <- 19
+released <- 57
+
+# log-likelihood function
+loglikelihood <- function(x, p){
+  dbinom(x = x, size = released, prob = p, log = TRUE)
+}
+
+# prior density
+logprior <- function(p){
+  dunif(x = p, min = 0, max = 1, log = TRUE)
+}
+
+# posterior density function (log scale)
+posterior <- function(x, p){
+  loglikelihood(x, p) + logprior(p) # - log(Pr(data))
+}
+```
+
+## Metropolis algorithm
+  
+1. We start at any possible value of the parameter to be estimated. 
+
+2. To decide where to visit next, we propose to move away from the current value of the parameter <span>&#8212;</span> this is a **candidate** value. To do so, we add to the current value some random value from say a normal distribution with some variance.
+  
+3. We compute the ratio of the probabilities at the candidate and current locations $R = \text{posterior(candidate)/posterior(current)}$. This is where the magic of MCMC happens, in that $\Pr(\text{data})$, the denominator of the Bayes theorem, cancels out. 
+
+4. We spin a continuous spinner that lands anywhere from 0 to 1 <span>&#8212;</span> call it the random spin $X$. If $X$ is smaller than $R$, we move to the candidate location, otherwise we remain at the current location.
+  
+5. We repeat 2-4 a number of times <span>&#8212;</span> or **steps** (many steps).
+  
+```{r}
+# propose candidate value
+move <- function(x, away = .2){ 
+  logitx <- log(x / (1 - x))
+  logit_candidate <- logitx + rnorm(1, 0, away)
+  candidate <- plogis(logit_candidate)
+  return(candidate)
+}
+
+# set up the scene
+steps <- 100
+theta.post <- rep(NA, steps)
+set.seed(1234)
+
+# pick starting value (step 1)
+inits <- 0.5
+theta.post[1] <- inits
+```
+
+```{r}
+for (t in 2:steps){ # repeat steps 2-4 (step 5)
+  
+  # propose candidate value for prob of success (step 2)
+  theta_star <- move(theta.post[t-1])
+  
+  # calculate ratio R (step 3)
+  pstar <- posterior(survived, p = theta_star)  
+  pprev <- posterior(survived, p = theta.post[t-1])
+  logR <- pstar - pprev
+  R <- exp(logR)
+  
+  # decide to accept candidate value or to keep current value (step 4)
+  accept <- rbinom(1, 1, prob = min(R, 1))
+  theta.post[t] <- ifelse(accept == 1, theta_star, theta.post[t-1])
+}
+```
+
+Starting at the value $0.5$ and running the algorithm for $100$ iterations.
+
+```{r}
+head(theta.post)
+tail(theta.post)
+```
+
+## A chain
+  
+```{r, echo = FALSE}
+df <- data.frame(x = 1:steps, y = theta.post)
+df %>%
+  ggplot() +
+  geom_line(aes(x = x, y = y), size = 1.5, color = wesanderson::wes_palettes$Zissou1[1]) + 
+  labs(x = "iterations", y = "values from posterior distribution") + 
+  ylim(0.1, 0.6)
+```
+
+## Another chain
+  
+```{r, echo = FALSE}
+
+# pick starting value (step 1)
+inits <- 0.2
+theta.post2 <- rep(NA, steps)
+theta.post2[1] <- inits
+
+for (t in 2:steps){ # repeat steps 2-4 (step 5)
+  # propose candidate value for prob of success (step 2)
+  theta_star <- move(theta.post2[t-1])
+  # calculate ratio R (step 3)
+  pstar <- posterior(survived, p = theta_star)  
+  pprev <- posterior(survived, p = theta.post[t-1])
+  logR <- pstar - pprev
+  R <- exp(logR)
+  
+  # decide to accept candidate value or to keep current value (step 4)
+  accept <- rbinom(1, 1, prob = min(R, 1))
+  theta.post2[t] <- ifelse(accept == 1, theta_star, theta.post2[t-1])
+}
+
+df2 <- data.frame(x = 1:steps, y = theta.post2)
+ggplot() +
+  geom_line(data = df, aes(x = x, y = y), size = 1.5, color = wesanderson::wes_palettes$Zissou1[1]) + 
+  geom_line(data = df2, aes(x = x, y = y), size = 1.5, color = wesanderson::wes_palettes$Zissou1[3]) + 
+  labs(x = "iterations", y = "values from posterior distribution") + 
+  ylim(0.1, 0.6)
+```
+
+## With 5000 steps 
+  
+```{r, echo = FALSE}
+# set up the scene
+steps <- 5000
+theta.post <- rep(NA, steps)
+set.seed(1234)
+
+# pick starting value (step 1)
+inits <- 0.5
+theta.post[1] <- inits
+
+for (t in 2:steps){ # repeat steps 2-4 (step 5)
+  
+  # propose candidate value for prob of success (step 2)
+  theta_star <- move(theta.post[t-1])
+  
+  # calculate ratio R (step 3)
+  pstar <- posterior(survived, p = theta_star)  
+  pprev <- posterior(survived, p = theta.post[t-1])
+  logR <- pstar - pprev
+  R <- exp(logR)
+  
+  # decide to accept candidate value or to keep current value (step 4)
+  accept <- rbinom(1, 1, prob = min(R, 1))
+  theta.post[t] <- ifelse(accept == 1, theta_star, theta.post[t-1])
+}
+
+df <- data.frame(x = 1:steps, y = theta.post)
+df %>%
+  ggplot() +
+  geom_line(aes(x = x, y = y), size = 1, color = wesanderson::wes_palettes$Zissou1[1]) + 
+  labs(x = "iterations", y = "values from posterior distribution") + 
+  ylim(0.1, 0.6) + 
+  geom_hline(aes(yintercept = mean(theta.post)), 
+             color = wesanderson::wes_palettes$Zissou1[3],
+             size = 1.2) + 
+  geom_hline(aes(yintercept = 19/57), 
+             color = wesanderson::wes_palettes$Zissou1[5],
+             size = 1.2)
+```
+
+In yellow: posterior mean; in red: maximum likelihood estimate.
+
+### Animating MCMC - 1D example (code [here](https://gist.github.com/oliviergimenez/5ee33af9c8d947b72a39ed1764040bf3))
+  
+```{r}
+knitr::include_graphics("images/112546886-56862f00-8dba-11eb-81a0-465434672bdd.gif")
+```
+
+### Animating MCMC - 2D example 
+
+Code [here](https://mbjoseph.github.io/posts/2018-12-25-animating-the-metropolis-algorithm/).
+  
+```{r}
+knitr::include_graphics("images/create-gif.gif")
+```
+
+### The MCMC Interactive Gallery (more [here](https://chi-feng.github.io/mcmc-demo/))
+  
+```{r}
+knitr::include_graphics("images/galery.png")
+```
+
+## Assessing convergence
+  
++ MCMC algorithms can be used to construct a Markov chain with a given stationary distribution (set to be the posterior distribution).
+
++ For the MCMC algorithm, the posterior distribution is only needed to be known up to proportionality. 
+
++ Once the stationary distribution is reached, we can regard the realisations of the chain as a (dependent) sample from the posterior distribution (and obtain Monte Carlo estimates).
+
++ We consider some important implementation issues.
+
+## Mixing and autocorrelation
+  
+```{r, echo = FALSE}
+# from https://bookdown.org/content/3686/markov-chain-monte-carlo.html
+# specify the data, to be used in the likelihood function.
+my_data <- c(rep(0, 38), rep(1, 19))
+
+# define the Bernoulli likelihood function, p(D|theta).
+# the argument theta could be a vector, not just a scalar
+likelihood <- function(theta, data) {
+  z <- sum(data)
+  n <- length(data)
+  p_data_given_theta <- theta^z * (1 - theta)^(n - z)
+  # the theta values passed into this function are generated at random,
+  # and therefore might be inadvertently greater than 1 or less than 0.
+  # the likelihood for theta > 1 or for theta < 0 is zero
+  p_data_given_theta[theta > 1 | theta < 0] <- 0
+  return(p_data_given_theta)
+}
+
+# define the prior density function. 
+prior_d <- function(theta) {
+  p_theta <- dbeta(theta, 1, 1)
+  # the theta values passed into this function are generated at random,
+  # and therefore might be inadvertently greater than 1 or less than 0.
+  # the prior for theta > 1 or for theta < 0 is zero
+  p_theta[theta > 1 | theta < 0] = 0
+  return(p_theta)
+}
+
+# define the relative probability of the target distribution, 
+# as a function of vector theta. for our application, this
+# target distribution is the unnormalized posterior distribution
+target_rel_prob <- function(theta, data) {
+  target_rel_prob <- likelihood(theta, data) * prior_d(theta)
+  return(target_rel_prob)
+}
+
+# specify the length of the trajectory, i.e., the number of jumps to try:
+traj_length <- 10000 # this is just an arbitrary large number
+
+# initialize the vector that will store the results
+trajectory <- rep(0, traj_length)
+
+# specify where to start the trajectory:
+trajectory[1] <- 0.01 # another arbitrary value
+
+# specify the burn-in period
+burn_in <- ceiling(0.0 * traj_length) # arbitrary number, less than `traj_length`
+
+# initialize accepted, rejected counters, just to monitor performance:
+n_accepted <- 0
+n_rejected <- 0
+
+my_metropolis <- function(proposal_sd) {
+  
+  # now generate the random walk. the 't' index is time or trial in the walk.
+  # specify seed to reproduce same random walk
+  set.seed(47405)
+  
+  
+  ## I'm taking this section out and will replace it
+  
+  # # specify standard deviation of proposal distribution
+  # proposal_sd <- c(0.02, 0.2, 2.0)[2]
+  
+  ## end of the section I took out
+  
+  
+  for (t in 1:(traj_length - 1)) {
+    current_position <- trajectory[t]
+    # use the proposal distribution to generate a proposed jump
+    proposed_jump <- rnorm(1, mean = 0, sd = proposal_sd)
+    # compute the probability of accepting the proposed jump
+    prob_accept <- min(1,
+                       target_rel_prob(current_position + proposed_jump, my_data)
+                       / target_rel_prob(current_position, my_data))
+    # generate a random uniform value from the interval [0, 1] to
+    # decide whether or not to accept the proposed jump
+    if (runif(1) < prob_accept) {
+      # accept the proposed jump
+      trajectory[t + 1] <- current_position + proposed_jump
+      # increment the accepted counter, just to monitor performance
+      if (t > burn_in) {n_accepted <- n_accepted + 1}
+    } else {
+      # reject the proposed jump, stay at current position
+      trajectory[t + 1] <- current_position
+      # increment the rejected counter, just to monitor performance
+      if (t > burn_in) {n_rejected <- n_rejected + 1}
+    }
+  }
+  
+  # extract the post-burn_in portion of the trajectory
+  accepted_traj <- trajectory[(burn_in + 1) : length(trajectory)]
+  
+  tibble(accepted_traj = accepted_traj,
+         n_accepted    = n_accepted, 
+         n_rejected    = n_rejected)
+  # end of Metropolis algorithm
+  
+}
+
+d <-
+  tibble(proposal_sd = c(0.02, 0.2, 2.0)) %>% 
+  mutate(accepted_traj = map(proposal_sd, my_metropolis)) %>% 
+  unnest(accepted_traj)
+
+d <-
+  d %>% 
+  mutate(proposal_sd = str_c("Proposal SD = ", proposal_sd),
+         iter        = rep(1:traj_length, times = 3))
+
+trace <- d %>% 
+  ggplot(aes(y = accepted_traj, x = iter)) +
+  geom_path(size = 1/4, color = "steelblue") +
+  geom_point(size = 1/2, alpha = 1/2, color = "steelblue") +
+  scale_y_continuous(expression(theta), breaks = 0:5 * 0.1, limits = c(0.15, 0.5)) +
+  scale_x_continuous("", breaks = seq(traj_length-traj_length*10/100,traj_length,by = 600), limits = c(traj_length-traj_length*10/100, traj_length)) +
+  facet_wrap(~proposal_sd, ncol = 3) +
+  theme_light(base_size = 14)
+library(forecast)
+plot1 <- ggAcf(x = d$accepted_traj[d$proposal_sd=="Proposal SD = 0.02"], main = "") + 
+  theme_light(base_size = 14)
+plot2 <- ggAcf(x = d$accepted_traj[d$proposal_sd=="Proposal SD = 0.2"], main = "") + 
+  theme_light(base_size = 14)
+plot3 <- ggAcf(x = d$accepted_traj[d$proposal_sd=="Proposal SD = 2"], main = "") + 
+  theme_light(base_size = 14)
+library(patchwork)
+trace / (plot1 + plot2 + plot3)
+```
+
++ The movement around the parameter space is often referred to as **mixing**.
+
++ Traceplots of for small and big moves provide (relatively) high correlations (known as autocorrelations) between successive observations of the Markov chain.
+
++ Strongly correlated observations require large sample sizes and therefore longer simulations.
+
++ Autocorrelation function (ACF) plots are a convenient way of displaying the strength of autocorrelation in the given sample values.
+
++ ACF plots provide the autocorrelation between successively sampled values separated by $k$ iterations, referred to as lag, (i.e. $\text{cor}(\theta_t, \theta_{t+k})$) for increasing values of $k$.
+
+## How do good chains behave? 
+  
++ Converge to same target distribution; discard some realisations of Markov chain before convergence is achieved.
+
++ Once there, explore efficiently: The post-convergence sample size required for suitable numerical summaries.
+
++ Therefore, we are looking to determine how long it takes for the Markov chain to converge to the stationary distribution.
+
++ In practice, we must discard observations from the start of the chain and just use observations from the chain once it has converged.
+
++ The initial observations that we discard are referred to as the **burn-in**.
+
++ Simplest method to determine length of burn-in period is to look at trace plots.
+
+## Burn-in
+  
+```{r, echo = FALSE}
+
+# set up the scene
+steps <- 1000
+theta.post <- rep(NA, steps)
+set.seed(1234)
+
+# pick starting value (step 1)
+inits <- 0.99
+theta.post[1] <- inits
+
+for (t in 2:steps){ # repeat steps 2-4 (step 5)
+  
+  # propose candidate value for prob of success (step 2)
+  theta_star <- move(theta.post[t-1], away = 0.1)
+  
+  # calculate ratio R (step 3)
+  pstar <- posterior(survived, p = theta_star)  
+  pprev <- posterior(survived, p = theta.post[t-1])
+  logR <- pstar - pprev
+  R <- exp(logR)
+  
+  # decide to accept candidate value or to keep current value (step 4)
+  accept <- rbinom(1, 1, prob = min(R, 1))
+  theta.post[t] <- ifelse(accept == 1, theta_star, theta.post[t-1])
+}
+
+df <- data.frame(x = 1:steps, y = theta.post)
+df %>%
+  ggplot() +
+  geom_line(aes(x = x, y = y), size = 1.2, color = wesanderson::wes_palettes$Zissou1[1]) + 
+  labs(x = "iterations", y = "values from posterior distribution") + 
+  theme_light(base_size = 14) + 
+  annotate("rect", 
+           xmin = 0, 
+           xmax = 500, 
+           ymin = 0.1, 
+           ymax = 1, 
+           alpha = .3) +
+  scale_y_continuous(expand = c(0,0))
+```
+
+If simulations cheap, be conservative.
+
+## Effective sample size `n.eff`
+  
+* How long of a chain is needed to produce stable estimates ?
+* Most MCMC chains are strongly autocorrelated.
+* Successive steps are near each other, and are not independent. 
+* The effective sample size (`n.eff`) measures chain length while taking into account the autocorrelation of the chain.
+* `n.eff` is less than the number of MCMC iterations.
+* Check the `n.eff` of every parameter of interest.
+* Check the `n.eff` of any interesting parameter combinations.
+* We need $\text{n.eff} \geq 100$ independent steps. 
+
+## Potential scale reduction factor
+  
++ Gelman-Rubin statistic $\hat{R}$
++ Measures the ratio of the total variability combining multiple chains (between-chain plus within-chain) to the within-chain variability. 
++ Asks the question is there a chain effect? Very much alike the $F$ test in an ANOVA. 
++ Values near $1$ indicates likely convergence, a value of $\leq 1.1$ is considered acceptable.
++ Necessary condition, not sufficient; In other words, these diagnostics cannot tell you that you have converged for sure, only that you have not. 
+
+## To sum up
+  
++ Run multiple chains from arbitrary starting places (initial values).
++ Assume convergence when all chains reach same regime
++ Discard initial burn-in phase.
++ Proceed with posterior inference. 
++ Use traceplot, effective sample size and $\hat{R}$.
+
+## What if you have issues of convergence?
+  
++ Increase burn-in, sample more.
++	Use more informative priors.
++ Pick better initial values (good guess), using e.g. estimates from simpler models.
++ Reparameterize: 
++ Standardize covariates.
++ Non-centering: $\alpha \sim N(0,\sigma)$ becomes $\alpha = z \sigma$ with $z \sim N(0,1)$.
++	Something wrong with your model? 
++ Start with a simpler model (remove complexities). 
++ Use simulations. 
++ Change your sampler. More later on. 
+
 
 
 ## Further reading

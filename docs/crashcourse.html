@@ -20,7 +20,8 @@
 <!-- JS --><script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.6/clipboard.min.js" integrity="sha256-inc5kl9MA1hkeYUt+EC3BhlIgyp/2jDIyBLS6k3UxPI=" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/fuse.js/6.4.6/fuse.js" integrity="sha512-zv6Ywkjyktsohkbp9bb45V6tEMoWhzFzXis+LrMehmJZZSys19Yxf1dopHx7WzIKxr5tK2dVcYmaCk2uqdjF4A==" crossorigin="anonymous"></script><script src="https://kit.fontawesome.com/6ecbd6c532.js" crossorigin="anonymous"></script><script src="libs/header-attrs/header-attrs.js"></script><script src="libs/jquery/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <link href="libs/bootstrap/bootstrap.min.css" rel="stylesheet">
 <script src="libs/bootstrap/bootstrap.bundle.min.js"></script><script src="libs/bs3compat/tabs.js"></script><script src="libs/bs3compat/bs3compat.js"></script><link href="libs/bs4_book/bs4_book.css" rel="stylesheet">
-<script src="libs/bs4_book/bs4_book.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/autocomplete.js/0.38.0/autocomplete.jquery.min.js" integrity="sha512-GU9ayf+66Xx2TmpxqJpliWbT5PiGYxpaG8rfnBEk1LL8l1KGkRShhngwdXK1UgqhAzWpZHSiYPc09/NwDQIGyg==" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/mark.js/8.11.1/mark.min.js" integrity="sha512-5CYOlHXGh6QpOFA/TeTylKLWfB3ftPsde7AnmhuitiTX4K5SqCLBeKro6sPS8ilsz1Q4NRx3v8Ko2IBiszzdww==" crossorigin="anonymous"></script><!-- CSS --><link rel="stylesheet" href="bs4_style.css">
+<script src="libs/bs4_book/bs4_book.js"></script><script src="libs/kePrint/kePrint.js"></script><link href="libs/lightable/lightable.css" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/autocomplete.js/0.38.0/autocomplete.jquery.min.js" integrity="sha512-GU9ayf+66Xx2TmpxqJpliWbT5PiGYxpaG8rfnBEk1LL8l1KGkRShhngwdXK1UgqhAzWpZHSiYPc09/NwDQIGyg==" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/mark.js/8.11.1/mark.min.js" integrity="sha512-5CYOlHXGh6QpOFA/TeTylKLWfB3ftPsde7AnmhuitiTX4K5SqCLBeKro6sPS8ilsz1Q4NRx3v8Ko2IBiszzdww==" crossorigin="anonymous"></script><!-- CSS --><link rel="stylesheet" href="bs4_style.css">
 </head>
 <body data-spy="scroll" data-target="#toc">
 
@@ -152,10 +153,316 @@ Figure 1.1: Bayes’ theorem spelt out in blue neon at the offices of Autonomy i
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">y</span> <span class="op">&lt;-</span> <span class="fl">19</span> <span class="co"># nb of success</span>
 <span class="va">n</span> <span class="op">&lt;-</span> <span class="fl">57</span> <span class="co"># nb of attempts</span></code></pre></div>
+<p>Our model:</p>
+<p><span class="math display">\[\begin{align*}
+y &amp;\sim \text{Binomial}(n, \theta) &amp;\text{[likelihood]}
+\\
+\theta &amp;\sim \text{Beta}(1, 1) &amp;\text{[prior for }\theta \text{]} \\ 
+\end{align*}\]</span></p>
 </div>
-<div id="further-reading" class="section level2" number="1.6">
+<div id="beta-prior" class="section level2" number="1.6">
 <h2>
-<span class="header-section-number">1.6</span> Further reading<a class="anchor" aria-label="anchor" href="#further-reading"><i class="fas fa-link"></i></a>
+<span class="header-section-number">1.6</span> Beta prior<a class="anchor" aria-label="anchor" href="#beta-prior"><i class="fas fa-link"></i></a>
+</h2>
+<div class="inline-figure"><img src="bayesHMMcapturerecapture_files/figure-html/unnamed-chunk-8-1.png" width="672"></div>
+</div>
+<div id="apply-bayes-theorem" class="section level2" number="1.7">
+<h2>
+<span class="header-section-number">1.7</span> Apply Bayes theorem<a class="anchor" aria-label="anchor" href="#apply-bayes-theorem"><i class="fas fa-link"></i></a>
+</h2>
+<p>Likelihood times the prior: <span class="math inline">\(\Pr(\text{data} \mid \theta) \; \Pr(\theta)\)</span></p>
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="va">numerator</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">p</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/stats/Binomial.html">dbinom</a></span><span class="op">(</span><span class="va">y</span>,<span class="va">n</span>,<span class="va">p</span><span class="op">)</span> <span class="op">*</span> <span class="fu"><a href="https://rdrr.io/r/stats/Beta.html">dbeta</a></span><span class="op">(</span><span class="va">p</span>,<span class="va">a</span>,<span class="va">b</span><span class="op">)</span></code></pre></div>
+<p>Averaged likelihood: <span class="math inline">\(\Pr(\text{data}) = \int{L(\theta \mid \text{data}) \; \Pr(\theta) d\theta}\)</span></p>
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="va">denominator</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/integrate.html">integrate</a></span><span class="op">(</span><span class="va">numerator</span>,<span class="fl">0</span>,<span class="fl">1</span><span class="op">)</span><span class="op">$</span><span class="va">value</span></code></pre></div>
+</div>
+<div id="posterior-via-numerical-integration" class="section level2" number="1.8">
+<h2>
+<span class="header-section-number">1.8</span> Posterior via numerical integration<a class="anchor" aria-label="anchor" href="#posterior-via-numerical-integration"><i class="fas fa-link"></i></a>
+</h2>
+<div class="inline-figure"><img src="bayesHMMcapturerecapture_files/figure-html/unnamed-chunk-11-1.png" width="672"></div>
+</div>
+<div id="superimpose-explicit-posterior" class="section level2" number="1.9">
+<h2>
+<span class="header-section-number">1.9</span> Superimpose explicit posterior<a class="anchor" aria-label="anchor" href="#superimpose-explicit-posterior"><i class="fas fa-link"></i></a>
+</h2>
+<div class="inline-figure"><img src="bayesHMMcapturerecapture_files/figure-html/unnamed-chunk-12-1.png" width="672"></div>
+</div>
+<div id="and-the-prior" class="section level2" number="1.10">
+<h2>
+<span class="header-section-number">1.10</span> And the prior<a class="anchor" aria-label="anchor" href="#and-the-prior"><i class="fas fa-link"></i></a>
+</h2>
+<div class="inline-figure"><img src="bayesHMMcapturerecapture_files/figure-html/unnamed-chunk-13-1.png" width="672"></div>
+</div>
+<div id="what-if-multiple-parameters" class="section level2" number="1.11">
+<h2>
+<span class="header-section-number">1.11</span> What if multiple parameters?<a class="anchor" aria-label="anchor" href="#what-if-multiple-parameters"><i class="fas fa-link"></i></a>
+</h2>
+<p>Example of a linear regression with parameters <span class="math inline">\(\alpha\)</span>, <span class="math inline">\(\beta\)</span> and <span class="math inline">\(\sigma\)</span> to be estimated.</p>
+<p>Bayes’ theorem says:</p>
+<p><span class="math display">\[ P(\alpha, \beta, \sigma \mid \text{data}) = \frac{ P(\text{data} \mid \alpha, \beta, \sigma) \, P(\alpha, \beta, \sigma)}{\iiint \, P(\text{data} \mid \alpha, \beta, \sigma) \, P(\alpha, \beta, \sigma) \,d\alpha \,d\beta \,d\sigma} \]</span></p>
+<p>Do we really wish to calculate a 3D integral?</p>
+</div>
+<div id="bayesian-computation" class="section level2" number="1.12">
+<h2>
+<span class="header-section-number">1.12</span> Bayesian computation<a class="anchor" aria-label="anchor" href="#bayesian-computation"><i class="fas fa-link"></i></a>
+</h2>
+<p>In the early 1990s, statisticians rediscovered work from the 1950’s in physics.</p>
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/include_graphics.html">include_graphics</a></span><span class="op">(</span><span class="st">"images/metropolis.png"</span><span class="op">)</span></code></pre></div>
+<div class="inline-figure"><img src="images/metropolis.png" width="582"></div>
+<p>Use stochastic simulation to draw samples from posterior distributions.</p>
+<p>Avoid explicit calculation of integrals in Bayes formula.</p>
+<p>Instead, approx. posterior w/ some precision by drawing large samples.</p>
+<p>Markov chain Monte Carlo (MCMC) gives a boost to Bayesian statistics!</p>
+</div>
+<div id="why-are-mcmc-methods-so-useful" class="section level2" number="1.13">
+<h2>
+<span class="header-section-number">1.13</span> Why are MCMC methods so useful?<a class="anchor" aria-label="anchor" href="#why-are-mcmc-methods-so-useful"><i class="fas fa-link"></i></a>
+</h2>
+<ul>
+<li><p>MCMC are stochastic algorithms to produce sequence of dependent random numbers from a Markov chain.</p></li>
+<li><p>A Markov chain is a discrete sequence of states, in which the probability of an event depends only on the state in the previous event.</p></li>
+<li><p>A Markov chain has an equilibrium (aka stationary) distribution.</p></li>
+<li><p>Equilibrium distribution is the desired posterior distribution!</p></li>
+<li><p>Several ways of constructing these chains: e.g., Metropolis-Hastings, Gibbs sampler.</p></li>
+<li><p>How to implement them in practice?!</p></li>
+</ul>
+</div>
+<div id="the-metropolis-algorithm" class="section level2" number="1.14">
+<h2>
+<span class="header-section-number">1.14</span> The Metropolis algorithm<a class="anchor" aria-label="anchor" href="#the-metropolis-algorithm"><i class="fas fa-link"></i></a>
+</h2>
+<ul>
+<li><p>Let’s go back to animal survival estimation.</p></li>
+<li><p>We illustrate sampling from the posterior distribution.</p></li>
+<li><p>We write functions in <code>R</code> for the likelihood, the prior and the posterior.</p></li>
+</ul>
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="co"># survival data, 19 "success" out of 57 "attempts"</span>
+<span class="va">survived</span> <span class="op">&lt;-</span> <span class="fl">19</span>
+<span class="va">released</span> <span class="op">&lt;-</span> <span class="fl">57</span>
+
+<span class="co"># log-likelihood function</span>
+<span class="va">loglikelihood</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">x</span>, <span class="va">p</span><span class="op">)</span><span class="op">{</span>
+  <span class="fu"><a href="https://rdrr.io/r/stats/Binomial.html">dbinom</a></span><span class="op">(</span>x <span class="op">=</span> <span class="va">x</span>, size <span class="op">=</span> <span class="va">released</span>, prob <span class="op">=</span> <span class="va">p</span>, log <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>
+<span class="op">}</span>
+
+<span class="co"># prior density</span>
+<span class="va">logprior</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">p</span><span class="op">)</span><span class="op">{</span>
+  <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html">dunif</a></span><span class="op">(</span>x <span class="op">=</span> <span class="va">p</span>, min <span class="op">=</span> <span class="fl">0</span>, max <span class="op">=</span> <span class="fl">1</span>, log <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>
+<span class="op">}</span>
+
+<span class="co"># posterior density function (log scale)</span>
+<span class="va">posterior</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">x</span>, <span class="va">p</span><span class="op">)</span><span class="op">{</span>
+  <span class="fu">loglikelihood</span><span class="op">(</span><span class="va">x</span>, <span class="va">p</span><span class="op">)</span> <span class="op">+</span> <span class="fu">logprior</span><span class="op">(</span><span class="va">p</span><span class="op">)</span> <span class="co"># - log(Pr(data))</span>
+<span class="op">}</span></code></pre></div>
+</div>
+<div id="metropolis-algorithm" class="section level2" number="1.15">
+<h2>
+<span class="header-section-number">1.15</span> Metropolis algorithm<a class="anchor" aria-label="anchor" href="#metropolis-algorithm"><i class="fas fa-link"></i></a>
+</h2>
+<ol style="list-style-type: decimal">
+<li><p>We start at any possible value of the parameter to be estimated.</p></li>
+<li><p>To decide where to visit next, we propose to move away from the current value of the parameter <span>—</span> this is a <strong>candidate</strong> value. To do so, we add to the current value some random value from say a normal distribution with some variance.</p></li>
+<li><p>We compute the ratio of the probabilities at the candidate and current locations <span class="math inline">\(R = \text{posterior(candidate)/posterior(current)}\)</span>. This is where the magic of MCMC happens, in that <span class="math inline">\(\Pr(\text{data})\)</span>, the denominator of the Bayes theorem, cancels out.</p></li>
+<li><p>We spin a continuous spinner that lands anywhere from 0 to 1 <span>—</span> call it the random spin <span class="math inline">\(X\)</span>. If <span class="math inline">\(X\)</span> is smaller than <span class="math inline">\(R\)</span>, we move to the candidate location, otherwise we remain at the current location.</p></li>
+<li><p>We repeat 2-4 a number of times <span>—</span> or <strong>steps</strong> (many steps).</p></li>
+</ol>
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="co"># propose candidate value</span>
+<span class="va">move</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">x</span>, <span class="va">away</span> <span class="op">=</span> <span class="fl">.2</span><span class="op">)</span><span class="op">{</span> 
+  <span class="va">logitx</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Log.html">log</a></span><span class="op">(</span><span class="va">x</span> <span class="op">/</span> <span class="op">(</span><span class="fl">1</span> <span class="op">-</span> <span class="va">x</span><span class="op">)</span><span class="op">)</span>
+  <span class="va">logit_candidate</span> <span class="op">&lt;-</span> <span class="va">logitx</span> <span class="op">+</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html">rnorm</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">0</span>, <span class="va">away</span><span class="op">)</span>
+  <span class="va">candidate</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/Logistic.html">plogis</a></span><span class="op">(</span><span class="va">logit_candidate</span><span class="op">)</span>
+  <span class="kw"><a href="https://rdrr.io/r/base/function.html">return</a></span><span class="op">(</span><span class="va">candidate</span><span class="op">)</span>
+<span class="op">}</span>
+
+<span class="co"># set up the scene</span>
+<span class="va">steps</span> <span class="op">&lt;-</span> <span class="fl">100</span>
+<span class="va">theta.post</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html">rep</a></span><span class="op">(</span><span class="cn">NA</span>, <span class="va">steps</span><span class="op">)</span>
+<span class="fu"><a href="https://rdrr.io/r/base/Random.html">set.seed</a></span><span class="op">(</span><span class="fl">1234</span><span class="op">)</span>
+
+<span class="co"># pick starting value (step 1)</span>
+<span class="va">inits</span> <span class="op">&lt;-</span> <span class="fl">0.5</span>
+<span class="va">theta.post</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="va">inits</span></code></pre></div>
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="kw">for</span> <span class="op">(</span><span class="va">t</span> <span class="kw">in</span> <span class="fl">2</span><span class="op">:</span><span class="va">steps</span><span class="op">)</span><span class="op">{</span> <span class="co"># repeat steps 2-4 (step 5)</span>
+  
+  <span class="co"># propose candidate value for prob of success (step 2)</span>
+  <span class="va">theta_star</span> <span class="op">&lt;-</span> <span class="fu">move</span><span class="op">(</span><span class="va">theta.post</span><span class="op">[</span><span class="va">t</span><span class="op">-</span><span class="fl">1</span><span class="op">]</span><span class="op">)</span>
+  
+  <span class="co"># calculate ratio R (step 3)</span>
+  <span class="va">pstar</span> <span class="op">&lt;-</span> <span class="fu">posterior</span><span class="op">(</span><span class="va">survived</span>, p <span class="op">=</span> <span class="va">theta_star</span><span class="op">)</span>  
+  <span class="va">pprev</span> <span class="op">&lt;-</span> <span class="fu">posterior</span><span class="op">(</span><span class="va">survived</span>, p <span class="op">=</span> <span class="va">theta.post</span><span class="op">[</span><span class="va">t</span><span class="op">-</span><span class="fl">1</span><span class="op">]</span><span class="op">)</span>
+  <span class="va">logR</span> <span class="op">&lt;-</span> <span class="va">pstar</span> <span class="op">-</span> <span class="va">pprev</span>
+  <span class="va">R</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Log.html">exp</a></span><span class="op">(</span><span class="va">logR</span><span class="op">)</span>
+  
+  <span class="co"># decide to accept candidate value or to keep current value (step 4)</span>
+  <span class="va">accept</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/Binomial.html">rbinom</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">1</span>, prob <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Extremes.html">min</a></span><span class="op">(</span><span class="va">R</span>, <span class="fl">1</span><span class="op">)</span><span class="op">)</span>
+  <span class="va">theta.post</span><span class="op">[</span><span class="va">t</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/ifelse.html">ifelse</a></span><span class="op">(</span><span class="va">accept</span> <span class="op">==</span> <span class="fl">1</span>, <span class="va">theta_star</span>, <span class="va">theta.post</span><span class="op">[</span><span class="va">t</span><span class="op">-</span><span class="fl">1</span><span class="op">]</span><span class="op">)</span>
+<span class="op">}</span></code></pre></div>
+<p>Starting at the value <span class="math inline">\(0.5\)</span> and running the algorithm for <span class="math inline">\(100\)</span> iterations.</p>
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/r/utils/head.html">head</a></span><span class="op">(</span><span class="va">theta.post</span><span class="op">)</span>
+<span class="co">## [1] 0.5000 0.4399 0.4399 0.4577 0.4577 0.4577</span>
+<span class="fu"><a href="https://rdrr.io/r/utils/head.html">tail</a></span><span class="op">(</span><span class="va">theta.post</span><span class="op">)</span>
+<span class="co">## [1] 0.4146 0.3772 0.3772 0.3861 0.3899 0.3624</span></code></pre></div>
+</div>
+<div id="a-chain" class="section level2" number="1.16">
+<h2>
+<span class="header-section-number">1.16</span> A chain<a class="anchor" aria-label="anchor" href="#a-chain"><i class="fas fa-link"></i></a>
+</h2>
+<div class="inline-figure"><img src="bayesHMMcapturerecapture_files/figure-html/unnamed-chunk-19-1.png" width="672"></div>
+</div>
+<div id="another-chain" class="section level2" number="1.17">
+<h2>
+<span class="header-section-number">1.17</span> Another chain<a class="anchor" aria-label="anchor" href="#another-chain"><i class="fas fa-link"></i></a>
+</h2>
+<div class="inline-figure"><img src="bayesHMMcapturerecapture_files/figure-html/unnamed-chunk-20-1.png" width="672"></div>
+</div>
+<div id="with-5000-steps" class="section level2" number="1.18">
+<h2>
+<span class="header-section-number">1.18</span> With 5000 steps<a class="anchor" aria-label="anchor" href="#with-5000-steps"><i class="fas fa-link"></i></a>
+</h2>
+<div class="inline-figure"><img src="bayesHMMcapturerecapture_files/figure-html/unnamed-chunk-21-1.png" width="672"></div>
+<p>In yellow: posterior mean; in red: maximum likelihood estimate.</p>
+<div id="animating-mcmc---1d-example-code-here" class="section level3" number="1.18.1">
+<h3>
+<span class="header-section-number">1.18.1</span> Animating MCMC - 1D example (code <a href="https://gist.github.com/oliviergimenez/5ee33af9c8d947b72a39ed1764040bf3">here</a>)<a class="anchor" aria-label="anchor" href="#animating-mcmc---1d-example-code-here"><i class="fas fa-link"></i></a>
+</h3>
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/include_graphics.html">include_graphics</a></span><span class="op">(</span><span class="st">"images/112546886-56862f00-8dba-11eb-81a0-465434672bdd.gif"</span><span class="op">)</span></code></pre></div>
+<div class="inline-figure">
+<img src="images/112546886-56862f00-8dba-11eb-81a0-465434672bdd.gif"><!-- -->
+</div>
+</div>
+<div id="animating-mcmc---2d-example" class="section level3" number="1.18.2">
+<h3>
+<span class="header-section-number">1.18.2</span> Animating MCMC - 2D example<a class="anchor" aria-label="anchor" href="#animating-mcmc---2d-example"><i class="fas fa-link"></i></a>
+</h3>
+<p>Code <a href="https://mbjoseph.github.io/posts/2018-12-25-animating-the-metropolis-algorithm/">here</a>.</p>
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/include_graphics.html">include_graphics</a></span><span class="op">(</span><span class="st">"images/create-gif.gif"</span><span class="op">)</span></code></pre></div>
+<div class="inline-figure">
+<img src="images/create-gif.gif"><!-- -->
+</div>
+</div>
+<div id="the-mcmc-interactive-gallery-more-here" class="section level3" number="1.18.3">
+<h3>
+<span class="header-section-number">1.18.3</span> The MCMC Interactive Gallery (more <a href="https://chi-feng.github.io/mcmc-demo/">here</a>)<a class="anchor" aria-label="anchor" href="#the-mcmc-interactive-gallery-more-here"><i class="fas fa-link"></i></a>
+</h3>
+<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/include_graphics.html">include_graphics</a></span><span class="op">(</span><span class="st">"images/galery.png"</span><span class="op">)</span></code></pre></div>
+<div class="inline-figure"><img src="images/galery.png" width="992"></div>
+</div>
+</div>
+<div id="assessing-convergence" class="section level2" number="1.19">
+<h2>
+<span class="header-section-number">1.19</span> Assessing convergence<a class="anchor" aria-label="anchor" href="#assessing-convergence"><i class="fas fa-link"></i></a>
+</h2>
+<ul>
+<li><p>MCMC algorithms can be used to construct a Markov chain with a given stationary distribution (set to be the posterior distribution).</p></li>
+<li><p>For the MCMC algorithm, the posterior distribution is only needed to be known up to proportionality.</p></li>
+<li><p>Once the stationary distribution is reached, we can regard the realisations of the chain as a (dependent) sample from the posterior distribution (and obtain Monte Carlo estimates).</p></li>
+<li><p>We consider some important implementation issues.</p></li>
+</ul>
+</div>
+<div id="mixing-and-autocorrelation" class="section level2" number="1.20">
+<h2>
+<span class="header-section-number">1.20</span> Mixing and autocorrelation<a class="anchor" aria-label="anchor" href="#mixing-and-autocorrelation"><i class="fas fa-link"></i></a>
+</h2>
+<div class="inline-figure"><img src="bayesHMMcapturerecapture_files/figure-html/unnamed-chunk-25-1.png" width="672"></div>
+<ul>
+<li><p>The movement around the parameter space is often referred to as <strong>mixing</strong>.</p></li>
+<li><p>Traceplots of for small and big moves provide (relatively) high correlations (known as autocorrelations) between successive observations of the Markov chain.</p></li>
+<li><p>Strongly correlated observations require large sample sizes and therefore longer simulations.</p></li>
+<li><p>Autocorrelation function (ACF) plots are a convenient way of displaying the strength of autocorrelation in the given sample values.</p></li>
+<li><p>ACF plots provide the autocorrelation between successively sampled values separated by <span class="math inline">\(k\)</span> iterations, referred to as lag, (i.e. <span class="math inline">\(\text{cor}(\theta_t, \theta_{t+k})\)</span>) for increasing values of <span class="math inline">\(k\)</span>.</p></li>
+</ul>
+</div>
+<div id="how-do-good-chains-behave" class="section level2" number="1.21">
+<h2>
+<span class="header-section-number">1.21</span> How do good chains behave?<a class="anchor" aria-label="anchor" href="#how-do-good-chains-behave"><i class="fas fa-link"></i></a>
+</h2>
+<ul>
+<li><p>Converge to same target distribution; discard some realisations of Markov chain before convergence is achieved.</p></li>
+<li><p>Once there, explore efficiently: The post-convergence sample size required for suitable numerical summaries.</p></li>
+<li><p>Therefore, we are looking to determine how long it takes for the Markov chain to converge to the stationary distribution.</p></li>
+<li><p>In practice, we must discard observations from the start of the chain and just use observations from the chain once it has converged.</p></li>
+<li><p>The initial observations that we discard are referred to as the <strong>burn-in</strong>.</p></li>
+<li><p>Simplest method to determine length of burn-in period is to look at trace plots.</p></li>
+</ul>
+</div>
+<div id="burn-in" class="section level2" number="1.22">
+<h2>
+<span class="header-section-number">1.22</span> Burn-in<a class="anchor" aria-label="anchor" href="#burn-in"><i class="fas fa-link"></i></a>
+</h2>
+<div class="inline-figure"><img src="bayesHMMcapturerecapture_files/figure-html/unnamed-chunk-26-1.png" width="672"></div>
+<p>If simulations cheap, be conservative.</p>
+</div>
+<div id="effective-sample-size-n.eff" class="section level2" number="1.23">
+<h2>
+<span class="header-section-number">1.23</span> Effective sample size <code>n.eff</code><a class="anchor" aria-label="anchor" href="#effective-sample-size-n.eff"><i class="fas fa-link"></i></a>
+</h2>
+<ul>
+<li>How long of a chain is needed to produce stable estimates ?</li>
+<li>Most MCMC chains are strongly autocorrelated.</li>
+<li>Successive steps are near each other, and are not independent.</li>
+<li>The effective sample size (<code>n.eff</code>) measures chain length while taking into account the autocorrelation of the chain.</li>
+<li>
+<code>n.eff</code> is less than the number of MCMC iterations.</li>
+<li>Check the <code>n.eff</code> of every parameter of interest.</li>
+<li>Check the <code>n.eff</code> of any interesting parameter combinations.</li>
+<li>We need <span class="math inline">\(\text{n.eff} \geq 100\)</span> independent steps.</li>
+</ul>
+</div>
+<div id="potential-scale-reduction-factor" class="section level2" number="1.24">
+<h2>
+<span class="header-section-number">1.24</span> Potential scale reduction factor<a class="anchor" aria-label="anchor" href="#potential-scale-reduction-factor"><i class="fas fa-link"></i></a>
+</h2>
+<ul>
+<li>Gelman-Rubin statistic <span class="math inline">\(\hat{R}\)</span>
+</li>
+<li>Measures the ratio of the total variability combining multiple chains (between-chain plus within-chain) to the within-chain variability.</li>
+<li>Asks the question is there a chain effect? Very much alike the <span class="math inline">\(F\)</span> test in an ANOVA.</li>
+<li>Values near <span class="math inline">\(1\)</span> indicates likely convergence, a value of <span class="math inline">\(\leq 1.1\)</span> is considered acceptable.</li>
+<li>Necessary condition, not sufficient; In other words, these diagnostics cannot tell you that you have converged for sure, only that you have not.</li>
+</ul>
+</div>
+<div id="to-sum-up" class="section level2" number="1.25">
+<h2>
+<span class="header-section-number">1.25</span> To sum up<a class="anchor" aria-label="anchor" href="#to-sum-up"><i class="fas fa-link"></i></a>
+</h2>
+<ul>
+<li>Run multiple chains from arbitrary starting places (initial values).</li>
+<li>Assume convergence when all chains reach same regime</li>
+<li>Discard initial burn-in phase.</li>
+<li>Proceed with posterior inference.</li>
+<li>Use traceplot, effective sample size and <span class="math inline">\(\hat{R}\)</span>.</li>
+</ul>
+</div>
+<div id="what-if-you-have-issues-of-convergence" class="section level2" number="1.26">
+<h2>
+<span class="header-section-number">1.26</span> What if you have issues of convergence?<a class="anchor" aria-label="anchor" href="#what-if-you-have-issues-of-convergence"><i class="fas fa-link"></i></a>
+</h2>
+<ul>
+<li>Increase burn-in, sample more.</li>
+<li>Use more informative priors.</li>
+<li>Pick better initial values (good guess), using e.g. estimates from simpler models.</li>
+<li>Reparameterize:</li>
+<li>Standardize covariates.</li>
+<li>Non-centering: <span class="math inline">\(\alpha \sim N(0,\sigma)\)</span> becomes <span class="math inline">\(\alpha = z \sigma\)</span> with <span class="math inline">\(z \sim N(0,1)\)</span>.</li>
+<li>Something wrong with your model?</li>
+<li>Start with a simpler model (remove complexities).</li>
+<li>Use simulations.</li>
+<li>Change your sampler. More later on.</li>
+</ul>
+</div>
+<div id="further-reading" class="section level2" number="1.27">
+<h2>
+<span class="header-section-number">1.27</span> Further reading<a class="anchor" aria-label="anchor" href="#further-reading"><i class="fas fa-link"></i></a>
 </h2>
 <ul>
 <li><p>McCarthy, M. (2007). <a href="https://www.cambridge.org/core/books/bayesian-methods-for-ecology/9225F65B8A25D69B0B6C50B5A9A78201">Bayesian Methods for Ecology</a>. Cambridge: Cambridge University Press.</p></li>
@@ -176,7 +483,34 @@ Figure 1.1: Bayes’ theorem spelt out in blue neon at the offices of Autonomy i
 <li><a class="nav-link" href="#what-is-the-bayesian-approach"><span class="header-section-number">1.3</span> What is the Bayesian approach?</a></li>
 <li><a class="nav-link" href="#bayes-theorem-1"><span class="header-section-number">1.4</span> Bayes’ theorem</a></li>
 <li><a class="nav-link" href="#brute-force-via-numerical-integration"><span class="header-section-number">1.5</span> Brute force via numerical integration</a></li>
-<li><a class="nav-link" href="#further-reading"><span class="header-section-number">1.6</span> Further reading</a></li>
+<li><a class="nav-link" href="#beta-prior"><span class="header-section-number">1.6</span> Beta prior</a></li>
+<li><a class="nav-link" href="#apply-bayes-theorem"><span class="header-section-number">1.7</span> Apply Bayes theorem</a></li>
+<li><a class="nav-link" href="#posterior-via-numerical-integration"><span class="header-section-number">1.8</span> Posterior via numerical integration</a></li>
+<li><a class="nav-link" href="#superimpose-explicit-posterior"><span class="header-section-number">1.9</span> Superimpose explicit posterior</a></li>
+<li><a class="nav-link" href="#and-the-prior"><span class="header-section-number">1.10</span> And the prior</a></li>
+<li><a class="nav-link" href="#what-if-multiple-parameters"><span class="header-section-number">1.11</span> What if multiple parameters?</a></li>
+<li><a class="nav-link" href="#bayesian-computation"><span class="header-section-number">1.12</span> Bayesian computation</a></li>
+<li><a class="nav-link" href="#why-are-mcmc-methods-so-useful"><span class="header-section-number">1.13</span> Why are MCMC methods so useful?</a></li>
+<li><a class="nav-link" href="#the-metropolis-algorithm"><span class="header-section-number">1.14</span> The Metropolis algorithm</a></li>
+<li><a class="nav-link" href="#metropolis-algorithm"><span class="header-section-number">1.15</span> Metropolis algorithm</a></li>
+<li><a class="nav-link" href="#a-chain"><span class="header-section-number">1.16</span> A chain</a></li>
+<li><a class="nav-link" href="#another-chain"><span class="header-section-number">1.17</span> Another chain</a></li>
+<li>
+<a class="nav-link" href="#with-5000-steps"><span class="header-section-number">1.18</span> With 5000 steps</a><ul class="nav navbar-nav">
+<li><a class="nav-link" href="#animating-mcmc---1d-example-code-here"><span class="header-section-number">1.18.1</span> Animating MCMC - 1D example (code here)</a></li>
+<li><a class="nav-link" href="#animating-mcmc---2d-example"><span class="header-section-number">1.18.2</span> Animating MCMC - 2D example</a></li>
+<li><a class="nav-link" href="#the-mcmc-interactive-gallery-more-here"><span class="header-section-number">1.18.3</span> The MCMC Interactive Gallery (more here)</a></li>
+</ul>
+</li>
+<li><a class="nav-link" href="#assessing-convergence"><span class="header-section-number">1.19</span> Assessing convergence</a></li>
+<li><a class="nav-link" href="#mixing-and-autocorrelation"><span class="header-section-number">1.20</span> Mixing and autocorrelation</a></li>
+<li><a class="nav-link" href="#how-do-good-chains-behave"><span class="header-section-number">1.21</span> How do good chains behave?</a></li>
+<li><a class="nav-link" href="#burn-in"><span class="header-section-number">1.22</span> Burn-in</a></li>
+<li><a class="nav-link" href="#effective-sample-size-n.eff"><span class="header-section-number">1.23</span> Effective sample size n.eff</a></li>
+<li><a class="nav-link" href="#potential-scale-reduction-factor"><span class="header-section-number">1.24</span> Potential scale reduction factor</a></li>
+<li><a class="nav-link" href="#to-sum-up"><span class="header-section-number">1.25</span> To sum up</a></li>
+<li><a class="nav-link" href="#what-if-you-have-issues-of-convergence"><span class="header-section-number">1.26</span> What if you have issues of convergence?</a></li>
+<li><a class="nav-link" href="#further-reading"><span class="header-section-number">1.27</span> Further reading</a></li>
 </ul>
 
       <div class="book-extra">
