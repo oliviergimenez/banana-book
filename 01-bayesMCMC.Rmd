@@ -4,97 +4,61 @@
 
 # Bayesian statistics & MCMC {#crashcourse}
 
+## Introduction
+
+In this first chapter, you will learn what the Bayesian theory is, and how you may use it in a simple example. You will also see how to implement simulation algorithms to implement the Bayesian method for more complex analyses. This is not an exhaustive treatment of Bayesian statistics, but you should get what you need to navigate through the rest of the book. 
+
 ## Bayes' theorem
 
-A theorem about conditional probabilities.
+**Ajouter quelque chose sur la démarche scientifique?**
 
-$\Pr(B \mid A) = \displaystyle{\frac{ \Pr(A \mid B) \; \Pr(B)}{\Pr(A)}}$
+Bayesian statistics relies on the Bayes' theorem. **Something about Reverend Bayes, not as boring as usual stuff**. This theorem or formula if you prefer **look for difference btw theorem and formula** is all about conditional probabilities. **What are conditional probabilities? Link towards nice videos**. It states that for events $A$ and $B$, we have:
+$$\Pr(B \mid A) = \displaystyle{\frac{ \Pr(A \mid B) \; \Pr(B)}{\Pr(A)}}$$
 
 ```{r, echo = FALSE, fig.cap = "Bayes' theorem spelt out in blue neon at the offices of Autonomy in Cambridge. Source: Wikipedia"}
 knitr::include_graphics("images/bayes_neon.jpeg")
 ```
 
-I always forget what the letters mean. 
-
-Might be easier to remember when written like this:
+I don't know about you, but I have a hard time not messing the letters around. It is easier to remember Bayes' theorem written like this:
 
 $$ \Pr(\text{hypothesis} \mid \text{data}) = \frac{ \Pr(\text{data} \mid \text{hypothesis}) \; \Pr(\text{hypothesis})}{\Pr(\text{data})} $$
-
-The "hypothesis" is typically something unobserved or unknown. It's what you want to learn about using the data. 
-
-For regression models, the "hypothesis" is a parameter (intercept, slopes or error terms).
-
-Bayes theorem tells you the probability of the hypothesis given the data.
-
-Cool because what is doing science after all?
-
-How plausible is some hypothesis given the data?
-
-$$ \Pr(\text{hypothesis} \mid \text{data}) = \frac{ \Pr(\text{data} \mid \text{hypothesis}) \; \Pr(\text{hypothesis})}{\Pr(\text{data})} $$
-
-The Bayesian reasoning echoes the scientific reasoning. You might ask then, why is Bayesian statistics not the default?
-
-You may ask: Why is Bayesian statistics not the default?
-
-Due to practical problems of implementing the Bayesian approach, and futile wars between (male) statisticians, little progress was made for over two centuries.
-
-Recent advances in computational power coupled with the development of new methodology have led to a great increase in the application of Bayesian methods within the last two decades.
+The *hypothesis* is what you want to learn about using the data. For capture-recapture models, the *hypothesis* is a parameter like detection probability, or the regression parameters of the relationship between survival probability and some covariates. **Citer Taj Mahr comme source**. Bayes theorem tells you the probability of the hypothesis given the data. This is great because what is doing science after all? We'd like to know how plausible is some hypothesis given the data? **dire des trucs sur les termes de droite!** In that respect, the Bayesian reasoning echoes the scientific reasoning. You might ask then, why is Bayesian statistics not the default in statistics? Clearly, until recently, there were practical problems to implement the Bayesian approach. Recent advances in computational power coupled with the development of new methodology have led to a great increase in the application of Bayesian methods within the last three decades. Also, because of futile wars between (male) statisticians, little progress was made for over two centuries. $$en dire un peu plus sur ces guerres$$.
 
 ## Frequentist versus Bayesian	
 
-Typical stats problems involve estimating parameter $\theta$ with available data.
-
-The frequentist approach (maximum likelihood estimation – MLE) assumes that the parameters are fixed, but have unknown values to be estimated.
-
-Classical estimates are generally point estimates of the parameters of interest.
-
-The Bayesian approach assumes that the parameters are not fixed but have some fixed  unknown distribution - a distribution for the parameter.
+Typical statistical problems involve estimating parameter(s) $\theta$ with available data. To do so, you might be more used to the frequentist rather than the Bayesian method. The frequentist approach, and in particulat maximum likelihood estimation (MLE) assumes that the parameters are fixed, and have unknown values to be estimated. Therefore classical estimates are generally point estimates of the parameters of interest. In contrast, the Bayesian approach assumes that the parameters are not fixed but have some fixed  unknown distribution -- a distribution for the parameter. **qu'entend-on par distribution?**
 
 ## What is the Bayesian approach?	
 
-The approach is based upon the idea that the experimenter begins with some prior beliefs about the system.
-
-You never start from scratch. 
-
-And then updates these beliefs on the basis of observed data.
-
-This updating procedure is based upon the Bayes' Theorem:
+The approach is based upon the idea that you, the experimenter, begin with some prior beliefs about the system. In other words, you never start from scratch. And then you update these beliefs on the basis of observed data. This updating procedure is based upon the Bayes' theorem which we've seen earlier: 
 
 $$\Pr(A \mid B) = \frac{\Pr(B \mid A) \; \Pr(A)}{\Pr(B)}$$
- 
-Schematically if $A = \theta$ and $B = \text{data}$, then
-
-The Bayes' theorem
-
-$$\Pr(A \mid B) = \frac{\Pr(B \mid A) \; \Pr(A)}{\Pr(B)}$$
-
-Translates into:
+Loosely, let's say $A = \theta$ and $B = \text{data}$, then the Bayes' theorem translates into:
 
 $$\Pr(\theta \mid \text{data}) = \frac{\Pr(\text{data} \mid \theta) \; \Pr(\theta)}{\Pr(\text{data})}$$
+or with some colors: 
 
-## Bayes' theorem	
+$${\color{red}{\Pr(\theta \mid \text{data})}} = \frac{\color{blue}{\Pr(\text{data} \mid \theta)} \; \color{green}{\Pr(\theta)}}{\color{orange}{\Pr(\text{data})}}.$$
 
-$${\color{red}{\Pr(\theta \mid \text{data})}} = \frac{\color{blue}{\Pr(\text{data} \mid \theta)} \; \color{green}{\Pr(\theta)}}{\color{orange}{\Pr(\text{data})}}$$
+Let's spend some time going through each quantity.  
 
-$\color{red}{\text{Posterior distribution}}$: Represents what you know after having seen the data. The basis for inference, a distribution, possibly multivariate if more than one parameter. 
+$\color{red}{\text{Posterior distribution}}$: It represents what you know after having seen the data. This is the basis for inference, a distribution, possibly multivariate if you have more than one parameter. 
 
-$\color{blue}{\text{Likelihood}}$: This quantity is the same as in the MLE approach.
+$\color{blue}{\text{Likelihood}}$: This quantity is the same as in the MLE approach. **Faut-il en dire plus ici sur MLE? En tous cas détailler la vraisemblance**
 
-$\color{green}{\text{Prior distribution}}$: Represents what you know before seeing the data. The source of much discussion about the Bayesian approach.
+$\color{green}{\text{Prior distribution}}$: This quantity represents what you know before seeing the data. This is the source of much discussion about the Bayesian approach. **dire qu'on y revient quelque part?**
 
-$\color{orange}{\Pr(\text{data}) = \int{L(\text{data} \mid \theta)\Pr(\theta) d\theta}}$ is a $N$-dimensional integral if $\theta = \theta_1, \ldots, \theta_N$. 
-
-Difficult if not impossible to calculate. This is one of the reasons why we need simulation (MCMC) methods.
+$\color{orange}{\Pr(\text{data}) = \int{L(\text{data} \mid \theta)\Pr(\theta) d\theta}}$ is a $N$-dimensional integral if $\theta = \theta_1, \ldots, \theta_N$. This quantity is difficult if not impossible to calculate. This is one of the reasons why the Bayesian method wasn't used until recently. And this is the reason why we need simulation algorithms to get the posteriors. Let's get to it. **Manque un exemple ou on peut calculer le posterior sans MCMC, introduire conjugaison, et peut-être MLE?**
 
 ## Brute force via numerical integration
 
-Say we release $n$ animals at the beginning of the winter, out of which $y$ survive, and we'd like to estimate winter survival $\theta$. 
+Let's take an example. Say we release $n$ animals at the beginning of a winter, out of which $y$ survive, and we'd like to estimate winter survival $\theta$. **Renvoyer au bouquin avec Ruth pour cet example**
 ```{r}
 y <- 19 # nb of success
 n <- 57 # nb of attempts
 ```
 
-Our model:
+**Préciser quelque part qu'on prend formalisme McElreath pour présenter les modèles**. Our model **détailler un peu vraisemblance et prior**:
   
   \begin{align*}
 y &\sim \text{Binomial}(n, \theta) &\text{[likelihood]}
@@ -102,8 +66,6 @@ y &\sim \text{Binomial}(n, \theta) &\text{[likelihood]}
 \theta &\sim \text{Beta}(1, 1) &\text{[prior for }\theta \text{]} \\ 
 \end{align*}
 
-## Beta prior
-  
 ```{r, echo = FALSE}
 a <- 1; b <- 1; p <- seq(0,1,.002); prior <- dbeta(p,a,b)
 dfprior <- data.frame(p = p, prior = prior) 
@@ -115,20 +77,17 @@ dfprior %>%
 #plot(p, dbeta(p,a,b), type='l', lwd=3)
 ```
 
-## Apply Bayes theorem
-  
-Likelihood times the prior: $\Pr(\text{data} \mid \theta) \; \Pr(\theta)$
+Now we apply Bayes theorem. We write a function that computes the product of the likelihood times the prior: $\Pr(\text{data} \mid \theta) \; \Pr(\theta)$
 ```{r}
 numerator <- function(p) dbinom(y,n,p) * dbeta(p,a,b)
 ```
 
-Averaged likelihood: $\Pr(\text{data}) = \int{L(\theta \mid \text{data}) \; \Pr(\theta) d\theta}$
+We write another function that calculates the denominator, averaged likelihood: $\Pr(\text{data}) = \int{L(\theta \mid \text{data}) \; \Pr(\theta) d\theta}$
 ```{r}
 denominator <- integrate(numerator,0,1)$value
 ```
 
-## Posterior via numerical integration
-  
+Then we get the posterior via numerical integration. **faire afficher le bout de code qui suit?**
 ```{r, echo = FALSE}
 numerical_posterior <- data.frame(p = p, posterior = numerator(p)/denominator) 
 numerical_posterior %>%
@@ -139,9 +98,7 @@ numerical_posterior %>%
             alpha = 0.5)
 ```
 
-
-## Superimpose explicit posterior
-  
+We may superimpose the explicit posterior to check how well our numerical approximation did. 
 ```{r, echo = FALSE}
 explicit_posterior <- dbeta(p, y + a, n - y + b)
 dfexpposterior <- data.frame(p = p, explicit_posterior = explicit_posterior)
@@ -158,8 +115,7 @@ ggplot() +
             linetype = "dashed")
 ```
 
-## And the prior
-  
+To finish up, let's add the prior. 
 ```{r, echo = FALSE}
 ggplot() + 
   geom_line(data = numerical_posterior, 
@@ -178,53 +134,26 @@ ggplot() +
             size = 1.5)
 ```
 
-## What if multiple parameters?
-  
-Example of a linear regression with parameters $\alpha$, $\beta$ and $\sigma$ to be estimated. 
+Now what if you had multiple parameters? For example, you'd like to fit a capture-recapture model with parameters $\alpha$, $\beta$ and $p$ that need to be estimated. **expliquer** Bayes' theorem says:
 
-Bayes' theorem says:
+$$ P(\alpha, \beta, p \mid \text{data}) = \frac{ P(\text{data} \mid \alpha, \beta, p) \, P(\alpha, \beta, p)}{\iiint \, P(\text{data} \mid \alpha, \beta, p) \, P(\alpha, \beta, p) \,d\alpha \,d\beta \,dp} $$
+Do we really wish to calculate a 3D integral? The answer is no obviously. **Transition**
 
-$$ P(\alpha, \beta, \sigma \mid \text{data}) = \frac{ P(\text{data} \mid \alpha, \beta, \sigma) \, P(\alpha, \beta, \sigma)}{\iiint \, P(\text{data} \mid \alpha, \beta, \sigma) \, P(\alpha, \beta, \sigma) \,d\alpha \,d\beta \,d\sigma} $$
-
-Do we really wish to calculate a 3D integral?
-
-## Bayesian computation
+## Bayesian computation with MCMC
 
 In the early 1990s, statisticians rediscovered work from the 1950's in physics.
 
-```{r}
+```{r, echo = FALSE, fig.cap = "Article cover. Source: JSTOR"}
 knitr::include_graphics("images/metropolis.png")
 ```
 
-Use stochastic simulation to draw samples from posterior distributions.
+The authors used simulations to draw samples from posterior distributions of the parameters of interest. This is a neat trick to avoid explicit calculation of the integrals in Bayes formula. **formula ou theorem?** Instead, we aim at approximating posterior with some precision by drawing large samples. These simulation algorithms are called Markov chain Monte Carlo (MCMC), and they definitely gave a boost to Bayesian statistics. **simulation algorithm ou stochastic algorithms. Expliquer.**
 
-Avoid explicit calculation of integrals in Bayes formula.
+Why are MCMC methods so useful? Well to understand why, weed to better explain the what. MCMC are stochastic algorithms to produce sequence of dependent random numbers from a Markov chain. What is a Markov chain? A Markov chain is a discrete sequence of states, in which the probability of an event depends only on the state in the previous event. **donner example de la météo?** By construction, a Markov chain has an equilibrium (aka stationary) distribution. **expliquer** The cool thing is that the equilibrium distribution is the desired posterior distribution. **why is it so cool? plutôt que de simuler comme des dingues, il suffit de tirer dans Markov chain, et eventuellement, on converge vers distribution statitionnaire qui est l'a posteriori!**
 
-Instead, approx. posterior w/ some precision by drawing large samples.
+There are several ways of constructing these chains: e.g., Metropolis-Hastings, Gibbs sampler. Here I will illustrate the Metropolis algorithm and how to implement it in practice.
 
-Markov chain Monte Carlo (MCMC) gives a boost to Bayesian statistics!
-
-## Why are MCMC methods so useful?
-
-+ MCMC are stochastic algorithms to produce sequence of dependent random numbers from a Markov chain.
-
-+ A Markov chain is a discrete sequence of states, in which the probability of an event depends only on the state in the previous event.
-
-+ A Markov chain has an equilibrium (aka stationary) distribution.
-
-+ Equilibrium distribution is the desired posterior distribution!
-
-+ Several ways of constructing these chains: e.g., Metropolis-Hastings, Gibbs sampler.
-
-+ How to implement them in practice?!
-
-## The Metropolis algorithm
-
-+ Let's go back to animal survival estimation.
-
-+ We illustrate sampling from the posterior distribution. 
-
-+ We write functions in `R` for the likelihood, the prior and the posterior.
+Let's go back to animal survival estimation. We illustrate sampling from the posterior distribution. We write functions in `R` for the likelihood, the prior and the posterior.
 
 ```{r}
 # survival data, 19 "success" out of 57 "attempts"
@@ -247,7 +176,7 @@ posterior <- function(x, p){
 }
 ```
 
-## Metropolis algorithm
+The Metropolis algorithm works as follows: 
   
 1. We start at any possible value of the parameter to be estimated. 
 
@@ -255,9 +184,9 @@ posterior <- function(x, p){
   
 3. We compute the ratio of the probabilities at the candidate and current locations $R = \text{posterior(candidate)/posterior(current)}$. This is where the magic of MCMC happens, in that $\Pr(\text{data})$, the denominator of the Bayes theorem, cancels out. 
 
-4. We spin a continuous spinner that lands anywhere from 0 to 1 <span>&#8212;</span> call it the random spin $X$. If $X$ is smaller than $R$, we move to the candidate location, otherwise we remain at the current location.
+4. We spin a continuous spinner that lands anywhere from 0 to 1 -- call it the random spin $X$. If $X$ is smaller than $R$, we move to the candidate location, otherwise we remain at the current location.
   
-5. We repeat 2-4 a number of times <span>&#8212;</span> or **steps** (many steps).
+5. We repeat 2-4 a number of times -- or **steps** (many steps).
   
 ```{r}
 # propose candidate value
@@ -303,8 +232,7 @@ head(theta.post)
 tail(theta.post)
 ```
 
-## A chain
-  
+Let's run a single chain.
 ```{r, echo = FALSE}
 df <- data.frame(x = 1:steps, y = theta.post)
 df %>%
@@ -314,7 +242,7 @@ df %>%
   ylim(0.1, 0.6)
 ```
 
-## Another chain
+What about another chain?
   
 ```{r, echo = FALSE}
 
@@ -345,7 +273,7 @@ ggplot() +
   ylim(0.1, 0.6)
 ```
 
-## With 5000 steps 
+Notice that we didn't get the same exact results. **Stochasticity.** Now let's increase the number of steps and go with 5000 iterations.
   
 ```{r, echo = FALSE}
 # set up the scene
@@ -389,24 +317,10 @@ df %>%
 
 In yellow: posterior mean; in red: maximum likelihood estimate.
 
-### Animating MCMC - 1D example (code [here](https://gist.github.com/oliviergimenez/5ee33af9c8d947b72a39ed1764040bf3))
+Sometimes easier to see the animated version. Code [here](https://gist.github.com/oliviergimenez/5ee33af9c8d947b72a39ed1764040bf3).
   
 ```{r}
 knitr::include_graphics("images/112546886-56862f00-8dba-11eb-81a0-465434672bdd.gif")
-```
-
-### Animating MCMC - 2D example 
-
-Code [here](https://mbjoseph.github.io/posts/2018-12-25-animating-the-metropolis-algorithm/).
-  
-```{r}
-knitr::include_graphics("images/create-gif.gif")
-```
-
-### The MCMC Interactive Gallery (more [here](https://chi-feng.github.io/mcmc-demo/))
-  
-```{r}
-knitr::include_graphics("images/galery.png")
 ```
 
 ## Assessing convergence
@@ -669,3 +583,16 @@ If simulations cheap, be conservative.
 + McElreath, R. (2020). [Statistical Rethinking: A Bayesian Course with Examples in R and Stan (2nd ed.)](https://xcelab.net/rm/statistical-rethinking/). CRC Press.
 
 + Gelman, A. and Hill, J. (2006). [Data Analysis Using Regression and Multilevel/Hierarchical Models (Analytical Methods for Social Research)](https://www.cambridge.org/core/books/data-analysis-using-regression-and-multilevelhierarchical-models/32A29531C7FD730C3A68951A17C9D983). Cambridge: Cambridge University Press.
+
++ Animating MCMC - 2D example; Code [here](https://mbjoseph.github.io/posts/2018-12-25-animating-the-metropolis-algorithm/).
+  
+```{r}
+knitr::include_graphics("images/create-gif.gif")
+```
+
++ The MCMC Interactive Gallery (more [here](https://chi-feng.github.io/mcmc-demo/))
+  
+```{r}
+knitr::include_graphics("images/galery.png")
+```
+
