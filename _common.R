@@ -5,6 +5,7 @@ library(nimble)
 library(MCMCvis)
 library(magick)
 library(pdftools)
+library(wesanderson)
 
 # example R options set globally
 options(width = 60)
