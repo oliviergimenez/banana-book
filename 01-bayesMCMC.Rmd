@@ -148,16 +148,16 @@ There are two computational challenges with this formula. First, do we really wi
 
 ## Bayesian computation with Markov chain Monte Carlo (MCMC)
 
-In the early 1990s, statisticians rediscovered work from the 1950's in physics. In a famous paper that would lay the fundations of algorithms for implementing Bayes' theorem, the authors use simulations to approximate posterior distributions with some precision by drawing large samples. This is a neat trick to avoid explicit calculation of multi-dimensional integrals we struggle with when using Bayes' theorem. These simulation algorithms are called Markov chain Monte Carlo (MCMC), and they definitely gave a boost to Bayesian statistics. **simulation algorithm ou stochastic algorithms. Expliquer.**
+In the early 1990s, statisticians rediscovered work from the 1950's in physics. In a famous paper that would lay the fundations of modern Bayesian statistics, the authors use simulations to approximate posterior distributions with some precision by drawing large samples. This is a neat trick to avoid explicit calculation of multi-dimensional integrals we struggle with when using Bayes' theorem. These simulation algorithms are called Markov chain Monte Carlo (MCMC), and they definitely gave a boost to Bayesian statistics. **simulation algorithm ou stochastic algorithms. Expliquer.**
 
 ```{r, echo = FALSE, fig.align='center', fig.cap = "MCMC article cover. Source: [The Journal of Chemical Physics](https://aip.scitation.org/doi/10.1063/1.1699114)"}
 knitr::include_graphics("images/metropolis.png")
 ```
 
-Why are MCMC methods so useful? Well to understand *why*, we need to better explain the *what*. MCMC are stochastic algorithms to produce sequence of dependent random numbers from a Markov chain. What is a Markov chain? A Markov chain is a discrete sequence of states, in which the probability of an event depends only on the state in the previous event. **donner example de la météo?** By construction, a Markov chain has an equilibrium (also know as stationary) distribution. **expliquer** The cool thing is that the equilibrium distribution is the desired posterior distribution. Yes, MCMC algorithms are used to construct a Markov chain with a given stationary distribution set to be the posterior distribution. This summarizes the core spirit of MCMC algorithms. 
+Why are MCMC methods so useful? Well to understand *why*, we need to better explain the *what*. MCMC are stochastic algorithms to produce sequence of dependent random numbers from a Markov chain. What is a Markov chain? A Markov chain is a discrete sequence of states, in which the probability of an event depends only on the state in the previous event. **donner example de la météo?** By construction, a Markov chain has an equilibrium (also know as stationary) distribution. **expliquer** The cool thing is that the equilibrium distribution is the desired posterior distribution. **Expliquer Monte Carlo avec exemple simple, idem pour Markov chain** Yes, MCMC algorithms are used to construct a Markov chain with a given stationary distribution set to be the posterior distribution. This summarizes the core spirit of MCMC algorithms. 
 **why is it so cool? plutôt que de simuler comme des dingues dans tous les snes, il suffit de tirer dans Markov chain, et eventuellement, on converge vers distribution statitionnaire qui est l'a posteriori! Also For the MCMC algorithm, the posterior distribution is only needed to be known up to proportionality.**
 
-There are several ways of constructing these chains: e.g., Metropolis-Hastings, Gibbs sampler. Here I will illustrate the Metropolis algorithm and how to implement it in practice.
+There are several ways of constructing these chains: e.g., Metropolis-Hastings, Gibbs sampler. Here I will illustrate the Metropolis algorithm and how to implement it in practice. **Différence entre Metropolis et MH**
 
 Let's go back to our example on animal survival estimation. We illustrate sampling from survival posterior distribution. We write functions for likelihood, prior and posterior.
 
@@ -467,11 +467,141 @@ knitr::include_graphics("images/traceplotMCMC.gif")
 knitr::include_graphics("images/histMCMC.gif")
 ```
 
-**Introduire l'idée de grass, note de bas de page vers Steve Brooks comm pers, et transition vers next section avec l'idée de comment on regarde la convergence** Once the stationary distribution is reached, we can regard the realisations of the chain as a (dependent) sample from the posterior distribution (and obtain Monte Carlo estimates). In the next section, we consider several important implementation issues. **coder Metropolis d'au-dessus dans Nimble**
+**Introduire l'idée de grass, note de bas de page vers Steve Brooks comm pers, et transition vers next section avec l'idée de comment on regarde la convergence** We discard some realisations of the Markov chain before convergence is achieved. Once the stationary distribution is reached **use stationary or target or limiting**, we can regard the realisations of the chain as a (dependent) sample from the posterior distribution, and obtain Monte Carlo estimates of parameters. In the next section, we consider several important implementation issues. **coder Metropolis d'au-dessus dans Nimble**
 
 ## Assessing convergence
 
-**Les principales questions on doit répondre pour check convergence. Noter qu'en freq c'est plus ou moins fait en backstage. En MCMC pas grand chose pour automatiser.**
+How do good chains behave? When implementing MCMC, we need to i) ensure that our Markov chain explores efficiently the parameter space, i) determine how long it takes and whether our Markov chain converges to the target distribution, and the same target distribution if we run several Markov chains, and iii) the number of iterations post-convergence to get reasonable Monte Carlo estimates (numerical summaries). 
+
+### Burn-in
+  
+In practice, we discard observations from the start of the Markov chain and just use observations from the chain once it has converged. The initial observations that we discard are usually referred to as the **burn-in**. The simplest method to determine the length of the burn-in period is to look at trace plots. Going back to our example, we see from the trace plot in Figure \@ref(fig:burnin) that we need at least 500 iterations to achieve convergence toward an average survival around 0.3. It is always better to be conservative when specifying the length of the burn-in period, and in this example, we would use 750 or even 1000 iterations as a burn-in. **préciser qu'il faut faire qqs runs préliminaires pour déterminer le burn-in; ajouter des cas pathologiques ou faire des renvois aux sections suiantes, en particuier les minimal locaux ou par redundancy?**
+
+```{r burnin, echo = FALSE, fig.cap = "Determining the length of the burn-in period."}
+
+# set up the scene
+steps <- 1000
+theta.post <- rep(NA, steps)
+set.seed(1234)
+
+# pick starting value (step 1)
+inits <- 0.99
+theta.post[1] <- inits
+
+for (t in 2:steps){ # repeat steps 2-4 (step 5)
+  
+  # propose candidate value for prob of success (step 2)
+  theta_star <- move(theta.post[t-1], away = 0.1)
+  
+  # calculate ratio R (step 3)
+  pstar <- posterior(survived, p = theta_star)  
+  pprev <- posterior(survived, p = theta.post[t-1])
+  logR <- pstar - pprev
+  R <- exp(logR)
+  
+  # decide to accept candidate value or to keep current value (step 4)
+  accept <- rbinom(1, 1, prob = min(R, 1))
+  theta.post[t] <- ifelse(accept == 1, theta_star, theta.post[t-1])
+}
+
+df <- data.frame(x = 1:steps, y = theta.post)
+df %>%
+  ggplot() +
+  geom_line(aes(x = x, y = y), size = 1.2, color = wesanderson::wes_palettes$Zissou1[1]) + 
+  labs(x = "iterations", y = "survival") + 
+  theme_light(base_size = 14) + 
+  annotate("rect", 
+           xmin = 0, 
+           xmax = 500, 
+           ymin = 0.1, 
+           ymax = 1, 
+           alpha = .3) +
+  scale_y_continuous(expand = c(0,0))
+```
+
+### Potential scale reduction factor
+
+Inspecting the trace plot for a single run of the Markov chain is useful. We usually run the Markov chain several times, starting from different over-dispersed points, to check that all replicates achieve the same target distribution. This approach is formalised by using the Brooks-Gelman-Rubin statistic $\hat{R}$ which measures the ratio of the total variability combining multiple chains (between-chain plus within-chain) to the within-chain variability. The BGR statistic asks whether there is a chain effect, and is very much alike the $F$ test in an analysis of variance. Values below $1.2$ indicate likely convergence. **check 1.1 or 1.2** 
+
+```{r, echo=FALSE}
+
+# function to simulate
+simul.bgr <- function(steps, inits){
+  
+  nb.replicates <- length(inits)
+  theta.post <- matrix(NA, nrow = nb.replicates, ncol = steps)
+  
+  for (i in 1:nb.replicates){
+    theta.post[i,1] <- inits[i]
+    for (t in 2:steps){ # repeat steps 2-4 (step 5)
+      
+      # propose candidate value for prob of success (step 2)
+      theta_star <- move(theta.post[i,t-1], away = 0.1)
+      
+      # calculate ratio R (step 3)
+      pstar <- posterior(survived, p = theta_star)  
+      pprev <- posterior(survived, p = theta.post[i,t-1])
+      logR <- pstar - pprev
+      R <- exp(logR)
+      
+      # decide to accept candidate value or to keep current value (step 4)
+      accept <- rbinom(1, 1, prob = min(R, 1))
+      theta.post[i,t] <- ifelse(accept == 1, theta_star, theta.post[i,t-1])
+    }
+  }
+  
+  df <- data.frame(x = rep(1:steps, nb.replicates), 
+                   y = c(t(theta.post)), 
+                   chain = paste0("chain ",gl(nb.replicates, steps))) %>%
+    filter(x > round(steps/2)) # apply burnin (half number of iterations)
+  
+  # df %>%
+  #   ggplot() +
+  #   geom_line(aes(x = x, y = y, group = chain, color = chain), size = 1.2) + 
+  #   scale_colour_manual(values = wesanderson::wes_palettes$Zissou1[2:(nb.replicates+1)])+
+  #   labs(x = "iterations", y = "survival", color = NULL) + 
+  #   theme_light(base_size = 14) + 
+  #   annotate("rect", 
+  #            xmin = 0, 
+  #            xmax = 750, 
+  #            ymin = 0.1, 
+  #            ymax = 1, 
+  #            alpha = .1) +
+  #   scale_y_continuous(expand = c(0,0))
+  
+  # compute BGR (R-hat)
+  num <- quantile(df$y, probs = c(20/100, 80/100))[2] - quantile(df$y, probs = c(20/100, 80/100))[1]
+  den <- df %>%
+    group_by(chain) %>%
+    summarise(ci = quantile(y, probs = c(20/100, 80/100))) %>%
+    mutate(diff = ci - lag(ci, default = ci[1])) %>%
+    filter(diff != 0) %>%
+    pull(diff) %>%
+    mean()
+  
+  bgr <- round(num / den, 3)
+  return(bgr)
+}
+
+set.seed(1234)
+steps <- seq(100, 5000, 100)
+bgr <- rep(NA, length(steps))
+for (i in 1:length(steps)){
+  bgr[i] <- simul.bgr(steps = steps[i], inits = c(0.2, 0.8))
+}
+df <- data.frame(iterations = steps, bgr = bgr)
+```
+
+Back to our example, we run two replicates of the Markov chain with starting values 0.2 and 0.8 using 100 up to 5000 iterations. 
+
+```{r bgr, echo=FALSE, fig.cap = "Brooks-Gelman-Rubin statistic."}
+df %>%
+  ggplot() + 
+  geom_line(aes(x = iterations, y = bgr), size = 1.2) +
+  labs(y = "BGR statistic")
+```
+
+It is important to bear in mind that a value near 1 for the BGR statistic is only a necessary *but not sufficient* condition for convergence. In other words, this diagnostic cannot tell you for sure that the Markov chain has achieved convergence, only that it has not.
 
 ### Mixing and autocorrelation
   
@@ -614,65 +744,7 @@ trace / (plot1 + plot2 + plot3)
 
 + ACF plots provide the autocorrelation between successively sampled values separated by $k$ iterations, referred to as lag, (i.e. $\text{cor}(\theta_t, \theta_{t+k})$) for increasing values of $k$.
 
-### How do good chains behave? 
-  
-+ Converge to same target distribution; discard some realisations of Markov chain before convergence is achieved.
 
-+ Once there, explore efficiently: The post-convergence sample size required for suitable numerical summaries.
-
-+ Therefore, we are looking to determine how long it takes for the Markov chain to converge to the stationary distribution.
-
-+ In practice, we must discard observations from the start of the chain and just use observations from the chain once it has converged.
-
-+ The initial observations that we discard are referred to as the **burn-in**.
-
-+ Simplest method to determine length of burn-in period is to look at trace plots.
-
-### Burn-in
-  
-```{r, echo = FALSE}
-
-# set up the scene
-steps <- 1000
-theta.post <- rep(NA, steps)
-set.seed(1234)
-
-# pick starting value (step 1)
-inits <- 0.99
-theta.post[1] <- inits
-
-for (t in 2:steps){ # repeat steps 2-4 (step 5)
-  
-  # propose candidate value for prob of success (step 2)
-  theta_star <- move(theta.post[t-1], away = 0.1)
-  
-  # calculate ratio R (step 3)
-  pstar <- posterior(survived, p = theta_star)  
-  pprev <- posterior(survived, p = theta.post[t-1])
-  logR <- pstar - pprev
-  R <- exp(logR)
-  
-  # decide to accept candidate value or to keep current value (step 4)
-  accept <- rbinom(1, 1, prob = min(R, 1))
-  theta.post[t] <- ifelse(accept == 1, theta_star, theta.post[t-1])
-}
-
-df <- data.frame(x = 1:steps, y = theta.post)
-df %>%
-  ggplot() +
-  geom_line(aes(x = x, y = y), size = 1.2, color = wesanderson::wes_palettes$Zissou1[1]) + 
-  labs(x = "iterations", y = "values from posterior distribution") + 
-  theme_light(base_size = 14) + 
-  annotate("rect", 
-           xmin = 0, 
-           xmax = 500, 
-           ymin = 0.1, 
-           ymax = 1, 
-           alpha = .3) +
-  scale_y_continuous(expand = c(0,0))
-```
-
-If simulations cheap, be conservative.
 
 ### Effective sample size `n.eff`
   
@@ -684,14 +756,6 @@ If simulations cheap, be conservative.
 * Check the `n.eff` of every parameter of interest.
 * Check the `n.eff` of any interesting parameter combinations.
 * We need $\text{n.eff} \geq 100$ independent steps. 
-
-### Potential scale reduction factor
-  
-+ Gelman-Rubin statistic $\hat{R}$
-+ Measures the ratio of the total variability combining multiple chains (between-chain plus within-chain) to the within-chain variability. 
-+ Asks the question is there a chain effect? Very much alike the $F$ test in an ANOVA. 
-+ Values near $1$ indicates likely convergence, a value of $\leq 1.1$ is considered acceptable.
-+ Necessary condition, not sufficient; In other words, these diagnostics cannot tell you that you have converged for sure, only that you have not. 
 
 ### What if you have issues of convergence?
   
