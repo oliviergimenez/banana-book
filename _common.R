@@ -7,10 +7,10 @@ library(magick)
 library(pdftools)
 library(wesanderson)
 
-# example R options set globally
+# R options
 options(width = 60)
 
-# example chunk options set globally
+# chunk options
 knitr::opts_chunk$set(
   comment = "##",
   collapse = TRUE,
