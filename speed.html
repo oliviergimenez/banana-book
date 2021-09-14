@@ -1,0 +1,694 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<title>Chapter 11 Speed up MCMC | Bayesian Analysis of Capture-Recapture Data with Hidden Markov Models – Theory and Case Studies in R</title>
+<meta name="author" content="Olivier Gimenez">
+<meta name="description" content='11.1 Our nimble workflow so far knitr::include_graphics("images/nimble_workflow_sofar.png")   11.2 But nimble gives full access to the MCMC engine...'>
+<meta name="generator" content="bookdown 0.23 with bs4_book()">
+<meta property="og:title" content="Chapter 11 Speed up MCMC | Bayesian Analysis of Capture-Recapture Data with Hidden Markov Models – Theory and Case Studies in R">
+<meta property="og:type" content="book">
+<meta property="og:url" content="https://oliviergimenez.github.io/bayesian-cr-workshop/speed.html">
+<meta property="og:image" content="https://oliviergimenez.github.io/bayesian-cr-workshop//images/satellite.png">
+<meta property="og:description" content='11.1 Our nimble workflow so far knitr::include_graphics("images/nimble_workflow_sofar.png")   11.2 But nimble gives full access to the MCMC engine...'>
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Chapter 11 Speed up MCMC | Bayesian Analysis of Capture-Recapture Data with Hidden Markov Models – Theory and Case Studies in R">
+<meta name="twitter:description" content='11.1 Our nimble workflow so far knitr::include_graphics("images/nimble_workflow_sofar.png")   11.2 But nimble gives full access to the MCMC engine...'>
+<meta name="twitter:image" content="https://oliviergimenez.github.io/bayesian-cr-workshop//images/satellite.png">
+<!-- JS --><script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.6/clipboard.min.js" integrity="sha256-inc5kl9MA1hkeYUt+EC3BhlIgyp/2jDIyBLS6k3UxPI=" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/fuse.js/6.4.6/fuse.js" integrity="sha512-zv6Ywkjyktsohkbp9bb45V6tEMoWhzFzXis+LrMehmJZZSys19Yxf1dopHx7WzIKxr5tK2dVcYmaCk2uqdjF4A==" crossorigin="anonymous"></script><script src="https://kit.fontawesome.com/6ecbd6c532.js" crossorigin="anonymous"></script><script src="libs/header-attrs/header-attrs.js"></script><script src="libs/jquery/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<link href="libs/bootstrap/bootstrap.min.css" rel="stylesheet">
+<script src="libs/bootstrap/bootstrap.bundle.min.js"></script><script src="libs/bs3compat/tabs.js"></script><script src="libs/bs3compat/bs3compat.js"></script><link href="libs/bs4_book/bs4_book.css" rel="stylesheet">
+<script src="libs/bs4_book/bs4_book.js"></script><script src="libs/kePrint/kePrint.js"></script><link href="libs/lightable/lightable.css" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/autocomplete.js/0.38.0/autocomplete.jquery.min.js" integrity="sha512-GU9ayf+66Xx2TmpxqJpliWbT5PiGYxpaG8rfnBEk1LL8l1KGkRShhngwdXK1UgqhAzWpZHSiYPc09/NwDQIGyg==" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/mark.js/8.11.1/mark.min.js" integrity="sha512-5CYOlHXGh6QpOFA/TeTylKLWfB3ftPsde7AnmhuitiTX4K5SqCLBeKro6sPS8ilsz1Q4NRx3v8Ko2IBiszzdww==" crossorigin="anonymous"></script><!-- CSS --><link rel="stylesheet" href="bs4_style.css">
+</head>
+<body data-spy="scroll" data-target="#toc">
+
+<div class="container-fluid">
+<div class="row">
+  <header class="col-sm-12 col-lg-3 sidebar sidebar-book"><a class="sr-only sr-only-focusable" href="#content">Skip to main content</a>
+
+    <div class="d-flex align-items-start justify-content-between">
+      <h1>
+        <a href="index.html" title="">Bayesian Analysis of Capture-Recapture Data with Hidden Markov Models – Theory and Case Studies in R</a>
+      </h1>
+      <button class="btn btn-outline-primary d-lg-none ml-2 mt-1" type="button" data-toggle="collapse" data-target="#main-nav" aria-expanded="true" aria-controls="main-nav"><i class="fas fa-bars"></i><span class="sr-only">Show table of contents</span></button>
+    </div>
+
+    <div id="main-nav" class="collapse-lg">
+      <form role="search">
+        <input id="search" class="form-control" type="search" placeholder="Search" aria-label="Search">
+</form>
+
+      <nav aria-label="Table of contents"><h2>Table of contents</h2>
+        <ul class="book-toc list-unstyled">
+<li><a class="" href="index.html">Welcome</a></li>
+<li><a class="" href="preface.html">Preface</a></li>
+<li><a class="" href="about-the-author.html">About the Author</a></li>
+<li class="book-part">Theory</li>
+<li><a class="" href="crashcourse.html"><span class="header-section-number">1</span> Bayesian statistics &amp; MCMC</a></li>
+<li><a class="" href="intronimble.html"><span class="header-section-number">2</span> Introduction to Nimble</a></li>
+<li><a class="" href="hmmcapturerecapture.html"><span class="header-section-number">3</span> Hidden Markov models</a></li>
+<li><a class="" href="survival.html"><span class="header-section-number">4</span> Survival</a></li>
+<li><a class="" href="transition.html"><span class="header-section-number">5</span> Transition</a></li>
+<li><a class="" href="covariates.html"><span class="header-section-number">6</span> Covariates</a></li>
+<li><a class="" href="uncertainty.html"><span class="header-section-number">7</span> Uncertainty in state assignment</a></li>
+<li><a class="" href="abundance.html"><span class="header-section-number">8</span> Abundance</a></li>
+<li><a class="" href="hsmm.html"><span class="header-section-number">9</span> Hidden semi-Markov models</a></li>
+<li><a class="" href="states.html"><span class="header-section-number">10</span> Hidden states</a></li>
+<li><a class="active" href="speed.html"><span class="header-section-number">11</span> Speed up MCMC</a></li>
+<li><a class="" href="conclusions.html"><span class="header-section-number">12</span> Conclusions</a></li>
+<li class="book-part">Case studies</li>
+<li><a class="" href="senescence.html"><span class="header-section-number">13</span> Actuarial senescence</a></li>
+<li><a class="" href="heterogeneity.html"><span class="header-section-number">14</span> Individual heterogeneity</a></li>
+<li><a class="" href="tradeoffs.html"><span class="header-section-number">15</span> Life-history tradeoffs</a></li>
+<li><a class="" href="breeding.html"><span class="header-section-number">16</span> Breeding dynamics</a></li>
+<li><a class="" href="rd.html"><span class="header-section-number">17</span> Robust design</a></li>
+<li><a class="" href="stopover.html"><span class="header-section-number">18</span> Stopover duration</a></li>
+<li><a class="" href="disease.html"><span class="header-section-number">19</span> Disease dynamics</a></li>
+<li><a class="" href="sex.html"><span class="header-section-number">20</span> Sex uncertainty</a></li>
+<li><a class="" href="dependence.html"><span class="header-section-number">21</span> Dependence among individuals</a></li>
+<li><a class="" href="covariateselection.html"><span class="header-section-number">22</span> Individual and temporal variability</a></li>
+<li><a class="" href="mortalities.html"><span class="header-section-number">23</span> Cause-specific mortalities</a></li>
+<li><a class="" href="prevalence.html"><span class="header-section-number">24</span> Prevalence</a></li>
+<li><a class="" href="faq.html">FAQ</a></li>
+<li><a class="" href="references.html">References</a></li>
+</ul>
+
+        <div class="book-extra">
+          <p><a id="book-repo" href="https://github.com/oliviergimenez/banana-book">View book source <i class="fab fa-github"></i></a></p>
+        </div>
+      </nav>
+</div>
+  </header><main class="col-sm-12 col-md-9 col-lg-7" id="content"><div id="speed" class="section level1" number="11">
+<h1>
+<span class="header-section-number">11</span> Speed up MCMC<a class="anchor" aria-label="anchor" href="#speed"><i class="fas fa-link"></i></a>
+</h1>
+<div id="our-nimble-workflow-so-far-1" class="section level2" number="11.1">
+<h2>
+<span class="header-section-number">11.1</span> Our <code>nimble</code> workflow so far<a class="anchor" aria-label="anchor" href="#our-nimble-workflow-so-far-1"><i class="fas fa-link"></i></a>
+</h2>
+<div class="sourceCode" id="cb133"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/include_graphics.html">include_graphics</a></span><span class="op">(</span><span class="st">"images/nimble_workflow_sofar.png"</span><span class="op">)</span></code></pre></div>
+<div class="inline-figure"><img src="images/nimble_workflow_sofar.png" width="1497"></div>
+</div>
+<div id="but-nimble-gives-full-access-to-the-mcmc-engine-1" class="section level2" number="11.2">
+<h2>
+<span class="header-section-number">11.2</span> But <code>nimble</code> gives full access to the MCMC engine<a class="anchor" aria-label="anchor" href="#but-nimble-gives-full-access-to-the-mcmc-engine-1"><i class="fas fa-link"></i></a>
+</h2>
+<div class="sourceCode" id="cb134"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/include_graphics.html">include_graphics</a></span><span class="op">(</span><span class="st">"images/nimble_workflow.png"</span><span class="op">)</span></code></pre></div>
+<div class="inline-figure"><img src="images/nimble_workflow.png" width="1497"></div>
+</div>
+<div id="steps-to-use-nimble-at-full-capacity" class="section level2" number="11.3">
+<h2>
+<span class="header-section-number">11.3</span> Steps to use NIMBLE at full capacity<a class="anchor" aria-label="anchor" href="#steps-to-use-nimble-at-full-capacity"><i class="fas fa-link"></i></a>
+</h2>
+<ol style="list-style-type: decimal">
+<li>Build the model. It is an R object.</li>
+<li>Build the MCMC.</li>
+<li>Compile the model and MCMC.</li>
+<li>Run the MCMC.</li>
+<li>Extract the samples.</li>
+</ol>
+<ul>
+<li>
+<code>nimbleMCMC</code> does all of this at once.</li>
+</ul>
+</div>
+<div id="back-to-cjs-models-with-dipper-data." class="section level2" number="11.4">
+<h2>
+<span class="header-section-number">11.4</span> Back to CJS models with Dipper data.<a class="anchor" aria-label="anchor" href="#back-to-cjs-models-with-dipper-data."><i class="fas fa-link"></i></a>
+</h2>
+<div id="define-model" class="section level3" number="11.4.1">
+<h3>
+<span class="header-section-number">11.4.1</span> Define model<a class="anchor" aria-label="anchor" href="#define-model"><i class="fas fa-link"></i></a>
+</h3>
+<div class="sourceCode" id="cb135"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="va">hmm.phip</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimbleCode.html">nimbleCode</a></span><span class="op">(</span><span class="op">{</span>
+  <span class="va">delta</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span>              <span class="co"># Pr(alive t = 1) = 1</span>
+  <span class="va">delta</span><span class="op">[</span><span class="fl">2</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0</span>              <span class="co"># Pr(dead t = 1) = 0</span>
+    <span class="va">phi</span> <span class="op">~</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html">dunif</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1</span><span class="op">)</span>     <span class="co"># prior survival</span>
+    <span class="va">gamma</span><span class="op">[</span><span class="fl">1</span>,<span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="va">phi</span>        <span class="co"># Pr(alive t -&gt; alive t+1)</span>
+    <span class="va">gamma</span><span class="op">[</span><span class="fl">1</span>,<span class="fl">2</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span> <span class="op">-</span> <span class="va">phi</span>    <span class="co"># Pr(alive t -&gt; dead t+1)</span>
+    <span class="va">gamma</span><span class="op">[</span><span class="fl">2</span>,<span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0</span>          <span class="co"># Pr(dead t -&gt; alive t+1)</span>
+    <span class="va">gamma</span><span class="op">[</span><span class="fl">2</span>,<span class="fl">2</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span>          <span class="co"># Pr(dead t -&gt; dead t+1)</span>
+    <span class="va">p</span> <span class="op">~</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html">dunif</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1</span><span class="op">)</span>       <span class="co"># prior detection</span>
+    <span class="va">omega</span><span class="op">[</span><span class="fl">1</span>,<span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span> <span class="op">-</span> <span class="va">p</span>    <span class="co"># Pr(alive t -&gt; non-detected t)</span>
+    <span class="va">omega</span><span class="op">[</span><span class="fl">1</span>,<span class="fl">2</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="va">p</span>        <span class="co"># Pr(alive t -&gt; detected t)</span>
+    <span class="va">omega</span><span class="op">[</span><span class="fl">2</span>,<span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span>        <span class="co"># Pr(dead t -&gt; non-detected t)</span>
+    <span class="va">omega</span><span class="op">[</span><span class="fl">2</span>,<span class="fl">2</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0</span>        <span class="co"># Pr(dead t -&gt; detected t)</span>
+  <span class="co"># likelihood</span>
+  <span class="kw">for</span> <span class="op">(</span><span class="va">i</span> <span class="kw">in</span> <span class="fl">1</span><span class="op">:</span><span class="va">N</span><span class="op">)</span><span class="op">{</span>
+    <span class="va">z</span><span class="op">[</span><span class="va">i</span>,<span class="va">first</span><span class="op">[</span><span class="va">i</span><span class="op">]</span><span class="op">]</span> <span class="op">~</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/Categorical.html">dcat</a></span><span class="op">(</span><span class="va">delta</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">2</span><span class="op">]</span><span class="op">)</span>
+    <span class="kw">for</span> <span class="op">(</span><span class="va">j</span> <span class="kw">in</span> <span class="op">(</span><span class="va">first</span><span class="op">[</span><span class="va">i</span><span class="op">]</span><span class="op">+</span><span class="fl">1</span><span class="op">)</span><span class="op">:</span><span class="cn">T</span><span class="op">)</span><span class="op">{</span>
+      <span class="va">z</span><span class="op">[</span><span class="va">i</span>,<span class="va">j</span><span class="op">]</span> <span class="op">~</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/Categorical.html">dcat</a></span><span class="op">(</span><span class="va">gamma</span><span class="op">[</span><span class="va">z</span><span class="op">[</span><span class="va">i</span>,<span class="va">j</span><span class="op">-</span><span class="fl">1</span><span class="op">]</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">2</span><span class="op">]</span><span class="op">)</span>
+      <span class="va">y</span><span class="op">[</span><span class="va">i</span>,<span class="va">j</span><span class="op">]</span> <span class="op">~</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/Categorical.html">dcat</a></span><span class="op">(</span><span class="va">omega</span><span class="op">[</span><span class="va">z</span><span class="op">[</span><span class="va">i</span>,<span class="va">j</span><span class="op">]</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">2</span><span class="op">]</span><span class="op">)</span>
+    <span class="op">}</span>
+  <span class="op">}</span>
+<span class="op">}</span><span class="op">)</span></code></pre></div>
+</div>
+<div id="run-and-summarise" class="section level3" number="11.4.2">
+<h3>
+<span class="header-section-number">11.4.2</span> Run and summarise<a class="anchor" aria-label="anchor" href="#run-and-summarise"><i class="fas fa-link"></i></a>
+</h3>
+<div class="sourceCode" id="cb136"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="va">mcmc.phip</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimbleMCMC.html">nimbleMCMC</a></span><span class="op">(</span>code <span class="op">=</span> <span class="va">hmm.phip</span>, 
+                         constants <span class="op">=</span> <span class="va">my.constants</span>,
+                         data <span class="op">=</span> <span class="va">my.data</span>,              
+                         inits <span class="op">=</span> <span class="va">initial.values</span>,
+                         monitors <span class="op">=</span> <span class="va">parameters.to.save</span>,
+                         niter <span class="op">=</span> <span class="va">n.iter</span>,
+                         nburnin <span class="op">=</span> <span class="va">n.burnin</span>, 
+                         nchains <span class="op">=</span> <span class="va">n.chains</span><span class="op">)</span>
+<span class="co">## defining model...</span>
+<span class="co">## building model...</span>
+<span class="co">## setting data and initial values...</span>
+<span class="co">## running calculate on model (any error reports that follow may simply reflect missing values in model variables) ... </span>
+<span class="co">## checking model sizes and dimensions...</span>
+<span class="co">## checking model calculations...</span>
+<span class="co">## model building finished.</span>
+<span class="co">## compiling... this may take a minute. Use 'showCompilerOutput = TRUE' to see C++ compilation details.</span>
+<span class="co">## compilation finished.</span>
+<span class="co">## running chain 1...</span>
+<span class="co">## |-------------|-------------|-------------|-------------|</span>
+<span class="co">## |-------------------------------------------------------|</span>
+<span class="co">## running chain 2...</span>
+<span class="co">## |-------------|-------------|-------------|-------------|</span>
+<span class="co">## |-------------------------------------------------------|</span></code></pre></div>
+<div class="sourceCode" id="cb137"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/pkg/MCMCvis/man/MCMCsummary.html">MCMCsummary</a></span><span class="op">(</span>object <span class="op">=</span> <span class="va">mcmc.phip</span>, round <span class="op">=</span> <span class="fl">2</span><span class="op">)</span>
+<span class="co">##     mean   sd 2.5%  50% 97.5% Rhat n.eff</span>
+<span class="co">## p   0.90 0.03 0.83 0.90  0.95    1   253</span>
+<span class="co">## phi 0.56 0.03 0.51 0.56  0.61    1   528</span></code></pre></div>
+</div>
+</div>
+<div id="detailed-nimble-workflow" class="section level2" number="11.5">
+<h2>
+<span class="header-section-number">11.5</span> Detailed Nimble workflow<a class="anchor" aria-label="anchor" href="#detailed-nimble-workflow"><i class="fas fa-link"></i></a>
+</h2>
+</div>
+<div id="build-the-model-r-object" class="section level2" number="11.6">
+<h2>
+<span class="header-section-number">11.6</span> 1. Build the model (R object)<a class="anchor" aria-label="anchor" href="#build-the-model-r-object"><i class="fas fa-link"></i></a>
+</h2>
+<div class="sourceCode" id="cb138"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="va">hmm.phip</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimbleModel.html">nimbleModel</a></span><span class="op">(</span>code <span class="op">=</span> <span class="va">hmm.phip</span>,
+                        constants <span class="op">=</span> <span class="va">my.constants</span>,
+                        data <span class="op">=</span> <span class="va">my.data</span>,
+                        inits <span class="op">=</span> <span class="fu">initial.values</span><span class="op">(</span><span class="op">)</span><span class="op">)</span>
+<span class="co">## defining model...</span>
+<span class="co">## building model...</span>
+<span class="co">## setting data and initial values...</span>
+<span class="co">## running calculate on model (any error reports that follow may simply reflect missing values in model variables) ... </span>
+<span class="co">## checking model sizes and dimensions...</span>
+<span class="co">## model building finished.</span></code></pre></div>
+</div>
+<div id="build-the-mcmc" class="section level2" number="11.7">
+<h2>
+<span class="header-section-number">11.7</span> 2. Build the MCMC<a class="anchor" aria-label="anchor" href="#build-the-mcmc"><i class="fas fa-link"></i></a>
+</h2>
+<div class="sourceCode" id="cb139"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="va">phip.mcmc.configuration</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/configureMCMC.html">configureMCMC</a></span><span class="op">(</span><span class="va">hmm.phip</span><span class="op">)</span>
+<span class="co">## ===== Monitors =====</span>
+<span class="co">## thin = 1: phi, p, z</span>
+<span class="co">## ===== Samplers =====</span>
+<span class="co">## RW sampler (2)</span>
+<span class="co">##   - phi</span>
+<span class="co">##   - p</span>
+<span class="co">## posterior_predictive sampler (39)</span>
+<span class="co">##   - z[]  (39 elements)</span>
+<span class="co">## categorical sampler (1103)</span>
+<span class="co">##   - z[]  (1103 elements)</span>
+<span class="va">phip.mcmc</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/buildMCMC.html">buildMCMC</a></span><span class="op">(</span><span class="va">phip.mcmc.configuration</span><span class="op">)</span></code></pre></div>
+</div>
+<div id="compile-the-model-and-mcmc" class="section level2" number="11.8">
+<h2>
+<span class="header-section-number">11.8</span> 3. Compile the model and MCMC<a class="anchor" aria-label="anchor" href="#compile-the-model-and-mcmc"><i class="fas fa-link"></i></a>
+</h2>
+<div class="sourceCode" id="cb140"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="va">phip.model</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/compileNimble.html">compileNimble</a></span><span class="op">(</span><span class="va">hmm.phip</span><span class="op">)</span> 
+<span class="co">## compiling... this may take a minute. Use 'showCompilerOutput = TRUE' to see C++ compilation details.</span>
+<span class="co">## compilation finished.</span>
+<span class="va">c.phip.mcmc</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/compileNimble.html">compileNimble</a></span><span class="op">(</span><span class="va">phip.mcmc</span>, project <span class="op">=</span> <span class="va">phip.model</span><span class="op">)</span>
+<span class="co">## compiling... this may take a minute. Use 'showCompilerOutput = TRUE' to see C++ compilation details.</span>
+<span class="co">## compilation finished.</span></code></pre></div>
+</div>
+<div id="run-the-mcmc" class="section level2" number="11.9">
+<h2>
+<span class="header-section-number">11.9</span> 4. Run the MCMC<a class="anchor" aria-label="anchor" href="#run-the-mcmc"><i class="fas fa-link"></i></a>
+</h2>
+<div class="sourceCode" id="cb141"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="va">samples</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/runMCMC.html">runMCMC</a></span><span class="op">(</span><span class="va">c.phip.mcmc</span>, niter <span class="op">=</span> <span class="fl">1000</span><span class="op">)</span>
+<span class="co">## running chain 1...</span>
+<span class="co">## |-------------|-------------|-------------|-------------|</span>
+<span class="co">## |-------------------------------------------------------|</span>
+<span class="co"># Alternative:</span>
+<span class="co"># c.phip.mcmc$run(1000)</span>
+<span class="co"># samples &lt;- as.matrix(c.phip.mcmc$mvSamples)</span></code></pre></div>
+</div>
+<div id="look-at-results" class="section level2" number="11.10">
+<h2>
+<span class="header-section-number">11.10</span> 5. Look at results<a class="anchor" aria-label="anchor" href="#look-at-results"><i class="fas fa-link"></i></a>
+</h2>
+<div class="sourceCode" id="cb142"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/r/base/summary.html">summary</a></span><span class="op">(</span><span class="va">samples</span><span class="op">[</span>,<span class="st">"phi"</span><span class="op">]</span><span class="op">)</span>
+<span class="co">##    Min. 1st Qu.  Median    Mean 3rd Qu.    Max. </span>
+<span class="co">##   0.380   0.552   0.565   0.572   0.589   0.780</span>
+<span class="fu"><a href="https://rdrr.io/r/base/summary.html">summary</a></span><span class="op">(</span><span class="va">samples</span><span class="op">[</span>,<span class="st">"p"</span><span class="op">]</span><span class="op">)</span>
+<span class="co">##    Min. 1st Qu.  Median    Mean 3rd Qu.    Max. </span>
+<span class="co">##   0.146   0.874   0.885   0.864   0.902   0.946</span></code></pre></div>
+</div>
+<div id="why-is-it-useful" class="section level2" number="11.11">
+<h2>
+<span class="header-section-number">11.11</span> Why is it useful?<a class="anchor" aria-label="anchor" href="#why-is-it-useful"><i class="fas fa-link"></i></a>
+</h2>
+</div>
+<div id="use-and-debug-model-in-r" class="section level2" number="11.12">
+<h2>
+<span class="header-section-number">11.12</span> Use and debug model in <code>R</code><a class="anchor" aria-label="anchor" href="#use-and-debug-model-in-r"><i class="fas fa-link"></i></a>
+</h2>
+<ul>
+<li><p>Makes your life easier when it comes to debugging</p></li>
+<li><p>Inspect variables</p></li>
+</ul>
+<div class="sourceCode" id="cb143"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="va">hmm.phip</span><span class="op">$</span><span class="va">gamma</span>
+<span class="co">##        [,1]   [,2]</span>
+<span class="co">## [1,] 0.3795 0.6205</span>
+<span class="co">## [2,] 0.0000 1.0000</span></code></pre></div>
+<ul>
+<li>Calculate likelihood</li>
+</ul>
+<div class="sourceCode" id="cb144"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="va">hmm.phip</span><span class="op">$</span><span class="fu">calculate</span><span class="op">(</span><span class="op">)</span>
+<span class="co">## [1] -2383</span></code></pre></div>
+</div>
+<div id="example-of-debugging-a-model-in-r" class="section level2" number="11.13">
+<h2>
+<span class="header-section-number">11.13</span> Example of debugging a model in <code>R</code><a class="anchor" aria-label="anchor" href="#example-of-debugging-a-model-in-r"><i class="fas fa-link"></i></a>
+</h2>
+<ul>
+<li>Pretend an impossible state was given in inits, making a dead bird alive again.</li>
+</ul>
+<div class="sourceCode" id="cb145"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="va">phip.model</span><span class="op">$</span><span class="fu">calculate</span><span class="op">(</span><span class="st">"z"</span><span class="op">)</span>        <span class="co"># We can see there is a problem in z (states).</span>
+<span class="co">## [1] -Inf</span>
+<span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimble-R-functions.html">c</a></span><span class="op">(</span><span class="va">phip.model</span><span class="op">$</span><span class="fu">calculate</span><span class="op">(</span><span class="st">"z[5,]"</span><span class="op">)</span>, <span class="co"># Bird 5 is valid.</span>
+  <span class="va">phip.model</span><span class="op">$</span><span class="fu">calculate</span><span class="op">(</span><span class="st">"z[6,]"</span><span class="op">)</span><span class="op">)</span> <span class="co"># Bird 6 isn't.</span>
+<span class="co">## [1] -3.327   -Inf</span>
+<span class="va">phip.model</span><span class="op">$</span><span class="va">z</span><span class="op">[</span><span class="fl">6</span>,<span class="op">]</span>                 <span class="co"># We have found the problem</span>
+<span class="co">## [1] 1 1 2 1 2 2 2</span></code></pre></div>
+</div>
+<div id="open-the-hood-and-changemodifywrite-samplers" class="section level2" number="11.14">
+<h2>
+<span class="header-section-number">11.14</span> Open the hood, and change/modify/write samplers<a class="anchor" aria-label="anchor" href="#open-the-hood-and-changemodifywrite-samplers"><i class="fas fa-link"></i></a>
+</h2>
+<ul>
+<li><p>Slice samplers instead of Metropolis-Hastings.</p></li>
+<li><p>Samplers on a log scale, especially for a variance, standard deviation, or precision parameter.</p></li>
+<li><p>Blocking correlated parameters.</p></li>
+<li><p>To know all samplers available in Nimble, type in <code><a href="https://rdrr.io/pkg/nimble/man/samplers.html">help(samplers)</a></code>.</p></li>
+<li><p>Source code for samplers and distributions is <strong>in R</strong> and can be copied and modified.</p></li>
+<li><p>Use <a href="https://github.com/nimble-dev/compareMCMCs"><code>compareMCMCs</code> package</a> to compare options (including Stan and Jags!).</p></li>
+</ul>
+</div>
+<div id="consider-a-model-with-wing-length-and-individual-random-effect-on-survival." class="section level2" number="11.15">
+<h2>
+<span class="header-section-number">11.15</span> Consider a model with wing length and individual random effect on survival.<a class="anchor" aria-label="anchor" href="#consider-a-model-with-wing-length-and-individual-random-effect-on-survival."><i class="fas fa-link"></i></a>
+</h2>
+<div class="sourceCode" id="cb146"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="va">hmm.phiwlrep</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimbleCode.html">nimbleCode</a></span><span class="op">(</span><span class="op">{</span>
+    <span class="va">p</span> <span class="op">~</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html">dunif</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1</span><span class="op">)</span> <span class="co"># prior detection</span>
+    <span class="va">omega</span><span class="op">[</span><span class="fl">1</span>,<span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span> <span class="op">-</span> <span class="va">p</span>    <span class="co"># Pr(alive t -&gt; non-detected t)</span>
+    <span class="va">omega</span><span class="op">[</span><span class="fl">1</span>,<span class="fl">2</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="va">p</span>        <span class="co"># Pr(alive t -&gt; detected t)</span>
+    <span class="va">omega</span><span class="op">[</span><span class="fl">2</span>,<span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span>        <span class="co"># Pr(dead t -&gt; non-detected t)</span>
+    <span class="va">omega</span><span class="op">[</span><span class="fl">2</span>,<span class="fl">2</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0</span>        <span class="co"># Pr(dead t -&gt; detected t)</span>
+  <span class="kw">for</span> <span class="op">(</span><span class="va">i</span> <span class="kw">in</span> <span class="fl">1</span><span class="op">:</span><span class="va">N</span><span class="op">)</span><span class="op">{</span>
+    <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimble-math.html">logit</a></span><span class="op">(</span><span class="va">phi</span><span class="op">[</span><span class="va">i</span><span class="op">]</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="va">beta</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span> <span class="op">+</span> <span class="va">beta</span><span class="op">[</span><span class="fl">2</span><span class="op">]</span> <span class="op">*</span> <span class="va">winglength</span><span class="op">[</span><span class="va">i</span><span class="op">]</span> <span class="op">+</span> <span class="va">eps</span><span class="op">[</span><span class="va">i</span><span class="op">]</span> <span class="co">#&lt;&lt;</span>
+    <span class="va">eps</span><span class="op">[</span><span class="va">i</span><span class="op">]</span> <span class="op">~</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html">dnorm</a></span><span class="op">(</span>mean <span class="op">=</span> <span class="fl">0</span>, sd <span class="op">=</span> <span class="va">sdeps</span><span class="op">)</span> <span class="co">#&lt;&lt;</span>
+    <span class="va">gamma</span><span class="op">[</span><span class="fl">1</span>,<span class="fl">1</span>,<span class="va">i</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="va">phi</span><span class="op">[</span><span class="va">i</span><span class="op">]</span>      <span class="co"># Pr(alive t -&gt; alive t+1)</span>
+    <span class="va">gamma</span><span class="op">[</span><span class="fl">1</span>,<span class="fl">2</span>,<span class="va">i</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span> <span class="op">-</span> <span class="va">phi</span><span class="op">[</span><span class="va">i</span><span class="op">]</span>  <span class="co"># Pr(alive t -&gt; dead t+1)</span>
+    <span class="va">gamma</span><span class="op">[</span><span class="fl">2</span>,<span class="fl">1</span>,<span class="va">i</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0</span>           <span class="co"># Pr(dead t -&gt; alive t+1)</span>
+    <span class="va">gamma</span><span class="op">[</span><span class="fl">2</span>,<span class="fl">2</span>,<span class="va">i</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span>           <span class="co"># Pr(dead t -&gt; dead t+1)</span>
+  <span class="op">}</span>
+  <span class="va">beta</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span> <span class="op">~</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html">dnorm</a></span><span class="op">(</span>mean <span class="op">=</span> <span class="fl">0</span>, sd <span class="op">=</span> <span class="fl">1.5</span><span class="op">)</span>
+  <span class="va">beta</span><span class="op">[</span><span class="fl">2</span><span class="op">]</span> <span class="op">~</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html">dnorm</a></span><span class="op">(</span>mean <span class="op">=</span> <span class="fl">0</span>, sd <span class="op">=</span> <span class="fl">1.5</span><span class="op">)</span>
+  <span class="va">sdeps</span> <span class="op">~</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html">dunif</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">10</span><span class="op">)</span>
+  <span class="va">delta</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span>          <span class="co"># Pr(alive t = 1) = 1</span>
+  <span class="va">delta</span><span class="op">[</span><span class="fl">2</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0</span>          <span class="co"># Pr(dead t = 1) = 0</span>
+  <span class="co"># likelihood</span>
+  <span class="kw">for</span> <span class="op">(</span><span class="va">i</span> <span class="kw">in</span> <span class="fl">1</span><span class="op">:</span><span class="va">N</span><span class="op">)</span><span class="op">{</span>
+    <span class="va">z</span><span class="op">[</span><span class="va">i</span>,<span class="va">first</span><span class="op">[</span><span class="va">i</span><span class="op">]</span><span class="op">]</span> <span class="op">~</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/Categorical.html">dcat</a></span><span class="op">(</span><span class="va">delta</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">2</span><span class="op">]</span><span class="op">)</span>
+    <span class="kw">for</span> <span class="op">(</span><span class="va">j</span> <span class="kw">in</span> <span class="op">(</span><span class="va">first</span><span class="op">[</span><span class="va">i</span><span class="op">]</span><span class="op">+</span><span class="fl">1</span><span class="op">)</span><span class="op">:</span><span class="cn">T</span><span class="op">)</span><span class="op">{</span>
+      <span class="va">z</span><span class="op">[</span><span class="va">i</span>,<span class="va">j</span><span class="op">]</span> <span class="op">~</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/Categorical.html">dcat</a></span><span class="op">(</span><span class="va">gamma</span><span class="op">[</span><span class="va">z</span><span class="op">[</span><span class="va">i</span>,<span class="va">j</span><span class="op">-</span><span class="fl">1</span><span class="op">]</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">2</span>, <span class="va">i</span><span class="op">]</span><span class="op">)</span> <span class="co">#&lt;&lt;</span>
+      <span class="va">y</span><span class="op">[</span><span class="va">i</span>,<span class="va">j</span><span class="op">]</span> <span class="op">~</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/Categorical.html">dcat</a></span><span class="op">(</span><span class="va">omega</span><span class="op">[</span><span class="va">z</span><span class="op">[</span><span class="va">i</span>,<span class="va">j</span><span class="op">]</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">2</span><span class="op">]</span><span class="op">)</span>
+    <span class="op">}</span>
+  <span class="op">}</span>
+<span class="op">}</span><span class="op">)</span></code></pre></div>
+</div>
+<div id="trace-plot-for-standard-deviation-of-the-random-effect-default-sampler" class="section level2" number="11.16">
+<h2>
+<span class="header-section-number">11.16</span> Trace plot for standard deviation of the random effect (default sampler)<a class="anchor" aria-label="anchor" href="#trace-plot-for-standard-deviation-of-the-random-effect-default-sampler"><i class="fas fa-link"></i></a>
+</h2>
+<div class="inline-figure"><img src="bayesHMMcapturerecapture_files/figure-html/unnamed-chunk-241-1.png" width="672"></div>
+</div>
+<div id="change-samplers" class="section level2" number="11.17">
+<h2>
+<span class="header-section-number">11.17</span> Change samplers<a class="anchor" aria-label="anchor" href="#change-samplers"><i class="fas fa-link"></i></a>
+</h2>
+<ul>
+<li>Good sampling strategies depend on the model and data. What are the samplers used by default?</li>
+</ul>
+<div class="sourceCode" id="cb147"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="va">mcmcConf</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/configureMCMC.html">configureMCMC</a></span><span class="op">(</span><span class="va">hmm.phiwlrep.m</span><span class="op">)</span>
+<span class="co">## ===== Monitors =====</span>
+<span class="co">## thin = 1: p, beta, sdeps, z</span>
+<span class="co">## ===== Samplers =====</span>
+<span class="co">## RW sampler (259)</span>
+<span class="co">##   - p</span>
+<span class="co">##   - beta[]  (2 elements)</span>
+<span class="co">##   - sdeps</span>
+<span class="co">##   - eps[]  (255 elements)</span>
+<span class="co">## posterior_predictive sampler (78)</span>
+<span class="co">##   - eps[]  (39 elements)</span>
+<span class="co">##   - z[]  (39 elements)</span>
+<span class="co">## categorical sampler (1103)</span>
+<span class="co">##   - z[]  (1103 elements)</span></code></pre></div>
+</div>
+<div id="remove-default-sampler-and-use-slice-sampler" class="section level2" number="11.18">
+<h2>
+<span class="header-section-number">11.18</span> Remove default sampler, and use slice sampler<a class="anchor" aria-label="anchor" href="#remove-default-sampler-and-use-slice-sampler"><i class="fas fa-link"></i></a>
+</h2>
+<div class="sourceCode" id="cb148"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="va">mcmcConf</span><span class="op">$</span><span class="fu">removeSamplers</span><span class="op">(</span><span class="st">'sdeps'</span><span class="op">)</span>
+<span class="va">mcmcConf</span><span class="op">$</span><span class="fu">addSampler</span><span class="op">(</span>target <span class="op">=</span> <span class="st">'sdeps'</span>,
+                    type <span class="op">=</span> <span class="st">"slice"</span><span class="op">)</span> <span class="co">#&lt;&lt;</span>
+<span class="va">mcmcConf</span>
+<span class="co">## ===== Monitors =====</span>
+<span class="co">## thin = 1: p, beta, sdeps, z</span>
+<span class="co">## ===== Samplers =====</span>
+<span class="co">## slice sampler (1)</span>
+<span class="co">##   - sdeps</span>
+<span class="co">## RW sampler (258)</span>
+<span class="co">##   - p</span>
+<span class="co">##   - beta[]  (2 elements)</span>
+<span class="co">##   - eps[]  (255 elements)</span>
+<span class="co">## posterior_predictive sampler (78)</span>
+<span class="co">##   - eps[]  (39 elements)</span>
+<span class="co">##   - z[]  (39 elements)</span>
+<span class="co">## categorical sampler (1103)</span>
+<span class="co">##   - z[]  (1103 elements)</span></code></pre></div>
+<pre><code>## |-------------|-------------|-------------|-------------|
+## |-------------------------------------------------------|
+## |-------------|-------------|-------------|-------------|
+## |-------------------------------------------------------|</code></pre>
+</div>
+<div id="trace-plot-for-standard-deviation-of-the-random-effect-slice-sampler" class="section level2" number="11.19">
+<h2>
+<span class="header-section-number">11.19</span> Trace plot for standard deviation of the random effect (slice sampler)<a class="anchor" aria-label="anchor" href="#trace-plot-for-standard-deviation-of-the-random-effect-slice-sampler"><i class="fas fa-link"></i></a>
+</h2>
+<div class="inline-figure"><img src="bayesHMMcapturerecapture_files/figure-html/unnamed-chunk-246-1.png" width="672"></div>
+</div>
+<div id="which-is-better" class="section level2" number="11.20">
+<h2>
+<span class="header-section-number">11.20</span> Which is better?<a class="anchor" aria-label="anchor" href="#which-is-better"><i class="fas fa-link"></i></a>
+</h2>
+<ul>
+<li><p>MCMC efficiency depends on both mixing and computation time.</p></li>
+<li><p>MCMC efficiency = Effective Sample Size (ESS) / computation time.</p></li>
+<li><p>MCMC efficiency is the number of effectively independent posterior samples generated per second.</p></li>
+<li><p>ESS is different for each parameter. (Computation time is the same for each parameter.)</p></li>
+<li><p>ESS can be estimated from packages <code>coda</code> or <code>mcmcse</code>. These give statistical estimates, so different runs will give different estimates.</p></li>
+<li><p>Efficiency with default sampler = 25.7 / 21.53 = 1.19.</p></li>
+<li><p>Efficiency with slice sampler = 19.14 / 21.95 = 0.87.</p></li>
+</ul>
+</div>
+<div id="block-sampling" class="section level2" number="11.21">
+<h2>
+<span class="header-section-number">11.21</span> Block sampling<a class="anchor" aria-label="anchor" href="#block-sampling"><i class="fas fa-link"></i></a>
+</h2>
+<ul>
+<li>High correlation in (regression) parameters may make independent samplers inefficient.</li>
+</ul>
+<div class="inline-figure"><img src="bayesHMMcapturerecapture_files/figure-html/unnamed-chunk-249-1.png" width="672"></div>
+<ul>
+<li>Block sampling (propose candidate values from multivariate distribution) might help.</li>
+</ul>
+</div>
+<div id="block-sampling-1" class="section level2" number="11.22">
+<h2>
+<span class="header-section-number">11.22</span> Block sampling<a class="anchor" aria-label="anchor" href="#block-sampling-1"><i class="fas fa-link"></i></a>
+</h2>
+<ul>
+<li>Remove and replace independent RW samples by block sampling. Then proceed as usual.</li>
+</ul>
+<div class="sourceCode" id="cb150"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="va">mcmcConf</span><span class="op">$</span><span class="fu">removeSamplers</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimble-R-functions.html">c</a></span><span class="op">(</span><span class="st">'beta[1]'</span>,<span class="st">'beta[2]'</span><span class="op">)</span><span class="op">)</span>
+<span class="va">mcmcConf</span><span class="op">$</span><span class="fu">addSampler</span><span class="op">(</span>target <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimble-R-functions.html">c</a></span><span class="op">(</span><span class="st">'beta[1]'</span>,<span class="st">'beta[2]'</span><span class="op">)</span>,
+                    type <span class="op">=</span> <span class="st">"RW_block"</span><span class="op">)</span> <span class="co">#&lt;&lt;</span></code></pre></div>
+</div>
+<div id="block-sampling-2" class="section level2" number="11.23">
+<h2>
+<span class="header-section-number">11.23</span> Block sampling<a class="anchor" aria-label="anchor" href="#block-sampling-2"><i class="fas fa-link"></i></a>
+</h2>
+<div class="sourceCode" id="cb151"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="va">mcmcConf</span>
+<span class="co">## ===== Monitors =====</span>
+<span class="co">## thin = 1: p, beta, sdeps, z</span>
+<span class="co">## ===== Samplers =====</span>
+<span class="co">## slice sampler (1)</span>
+<span class="co">##   - sdeps</span>
+<span class="co">## RW_block sampler (1)</span>
+<span class="co">##   - beta[1], beta[2] </span>
+<span class="co">## RW sampler (256)</span>
+<span class="co">##   - p</span>
+<span class="co">##   - eps[]  (255 elements)</span>
+<span class="co">## posterior_predictive sampler (78)</span>
+<span class="co">##   - eps[]  (39 elements)</span>
+<span class="co">##   - z[]  (39 elements)</span>
+<span class="co">## categorical sampler (1103)</span>
+<span class="co">##   - z[]  (1103 elements)</span></code></pre></div>
+</div>
+<div id="summary-of-strategies-for-improving-mcmc" class="section level2" number="11.24">
+<h2>
+<span class="header-section-number">11.24</span> Summary of strategies for improving MCMC<a class="anchor" aria-label="anchor" href="#summary-of-strategies-for-improving-mcmc"><i class="fas fa-link"></i></a>
+</h2>
+<ul>
+<li><p>Choose better initial values.</p></li>
+<li><p>Customize sampler choice (more in <a href="https://r-nimble.org/html_manual/cha-mcmc.html">Chapter 7 of the User’s manual</a>).</p></li>
+<li><p>Reparameterize, e.g. standardize covariates, deal with parameter redundancy.</p></li>
+<li>
+<p>Rewrite the model.</p>
+<ul>
+<li>Vectorize to improve computational efficiency (not covered).</li>
+<li>Avoid long chains of deterministic dependencies.</li>
+<li>Marginalize to remove parameters</li>
+<li>Use new functions and new distributions written as nimbleFunctions.</li>
+</ul>
+</li>
+<li><p>Write new samplers that take advantage of particular model structures (not covered).</p></li>
+<li><p>Using multiple cores with parallelization: see how-to at <a href="https://r-nimble.org/nimbleExamples/parallelizing_NIMBLE.html" class="uri">https://r-nimble.org/nimbleExamples/parallelizing_NIMBLE.html</a></p></li>
+</ul>
+</div>
+<div id="marginalization" class="section level2" number="11.25">
+<h2>
+<span class="header-section-number">11.25</span> Marginalization<a class="anchor" aria-label="anchor" href="#marginalization"><i class="fas fa-link"></i></a>
+</h2>
+<ul>
+<li><p>User-defined distributions is another neat feature of Nimble.</p></li>
+<li><p>Integrate over latent states if those are not the focus of ecological inference (marginalization).</p></li>
+<li><p>Marginalization often (but not always) improves MCMC. See <a href="https://onlinelibrary.wiley.com/doi/full/10.1002/ece3.6053">Ponisio et al. 2020</a> for examples.</p></li>
+<li><p>The <a href="https://cran.r-project.org/web/packages/nimbleEcology/vignettes/Introduction_to_nimbleEcology.html">nimbleEcology</a> package implements capture-recapture models and HMMs with marginalization.</p></li>
+</ul>
+<div id="our-model-phi_a-phi_b-psi_ab-psi_ba-p_a-p_b-6" class="section level3" number="11.25.1">
+<h3>
+<span class="header-section-number">11.25.1</span> Our model <span class="math inline">\((\phi_A, \phi_B, \psi_{AB}, \psi_{BA}, p_A, p_B)\)</span><a class="anchor" aria-label="anchor" href="#our-model-phi_a-phi_b-psi_ab-psi_ba-p_a-p_b-6"><i class="fas fa-link"></i></a>
+</h3>
+<div class="sourceCode" id="cb152"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="va">multisite</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimbleCode.html">nimbleCode</a></span><span class="op">(</span><span class="op">{</span>
+<span class="va">...</span>
+  <span class="co"># Likelihood </span>
+  <span class="kw">for</span> <span class="op">(</span><span class="va">i</span> <span class="kw">in</span> <span class="fl">1</span><span class="op">:</span><span class="va">N</span><span class="op">)</span><span class="op">{</span>
+    <span class="co"># Define latent state at first capture</span>
+    <span class="va">z</span><span class="op">[</span><span class="va">i</span>,<span class="va">first</span><span class="op">[</span><span class="va">i</span><span class="op">]</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="va">y</span><span class="op">[</span><span class="va">i</span>,<span class="va">first</span><span class="op">[</span><span class="va">i</span><span class="op">]</span><span class="op">]</span> <span class="op">-</span> <span class="fl">1</span>
+    <span class="kw">for</span> <span class="op">(</span><span class="va">t</span> <span class="kw">in</span> <span class="op">(</span><span class="va">first</span><span class="op">[</span><span class="va">i</span><span class="op">]</span><span class="op">+</span><span class="fl">1</span><span class="op">)</span><span class="op">:</span><span class="va">K</span><span class="op">)</span><span class="op">{</span>
+      <span class="co"># State process: draw S(t) given S(t-1)</span>
+      <span class="va">z</span><span class="op">[</span><span class="va">i</span>,<span class="va">t</span><span class="op">]</span> <span class="op">~</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/Categorical.html">dcat</a></span><span class="op">(</span><span class="va">gamma</span><span class="op">[</span><span class="va">z</span><span class="op">[</span><span class="va">i</span>,<span class="va">t</span><span class="op">-</span><span class="fl">1</span><span class="op">]</span>,<span class="fl">1</span><span class="op">:</span><span class="fl">3</span><span class="op">]</span><span class="op">)</span>
+      <span class="co"># Observation process: draw O(t) given S(t)</span>
+      <span class="va">y</span><span class="op">[</span><span class="va">i</span>,<span class="va">t</span><span class="op">]</span> <span class="op">~</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/Categorical.html">dcat</a></span><span class="op">(</span><span class="va">omega</span><span class="op">[</span><span class="va">z</span><span class="op">[</span><span class="va">i</span>,<span class="va">t</span><span class="op">]</span>,<span class="fl">1</span><span class="op">:</span><span class="fl">3</span><span class="op">]</span><span class="op">)</span>
+    <span class="op">}</span>
+  <span class="op">}</span>
+<span class="op">}</span><span class="op">)</span></code></pre></div>
+</div>
+<div id="same-model-with-nimbleecology" class="section level3" number="11.25.2">
+<h3>
+<span class="header-section-number">11.25.2</span> Same model with nimbleEcology<a class="anchor" aria-label="anchor" href="#same-model-with-nimbleecology"><i class="fas fa-link"></i></a>
+</h3>
+<div class="sourceCode" id="cb153"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb153-1"><a href="speed.html#cb153-1" aria-hidden="true" tabindex="-1"></a>multisite <span class="ot">&lt;-</span> <span class="fu">nimbleCode</span>({</span>
+<span id="cb153-2"><a href="speed.html#cb153-2" aria-hidden="true" tabindex="-1"></a>...</span>
+<span id="cb153-3"><a href="speed.html#cb153-3" aria-hidden="true" tabindex="-1"></a><span class="co"># initial state probs</span></span>
+<span id="cb153-4"><a href="speed.html#cb153-4" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>N) {</span>
+<span id="cb153-5"><a href="speed.html#cb153-5" aria-hidden="true" tabindex="-1"></a>  init[i, <span class="dv">1</span><span class="sc">:</span><span class="dv">4</span>] <span class="ot">&lt;-</span> gamma[ y[i, first[i] ] <span class="sc">-</span> <span class="dv">1</span>, <span class="dv">1</span><span class="sc">:</span><span class="dv">4</span> ] <span class="co"># first state propagation</span></span>
+<span id="cb153-6"><a href="speed.html#cb153-6" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb153-7"><a href="speed.html#cb153-7" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb153-8"><a href="speed.html#cb153-8" aria-hidden="true" tabindex="-1"></a><span class="co"># likelihood </span></span>
+<span id="cb153-9"><a href="speed.html#cb153-9" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>N){</span>
+<span id="cb153-10"><a href="speed.html#cb153-10" aria-hidden="true" tabindex="-1"></a>  y[i,(first[i]<span class="sc">+</span><span class="dv">1</span>)<span class="sc">:</span>K] <span class="sc">~</span> <span class="fu">dHMM</span>(<span class="at">init =</span> init[i,<span class="dv">1</span><span class="sc">:</span><span class="dv">4</span>],           <span class="co"># count data from first[i] + 1</span></span>
+<span id="cb153-11"><a href="speed.html#cb153-11" aria-hidden="true" tabindex="-1"></a>                             <span class="at">probObs =</span> omega[<span class="dv">1</span><span class="sc">:</span><span class="dv">4</span>,<span class="dv">1</span><span class="sc">:</span><span class="dv">4</span>],     <span class="co"># observation matrix</span></span>
+<span id="cb153-12"><a href="speed.html#cb153-12" aria-hidden="true" tabindex="-1"></a>                             <span class="at">probTrans =</span> gamma[<span class="dv">1</span><span class="sc">:</span><span class="dv">4</span>,<span class="dv">1</span><span class="sc">:</span><span class="dv">4</span>],   <span class="co"># transition matrix</span></span>
+<span id="cb153-13"><a href="speed.html#cb153-13" aria-hidden="true" tabindex="-1"></a>                             <span class="at">len =</span> K <span class="sc">-</span> first[i],           <span class="co"># nb of occasions</span></span>
+<span id="cb153-14"><a href="speed.html#cb153-14" aria-hidden="true" tabindex="-1"></a>                             <span class="at">checkRowSums =</span> <span class="dv">0</span>)             <span class="co"># do not check whether elements in a row sum tp 1</span></span>
+<span id="cb153-15"><a href="speed.html#cb153-15" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb153-16"><a href="speed.html#cb153-16" aria-hidden="true" tabindex="-1"></a>...</span></code></pre></div>
+<ul>
+<li><p>This runs twice as fast as the standard formulation with explicit latent states.</p></li>
+<li><p>Marginalizing typically gives better mixing.</p></li>
+</ul>
+</div>
+<div id="reducing-redundant-calculations" class="section level3" number="11.25.3">
+<h3>
+<span class="header-section-number">11.25.3</span> Reducing redundant calculations<a class="anchor" aria-label="anchor" href="#reducing-redundant-calculations"><i class="fas fa-link"></i></a>
+</h3>
+<ul>
+<li><p>So far, a row of the dataset is an individual. However, several individuals may share the same encounter history.</p></li>
+<li><p>The contribution of <span class="math inline">\(M\)</span> individuals with the same encounter history is the likelihood of this particular encounter history raised to the power <span class="math inline">\(M\)</span>.</p></li>
+<li><p>Using this so-called <strong>weighted likelihood</strong> greatly decreases the computational burden.</p></li>
+<li><p>This idea is used in most computer programs that implement maximum likelihood. In the Bayesian framework, the same idea was proposed in <a href="https://doi.org/10.1007/s10651-016-0353-z">Turek et al. (2016)</a>.</p></li>
+<li><p>Cannot be done in Jags. Can be done in nimble thanks to nimble functions!</p></li>
+<li><p>The run is <em>much</em> faster. Also allows fitting models to big datasets. More details in dedicated Worksheet.</p></li>
+</ul>
+</div>
+</div>
+<div id="no-live-demo-but-there-is-a-worksheet." class="section level2" number="11.26">
+<h2>
+<span class="header-section-number">11.26</span> No live demo, but there is a worksheet.<a class="anchor" aria-label="anchor" href="#no-live-demo-but-there-is-a-worksheet."><i class="fas fa-link"></i></a>
+</h2>
+</div>
+<div id="future-directions-for-nimble" class="section level2" number="11.27">
+<h2>
+<span class="header-section-number">11.27</span> Future directions for NIMBLE<a class="anchor" aria-label="anchor" href="#future-directions-for-nimble"><i class="fas fa-link"></i></a>
+</h2>
+<ul>
+<li><p>NIMBLE is under active development. Contributors are welcome, including those who want to get involved but don’t know where.</p></li>
+<li><p>Faster building of models and algorithms. Ability to save and re-load compiled work.</p></li>
+<li><p>Automatic differentiation of model calculations, enabling Hamiltonian Monte Carlo, other sampling strategies, and Laplace approximation.</p></li>
+<li><p>Tools for building packages that use NIMBLE “under the hood.”</p></li>
+</ul>
+</div>
+<div id="further-reading-5" class="section level2" number="11.28">
+<h2>
+<span class="header-section-number">11.28</span> Further reading<a class="anchor" aria-label="anchor" href="#further-reading-5"><i class="fas fa-link"></i></a>
+</h2>
+<ul>
+<li><p>Turek, D., de Valpine, P. &amp; Paciorek, C.J. <a href="https://doi.org/10.1007/s10651-016-0353-z">Efficient Markov chain Monte Carlo sampling for hierarchical hidden Markov models</a> <em>Environ Ecol Stat</em> 23: 549–564 (2016).</p></li>
+<li><p>Ponisio, L.C., de Valpine, P., Michaud, N., and Turek, D. <a href="https://doi.org/10.1002/ece3.6053">One size does not fit all: Customizing MCMC methods for hierarchical models using NIMBLE</a> <em>Ecol Evol.</em> 10: 2385–2416 (2020).</p></li>
+<li><p>Nimble workshop to come 26-28 May, check out <a href="https://r-nimble.org/nimble-virtual-short-course-may-26-28">here</a>.</p></li>
+<li><p>Nimble workshop material online available <a href="https://github.com/nimble-training">here</a>.</p></li>
+<li><p>Nimble <a href="https://r-nimble.org/html_manual/cha-welcome-nimble.html">manual</a> and <a href="https://r-nimble.org/cheatsheets/NimbleCheatSheet.pdf">cheatsheet</a>.</p></li>
+</ul>
+</div>
+</div>
+  <div class="chapter-nav">
+<div class="prev"><a href="states.html"><span class="header-section-number">10</span> Hidden states</a></div>
+<div class="next"><a href="conclusions.html"><span class="header-section-number">12</span> Conclusions</a></div>
+</div></main><div class="col-md-3 col-lg-2 d-none d-md-block sidebar sidebar-chapter">
+    <nav id="toc" data-toggle="toc" aria-label="On this page"><h2>On this page</h2>
+      <ul class="nav navbar-nav">
+<li><a class="nav-link" href="#speed"><span class="header-section-number">11</span> Speed up MCMC</a></li>
+<li><a class="nav-link" href="#our-nimble-workflow-so-far-1"><span class="header-section-number">11.1</span> Our nimble workflow so far</a></li>
+<li><a class="nav-link" href="#but-nimble-gives-full-access-to-the-mcmc-engine-1"><span class="header-section-number">11.2</span> But nimble gives full access to the MCMC engine</a></li>
+<li><a class="nav-link" href="#steps-to-use-nimble-at-full-capacity"><span class="header-section-number">11.3</span> Steps to use NIMBLE at full capacity</a></li>
+<li>
+<a class="nav-link" href="#back-to-cjs-models-with-dipper-data."><span class="header-section-number">11.4</span> Back to CJS models with Dipper data.</a><ul class="nav navbar-nav">
+<li><a class="nav-link" href="#define-model"><span class="header-section-number">11.4.1</span> Define model</a></li>
+<li><a class="nav-link" href="#run-and-summarise"><span class="header-section-number">11.4.2</span> Run and summarise</a></li>
+</ul>
+</li>
+<li><a class="nav-link" href="#detailed-nimble-workflow"><span class="header-section-number">11.5</span> Detailed Nimble workflow</a></li>
+<li><a class="nav-link" href="#build-the-model-r-object"><span class="header-section-number">11.6</span> 1. Build the model (R object)</a></li>
+<li><a class="nav-link" href="#build-the-mcmc"><span class="header-section-number">11.7</span> 2. Build the MCMC</a></li>
+<li><a class="nav-link" href="#compile-the-model-and-mcmc"><span class="header-section-number">11.8</span> 3. Compile the model and MCMC</a></li>
+<li><a class="nav-link" href="#run-the-mcmc"><span class="header-section-number">11.9</span> 4. Run the MCMC</a></li>
+<li><a class="nav-link" href="#look-at-results"><span class="header-section-number">11.10</span> 5. Look at results</a></li>
+<li><a class="nav-link" href="#why-is-it-useful"><span class="header-section-number">11.11</span> Why is it useful?</a></li>
+<li><a class="nav-link" href="#use-and-debug-model-in-r"><span class="header-section-number">11.12</span> Use and debug model in R</a></li>
+<li><a class="nav-link" href="#example-of-debugging-a-model-in-r"><span class="header-section-number">11.13</span> Example of debugging a model in R</a></li>
+<li><a class="nav-link" href="#open-the-hood-and-changemodifywrite-samplers"><span class="header-section-number">11.14</span> Open the hood, and change/modify/write samplers</a></li>
+<li><a class="nav-link" href="#consider-a-model-with-wing-length-and-individual-random-effect-on-survival."><span class="header-section-number">11.15</span> Consider a model with wing length and individual random effect on survival.</a></li>
+<li><a class="nav-link" href="#trace-plot-for-standard-deviation-of-the-random-effect-default-sampler"><span class="header-section-number">11.16</span> Trace plot for standard deviation of the random effect (default sampler)</a></li>
+<li><a class="nav-link" href="#change-samplers"><span class="header-section-number">11.17</span> Change samplers</a></li>
+<li><a class="nav-link" href="#remove-default-sampler-and-use-slice-sampler"><span class="header-section-number">11.18</span> Remove default sampler, and use slice sampler</a></li>
+<li><a class="nav-link" href="#trace-plot-for-standard-deviation-of-the-random-effect-slice-sampler"><span class="header-section-number">11.19</span> Trace plot for standard deviation of the random effect (slice sampler)</a></li>
+<li><a class="nav-link" href="#which-is-better"><span class="header-section-number">11.20</span> Which is better?</a></li>
+<li><a class="nav-link" href="#block-sampling"><span class="header-section-number">11.21</span> Block sampling</a></li>
+<li><a class="nav-link" href="#block-sampling-1"><span class="header-section-number">11.22</span> Block sampling</a></li>
+<li><a class="nav-link" href="#block-sampling-2"><span class="header-section-number">11.23</span> Block sampling</a></li>
+<li><a class="nav-link" href="#summary-of-strategies-for-improving-mcmc"><span class="header-section-number">11.24</span> Summary of strategies for improving MCMC</a></li>
+<li>
+<a class="nav-link" href="#marginalization"><span class="header-section-number">11.25</span> Marginalization</a><ul class="nav navbar-nav">
+<li><a class="nav-link" href="#our-model-phi_a-phi_b-psi_ab-psi_ba-p_a-p_b-6"><span class="header-section-number">11.25.1</span> Our model \((\phi_A, \phi_B, \psi_{AB}, \psi_{BA}, p_A, p_B)\)</a></li>
+<li><a class="nav-link" href="#same-model-with-nimbleecology"><span class="header-section-number">11.25.2</span> Same model with nimbleEcology</a></li>
+<li><a class="nav-link" href="#reducing-redundant-calculations"><span class="header-section-number">11.25.3</span> Reducing redundant calculations</a></li>
+</ul>
+</li>
+<li><a class="nav-link" href="#no-live-demo-but-there-is-a-worksheet."><span class="header-section-number">11.26</span> No live demo, but there is a worksheet.</a></li>
+<li><a class="nav-link" href="#future-directions-for-nimble"><span class="header-section-number">11.27</span> Future directions for NIMBLE</a></li>
+<li><a class="nav-link" href="#further-reading-5"><span class="header-section-number">11.28</span> Further reading</a></li>
+</ul>
+
+      <div class="book-extra">
+        <ul class="list-unstyled">
+<li><a id="book-source" href="https://github.com/oliviergimenez/banana-book/blob/master/11-speed.Rmd">View source <i class="fab fa-github"></i></a></li>
+          <li><a id="book-edit" href="https://github.com/oliviergimenez/banana-book/edit/master/11-speed.Rmd">Edit this page <i class="fab fa-github"></i></a></li>
+        </ul>
+</div>
+    </nav>
+</div>
+
+</div>
+</div> <!-- .container -->
+
+<footer class="bg-primary text-light mt-5"><div class="container"><div class="row">
+
+  <div class="col-12 col-md-6 mt-3">
+    <p>"<strong>Bayesian Analysis of Capture-Recapture Data with Hidden Markov Models – Theory and Case Studies in R</strong>" was written by Olivier Gimenez. It was last built on 2021-09-14.</p>
+  </div>
+
+  <div class="col-12 col-md-6 mt-3">
+    <p>This book was built by the <a class="text-light" href="https://bookdown.org">bookdown</a> R package.</p>
+  </div>
+
+</div></div>
+</footer><!-- dynamically load mathjax for compatibility with self-contained --><script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    var src = "true";
+    if (src === "" || src === "true") src = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-MML-AM_CHTML";
+    if (location.protocol !== "file:")
+      if (/^https?:/.test(src))
+        src = src.replace(/^https?:/, '');
+    script.src = src;
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script><script type="text/x-mathjax-config">const popovers = document.querySelectorAll('a.footnote-ref[data-toggle="popover"]');
+for (let popover of popovers) {
+  const div = document.createElement('div');
+  div.setAttribute('style', 'position: absolute; top: 0, left:0; width:0, height:0, overflow: hidden; visibility: hidden;');
+  div.innerHTML = popover.getAttribute('data-content');
+
+  var has_math = div.querySelector("span.math");
+  if (has_math) {
+    document.body.appendChild(div);
+    MathJax.Hub.Queue(["Typeset", MathJax.Hub, div]);
+    MathJax.Hub.Queue(function() {
+      popover.setAttribute('data-content', div.innerHTML);
+      document.body.removeChild(div);
+    })
+  }
+}
+</script>
+</body>
+</html>
