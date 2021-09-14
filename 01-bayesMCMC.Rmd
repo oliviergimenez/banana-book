@@ -50,7 +50,7 @@ Then we have the $\color{green}{\text{prior distribution}}$. This quantity repre
 
 Last, we have $\color{orange}{\Pr(\text{data})}$ which is sometimes called the average likelihood. The likelihood is averaged over the prior $\color{orange}{\Pr(\text{data}) = \int{L(\text{data} \mid \theta)\Pr(\theta) d\theta}}$ so that the posterior is standardized, that is it integrates or sums up to one for the posterior to be a distribution. The average likelihood is a $N$-dimensional integral if you have $N$ parameters to estimate $\theta = \theta_1, \ldots, \theta_N$. This quantity is difficult, if not impossible, to calculate. This is one of the reasons why the Bayesian method wasn't used until recently, and why we need algorithms to estimate posterior distributions as I illustrate in the next section.
 
-## Approximating posterior distributions via numerical integration
+## Approximating posterior distributions via numerical integration {#numerical-approx}
 
 Let's take an example. Say we capture, mark and release $n = 57$ animals at the beginning of a winter, out of which we recapture $y = 19$ animals alive^[We used a similar example in @king_bayesian_2009]. We'd like to estimate winter survival $\theta$.
 ```{r}
@@ -64,7 +64,7 @@ We build our model first. Assuming all animals are independent of each other and
 y &\sim \text{Binomial}(n, \theta) &\text{[likelihood]}
 \end{align*}
 
-In the Bayesian approach, priors are part of the model. For parameters that are probabilities, we often go for the uniform distribution $U(0,1)$ to imply vague priors. Here vague means that we have survival has, before we see the data, the same probability of falling between 0.1 and 0.2 than being between 0.8 and 0.9. 
+In the Bayesian approach, priors are part of the model. For a parameter that is a probability, the one thing we know is that the prior should be a continuous random variable that lies between 0 and 1. To reflect that, we often go for the uniform distribution $U(0,1)$ to imply *vague* priors. Here vague means that survival has, before we see the data, the same probability of falling between 0.1 and 0.2 and between 0.8 and 0.9, for example. 
 
 \begin{align*}
 \theta &\sim \text{Uniform}(0, 1) &\text{[prior for }\theta \text{]}
@@ -81,7 +81,7 @@ dfprior <- data.frame(survival = grid, prior = prior)
 #plot(p, dbeta(p,a,b), type='l', lwd=3)
 ```
 
-Now we apply the Bayes' theorem. We write a R function that computes the product of the likelihood times the prior, or the numerator in the formula of the Bayes' theorem: $\Pr(\text{data} \mid \theta) \times \Pr(\theta)$
+Now we apply the Bayes' theorem. We write a `R` function that computes the product of the likelihood times the prior, or the numerator in the formula of the Bayes' theorem: $\Pr(\text{data} \mid \theta) \times \Pr(\theta)$
 ```{r}
 numerator <- function(theta) dbinom(y, n, theta) * dunif(theta, 0, 1)
 ```
@@ -102,7 +102,20 @@ numerical_posterior %>%
             size = 1.5)
 ```
 
-When we use a binomial likelihood together with a uniform prior, the posterior distribution has an explicit form that we can calculate by hand^[When the likelihood of the data $y$ is Binomial $B(n,p)$, and the prior is a Beta distribution (which extends the uniform distribution, more later on) with parameters $\alpha$ and $\beta$, then the posterior is a Beta distribution with parameters $\alpha + y$ and $\beta + n - y$]. In Figure \@ref(fig:compar), we superimpose the exact posterior and its numerical approximation. Clearly, the two distributions are indistinguishable, suggesting that the numerical approximation is more than fine. 
+How good is our numerical approximation of the survival posterior distribution? Ideally, we would want to compare the approximation to the true posterior distribution. Although a closed-form expression for the posterior distribution is in general intractable, when you combine a binomial likelihood together with a beta distribution as a prior, then the posterior distribution is also a beta distribution, which makes it amenable to all sorts of exact calculations^[We say that the beta distribution is the conjugate prior distribution for the binomial distribution.]. The beta distribution is continuous between 0 and 1, and extends the uniform distribution to situations where not all outcomes are equally likely. It has two parameters  $\alpha$ and $\beta$ that control its shape (Figure \@ref(fig:betadistribution)). 
+```{r betadistribution, echo = FALSE, fig.cap = "The beta distribution with various parameters."}
+x <- seq(0, 1, length=200)
+par(mfrow = c(2,3))
+# distribution a posteriori beta
+plot(x,dbeta(x, 1, 1),type='l',xlab='',ylab='Density',main='beta(1,1)',lwd=3,col='black',ylim=c(0,1.5))
+plot(x,dbeta(x, 2, 1),type='l',xlab='',ylab='',main='beta(2,1)',lwd=3,col='black',ylim=c(0,2))
+plot(x,dbeta(x, 1, 2),type='l',xlab='',ylab='',main='beta(1,2)',lwd=3,col='black',ylim=c(0,2))
+plot(x,dbeta(x, 2, 2),type='l',xlab='',ylab='Density',main='beta(2,2)',lwd=3,col='black',ylim=c(0,1.5))
+plot(x,dbeta(x, 10, 10),type='l',xlab='',ylab='',main='beta(10,10)',lwd=3,col='black',ylim=c(0,3.5))
+plot(x,dbeta(x, 0.8, 0.8),type='l',xlab='',ylab='',main='beta(0.8,0.8)',lwd=3,col='black',ylim=c(0.5,2.5))
+```
+
+It can be shown that if the likelihood of the data $y$ is binomial $B(n,p)$, and the prior is a beta distribution with parameters $\alpha$ and $\beta$, then the posterior is a beta distribution with parameters $\alpha + y$ and $\beta + n - y$. In our example, survival has a beta posterior distribution with parameters 20 and 39. In Figure \@ref(fig:compar), we superimpose the exact posterior and its numerical approximation. Clearly, the two distributions are indistinguishable, suggesting that the numerical approximation is more than fine. 
 ```{r compar, echo = FALSE, fig.cap = "Comparison of exact (dashed line) vs. numerical approximation (continuous line) of winter survival posterior distribution."}
 explicit_posterior <- dbeta(grid, y + a, n - y + b)
 dfexpposterior <- data.frame(survival = grid, explicit_posterior = explicit_posterior)
@@ -138,21 +151,62 @@ ggplot() +
 <!--             size = 1.5) -->
 <!-- ``` -->
 
-In this example, we have a single parameter to estimate. This means dealing with a one-dimensional integral in the denominator which is pretty easy with a quadrature scheme and the `R` function `integrate()`. Now what if we had multiple parameters? For example, let's imagine you'd like to fit a capture-recapture model with detection probability $p$ and regression parameters $\alpha$ and $\beta$ for the intercept and slope of a relationship between survival probability and a covariate, then Bayes' theorem gives you the posterior distribution of all three parameters together:
+The posterior distribution contains all the information we need about the parameter to be estimated. When dealing with many parameters however, you may want to summarise posterior results by calculating numerical summaries. The simplest numerical summary is the mean or the median of the posterior distribution. These can simply be calculated in `R`:
+```{r}
+sample_from_posterior <- rbeta(n = 1000, 1 + 19, 1 + 57 - 19) # draw 1000 values from posterior distribution of survival beta(20,39)
+mean(sample_from_posterior) # compute mean
+median(sample_from_posterior) # compute median
+```
+
+Because the posterior distribution is rather symetric, mean and median are very similar but this is not necessarily the case. We may also check that the mean we calculate empirically matches the expectation of a beta distribution^[$E(\text{beta}(\alpha, \beta)) = \displaystyle{\frac{\alpha}{\alpha + \beta}}$]:
+```{r}
+mean(sample_from_posterior) # compute mean
+20/(20+39)
+```
+
+Another useful numerical summary is the credible interval within which our parameter falls with some probability, usually 0.95 hence a 95$\%$ credible interval. This can be obtained in `R` with:
+```{r}
+quantile(sample_from_posterior, probs = c(2.5/100, 97.5/100))
+```
+
+In our example, we have a single parameter to estimate, winter survival. This means dealing with a one-dimensional integral in the denominator which is pretty easy with a quadrature scheme and the `R` function `integrate()`. Now what if we had multiple parameters? For example, let's imagine you'd like to fit a capture-recapture model with detection probability $p$ and regression parameters $\alpha$ and $\beta$ for the intercept and slope of a relationship between survival probability and a covariate, then Bayes' theorem gives you the posterior distribution of all three parameters together:
 
 $$ P(\alpha, \beta, p \mid \text{data}) = \frac{ P(\text{data} \mid \alpha, \beta, p) \times P(\alpha, \beta, p)}{\iiint \, P(\text{data} \mid \alpha, \beta, p) P(\alpha, \beta, p) d\alpha d\beta dp} $$
-There are two computational challenges with this formula. First, do we really wish to calculate a three-dimensional integral? The answer is no, 1D or 2D integrals is so much further we can go with standard methods. Second, we're more interested in a posterior distribution for each parameter separately than the joint posterior distribution. The so-called marginal distribution of $p$ for example is obtained by integrating over all the other parameters -- a two-dimensional integral in this example. Now imagine with tens or hundreds of parameters to estimate, these integrals become highly multi-dimensional and simply too difficult to calculate. In the next section, we introduce powerful simulation methods to circumvent this issue. 
+There are two computational challenges with this formula. First, do we really wish to calculate a three-dimensional integral? The answer is no, one-dimensional and two-dimensional integrals are so much further we can go with standard methods. Second, we're more interested in a posterior distribution for each parameter separately than the joint posterior distribution. The so-called marginal distribution of $p$ for example is obtained by integrating over all the other parameters -- a two-dimensional integral in this example. Now imagine with tens or hundreds of parameters to estimate, these integrals become highly multi-dimensional and simply intractable. In the next section, I introduce powerful simulation methods to circumvent this issue. 
 
 ## Bayesian computation with Markov chain Monte Carlo (MCMC)
 
-In the early 1990s, statisticians rediscovered work from the 1950's in physics. In a famous paper that would lay the fundations of modern Bayesian statistics (see Figure \@ref(fig:mcmcpaper)), the authors use simulations to approximate posterior distributions with some precision by drawing large samples. This is a neat trick to avoid explicit calculation of multi-dimensional integrals we struggle with when using Bayes' theorem. These simulation algorithms are called Markov chain Monte Carlo (MCMC), and they definitely gave a boost to Bayesian statistics. **simulation algorithm ou stochastic algorithms. Expliquer.**
+In the early 1990s, statisticians rediscovered work from the 1950's in physics. In a famous paper that would lay the fundations of modern Bayesian statistics (see Figure \@ref(fig:mcmcpaper)), the authors use simulations to approximate posterior distributions with some precision by drawing large samples. This is a neat trick to avoid explicit calculation of the multi-dimensional integrals we struggle with when using Bayes' theorem. These simulation algorithms are called Markov chain Monte Carlo (MCMC), and they definitely gave a boost to Bayesian statistics. There are two parts in MCMC, Markov chain and Monte Carlo. Let's try and make sense of these terms. 
 
 ```{r mcmcpaper, echo = FALSE, fig.align='center', fig.cap = "MCMC article cover. Source: [The Journal of Chemical Physics](https://aip.scitation.org/doi/10.1063/1.1699114)"}
 knitr::include_graphics("images/metropolis.png")
 ```
 
-Why are MCMC methods so useful? Well to understand *why*, we need to better explain the *what*. MCMC are stochastic algorithms to produce sequence of dependent random numbers from a Markov chain. What is a Markov chain? A Markov chain is a discrete sequence of states, in which the probability of an event depends only on the state in the previous event. **donner example de la météo?** By construction, a Markov chain has an equilibrium (also know as stationary) distribution. **expliquer** The cool thing is that the equilibrium distribution is the desired posterior distribution. **Expliquer Monte Carlo avec exemple simple, idem pour Markov chain** Yes, MCMC algorithms are used to construct a Markov chain with a given stationary distribution set to be the posterior distribution. This summarizes the core spirit of MCMC algorithms. 
-**why is it so cool? plutôt que de simuler comme des dingues dans tous les snes, il suffit de tirer dans Markov chain, et eventuellement, on converge vers distribution statitionnaire qui est l'a posteriori! Also For the MCMC algorithm, the posterior distribution is only needed to be known up to proportionality.**
+Now what does Monte Carlo stand for? We have actually already met with this method in Section \@ref(numerical-approx) when we calculated numerical summaries of the survival posterior distribution. Monte Carlo integration is a simulation technique to estimate integrals involving any function of the parameter $\theta$, in which you draw samples from the posterior distribution, then calculate the sample mean of the values to which we applied the function. **prendre la SD comme exemple?**
+
+Now what is a Markov chain? A Markov chain is a random sequence of numbers, in which each number depends only on the previous number. An example for a Markov chain is the weather in my home town in Southern France, in which a sunny day is most likely to be followed by another sunny day. Under certain conditions^[The Markov chain is irreducible and aperiodic.], a Markov chain will converge to a unique stationary distribution. The cool thing is that you can build Markov chains with a given stationary distribution set to be the desired posterior distribution. **donner un exemple de Markov chain et stationary distribution**
+
+MCMC therefore allows us to construct a sequence of values whose distribution
+converges to the posterior distribution of interest (if the chain is run
+for long enough). Once the chain has converged to the stationary distribution,
+we can then use the sequence of values taken by the chain in order to obtain
+empirical (Monte Carlo) estimates of any posterior summaries of interest, such
+as posterior means. Note that we need to ensure that the Markov chain has
+reached the stationary distribution before we can use the realisations to obtain
+our Monte Carlo estimates of the posterior distributions of interest. This
+means that we need to discard realisations from the start of the chain and
+only use observations once the chain has converged. This initial period of the
+chain is referred to as the burn-in. We return to the issue of determining the
+length of the burn-in in Section 5.4.2, once we have described the general
+MCMC methods. We emphasise that the beauty of MCMC is that the updating
+procedure remains relatively simple, no matter how complex the posterior
+distribution of interest. Thus we can do the required integration by sampling
+from the posterior distribution, and we can sample from the posterior by generating
+a Markov chain. We construct a Markov chain using an appropriate
+updating scheme, but how do we do these updates? There are several standard
+approaches.
+
+This summarizes the core spirit of MCMC algorithms. 
 
 There are several ways of constructing these chains: e.g., Metropolis-Hastings, Gibbs sampler. Have a look to <https://github.com/chi-feng/mcmc-demo> for an interactive gallery of MCMC algorithms. Here I will illustrate the Metropolis algorithm and how to implement it in practice. **Différence entre Metropolis et MH**
 

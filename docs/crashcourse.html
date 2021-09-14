@@ -130,23 +130,23 @@ Let’s spend some time going through each quantity in this formula.</p>
 <p>Then we have the <span class="math inline">\(\color{green}{\text{prior distribution}}\)</span>. This quantity represents what you know before seeing the data. This is the source of much discussion about the Bayesian approach. It may be vague if you don’t know anything about <span class="math inline">\(\theta\)</span>. Usually however, you never start from scratch, and you’d like your prior to be informed by information you have. We’ll get back to it at length later on.</p>
 <p>Last, we have <span class="math inline">\(\color{orange}{\Pr(\text{data})}\)</span> which is sometimes called the average likelihood. The likelihood is averaged over the prior <span class="math inline">\(\color{orange}{\Pr(\text{data}) = \int{L(\text{data} \mid \theta)\Pr(\theta) d\theta}}\)</span> so that the posterior is standardized, that is it integrates or sums up to one for the posterior to be a distribution. The average likelihood is a <span class="math inline">\(N\)</span>-dimensional integral if you have <span class="math inline">\(N\)</span> parameters to estimate <span class="math inline">\(\theta = \theta_1, \ldots, \theta_N\)</span>. This quantity is difficult, if not impossible, to calculate. This is one of the reasons why the Bayesian method wasn’t used until recently, and why we need algorithms to estimate posterior distributions as I illustrate in the next section.</p>
 </div>
-<div id="approximating-posterior-distributions-via-numerical-integration" class="section level2" number="1.4">
+<div id="numerical-approx" class="section level2" number="1.4">
 <h2>
-<span class="header-section-number">1.4</span> Approximating posterior distributions via numerical integration<a class="anchor" aria-label="anchor" href="#approximating-posterior-distributions-via-numerical-integration"><i class="fas fa-link"></i></a>
+<span class="header-section-number">1.4</span> Approximating posterior distributions via numerical integration<a class="anchor" aria-label="anchor" href="#numerical-approx"><i class="fas fa-link"></i></a>
 </h2>
 <p>Let’s take an example. Say we capture, mark and release <span class="math inline">\(n = 57\)</span> animals at the beginning of a winter, out of which we recapture <span class="math inline">\(y = 19\)</span> animals alive<a class="footnote-ref" tabindex="0" data-toggle="popover" data-content='&lt;p&gt;We used a similar example in &lt;span class="citation"&gt;&lt;a href="references.html#ref-king_bayesian_2009" role="doc-biblioref"&gt;King et al.&lt;/a&gt; (&lt;a href="references.html#ref-king_bayesian_2009" role="doc-biblioref"&gt;2009&lt;/a&gt;)&lt;/span&gt;&lt;/p&gt;'><sup>4</sup></a>. We’d like to estimate winter survival <span class="math inline">\(\theta\)</span>.</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">y</span> <span class="op">&lt;-</span> <span class="fl">19</span> <span class="co"># nb of success</span>
 <span class="va">n</span> <span class="op">&lt;-</span> <span class="fl">57</span> <span class="co"># nb of attempts</span></code></pre></div>
-<p>We build our model first. Assuming all animals are independent of each other and have the same survival probability, then the number of alive animals at the end of the winter is a binomial distribution<a class="footnote-ref" tabindex="0" data-toggle="popover" data-content='&lt;p&gt;I follow &lt;span class="citation"&gt;(&lt;a href="#ref-mcelreathbook" role="doc-biblioref"&gt;&lt;strong&gt;mcelreathbook?&lt;/strong&gt;&lt;/a&gt;)&lt;/span&gt; and use labels on the right to help remember what each line is about.&lt;/p&gt;'><sup>5</sup></a>:</p>
+<p>We build our model first. Assuming all animals are independent of each other and have the same survival probability, then the number of alive animals at the end of the winter is a binomial distribution<a class="footnote-ref" tabindex="0" data-toggle="popover" data-content='&lt;p&gt;I follow &lt;span class="citation"&gt;&lt;a href="references.html#ref-mcelreathbook" role="doc-biblioref"&gt;McElreath&lt;/a&gt; (&lt;a href="references.html#ref-mcelreathbook" role="doc-biblioref"&gt;2016&lt;/a&gt;)&lt;/span&gt; and use labels on the right to help remember what each line is about.&lt;/p&gt;'><sup>5</sup></a>:</p>
 <p><span class="math display">\[\begin{align*}
 y &amp;\sim \text{Binomial}(n, \theta) &amp;\text{[likelihood]}
 \end{align*}\]</span></p>
-<p>In the Bayesian approach, priors are part of the model. For parameters that are probabilities, we often go for the uniform distribution <span class="math inline">\(U(0,1)\)</span> to imply vague priors. Here vague means that we have survival has, before we see the data, the same probability of falling between 0.1 and 0.2 than being between 0.8 and 0.9.</p>
+<p>In the Bayesian approach, priors are part of the model. For a parameter that is a probability, the one thing we know is that the prior should be a continuous random variable that lies between 0 and 1. To reflect that, we often go for the uniform distribution <span class="math inline">\(U(0,1)\)</span> to imply <em>vague</em> priors. Here vague means that survival has, before we see the data, the same probability of falling between 0.1 and 0.2 and between 0.8 and 0.9, for example.</p>
 <p><span class="math display">\[\begin{align*}
 \theta &amp;\sim \text{Uniform}(0, 1) &amp;\text{[prior for }\theta \text{]}
 \end{align*}\]</span></p>
-<p>Now we apply the Bayes’ theorem. We write a R function that computes the product of the likelihood times the prior, or the numerator in the formula of the Bayes’ theorem: <span class="math inline">\(\Pr(\text{data} \mid \theta) \times \Pr(\theta)\)</span></p>
+<p>Now we apply the Bayes’ theorem. We write a <code>R</code> function that computes the product of the likelihood times the prior, or the numerator in the formula of the Bayes’ theorem: <span class="math inline">\(\Pr(\text{data} \mid \theta) \times \Pr(\theta)\)</span></p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">numerator</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">theta</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/stats/Binomial.html">dbinom</a></span><span class="op">(</span><span class="va">y</span>, <span class="va">n</span>, <span class="va">theta</span><span class="op">)</span> <span class="op">*</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html">dunif</a></span><span class="op">(</span><span class="va">theta</span>, <span class="fl">0</span>, <span class="fl">1</span><span class="op">)</span></code></pre></div>
 <p>We write another function that calculates the denominator, the average likelihood: <span class="math inline">\(\Pr(\text{data}) = \int{L(\theta \mid \text{data}) \Pr(\theta) d\theta}\)</span></p>
@@ -167,11 +167,18 @@ y &amp;\sim \text{Binomial}(n, \theta) &amp;\text{[likelihood]}
 Figure 1.3: Numerical approximation of winter survival posterior distribution.
 </p>
 </div>
-When we use a binomial likelihood together with a uniform prior, the posterior distribution has an explicit form that we can calculate by hand<a class="footnote-ref" tabindex="0" data-toggle="popover" data-content='&lt;p&gt;When the likelihood of the data &lt;span class="math inline"&gt;\(y\)&lt;/span&gt; is Binomial &lt;span class="math inline"&gt;\(B(n,p)\)&lt;/span&gt;, and the prior is a Beta distribution (which extends the uniform distribution, more later on) with parameters &lt;span class="math inline"&gt;\(\alpha\)&lt;/span&gt; and &lt;span class="math inline"&gt;\(\beta\)&lt;/span&gt;, then the posterior is a Beta distribution with parameters &lt;span class="math inline"&gt;\(\alpha + y\)&lt;/span&gt; and &lt;span class="math inline"&gt;\(\beta + n - y\)&lt;/span&gt;&lt;/p&gt;'><sup>6</sup></a>. In Figure <a href="crashcourse.html#fig:compar">1.4</a>, we superimpose the exact posterior and its numerical approximation. Clearly, the two distributions are indistinguishable, suggesting that the numerical approximation is more than fine.
+How good is our numerical approximation of the survival posterior distribution? Ideally, we would want to compare the approximation to the true posterior distribution. Although a closed-form expression for the posterior distribution is in general intractable, when you combine a binomial likelihood together with a beta distribution as a prior, then the posterior distribution is also a beta distribution, which makes it amenable to all sorts of exact calculations<a class="footnote-ref" tabindex="0" data-toggle="popover" data-content="&lt;p&gt;We say that the beta distribution is the conjugate prior distribution for the binomial distribution.&lt;/p&gt;"><sup>6</sup></a>. The beta distribution is continuous between 0 and 1, and extends the uniform distribution to situations where not all outcomes are equally likely. It has two parameters <span class="math inline">\(\alpha\)</span> and <span class="math inline">\(\beta\)</span> that control its shape (Figure <a href="crashcourse.html#fig:betadistribution">1.4</a>).
+<div class="figure">
+<span style="display:block;" id="fig:betadistribution"></span>
+<img src="bayesHMMcapturerecapture_files/figure-html/betadistribution-1.png" alt="The beta distribution with various parameters." width="672"><p class="caption">
+Figure 1.4: The beta distribution with various parameters.
+</p>
+</div>
+It can be shown that if the likelihood of the data <span class="math inline">\(y\)</span> is binomial <span class="math inline">\(B(n,p)\)</span>, and the prior is a beta distribution with parameters <span class="math inline">\(\alpha\)</span> and <span class="math inline">\(\beta\)</span>, then the posterior is a beta distribution with parameters <span class="math inline">\(\alpha + y\)</span> and <span class="math inline">\(\beta + n - y\)</span>. In our example, survival has a beta posterior distribution with parameters 20 and 39. In Figure <a href="crashcourse.html#fig:compar">1.5</a>, we superimpose the exact posterior and its numerical approximation. Clearly, the two distributions are indistinguishable, suggesting that the numerical approximation is more than fine.
 <div class="figure">
 <span style="display:block;" id="fig:compar"></span>
 <img src="bayesHMMcapturerecapture_files/figure-html/compar-1.png" alt="Comparison of exact (dashed line) vs. numerical approximation (continuous line) of winter survival posterior distribution." width="672"><p class="caption">
-Figure 1.4: Comparison of exact (dashed line) vs. numerical approximation (continuous line) of winter survival posterior distribution.
+Figure 1.5: Comparison of exact (dashed line) vs. numerical approximation (continuous line) of winter survival posterior distribution.
 </p>
 </div>
 <!-- To finish up, let's add the prior.  -->
@@ -192,26 +199,64 @@ Figure 1.4: Comparison of exact (dashed line) vs. numerical approximation (cont
 <!--             col = wesanderson::wes_palettes$Royal1[1], -->
 <!--             size = 1.5) -->
 <!-- ``` -->
-<p>In this example, we have a single parameter to estimate. This means dealing with a one-dimensional integral in the denominator which is pretty easy with a quadrature scheme and the <code>R</code> function <code><a href="https://rdrr.io/r/stats/integrate.html">integrate()</a></code>. Now what if we had multiple parameters? For example, let’s imagine you’d like to fit a capture-recapture model with detection probability <span class="math inline">\(p\)</span> and regression parameters <span class="math inline">\(\alpha\)</span> and <span class="math inline">\(\beta\)</span> for the intercept and slope of a relationship between survival probability and a covariate, then Bayes’ theorem gives you the posterior distribution of all three parameters together:</p>
+<p>The posterior distribution contains all the information we need about the parameter to be estimated. When dealing with many parameters however, you may want to summarise posterior results by calculating numerical summaries. The simplest numerical summary is the mean or the median of the posterior distribution. These can simply be calculated in <code>R</code>:</p>
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="va">sample_from_posterior</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/Beta.html">rbeta</a></span><span class="op">(</span>n <span class="op">=</span> <span class="fl">1000</span>, <span class="fl">1</span> <span class="op">+</span> <span class="fl">19</span>, <span class="fl">1</span> <span class="op">+</span> <span class="fl">57</span> <span class="op">-</span> <span class="fl">19</span><span class="op">)</span> <span class="co"># draw 1000 values from posterior distribution of survival beta(20,39)</span>
+<span class="fu"><a href="https://rdrr.io/r/base/mean.html">mean</a></span><span class="op">(</span><span class="va">sample_from_posterior</span><span class="op">)</span> <span class="co"># compute mean</span>
+<span class="co">## [1] 0.3403</span>
+<span class="fu"><a href="https://rdrr.io/r/stats/median.html">median</a></span><span class="op">(</span><span class="va">sample_from_posterior</span><span class="op">)</span> <span class="co"># compute median</span>
+<span class="co">## [1] 0.3389</span></code></pre></div>
+<p>Because the posterior distribution is rather symetric, mean and median are very similar but this is not necessarily the case. We may also check that the mean we calculate empirically matches the expectation of a beta distribution<a class="footnote-ref" tabindex="0" data-toggle="popover" data-content='&lt;p&gt;&lt;span class="math inline"&gt;\(E(\text{beta}(\alpha, \beta)) = \displaystyle{\frac{\alpha}{\alpha + \beta}}\)&lt;/span&gt;&lt;/p&gt;'><sup>7</sup></a>:</p>
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/r/base/mean.html">mean</a></span><span class="op">(</span><span class="va">sample_from_posterior</span><span class="op">)</span> <span class="co"># compute mean</span>
+<span class="co">## [1] 0.3403</span>
+<span class="fl">20</span><span class="op">/</span><span class="op">(</span><span class="fl">20</span><span class="op">+</span><span class="fl">39</span><span class="op">)</span>
+<span class="co">## [1] 0.339</span></code></pre></div>
+<p>Another useful numerical summary is the credible interval within which our parameter falls with some probability, usually 0.95 hence a 95<span class="math inline">\(\%\)</span> credible interval. This can be obtained in <code>R</code> with:</p>
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/r/stats/quantile.html">quantile</a></span><span class="op">(</span><span class="va">sample_from_posterior</span>, probs <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="fl">2.5</span><span class="op">/</span><span class="fl">100</span>, <span class="fl">97.5</span><span class="op">/</span><span class="fl">100</span><span class="op">)</span><span class="op">)</span>
+<span class="co">##   2.5%  97.5% </span>
+<span class="co">## 0.2296 0.4572</span></code></pre></div>
+<p>In our example, we have a single parameter to estimate, winter survival. This means dealing with a one-dimensional integral in the denominator which is pretty easy with a quadrature scheme and the <code>R</code> function <code><a href="https://rdrr.io/r/stats/integrate.html">integrate()</a></code>. Now what if we had multiple parameters? For example, let’s imagine you’d like to fit a capture-recapture model with detection probability <span class="math inline">\(p\)</span> and regression parameters <span class="math inline">\(\alpha\)</span> and <span class="math inline">\(\beta\)</span> for the intercept and slope of a relationship between survival probability and a covariate, then Bayes’ theorem gives you the posterior distribution of all three parameters together:</p>
 <p><span class="math display">\[ P(\alpha, \beta, p \mid \text{data}) = \frac{ P(\text{data} \mid \alpha, \beta, p) \times P(\alpha, \beta, p)}{\iiint \, P(\text{data} \mid \alpha, \beta, p) P(\alpha, \beta, p) d\alpha d\beta dp} \]</span>
-There are two computational challenges with this formula. First, do we really wish to calculate a three-dimensional integral? The answer is no, 1D or 2D integrals is so much further we can go with standard methods. Second, we’re more interested in a posterior distribution for each parameter separately than the joint posterior distribution. The so-called marginal distribution of <span class="math inline">\(p\)</span> for example is obtained by integrating over all the other parameters – a two-dimensional integral in this example. Now imagine with tens or hundreds of parameters to estimate, these integrals become highly multi-dimensional and simply too difficult to calculate. In the next section, we introduce powerful simulation methods to circumvent this issue.</p>
+There are two computational challenges with this formula. First, do we really wish to calculate a three-dimensional integral? The answer is no, one-dimensional and two-dimensional integrals are so much further we can go with standard methods. Second, we’re more interested in a posterior distribution for each parameter separately than the joint posterior distribution. The so-called marginal distribution of <span class="math inline">\(p\)</span> for example is obtained by integrating over all the other parameters – a two-dimensional integral in this example. Now imagine with tens or hundreds of parameters to estimate, these integrals become highly multi-dimensional and simply intractable. In the next section, I introduce powerful simulation methods to circumvent this issue.</p>
 </div>
 <div id="bayesian-computation-with-markov-chain-monte-carlo-mcmc" class="section level2" number="1.5">
 <h2>
 <span class="header-section-number">1.5</span> Bayesian computation with Markov chain Monte Carlo (MCMC)<a class="anchor" aria-label="anchor" href="#bayesian-computation-with-markov-chain-monte-carlo-mcmc"><i class="fas fa-link"></i></a>
 </h2>
-<p>In the early 1990s, statisticians rediscovered work from the 1950’s in physics. In a famous paper that would lay the fundations of modern Bayesian statistics (see Figure <a href="crashcourse.html#fig:mcmcpaper">1.5</a>), the authors use simulations to approximate posterior distributions with some precision by drawing large samples. This is a neat trick to avoid explicit calculation of multi-dimensional integrals we struggle with when using Bayes’ theorem. These simulation algorithms are called Markov chain Monte Carlo (MCMC), and they definitely gave a boost to Bayesian statistics. <strong>simulation algorithm ou stochastic algorithms. Expliquer.</strong></p>
+<p>In the early 1990s, statisticians rediscovered work from the 1950’s in physics. In a famous paper that would lay the fundations of modern Bayesian statistics (see Figure <a href="crashcourse.html#fig:mcmcpaper">1.6</a>), the authors use simulations to approximate posterior distributions with some precision by drawing large samples. This is a neat trick to avoid explicit calculation of the multi-dimensional integrals we struggle with when using Bayes’ theorem. These simulation algorithms are called Markov chain Monte Carlo (MCMC), and they definitely gave a boost to Bayesian statistics. There are two parts in MCMC, Markov chain and Monte Carlo. Let’s try and make sense of these terms.</p>
 <div class="figure" style="text-align: center">
 <span style="display:block;" id="fig:mcmcpaper"></span>
 <img src="images/metropolis.png" alt="MCMC article cover. Source: [The Journal of Chemical Physics](https://aip.scitation.org/doi/10.1063/1.1699114)" width="582"><p class="caption">
-Figure 1.5: MCMC article cover. Source: <a href="https://aip.scitation.org/doi/10.1063/1.1699114">The Journal of Chemical Physics</a>
+Figure 1.6: MCMC article cover. Source: <a href="https://aip.scitation.org/doi/10.1063/1.1699114">The Journal of Chemical Physics</a>
 </p>
 </div>
-<p>Why are MCMC methods so useful? Well to understand <em>why</em>, we need to better explain the <em>what</em>. MCMC are stochastic algorithms to produce sequence of dependent random numbers from a Markov chain. What is a Markov chain? A Markov chain is a discrete sequence of states, in which the probability of an event depends only on the state in the previous event. <strong>donner example de la météo?</strong> By construction, a Markov chain has an equilibrium (also know as stationary) distribution. <strong>expliquer</strong> The cool thing is that the equilibrium distribution is the desired posterior distribution. <strong>Expliquer Monte Carlo avec exemple simple, idem pour Markov chain</strong> Yes, MCMC algorithms are used to construct a Markov chain with a given stationary distribution set to be the posterior distribution. This summarizes the core spirit of MCMC algorithms.
-<strong>why is it so cool? plutôt que de simuler comme des dingues dans tous les snes, il suffit de tirer dans Markov chain, et eventuellement, on converge vers distribution statitionnaire qui est l’a posteriori! Also For the MCMC algorithm, the posterior distribution is only needed to be known up to proportionality.</strong></p>
+<p>Now what does Monte Carlo stand for? We have actually already met with this method in Section <a href="crashcourse.html#numerical-approx">1.4</a> when we calculated numerical summaries of the survival posterior distribution. Monte Carlo integration is a simulation technique to estimate integrals involving any function of the parameter <span class="math inline">\(\theta\)</span>, in which you draw samples from the posterior distribution, then calculate the sample mean of the values to which we applied the function. <strong>prendre la SD comme exemple?</strong></p>
+<p>Now what is a Markov chain? A Markov chain is a random sequence of numbers, in which each number depends only on the previous number. An example for a Markov chain is the weather in my home town in Southern France, in which a sunny day is most likely to be followed by another sunny day. Under certain conditions<a class="footnote-ref" tabindex="0" data-toggle="popover" data-content="&lt;p&gt;The Markov chain is irreducible and aperiodic.&lt;/p&gt;"><sup>8</sup></a>, a Markov chain will converge to a unique stationary distribution. The cool thing is that you can build Markov chains with a given stationary distribution set to be the desired posterior distribution. <strong>donner un exemple de Markov chain et stationary distribution</strong></p>
+<p>MCMC therefore allows us to construct a sequence of values whose distribution
+converges to the posterior distribution of interest (if the chain is run
+for long enough). Once the chain has converged to the stationary distribution,
+we can then use the sequence of values taken by the chain in order to obtain
+empirical (Monte Carlo) estimates of any posterior summaries of interest, such
+as posterior means. Note that we need to ensure that the Markov chain has
+reached the stationary distribution before we can use the realisations to obtain
+our Monte Carlo estimates of the posterior distributions of interest. This
+means that we need to discard realisations from the start of the chain and
+only use observations once the chain has converged. This initial period of the
+chain is referred to as the burn-in. We return to the issue of determining the
+length of the burn-in in Section 5.4.2, once we have described the general
+MCMC methods. We emphasise that the beauty of MCMC is that the updating
+procedure remains relatively simple, no matter how complex the posterior
+distribution of interest. Thus we can do the required integration by sampling
+from the posterior distribution, and we can sample from the posterior by generating
+a Markov chain. We construct a Markov chain using an appropriate
+updating scheme, but how do we do these updates? There are several standard
+approaches.</p>
+<p>This summarizes the core spirit of MCMC algorithms.</p>
 <p>There are several ways of constructing these chains: e.g., Metropolis-Hastings, Gibbs sampler. Have a look to <a href="https://github.com/chi-feng/mcmc-demo" class="uri">https://github.com/chi-feng/mcmc-demo</a> for an interactive gallery of MCMC algorithms. Here I will illustrate the Metropolis algorithm and how to implement it in practice. <strong>Différence entre Metropolis et MH</strong></p>
 <p>Let’s go back to our example on animal survival estimation. We illustrate sampling from survival posterior distribution. We write functions for likelihood, prior and posterior.</p>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="co"># 19 animals recaptured alive out of 57 captured, marked and released</span>
 <span class="va">survived</span> <span class="op">&lt;-</span> <span class="fl">19</span>
 <span class="va">released</span> <span class="op">&lt;-</span> <span class="fl">57</span>
@@ -239,16 +284,16 @@ Figure 1.5: MCMC article cover. Source: <a href="https://aip.scitation.org/doi/1
 <li><p>We repeat 2-4 a number of times – or <em>steps</em> (many steps).</p></li>
 </ol>
 <p>Enough of the theory, let’s implement the Metropolis algorithm in <code>R</code>. Let’s start by setting the scene.</p>
-<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">steps</span> <span class="op">&lt;-</span> <span class="fl">100</span> <span class="co"># number of steps</span>
 <span class="va">theta.post</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html">rep</a></span><span class="op">(</span><span class="cn">NA</span>, <span class="va">steps</span><span class="op">)</span> <span class="co"># vector to store samples</span>
 <span class="fu"><a href="https://rdrr.io/r/base/Random.html">set.seed</a></span><span class="op">(</span><span class="fl">1234</span><span class="op">)</span> <span class="co"># for reproducibility</span></code></pre></div>
 <p>Now we follow the 5 steps we’ve just described. First, we pick a starting value, and store it (step 1).</p>
-<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">inits</span> <span class="op">&lt;-</span> <span class="fl">0.5</span>
 <span class="va">theta.post</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="va">inits</span></code></pre></div>
 <p>To go to the next steps, we’ll need a function to propose a candidate value. <strong>expliquer le away, on s’en sert plus bas pour autocorrelation, called SD</strong></p>
-<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">move</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">x</span>, <span class="va">away</span> <span class="op">=</span> <span class="fl">.2</span><span class="op">)</span><span class="op">{</span> 
   <span class="va">logitx</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Log.html">log</a></span><span class="op">(</span><span class="va">x</span> <span class="op">/</span> <span class="op">(</span><span class="fl">1</span> <span class="op">-</span> <span class="va">x</span><span class="op">)</span><span class="op">)</span>
   <span class="va">logit_candidate</span> <span class="op">&lt;-</span> <span class="va">logitx</span> <span class="op">+</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html">rnorm</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">0</span>, <span class="va">away</span><span class="op">)</span>
@@ -256,7 +301,7 @@ Figure 1.5: MCMC article cover. Source: <a href="https://aip.scitation.org/doi/1
   <span class="kw"><a href="https://rdrr.io/r/base/function.html">return</a></span><span class="op">(</span><span class="va">candidate</span><span class="op">)</span>
 <span class="op">}</span></code></pre></div>
 <p>Now we’re ready for steps 2, 3 and 4. Actually, we will write a look to take care of step 5 as well. Remember we start at initial value 0.5 and run the algorithm for <span class="math inline">\(100\)</span> iterations.</p>
-<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="kw">for</span> <span class="op">(</span><span class="va">t</span> <span class="kw">in</span> <span class="fl">2</span><span class="op">:</span><span class="va">steps</span><span class="op">)</span><span class="op">{</span> <span class="co"># repeat steps 2-4 (step 5)</span>
   
   <span class="co"># propose candidate value for prob of success (step 2)</span>
@@ -273,38 +318,38 @@ Figure 1.5: MCMC article cover. Source: <a href="https://aip.scitation.org/doi/1
   <span class="va">theta.post</span><span class="op">[</span><span class="va">t</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/ifelse.html">ifelse</a></span><span class="op">(</span><span class="va">accept</span> <span class="op">==</span> <span class="fl">1</span>, <span class="va">theta_star</span>, <span class="va">theta.post</span><span class="op">[</span><span class="va">t</span><span class="op">-</span><span class="fl">1</span><span class="op">]</span><span class="op">)</span>
 <span class="op">}</span></code></pre></div>
 <p>We get the following values.</p>
-<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/r/utils/head.html">head</a></span><span class="op">(</span><span class="va">theta.post</span><span class="op">)</span> <span class="co"># first values</span>
 <span class="co">## [1] 0.5000 0.4399 0.4399 0.4577 0.4577 0.4577</span>
 <span class="fu"><a href="https://rdrr.io/r/utils/head.html">tail</a></span><span class="op">(</span><span class="va">theta.post</span><span class="op">)</span> <span class="co"># last values</span>
 <span class="co">## [1] 0.4146 0.3772 0.3772 0.3861 0.3899 0.3624</span></code></pre></div>
-Visually, you may look at the chain in Figure <a href="crashcourse.html#fig:chain">1.6</a>. <strong>introduire traceplot?</strong>
+Visually, you may look at the chain in Figure <a href="crashcourse.html#fig:chain">1.7</a>. <strong>introduire traceplot?</strong>
 <div class="figure" style="text-align: center">
 <span style="display:block;" id="fig:chain"></span>
 <img src="bayesHMMcapturerecapture_files/figure-html/chain-1.png" alt="Visualisation of a Markov chain, often called traceplot. Starting value is 0.5." width="672"><p class="caption">
-Figure 1.6: Visualisation of a Markov chain, often called traceplot. Starting value is 0.5.
+Figure 1.7: Visualisation of a Markov chain, often called traceplot. Starting value is 0.5.
 </p>
 </div>
-Can we run another chain and start at initial value 0.2 this time? Yes, just go through the same algorithm again, and visualise the results in Figure <a href="crashcourse.html#fig:twochains">1.7</a>.
+Can we run another chain and start at initial value 0.2 this time? Yes, just go through the same algorithm again, and visualise the results in Figure <a href="crashcourse.html#fig:twochains">1.8</a>.
 <div class="figure" style="text-align: center">
 <span style="display:block;" id="fig:twochains"></span>
 <img src="bayesHMMcapturerecapture_files/figure-html/twochains-1.png" alt="Visualisation of two Markov chains with starting values 0.2 (yellow) and 0.5 (blue)." width="672"><p class="caption">
-Figure 1.7: Visualisation of two Markov chains with starting values 0.2 (yellow) and 0.5 (blue).
+Figure 1.8: Visualisation of two Markov chains with starting values 0.2 (yellow) and 0.5 (blue).
 </p>
 </div>
-Notice that we do not get the same exact results. <strong>Stochasticity, mais on average, seems to reach same value and vary aournd it – equilibrium? Stationary? posterior of winter survival</strong> Now let’s increase the number of steps and run a chain with 5000 iterations as in Figure <a href="crashcourse.html#fig:longchain">1.8</a>.
+Notice that we do not get the same exact results. <strong>Stochasticity, mais on average, seems to reach same value and vary aournd it – equilibrium? Stationary? posterior of winter survival</strong> Now let’s increase the number of steps and run a chain with 5000 iterations as in Figure <a href="crashcourse.html#fig:longchain">1.9</a>.
 <div class="figure" style="text-align: center">
 <span style="display:block;" id="fig:longchain"></span>
 <img src="bayesHMMcapturerecapture_files/figure-html/longchain-1.png" alt="Visualisation of a Markov chains with 5000 iterations." width="672"><p class="caption">
-Figure 1.8: Visualisation of a Markov chains with 5000 iterations.
+Figure 1.9: Visualisation of a Markov chains with 5000 iterations.
 </p>
 </div>
 <p>We also add two straight lines, one in yellow for the mean of the posterior distribution <strong>dire comment c’est calculé</strong>, and the other in red for the maximum likelihood estimate <strong>c’est quoi ici?</strong>. <strong>expliquer pourquoi, et noter que ça donne la même chose</strong>.</p>
-<p>I find it informative to look at the animated version of Figure <a href="crashcourse.html#fig:longchain">1.8</a>, it helps understanding the iterative behavior of the algorithm, and also to realise how the chains converge to their stationary distribution, see Figure <a href="crashcourse.html#fig:animlongchain">1.9</a>.</p>
+<p>I find it informative to look at the animated version of Figure <a href="crashcourse.html#fig:longchain">1.9</a>, it helps understanding the iterative behavior of the algorithm, and also to realise how the chains converge to their stationary distribution, see Figure <a href="crashcourse.html#fig:animlongchain">1.10</a>.</p>
 <img src="images/traceplotMCMC.gif" width="100%" style="display: block; margin: auto;"><div class="figure" style="text-align: center">
 <span style="display:block;" id="fig:animlongchain"></span>
 <img src="images/histMCMC.gif" alt="Sampling values in survival posterior distribution with a MCMC algorithm. Top panel: traceplot. Bottom panel: histogram." width="100%"><p class="caption">
-Figure 1.9: Sampling values in survival posterior distribution with a MCMC algorithm. Top panel: traceplot. Bottom panel: histogram.
+Figure 1.10: Sampling values in survival posterior distribution with a MCMC algorithm. Top panel: traceplot. Bottom panel: histogram.
 </p>
 </div>
 <p><strong>Introduire l’idée de grass, note de bas de page vers Steve Brooks comm pers, et transition vers next section avec l’idée de comment on regarde la convergence</strong> We discard some realisations of the Markov chain before convergence is achieved. Once the stationary distribution is reached <strong>use stationary or target or limiting</strong>, we can regard the realisations of the chain as a (dependent) sample from the posterior distribution, and obtain Monte Carlo estimates of parameters. In the next section, we consider several important implementation issues. <strong>coder Metropolis d’au-dessus dans Nimble</strong></p>
@@ -319,19 +364,19 @@ Figure 1.9: Sampling values in survival posterior distribution with a MCMC algor
 <span class="header-section-number">1.6.1</span> Burn-in<a class="anchor" aria-label="anchor" href="#burn-in"><i class="fas fa-link"></i></a>
 </h3>
 <p>In practice, we discard observations from the start of the Markov chain and just use observations from the chain once it has converged. The initial observations that we discard are usually referred to as the <strong>burn-in</strong>.</p>
-<p>The simplest method to determine the length of the burn-in period is to look at trace plots. Going back to our example, we see from the trace plot in Figure <a href="crashcourse.html#fig:burnin">1.10</a> that we need at least 500 iterations to achieve convergence toward an average survival around 0.3. It is always better to be conservative when specifying the length of the burn-in period, and in this example, we would use 750 or even 1000 iterations as a burn-in. <strong>préciser qu’il faut faire qqs runs préliminaires pour déterminer le burn-in; ajouter des cas pathologiques ou faire des renvois aux sections suiantes, en particuier les minimal locaux ou par redundancy?</strong></p>
+<p>The simplest method to determine the length of the burn-in period is to look at trace plots. Going back to our example, we see from the trace plot in Figure <a href="crashcourse.html#fig:burnin">1.11</a> that we need at least 500 iterations to achieve convergence toward an average survival around 0.3. It is always better to be conservative when specifying the length of the burn-in period, and in this example, we would use 750 or even 1000 iterations as a burn-in. <strong>préciser qu’il faut faire qqs runs préliminaires pour déterminer le burn-in; ajouter des cas pathologiques ou faire des renvois aux sections suiantes, en particuier les minimal locaux ou par redundancy?</strong></p>
 <div class="figure">
 <span style="display:block;" id="fig:burnin"></span>
 <img src="bayesHMMcapturerecapture_files/figure-html/burnin-1.png" alt="Determining the length of the burn-in period." width="672"><p class="caption">
-Figure 1.10: Determining the length of the burn-in period.
+Figure 1.11: Determining the length of the burn-in period.
 </p>
 </div>
 <p>Inspecting the trace plot for a single run of the Markov chain is useful. However, we usually run the Markov chain several times, starting from different over-dispersed points, to check that all replicates achieve the same target distribution. This approach is formalised by using the Brooks-Gelman-Rubin (BGR) statistic <span class="math inline">\(\hat{R}\)</span> which measures the ratio of the total variability combining multiple chains (between-chain plus within-chain) to the within-chain variability. The BGR statistic asks whether there is a chain effect, and is very much alike the <span class="math inline">\(F\)</span> test in an analysis of variance. Values below <span class="math inline">\(1.2\)</span> indicate likely convergence. <strong>check 1.1 or 1.2</strong></p>
-<p>Back to our example, we run two replicates of the Markov chain with starting values 0.2 and 0.8 using 100 up to 5000 iterations, and calculate the BGR statistic using half the number of iterations as the length of the burn-in. From Figure <a href="crashcourse.html#fig:bgr">1.11</a>, we get a value of the BGR statistic near 1 by up to 2500 iterations, which suggests that with 2500 iterations as a burn-in, there is no evidence of a lack of convergence.</p>
+<p>Back to our example, we run two replicates of the Markov chain with starting values 0.2 and 0.8 using 100 up to 5000 iterations, and calculate the BGR statistic using half the number of iterations as the length of the burn-in. From Figure <a href="crashcourse.html#fig:bgr">1.12</a>, we get a value of the BGR statistic near 1 by up to 2500 iterations, which suggests that with 2500 iterations as a burn-in, there is no evidence of a lack of convergence.</p>
 <div class="figure">
 <span style="display:block;" id="fig:bgr"></span>
 <img src="bayesHMMcapturerecapture_files/figure-html/bgr-1.png" alt="Brooks-Gelman-Rubin statistic." width="672"><p class="caption">
-Figure 1.11: Brooks-Gelman-Rubin statistic.
+Figure 1.12: Brooks-Gelman-Rubin statistic.
 </p>
 </div>
 <p>It is important to bear in mind that a value near 1 for the BGR statistic is only a necessary <em>but not sufficient</em> condition for convergence. In other words, this diagnostic cannot tell you for sure that the Markov chain has achieved convergence, only that it has not.</p>
@@ -344,14 +389,14 @@ Figure 1.11: Brooks-Gelman-Rubin statistic.
 <div class="figure">
 <span style="display:block;" id="fig:tracechainlength"></span>
 <img src="bayesHMMcapturerecapture_files/figure-html/tracechainlength-1.png" alt="Trace plots for different tuning of the acceptance rate. Left: SD is 0.02, the chain exhibits small moves and mixing is bad. Right: SD is 2, the chain exhibits big moves and mixing is bad. Middle: SD is 0.2, the chain exhibits adequate moves and mixing is good." width="672"><p class="caption">
-Figure 1.12: Trace plots for different tuning of the acceptance rate. Left: SD is 0.02, the chain exhibits small moves and mixing is bad. Right: SD is 2, the chain exhibits big moves and mixing is bad. Middle: SD is 0.2, the chain exhibits adequate moves and mixing is good.
+Figure 1.13: Trace plots for different tuning of the acceptance rate. Left: SD is 0.02, the chain exhibits small moves and mixing is bad. Right: SD is 2, the chain exhibits big moves and mixing is bad. Middle: SD is 0.2, the chain exhibits adequate moves and mixing is good.
 </p>
 </div>
 <p>Besides trace plots, autocorrelation function (ACF) plots are a convenient way of displaying the strength of autocorrelation in a given sample values. ACF plots provide the autocorrelation between successively sampled values separated by <span class="math inline">\(k\)</span> iterations, referred to as lag, (i.e. <span class="math inline">\(\text{cor}(\theta_t, \theta_{t+k})\)</span>) for increasing values of <span class="math inline">\(k\)</span>. Figure (fig:acfchainlength)</p>
 <div class="figure">
 <span style="display:block;" id="fig:acfchainlength"></span>
 <img src="bayesHMMcapturerecapture_files/figure-html/acfchainlength-1.png" alt="Autocorrelation function plots for different tuning of the acceptance rate. Left: SD is 0.02, autocorrelation is strong, decreases slowly with increasing lag and mixing is bad. Right: SD is 2, autocorrelation is strong, decreases slowly with increasing lag and mixing is bad. Middle: SD is 0.2, autocorrelation is weak, decreases rapidly with increasing lag and mixing is good." width="672"><p class="caption">
-Figure 1.13: Autocorrelation function plots for different tuning of the acceptance rate. Left: SD is 0.02, autocorrelation is strong, decreases slowly with increasing lag and mixing is bad. Right: SD is 2, autocorrelation is strong, decreases slowly with increasing lag and mixing is bad. Middle: SD is 0.2, autocorrelation is weak, decreases rapidly with increasing lag and mixing is good.
+Figure 1.14: Autocorrelation function plots for different tuning of the acceptance rate. Left: SD is 0.02, autocorrelation is strong, decreases slowly with increasing lag and mixing is bad. Right: SD is 2, autocorrelation is strong, decreases slowly with increasing lag and mixing is bad. Middle: SD is 0.2, autocorrelation is weak, decreases rapidly with increasing lag and mixing is good.
 </p>
 </div>
 <p>Autocorrelation is not necessarily a big issue. Strongly correlated observations just require large sample sizes and therefore longer simulations. But how many iterations exactly? The effective sample size (<code>n.eff</code>) measures chain length while taking into account chain autocorrelation. Obviously, <code>n.eff</code> is less than the number of MCMC iterations. You should check the <code>n.eff</code> of every parameter of interest, and of any interesting parameter combinations. In general, we need <span class="math inline">\(\text{n.eff} \geq 100\)</span> independent steps to get reasonable Monte Carlo estimates of model parameters. <strong>calculer neff sur exemple</strong></p>
@@ -403,7 +448,7 @@ Figure 1.13: Autocorrelation function plots for different tuning of the acceptan
 <li><a class="nav-link" href="#introduction"><span class="header-section-number">1.1</span> Introduction</a></li>
 <li><a class="nav-link" href="#bayes-theorem"><span class="header-section-number">1.2</span> Bayes’ theorem</a></li>
 <li><a class="nav-link" href="#what-is-the-bayesian-approach"><span class="header-section-number">1.3</span> What is the Bayesian approach?</a></li>
-<li><a class="nav-link" href="#approximating-posterior-distributions-via-numerical-integration"><span class="header-section-number">1.4</span> Approximating posterior distributions via numerical integration</a></li>
+<li><a class="nav-link" href="#numerical-approx"><span class="header-section-number">1.4</span> Approximating posterior distributions via numerical integration</a></li>
 <li><a class="nav-link" href="#bayesian-computation-with-markov-chain-monte-carlo-mcmc"><span class="header-section-number">1.5</span> Bayesian computation with Markov chain Monte Carlo (MCMC)</a></li>
 <li>
 <a class="nav-link" href="#assessing-convergence"><span class="header-section-number">1.6</span> Assessing convergence</a><ul class="nav navbar-nav">
@@ -431,7 +476,7 @@ Figure 1.13: Autocorrelation function plots for different tuning of the acceptan
 <footer class="bg-primary text-light mt-5"><div class="container"><div class="row">
 
   <div class="col-12 col-md-6 mt-3">
-    <p>"<strong>Bayesian Analysis of Capture-Recapture Data with Hidden Markov Models – Theory and Case Studies in R</strong>" was written by Olivier Gimenez. It was last built on 2021-09-13.</p>
+    <p>"<strong>Bayesian Analysis of Capture-Recapture Data with Hidden Markov Models – Theory and Case Studies in R</strong>" was written by Olivier Gimenez. It was last built on 2021-09-14.</p>
   </div>
 
   <div class="col-12 col-md-6 mt-3">
