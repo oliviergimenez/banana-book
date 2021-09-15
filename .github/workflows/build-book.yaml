@@ -1,0 +1,67 @@
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+  schedule:
+    # run every day at 11 PM
+    - cron: '0 23 * * *'
+
+name: build-book
+
+env:
+  isExtPR: ${{ github.event.pull_request.head.repo.fork == true }}
+
+jobs:
+  build:
+    env:
+      GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
+    runs-on: macOS-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@master
+
+      - name: Setup R
+        id: install-r
+        uses: r-lib/actions/setup-r@master
+
+      - name: Setup pandoc
+        uses: r-lib/actions/setup-pandoc@master
+
+      - uses: r-lib/actions/setup-tinytex@v1
+      - name: Install tinytex
+        run: tlmgr --version
+
+      - name: Install pak and query dependencies
+        run: |
+          install.packages("pak", repos = "https://r-lib.github.io/p/pak/dev/")
+          saveRDS(pak::local_dev_deps_tree(), ".github/r-depends.rds")
+        shell: Rscript {0}
+
+      - name: Cache R packages
+        uses: actions/cache@v2
+        with:
+          path: ${{ env.R_LIBS_USER }}
+          key: ${{ runner.os }}-${{ steps.install-r.outputs.installed-r-version }}-1-${{ hashFiles('.github/r-depends.rds') }}
+          restore-keys: ${{ runner.os }}-${{ steps.install-r.outputs.installed-r-version }}-1-
+
+      - name: Install dependencies
+        run: |
+          pak::local_install_dev_deps(upgrade = TRUE)
+        shell: Rscript {0}
+
+      - name: Install PhantomJS
+        run: R -e 'webshot::install_phantomjs()'
+
+      - name: Build book
+        run: Rscript -e 'bookdown::render_book(input = "index.Rmd", output_format = "bookdown::bs4_book", output_dir = "docs", encoding = "UTF-8")'
+
+      - name: Deploy book on github pages
+        uses: JamesIves/github-pages-deploy-action@3.7.1
+        with:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          BRANCH: gh-pages
+          FOLDER: docs
+          CLEAN: true
