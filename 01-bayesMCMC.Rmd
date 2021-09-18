@@ -184,7 +184,7 @@ These simulation algorithms are called Markov chain Monte Carlo (MCMC), and they
 
 ### Monte Carlo integration
 
-What does Monte Carlo stand for? Monte Carlo integration is a simulation technique to calculate integrals of any function $f$ of parameter $\theta$, say $\int f(\theta) \Pr(\theta|\text{data} )d\theta$. You draw values from $\Pr(\theta|\text{data})$ the posterior distribution of $\theta$, apply function $f$ to these values, then calculate the mean of these new values. How is Monte Carlo integration used in a Bayesian context? The posterior distribution contains all the information we need about the parameter to be estimated. When dealing with many parameters however, you may want to summarise posterior results by calculating numerical summaries. The simplest numerical summary is the mean of the posterior distribution, $E(\theta) = \int \theta \Pr(\theta|\text{data})$, which can be calculated with Monte Carlo integration:
+What does Monte Carlo stand for? Monte Carlo integration is a simulation technique to calculate integrals of any function $f$ of random variable $X$ with distribution $\Pr(X)$, say $\int f(X) \Pr(X)dX$. You draw values $X_1,\ldots,X_k$ from $\Pr(X)$ the distribution of $X$, apply function $f$ to these values, then calculate the mean of these new values $\displaystyle{\frac{1}{k}}\sum_{i=1}^k{f(X_i)}$ to approximate the integral. How is Monte Carlo integration used in a Bayesian context? The posterior distribution contains all the information we need about the parameter to be estimated. When dealing with many parameters however, you may want to summarise posterior results by calculating numerical summaries. The simplest numerical summary is the mean of the posterior distribution, $E(\theta) = \int \theta \Pr(\theta|\text{data})$, where $X$ is $\theta$ now and $f$ is the identity function, which can be calculated with Monte Carlo integration:
 ```{r}
 sample_from_posterior <- rbeta(1000, 20, 39) # draw 1000 values from posterior survival beta(20,39)
 mean(sample_from_posterior) # compute mean with Monte Carlo integration
@@ -271,9 +271,9 @@ The Metropolis algorithm works as follows:
 
 2. To decide where to go next, we propose to move away from the current value of the parameter -- this is a *candidate* value. To do so, we add to the current value some random value from e.g. a normal distribution with some variance -- this is a *proposal* distribution. The Metropolis algorithm is a particular case of the Metropolis-Hastings algorithm with symmetric proposals.
   
-3. We compute the ratio of the probabilities at the candidate and current locations $R=\displaystyle{\frac{{\Pr(\text{candidate}|\text{data})}}{{\Pr(\text{current}|\text{data})}}}$. This is where the magic of MCMC happens, in that $\Pr(\text{data})$, the denominator in the Bayes' theorem, appears in both the numerator and the denominator in $R$ therefore cancels out and does not need to be calculated. The minimum of $R$ and 1 is called the *acceptance probability*. 
+3. We compute the ratio of the probabilities at the candidate and current locations $R=\displaystyle{\frac{{\Pr(\text{candidate}|\text{data})}}{{\Pr(\text{current}|\text{data})}}}$ -- *the Hastings ratio*. This is where the magic of MCMC happens, in that $\Pr(\text{data})$, the denominator in the Bayes' theorem, appears in both the numerator and the denominator in $R$ therefore cancels out and does not need to be calculated. 
 
-4. We spin a continuous spinner that lands somewhere between 0 and 1 -- call the random spin $X$. If $X$ is smaller than $R$, we move to the candidate location, otherwise we remain at the current location. **Give intuition, and reconcile with code below.** We do not want to accept or reject too often. In practice, the Metropolis algorithm should have an acceptance probability between 0.2 and 0.4, which can be achieved by tuning the variance of the proposal distribution. **Explain why this builds a Markov chain with a stationary distribution.**
+4. If the posterior at the candidate location $\Pr(\text{candidate}|\text{data})$ is higher than at the current location $\Pr(\text{current}|\text{data})$, or when the candidate value is more plausible than the current value, we will definitely accept the candidate value. If not, then we will accept the candidate value with probability $R$ and reject with probability $1-R$. For example, if the candidate value is ten times less plausible than the current value, then we accept with probability 0.1 and reject with probability 0.9. How does it work in practice? We use a continuous spinner that lands somewhere between 0 and 1 -- call the random spin $X$. If $X$ is smaller than $R$, we move to the candidate location, otherwise we remain at the current location.  We do not want to accept or reject too often. In practice, the Metropolis algorithm should have an acceptance probability between 0.2 and 0.4, which can be achieved by *tuning* the variance of the normal proposal distribution. 
   
 5. We repeat 2-4 a number of times -- or *steps*.
 
@@ -281,6 +281,7 @@ Enough of the theory, let's implement the Metropolis algorithm in `R`. Let's sta
 ```{r}
 steps <- 100 # number of steps
 theta.post <- rep(NA, steps) # vector to store samples
+accept <- rep(NA, steps) # keep track of accept/reject
 set.seed(1234) # for reproducibility
 ```
 
@@ -288,6 +289,7 @@ Now follow the 5 steps we've just described. First, we pick a starting value, an
 ```{r}
 inits <- 0.5
 theta.post[1] <- inits
+accept[1] <- 1
 ```
 
 Then, we will need a function to propose a candidate value. We add a value taken from a normal distribution with mean zero and standard deviation we call *away*. We work on the logit scale to make sure the candidate value for survival lies between 0 and 1. 
@@ -314,11 +316,15 @@ for (t in 2:steps){ # repeat steps 2-4 (step 5)
   R <- exp(logR)
   
   # accept candidate value or keep current value (step 4)
-  acceptance_prob <- min(R, 1)
-  accept <- rbinom(1, 1, prob = acceptance_prob) # if R > 1, then accept current value
-                                                 # if R < 1, accept current value w/ prob R 
-                                                 #           and keep current value w/ prob 1-R
-  theta.post[t] <- ifelse(accept == 1, theta_star, theta.post[t-1])
+  X <- runif(1, 0, 1) # spin continuous spinner
+  if (X < R){
+    theta.post[t] <- theta_star # accept candidate value
+    accept[t] <- 1 # reject
+  }
+  else{
+    theta.post[t] <- theta.post[t-1] # keep current value
+    accept[t] <- 0 # reject
+  }
 }
 ```
 
@@ -338,6 +344,8 @@ df %>%
   ylim(0.1, 0.6)
 ```
 
+The acceptance probability is high `r mean(accept)` and would need some tuning (try increasing the default standard deviation of 0.2). 
+
 Can we run another chain and start at initial value 0.2 this time? Yes, just go through the same algorithm again, and visualise the results in Figure \@ref(fig:twochains). 
 ```{r twochains, echo = FALSE, fig.align='center', fig.cap = "Trace plot of survival for two chains starting at 0.2 (yellow) and 0.5 (blue) run for 100 steps."}
 
@@ -355,9 +363,14 @@ for (t in 2:steps){ # repeat steps 2-4 (step 5)
   logR <- pstar - pprev
   R <- exp(logR)
   
-  # decide to accept candidate value or to keep current value (step 4)
-  accept <- rbinom(1, 1, prob = min(R, 1))
-  theta.post2[t] <- ifelse(accept == 1, theta_star, theta.post2[t-1])
+  # accept candidate value or keep current value (step 4)
+  X <- runif(1, 0, 1) # spin continuous spinner
+  if (X < R){
+    theta.post2[t] <- theta_star
+  }
+  else{
+    theta.post2[t] <- theta.post[t-1]
+  }
 }
 
 df2 <- data.frame(x = 1:steps, y = theta.post2)
@@ -368,16 +381,18 @@ ggplot() +
   ylim(0.1, 0.6)
 ```
 
-Notice that we do not get the exact same results because the algorithm is stochastic. The question is to know whether we have reached the stationary distribution. Let's increase the number of steps and run a chain with 1000 iterations as in Figure \@ref(fig:longchain).
+Notice that we do not get the exact same results because the algorithm is stochastic. The question is to know whether we have reached the stationary distribution. Let's increase the number of steps and run a chain with 5000 iterations as in Figure \@ref(fig:longchain).
 ```{r longchain, echo = FALSE, fig.align='center', fig.cap = "Trace plot of survival for a chains starting at 0.5 and 1000 steps."}
 # set up the scene
-steps <- 1000
+steps <- 5000
 theta.post <- rep(NA, steps)
+accept <- rep(NA, steps)
 set.seed(1234)
 
 # pick starting value (step 1)
 inits <- 0.5
 theta.post[1] <- inits
+accept[1] <- 1
 
 for (t in 2:steps){ # repeat steps 2-4 (step 5)
   
@@ -390,9 +405,16 @@ for (t in 2:steps){ # repeat steps 2-4 (step 5)
   logR <- pstar - pprev
   R <- exp(logR)
   
-  # decide to accept candidate value or to keep current value (step 4)
-  accept <- rbinom(1, 1, prob = min(R, 1))
-  theta.post[t] <- ifelse(accept == 1, theta_star, theta.post[t-1])
+  # accept candidate value or keep current value (step 4)
+  X <- runif(1, 0, 1) # spin continuous spinner
+  if (X < R){
+    theta.post[t] <- theta_star
+    accept[t] <- 1
+  }
+  else{
+    theta.post[t] <- theta.post[t-1]
+    accept[t] <- 0
+  }
 }
 
 df <- data.frame(x = 1:steps, y = theta.post)
@@ -466,9 +488,14 @@ metropolis <- function(steps = 100, inits = 0.5){
     logR <- pstar - pprev
     R <- exp(logR)
     
-    # decide to accept candidate value or to keep current value
-    accept <- rbinom(1, 1, prob = min(R, 1))
-    theta.post[t] <- ifelse(accept == 1, theta_star, theta.post[t-1])
+    # accept candidate value or keep current value (step 4)
+    X <- runif(1, 0, 1) # spin continuous spinner
+    if (X < R){
+      theta.post[t] <- theta_star
+    }
+    else{
+      theta.post[t] <- theta.post[t-1]
+    }
   }
   theta.post
 }
@@ -490,7 +517,7 @@ df <- data.frame(iter = rep(1:steps, 3),
 static_tsplot <- df %>%
   mutate(posterior_mean = mean(value)) %>%
   ggplot(aes(x = iter, y = value, group = chain, color = chain)) +
-  geom_line(size = 1, alpha = 0.7) + 
+  geom_line(size = 1, alpha = 0.5) + 
   geom_hline(aes(yintercept = posterior_mean, linetype = "posterior mean")) + 
   scale_linetype_manual(name = "", values = c(2,2)) + 
   labs(color = "", x = "iterations", y = "survival")
@@ -558,7 +585,7 @@ When implementing MCMC, we need to determine how long it takes for our Markov ch
   
 In practice, we discard observations from the start of the Markov chain and just use observations from the chain once it has converged. The initial observations that we discard are usually referred to as the *burn-in*. 
 
-The simplest method to determine the length of the burn-in period is to look at trace plots. Going back to our example, we see from the trace plot in Figure \@ref(fig:burnin) that we need at least 500 iterations to achieve convergence toward an average survival around 0.3. It is always better to be conservative when specifying the length of the burn-in period, and in this example, we would use 750 or even 1000 iterations as a burn-in. **Cross-reference sections on local minima and parameter redundancy for pathological cases.** The length of the burn-in period can be determined by performing preliminary MCMC short runs. 
+The simplest method to determine the length of the burn-in period is to look at trace plots. Going back to our example, we see from the trace plot in Figure \@ref(fig:burnin) that we need at least 500 iterations to achieve convergence toward an average survival around 0.3. It is always better to be conservative when specifying the length of the burn-in period, and in this example, we would use 750 or even 1000 iterations as a burn-in. The length of the burn-in period can be determined by performing preliminary MCMC short runs. 
 
 ```{r burnin, echo = FALSE, fig.cap = "Determining the length of the burn-in period. The chain starts at value 0.99 and rapidly stabilises, with values bouncing back and forth around 0.3 from the 500th iteration onwards. You may choose the shaded area as the burn-in, and discard the corresponding values."}
 
@@ -582,10 +609,15 @@ for (t in 2:steps){ # repeat steps 2-4 (step 5)
   logR <- pstar - pprev
   R <- exp(logR)
   
-  # decide to accept candidate value or to keep current value (step 4)
-  accept <- rbinom(1, 1, prob = min(R, 1))
-  theta.post[t] <- ifelse(accept == 1, theta_star, theta.post[t-1])
-}
+    # accept candidate value or keep current value (step 4)
+    X <- runif(1, 0, 1) # spin continuous spinner
+    if (X < R){
+      theta.post[t] <- theta_star
+    }
+    else{
+      theta.post[t] <- theta.post[t-1]
+    }
+  }
 
 df <- data.frame(x = 1:steps, y = theta.post)
 df %>%
@@ -626,30 +658,22 @@ simul.bgr <- function(steps, inits){
       R <- exp(logR)
       
       # decide to accept candidate value or to keep current value (step 4)
-      accept <- rbinom(1, 1, prob = min(R, 1))
-      theta.post[i,t] <- ifelse(accept == 1, theta_star, theta.post[i,t-1])
+      # accept candidate value or keep current value (step 4)
+      X <- runif(1, 0, 1) # spin continuous spinner
+      if (X < R){
+        theta.post[i,t] <- theta_star
+      }
+      else{
+        theta.post[i,t] <- theta.post[i,t-1]
+      }
     }
   }
-  
+
   df <- data.frame(x = rep(1:steps, nb.replicates), 
                    y = c(t(theta.post)), 
                    chain = paste0("chain ",gl(nb.replicates, steps))) %>%
     filter(x > round(steps/2)) # apply burnin (half number of iterations)
-  
-  # df %>%
-  #   ggplot() +
-  #   geom_line(aes(x = x, y = y, group = chain, color = chain), size = 1.2) + 
-  #   scale_colour_manual(values = wesanderson::wes_palettes$Zissou1[2:(nb.replicates+1)])+
-  #   labs(x = "iterations", y = "survival", color = NULL) + 
-  #   theme_light(base_size = 14) + 
-  #   annotate("rect", 
-  #            xmin = 0, 
-  #            xmax = 750, 
-  #            ymin = 0.1, 
-  #            ymax = 1, 
-  #            alpha = .1) +
-  #   scale_y_continuous(expand = c(0,0))
-  
+
   # compute BGR (R-hat)
   num <- quantile(df$y, probs = c(20/100, 80/100))[2] - quantile(df$y, probs = c(20/100, 80/100))[1]
   den <- df %>%
@@ -682,7 +706,7 @@ df %>%
   labs(y = "BGR statistic")
 ```
 
-It is important to bear in mind that a value near 1 for the BGR statistic is only a necessary *but not sufficient* condition for convergence. In other words, this diagnostic cannot tell you for sure that the Markov chain has achieved convergence, only that it has not.
+It is important to bear in mind that a value near 1 for the BGR statistic is only a necessary *but not sufficient* condition for convergence. In other words, this diagnostic cannot tell you for sure that the Markov chain has achieved convergence, only that it has not.^[Cross-reference sections on local minima and parameter redundancy for pathological cases.]
 
 ### Chain length
   
@@ -826,7 +850,7 @@ df <- tibble("Proposal SD" = c(0.02, 0.2, 2),
 knitr::kable(df, format = "markdown")
 ```
 
-Obviously, `n.eff` is less than the number of MCMC iterations. Only when the standard deviation of the proposal distribution is 0.2 and mixing is good (Figures \@ref(fig:tracechainlength) and \@ref(fig:acfchainlength)) we get a satisfying effective sample size. 
+As expected, `n.eff` is less than the number of MCMC iterations because of autocorrelation. Only when the standard deviation of the proposal distribution is 0.2 and mixing is good (Figures \@ref(fig:tracechainlength) and \@ref(fig:acfchainlength)) we get a satisfying effective sample size. 
 
 ### What if you have issues of convergence?
   
@@ -834,11 +858,11 @@ When diagnosing MCMC convergence, you will (very) often run into troubles. In th
 
 When mixing is bad and effective sample size is small, you may just need to increase burn-in and/or sample more. Using more informative priors might also make Markov chains converge faster by helping your MCMC sampler (e.g. the Metropolis algorithm) navigating more efficiently the parameter space. In the same spirit, picking better initial values for starting the chain does not harm. For doing that, a strategy consists in using estimates from a simpler model for which your MCMC chains do converge. 
 
-If convergence issues persist, often there is a problem with your model^[The quote 'When you have computational problems, often there's a problem with your model' is the folk theorem of statistical computing stated by Andrew Gelman in 2008, see https://statmodeling.stat.columbia.edu/2008/05/13/the_folk_theore/]. A bug in the code? A typo somewhere? A msitake in your maths? As often when coding is involved, the issue can be identified by removing complexities, and start with a simpler model until you find what the problem is. 
+If convergence issues persist, often there is a problem with your model^[The quote 'When you have computational problems, often there's a problem with your model' is the folk theorem of statistical computing stated by Andrew Gelman in 2008, see https://statmodeling.stat.columbia.edu/2008/05/13/the_folk_theore/]. A bug in the code? A typo somewhere? A mistake in your maths? As often when coding is involved, the issue can be identified by removing complexities, and start with a simpler model until you find what the problem is. 
 
-A general advice is to see your model as a data generating tool in the first place, simulate data from it using some realistic values for the parameters, and try to recover these parameter values by fitting the model to the simulated data. 
+A general advice is to see your model as a data generating tool in the first place, simulate data from it using some realistic values for the parameters, and try to recover these parameter values by fitting the model to the simulated data. Simulating from your model will help understanding how it works, what it does not do, and the data you need to get reasonable estimates. 
 
-We will also see more advanced strategies to improve convergence in the next chapters. **Cross reference relevant chapters.^[Option 1. Change your sampler. Option 2. Reparameterize (standardize covariates, plus non-centering: $\alpha \sim N(0,\sigma)$ becomes $\alpha = z \sigma$ with $z \sim N(0,1)$).]** 
+We will see other strategies to improve convergence in the next chapters.^[Cross reference relevant chapters. Option 1. Change your sampler. Option 2. Reparameterize (standardize covariates, plus non-centering: $\alpha \sim N(0,\sigma)$ becomes $\alpha = z \sigma$ with $z \sim N(0,1)$).]
 
 ## Summary
 
@@ -854,11 +878,11 @@ We will also see more advanced strategies to improve convergence in the next cha
 
 ## Suggested reading
 
-+ McCarthy, M. (2007). [Bayesian Methods for Ecology](https://www.cambridge.org/core/books/bayesian-methods-for-ecology/9225F65B8A25D69B0B6C50B5A9A78201). Cambridge: Cambridge University Press.
-
 + Gelman, A. and Hill, J. (2006). [Data Analysis Using Regression and Multilevel/Hierarchical Models (Analytical Methods for Social Research)](https://www.cambridge.org/core/books/data-analysis-using-regression-and-multilevelhierarchical-models/32A29531C7FD730C3A68951A17C9D983). Cambridge: Cambridge University Press.
 
-+ McElreath, R. (2020). [Statistical Rethinking: A Bayesian Course with Examples in R and Stan (2nd ed.)](https://xcelab.net/rm/statistical-rethinking/). CRC Press.
-
 + Gelman, A. and colleagues (2020). [Bayesian workflow](https://arxiv.org/pdf/2011.01808.pdf). arXiv preprint. 
+
++ McCarthy, M. (2007). [Bayesian Methods for Ecology](https://www.cambridge.org/core/books/bayesian-methods-for-ecology/9225F65B8A25D69B0B6C50B5A9A78201). Cambridge: Cambridge University Press.
+
++ McElreath, R. (2020). [Statistical Rethinking: A Bayesian Course with Examples in R and Stan (2nd ed.)](https://xcelab.net/rm/statistical-rethinking/). CRC Press.
 

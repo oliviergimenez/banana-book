@@ -234,11 +234,11 @@ Figure 1.7: MCMC article cover. Source: <a href="https://aip.scitation.org/doi/1
 <h3>
 <span class="header-section-number">1.5.1</span> Monte Carlo integration<a class="anchor" aria-label="anchor" href="#monte-carlo-integration"><i class="fas fa-link"></i></a>
 </h3>
-<p>What does Monte Carlo stand for? Monte Carlo integration is a simulation technique to calculate integrals of any function <span class="math inline">\(f\)</span> of parameter <span class="math inline">\(\theta\)</span>, say <span class="math inline">\(\int f(\theta) \Pr(\theta|\text{data} )d\theta\)</span>. You draw values from <span class="math inline">\(\Pr(\theta|\text{data})\)</span> the posterior distribution of <span class="math inline">\(\theta\)</span>, apply function <span class="math inline">\(f\)</span> to these values, then calculate the mean of these new values. How is Monte Carlo integration used in a Bayesian context? The posterior distribution contains all the information we need about the parameter to be estimated. When dealing with many parameters however, you may want to summarise posterior results by calculating numerical summaries. The simplest numerical summary is the mean of the posterior distribution, <span class="math inline">\(E(\theta) = \int \theta \Pr(\theta|\text{data})\)</span>, which can be calculated with Monte Carlo integration:</p>
+<p>What does Monte Carlo stand for? Monte Carlo integration is a simulation technique to calculate integrals of any function <span class="math inline">\(f\)</span> of random variable <span class="math inline">\(X\)</span> with distribution <span class="math inline">\(\Pr(X)\)</span>, say <span class="math inline">\(\int f(X) \Pr(X)dX\)</span>. You draw values <span class="math inline">\(X_1,\ldots,X_k\)</span> from <span class="math inline">\(\Pr(X)\)</span> the distribution of <span class="math inline">\(X\)</span>, apply function <span class="math inline">\(f\)</span> to these values, then calculate the mean of these new values <span class="math inline">\(\displaystyle{\frac{1}{k}}\sum_{i=1}^k{f(X_i)}\)</span> to approximate the integral. How is Monte Carlo integration used in a Bayesian context? The posterior distribution contains all the information we need about the parameter to be estimated. When dealing with many parameters however, you may want to summarise posterior results by calculating numerical summaries. The simplest numerical summary is the mean of the posterior distribution, <span class="math inline">\(E(\theta) = \int \theta \Pr(\theta|\text{data})\)</span>, where <span class="math inline">\(X\)</span> is <span class="math inline">\(\theta\)</span> now and <span class="math inline">\(f\)</span> is the identity function, which can be calculated with Monte Carlo integration:</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">sample_from_posterior</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/Beta.html">rbeta</a></span><span class="op">(</span><span class="fl">1000</span>, <span class="fl">20</span>, <span class="fl">39</span><span class="op">)</span> <span class="co"># draw 1000 values from posterior survival beta(20,39)</span>
 <span class="fu"><a href="https://rdrr.io/r/base/mean.html">mean</a></span><span class="op">(</span><span class="va">sample_from_posterior</span><span class="op">)</span> <span class="co"># compute mean with Monte Carlo integration</span>
-<span class="co">## [1] 0.3379</span></code></pre></div>
+<span class="co">## [1] 0.338</span></code></pre></div>
 <p>You may check that the mean we have just calculated matches the expectation of a beta distribution<a class="footnote-ref" tabindex="0" data-toggle="popover" data-content='&lt;p&gt;If &lt;span class="math inline"&gt;\(X\)&lt;/span&gt; is a random variable with distribution &lt;span class="math inline"&gt;\(\text{beta}(a, b)\)&lt;/span&gt;, then &lt;span class="math inline"&gt;\(E(X) = \displaystyle{\frac{a}{a + b}}\)&lt;/span&gt;&lt;/p&gt;'><sup>8</sup></a>:</p>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="fl">20</span><span class="op">/</span><span class="op">(</span><span class="fl">20</span><span class="op">+</span><span class="fl">39</span><span class="op">)</span> <span class="co"># expectation of beta(20,39)</span>
@@ -247,7 +247,7 @@ Figure 1.7: MCMC article cover. Source: <a href="https://aip.scitation.org/doi/1
 <div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/r/stats/quantile.html">quantile</a></span><span class="op">(</span><span class="va">sample_from_posterior</span>, probs <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="fl">2.5</span><span class="op">/</span><span class="fl">100</span>, <span class="fl">97.5</span><span class="op">/</span><span class="fl">100</span><span class="op">)</span><span class="op">)</span>
 <span class="co">##   2.5%  97.5% </span>
-<span class="co">## 0.2257 0.4630</span></code></pre></div>
+<span class="co">## 0.2292 0.4604</span></code></pre></div>
 </div>
 <div id="markov-chains" class="section level3" number="1.5.2">
 <h3>
@@ -318,19 +318,21 @@ Under certain conditions<a class="footnote-ref" tabindex="0" data-toggle="popove
 <ol style="list-style-type: decimal">
 <li><p>We pick a value of the parameter to be estimated. This is where we start our Markov chain – this is a <em>starting</em> value.</p></li>
 <li><p>To decide where to go next, we propose to move away from the current value of the parameter – this is a <em>candidate</em> value. To do so, we add to the current value some random value from e.g. a normal distribution with some variance – this is a <em>proposal</em> distribution. The Metropolis algorithm is a particular case of the Metropolis-Hastings algorithm with symmetric proposals.</p></li>
-<li><p>We compute the ratio of the probabilities at the candidate and current locations <span class="math inline">\(R=\displaystyle{\frac{{\Pr(\text{candidate}|\text{data})}}{{\Pr(\text{current}|\text{data})}}}\)</span>. This is where the magic of MCMC happens, in that <span class="math inline">\(\Pr(\text{data})\)</span>, the denominator in the Bayes’ theorem, appears in both the numerator and the denominator in <span class="math inline">\(R\)</span> therefore cancels out and does not need to be calculated. The minimum of <span class="math inline">\(R\)</span> and 1 is called the <em>acceptance probability</em>.</p></li>
-<li><p>We spin a continuous spinner that lands somewhere between 0 and 1 – call the random spin <span class="math inline">\(X\)</span>. If <span class="math inline">\(X\)</span> is smaller than <span class="math inline">\(R\)</span>, we move to the candidate location, otherwise we remain at the current location. <strong>Give intuition, and reconcile with code below.</strong> We do not want to accept or reject too often. In practice, the Metropolis algorithm should have an acceptance probability between 0.2 and 0.4, which can be achieved by tuning the variance of the proposal distribution. <strong>Explain why this builds a Markov chain with a stationary distribution.</strong></p></li>
+<li><p>We compute the ratio of the probabilities at the candidate and current locations <span class="math inline">\(R=\displaystyle{\frac{{\Pr(\text{candidate}|\text{data})}}{{\Pr(\text{current}|\text{data})}}}\)</span> – <em>the Hastings ratio</em>. This is where the magic of MCMC happens, in that <span class="math inline">\(\Pr(\text{data})\)</span>, the denominator in the Bayes’ theorem, appears in both the numerator and the denominator in <span class="math inline">\(R\)</span> therefore cancels out and does not need to be calculated.</p></li>
+<li><p>If the posterior at the candidate location <span class="math inline">\(\Pr(\text{candidate}|\text{data})\)</span> is higher than at the current location <span class="math inline">\(\Pr(\text{current}|\text{data})\)</span>, or when the candidate value is more plausible than the current value, we will definitely accept the candidate value. If not, then we will accept the candidate value with probability <span class="math inline">\(R\)</span> and reject with probability <span class="math inline">\(1-R\)</span>. For example, if the candidate value is ten times less plausible than the current value, then we accept with probability 0.1 and reject with probability 0.9. How does it work in practice? We use a continuous spinner that lands somewhere between 0 and 1 – call the random spin <span class="math inline">\(X\)</span>. If <span class="math inline">\(X\)</span> is smaller than <span class="math inline">\(R\)</span>, we move to the candidate location, otherwise we remain at the current location. We do not want to accept or reject too often. In practice, the Metropolis algorithm should have an acceptance probability between 0.2 and 0.4, which can be achieved by <em>tuning</em> the variance of the normal proposal distribution.</p></li>
 <li><p>We repeat 2-4 a number of times – or <em>steps</em>.</p></li>
 </ol>
 <p>Enough of the theory, let’s implement the Metropolis algorithm in <code>R</code>. Let’s start by setting the scene.</p>
 <div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">steps</span> <span class="op">&lt;-</span> <span class="fl">100</span> <span class="co"># number of steps</span>
 <span class="va">theta.post</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html">rep</a></span><span class="op">(</span><span class="cn">NA</span>, <span class="va">steps</span><span class="op">)</span> <span class="co"># vector to store samples</span>
+<span class="va">accept</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html">rep</a></span><span class="op">(</span><span class="cn">NA</span>, <span class="va">steps</span><span class="op">)</span> <span class="co"># keep track of accept/reject</span>
 <span class="fu"><a href="https://rdrr.io/r/base/Random.html">set.seed</a></span><span class="op">(</span><span class="fl">1234</span><span class="op">)</span> <span class="co"># for reproducibility</span></code></pre></div>
 <p>Now follow the 5 steps we’ve just described. First, we pick a starting value, and store it (step 1).</p>
 <div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">inits</span> <span class="op">&lt;-</span> <span class="fl">0.5</span>
-<span class="va">theta.post</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="va">inits</span></code></pre></div>
+<span class="va">theta.post</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="va">inits</span>
+<span class="va">accept</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span></code></pre></div>
 <p>Then, we will need a function to propose a candidate value. We add a value taken from a normal distribution with mean zero and standard deviation we call <em>away</em>. We work on the logit scale to make sure the candidate value for survival lies between 0 and 1.</p>
 <div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">move</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">x</span>, <span class="va">away</span> <span class="op">=</span> <span class="fl">.2</span><span class="op">)</span><span class="op">{</span> <span class="co"># by default, standard deviation of the proposal distribution is 0.2</span>
@@ -353,18 +355,22 @@ Under certain conditions<a class="footnote-ref" tabindex="0" data-toggle="popove
   <span class="va">R</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Log.html">exp</a></span><span class="op">(</span><span class="va">logR</span><span class="op">)</span>
   
   <span class="co"># accept candidate value or keep current value (step 4)</span>
-  <span class="va">acceptance_prob</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Extremes.html">min</a></span><span class="op">(</span><span class="va">R</span>, <span class="fl">1</span><span class="op">)</span>
-  <span class="va">accept</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/Binomial.html">rbinom</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">1</span>, prob <span class="op">=</span> <span class="va">acceptance_prob</span><span class="op">)</span> <span class="co"># if R &gt; 1, then accept current value</span>
-                                                 <span class="co"># if R &lt; 1, accept current value w/ prob R </span>
-                                                 <span class="co">#           and keep current value w/ prob 1-R</span>
-  <span class="va">theta.post</span><span class="op">[</span><span class="va">t</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/ifelse.html">ifelse</a></span><span class="op">(</span><span class="va">accept</span> <span class="op">==</span> <span class="fl">1</span>, <span class="va">theta_star</span>, <span class="va">theta.post</span><span class="op">[</span><span class="va">t</span><span class="op">-</span><span class="fl">1</span><span class="op">]</span><span class="op">)</span>
+  <span class="va">X</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html">runif</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">0</span>, <span class="fl">1</span><span class="op">)</span> <span class="co"># spin continuous spinner</span>
+  <span class="kw">if</span> <span class="op">(</span><span class="va">X</span> <span class="op">&lt;</span> <span class="va">R</span><span class="op">)</span><span class="op">{</span>
+    <span class="va">theta.post</span><span class="op">[</span><span class="va">t</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="va">theta_star</span> <span class="co"># accept candidate value</span>
+    <span class="va">accept</span><span class="op">[</span><span class="va">t</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span> <span class="co"># reject</span>
+  <span class="op">}</span>
+  <span class="kw">else</span><span class="op">{</span>
+    <span class="va">theta.post</span><span class="op">[</span><span class="va">t</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="va">theta.post</span><span class="op">[</span><span class="va">t</span><span class="op">-</span><span class="fl">1</span><span class="op">]</span> <span class="co"># keep current value</span>
+    <span class="va">accept</span><span class="op">[</span><span class="va">t</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0</span> <span class="co"># reject</span>
+  <span class="op">}</span>
 <span class="op">}</span></code></pre></div>
 <p>We get the following values.</p>
 <div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/r/utils/head.html">head</a></span><span class="op">(</span><span class="va">theta.post</span><span class="op">)</span> <span class="co"># first values</span>
-<span class="co">## [1] 0.5000 0.4399 0.4399 0.4577 0.4577 0.4577</span>
+<span class="co">## [1] 0.5000 0.4399 0.4555 0.3435 0.3451 0.3196</span>
 <span class="fu"><a href="https://rdrr.io/r/utils/head.html">tail</a></span><span class="op">(</span><span class="va">theta.post</span><span class="op">)</span> <span class="co"># last values</span>
-<span class="co">## [1] 0.4146 0.3772 0.3772 0.3861 0.3899 0.3624</span></code></pre></div>
+<span class="co">## [1] 0.3374 0.3374 0.3120 0.3344 0.3248 0.3370</span></code></pre></div>
 Visually, you may look at the chain in Figure <a href="crashcourse.html#fig:chain">1.8</a> called a trace plot.
 <div class="figure" style="text-align: center">
 <span style="display:block;" id="fig:chain"></span>
@@ -372,6 +378,7 @@ Visually, you may look at the chain in Figure <a href="crashcourse.html#fig:chai
 Figure 1.8: Visualisation of a Markov chain starting at value 0.5, with steps or iterations on the x-axis, and generated values on the y-axis. This graphical representation is called a trace plot.
 </p>
 </div>
+<p>The acceptance probability is high 0.79 and would need some tuning (try increasing the default standard deviation of 0.2).</p>
 Can we run another chain and start at initial value 0.2 this time? Yes, just go through the same algorithm again, and visualise the results in Figure <a href="crashcourse.html#fig:twochains">1.9</a>.
 <div class="figure" style="text-align: center">
 <span style="display:block;" id="fig:twochains"></span>
@@ -379,7 +386,7 @@ Can we run another chain and start at initial value 0.2 this time? Yes, just go 
 Figure 1.9: Trace plot of survival for two chains starting at 0.2 (yellow) and 0.5 (blue) run for 100 steps.
 </p>
 </div>
-Notice that we do not get the exact same results because the algorithm is stochastic. The question is to know whether we have reached the stationary distribution. Let’s increase the number of steps and run a chain with 1000 iterations as in Figure <a href="crashcourse.html#fig:longchain">1.10</a>.
+Notice that we do not get the exact same results because the algorithm is stochastic. The question is to know whether we have reached the stationary distribution. Let’s increase the number of steps and run a chain with 5000 iterations as in Figure <a href="crashcourse.html#fig:longchain">1.10</a>.
 <div class="figure" style="text-align: center">
 <span style="display:block;" id="fig:longchain"></span>
 <img src="banana-book_files/figure-html/longchain-1.png" alt="Trace plot of survival for a chains starting at 0.5 and 1000 steps." width="672"><p class="caption">
@@ -406,7 +413,7 @@ Figure 1.11: Animated trace plot of survival with three chains starting at 0.2, 
 <span class="header-section-number">1.6.1</span> Burn-in<a class="anchor" aria-label="anchor" href="#burn-in"><i class="fas fa-link"></i></a>
 </h3>
 <p>In practice, we discard observations from the start of the Markov chain and just use observations from the chain once it has converged. The initial observations that we discard are usually referred to as the <em>burn-in</em>.</p>
-<p>The simplest method to determine the length of the burn-in period is to look at trace plots. Going back to our example, we see from the trace plot in Figure <a href="crashcourse.html#fig:burnin">1.12</a> that we need at least 500 iterations to achieve convergence toward an average survival around 0.3. It is always better to be conservative when specifying the length of the burn-in period, and in this example, we would use 750 or even 1000 iterations as a burn-in. <strong>Cross-reference sections on local minima and parameter redundancy for pathological cases.</strong> The length of the burn-in period can be determined by performing preliminary MCMC short runs.</p>
+<p>The simplest method to determine the length of the burn-in period is to look at trace plots. Going back to our example, we see from the trace plot in Figure <a href="crashcourse.html#fig:burnin">1.12</a> that we need at least 500 iterations to achieve convergence toward an average survival around 0.3. It is always better to be conservative when specifying the length of the burn-in period, and in this example, we would use 750 or even 1000 iterations as a burn-in. The length of the burn-in period can be determined by performing preliminary MCMC short runs.</p>
 <div class="figure">
 <span style="display:block;" id="fig:burnin"></span>
 <img src="banana-book_files/figure-html/burnin-1.png" alt="Determining the length of the burn-in period. The chain starts at value 0.99 and rapidly stabilises, with values bouncing back and forth around 0.3 from the 500th iteration onwards. You may choose the shaded area as the burn-in, and discard the corresponding values." width="672"><p class="caption">
@@ -421,7 +428,7 @@ Figure 1.12: Determining the length of the burn-in period. The chain starts at v
 Figure 1.13: Brooks-Gelman-Rubin statistic as a function of the number of iterations.
 </p>
 </div>
-<p>It is important to bear in mind that a value near 1 for the BGR statistic is only a necessary <em>but not sufficient</em> condition for convergence. In other words, this diagnostic cannot tell you for sure that the Markov chain has achieved convergence, only that it has not.</p>
+<p>It is important to bear in mind that a value near 1 for the BGR statistic is only a necessary <em>but not sufficient</em> condition for convergence. In other words, this diagnostic cannot tell you for sure that the Markov chain has achieved convergence, only that it has not.<a class="footnote-ref" tabindex="0" data-toggle="popover" data-content="&lt;p&gt;Cross-reference sections on local minima and parameter redundancy for pathological cases.&lt;/p&gt;"><sup>12</sup></a></p>
 </div>
 <div id="chain-length" class="section level3" number="1.6.2">
 <h3>
@@ -462,7 +469,7 @@ Figure 1.15: Autocorrelation function plots for different values of the standard
 </tr>
 </tbody>
 </table></div>
-<p>Obviously, <code>n.eff</code> is less than the number of MCMC iterations. Only when the standard deviation of the proposal distribution is 0.2 and mixing is good (Figures <a href="crashcourse.html#fig:tracechainlength">1.14</a> and <a href="crashcourse.html#fig:acfchainlength">1.15</a>) we get a satisfying effective sample size.</p>
+<p>As expected, <code>n.eff</code> is less than the number of MCMC iterations because of autocorrelation. Only when the standard deviation of the proposal distribution is 0.2 and mixing is good (Figures <a href="crashcourse.html#fig:tracechainlength">1.14</a> and <a href="crashcourse.html#fig:acfchainlength">1.15</a>) we get a satisfying effective sample size.</p>
 </div>
 <div id="what-if-you-have-issues-of-convergence" class="section level3" number="1.6.3">
 <h3>
@@ -470,9 +477,9 @@ Figure 1.15: Autocorrelation function plots for different values of the standard
 </h3>
 <p>When diagnosing MCMC convergence, you will (very) often run into troubles. In this section I provide some tips learnt from experience.</p>
 <p>When mixing is bad and effective sample size is small, you may just need to increase burn-in and/or sample more. Using more informative priors might also make Markov chains converge faster by helping your MCMC sampler (e.g. the Metropolis algorithm) navigating more efficiently the parameter space. In the same spirit, picking better initial values for starting the chain does not harm. For doing that, a strategy consists in using estimates from a simpler model for which your MCMC chains do converge.</p>
-<p>If convergence issues persist, often there is a problem with your model<a class="footnote-ref" tabindex="0" data-toggle="popover" data-content='&lt;p&gt;The quote ‘When you have computational problems, often there’s a problem with your model’ is the folk theorem of statistical computing stated by Andrew Gelman in 2008, see &lt;a href="https://statmodeling.stat.columbia.edu/2008/05/13/the_folk_theore/" class="uri"&gt;https://statmodeling.stat.columbia.edu/2008/05/13/the_folk_theore/&lt;/a&gt;&lt;/p&gt;'><sup>12</sup></a>. A bug in the code? A typo somewhere? A msitake in your maths? As often when coding is involved, the issue can be identified by removing complexities, and start with a simpler model until you find what the problem is.</p>
-<p>A general advice is to see your model as a data generating tool in the first place, simulate data from it using some realistic values for the parameters, and try to recover these parameter values by fitting the model to the simulated data.</p>
-<p>We will also see more advanced strategies to improve convergence in the next chapters. <strong>Cross reference relevant chapters.<a class="footnote-ref" tabindex="0" data-toggle="popover" data-content='&lt;p&gt;Option 1. Change your sampler. Option 2. Reparameterize (standardize covariates, plus non-centering: &lt;span class="math inline"&gt;\(\alpha \sim N(0,\sigma)\)&lt;/span&gt; becomes &lt;span class="math inline"&gt;\(\alpha = z \sigma\)&lt;/span&gt; with &lt;span class="math inline"&gt;\(z \sim N(0,1)\)&lt;/span&gt;).&lt;/p&gt;'><sup>13</sup></a></strong></p>
+<p>If convergence issues persist, often there is a problem with your model<a class="footnote-ref" tabindex="0" data-toggle="popover" data-content='&lt;p&gt;The quote ‘When you have computational problems, often there’s a problem with your model’ is the folk theorem of statistical computing stated by Andrew Gelman in 2008, see &lt;a href="https://statmodeling.stat.columbia.edu/2008/05/13/the_folk_theore/" class="uri"&gt;https://statmodeling.stat.columbia.edu/2008/05/13/the_folk_theore/&lt;/a&gt;&lt;/p&gt;'><sup>13</sup></a>. A bug in the code? A typo somewhere? A mistake in your maths? As often when coding is involved, the issue can be identified by removing complexities, and start with a simpler model until you find what the problem is.</p>
+<p>A general advice is to see your model as a data generating tool in the first place, simulate data from it using some realistic values for the parameters, and try to recover these parameter values by fitting the model to the simulated data. Simulating from your model will help understanding how it works, what it does not do, and the data you need to get reasonable estimates.</p>
+<p>We will see other strategies to improve convergence in the next chapters.<a class="footnote-ref" tabindex="0" data-toggle="popover" data-content='&lt;p&gt;Cross reference relevant chapters. Option 1. Change your sampler. Option 2. Reparameterize (standardize covariates, plus non-centering: &lt;span class="math inline"&gt;\(\alpha \sim N(0,\sigma)\)&lt;/span&gt; becomes &lt;span class="math inline"&gt;\(\alpha = z \sigma\)&lt;/span&gt; with &lt;span class="math inline"&gt;\(z \sim N(0,1)\)&lt;/span&gt;).&lt;/p&gt;'><sup>14</sup></a></p>
 </div>
 </div>
 <div id="summary" class="section level2" number="1.7">
@@ -492,10 +499,10 @@ Figure 1.15: Autocorrelation function plots for different values of the standard
 <span class="header-section-number">1.8</span> Suggested reading<a class="anchor" aria-label="anchor" href="#suggested-reading"><i class="fas fa-link"></i></a>
 </h2>
 <ul>
-<li><p>McCarthy, M. (2007). <a href="https://www.cambridge.org/core/books/bayesian-methods-for-ecology/9225F65B8A25D69B0B6C50B5A9A78201">Bayesian Methods for Ecology</a>. Cambridge: Cambridge University Press.</p></li>
 <li><p>Gelman, A. and Hill, J. (2006). <a href="https://www.cambridge.org/core/books/data-analysis-using-regression-and-multilevelhierarchical-models/32A29531C7FD730C3A68951A17C9D983">Data Analysis Using Regression and Multilevel/Hierarchical Models (Analytical Methods for Social Research)</a>. Cambridge: Cambridge University Press.</p></li>
-<li><p>McElreath, R. (2020). <a href="https://xcelab.net/rm/statistical-rethinking/">Statistical Rethinking: A Bayesian Course with Examples in R and Stan (2nd ed.)</a>. CRC Press.</p></li>
 <li><p>Gelman, A. and colleagues (2020). <a href="https://arxiv.org/pdf/2011.01808.pdf">Bayesian workflow</a>. arXiv preprint.</p></li>
+<li><p>McCarthy, M. (2007). <a href="https://www.cambridge.org/core/books/bayesian-methods-for-ecology/9225F65B8A25D69B0B6C50B5A9A78201">Bayesian Methods for Ecology</a>. Cambridge: Cambridge University Press.</p></li>
+<li><p>McElreath, R. (2020). <a href="https://xcelab.net/rm/statistical-rethinking/">Statistical Rethinking: A Bayesian Course with Examples in R and Stan (2nd ed.)</a>. CRC Press.</p></li>
 </ul>
 </div>
 </div>
@@ -544,7 +551,7 @@ Figure 1.15: Autocorrelation function plots for different values of the standard
 <footer class="bg-primary text-light mt-5"><div class="container"><div class="row">
 
   <div class="col-12 col-md-6 mt-3">
-    <p>"<strong>Bayesian Analysis of Capture-Recapture Data with Hidden Markov Models – Theory and Case Studies in R</strong>" was written by Olivier Gimenez. It was last built on 2021-09-17.</p>
+    <p>"<strong>Bayesian Analysis of Capture-Recapture Data with Hidden Markov Models – Theory and Case Studies in R</strong>" was written by Olivier Gimenez. It was last built on 2021-09-18.</p>
   </div>
 
   <div class="col-12 col-md-6 mt-3">
