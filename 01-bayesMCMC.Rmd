@@ -294,7 +294,7 @@ accept[1] <- 1
 
 Then, we will need a function to propose a candidate value. We add a value taken from a normal distribution with mean zero and standard deviation we call *away*. We work on the logit scale to make sure the candidate value for survival lies between 0 and 1. 
 ```{r}
-move <- function(x, away = .2){ # by default, standard deviation of the proposal distribution is 0.2
+move <- function(x, away = 1){ # by default, standard deviation of the proposal distribution is 1
   logitx <- log(x / (1 - x)) # apply logit transform (-infinity,+infinity)
   logit_candidate <- logitx + rnorm(1, 0, away) # add a value taken from N(0,sd=away) to current value
   candidate <- plogis(logit_candidate) # back-transform (0,1)
@@ -344,108 +344,9 @@ df %>%
   ylim(0.1, 0.6)
 ```
 
-The acceptance probability is high `r mean(accept)` and would need some tuning (try increasing the default standard deviation of 0.2). 
+The acceptance probability is `r mean(accept)` and almost satisfying. 
 
-Can we run another chain and start at initial value 0.2 this time? Yes, just go through the same algorithm again, and visualise the results in Figure \@ref(fig:twochains). 
-```{r twochains, echo = FALSE, fig.align='center', fig.cap = "Trace plot of survival for two chains starting at 0.2 (yellow) and 0.5 (blue) run for 100 steps."}
-
-# pick starting value (step 1)
-inits <- 0.2
-theta.post2 <- rep(NA, steps)
-theta.post2[1] <- inits
-
-for (t in 2:steps){ # repeat steps 2-4 (step 5)
-  # propose candidate value for prob of success (step 2)
-  theta_star <- move(theta.post2[t-1])
-  # calculate ratio R (step 3)
-  pstar <- posterior(survived, p = theta_star)  
-  pprev <- posterior(survived, p = theta.post[t-1])
-  logR <- pstar - pprev
-  R <- exp(logR)
-  
-  # accept candidate value or keep current value (step 4)
-  X <- runif(1, 0, 1) # spin continuous spinner
-  if (X < R){
-    theta.post2[t] <- theta_star
-  }
-  else{
-    theta.post2[t] <- theta.post[t-1]
-  }
-}
-
-df2 <- data.frame(x = 1:steps, y = theta.post2)
-ggplot() +
-  geom_line(data = df, aes(x = x, y = y), size = 1.5, color = wesanderson::wes_palettes$Zissou1[1]) + 
-  geom_line(data = df2, aes(x = x, y = y), size = 1.5, color = wesanderson::wes_palettes$Zissou1[3]) + 
-  labs(x = "iterations", y = "values from posterior distribution") + 
-  ylim(0.1, 0.6)
-```
-
-Notice that we do not get the exact same results because the algorithm is stochastic. The question is to know whether we have reached the stationary distribution. Let's increase the number of steps and run a chain with 5000 iterations as in Figure \@ref(fig:longchain).
-```{r longchain, echo = FALSE, fig.align='center', fig.cap = "Trace plot of survival for a chains starting at 0.5 and 1000 steps."}
-# set up the scene
-steps <- 5000
-theta.post <- rep(NA, steps)
-accept <- rep(NA, steps)
-set.seed(1234)
-
-# pick starting value (step 1)
-inits <- 0.5
-theta.post[1] <- inits
-accept[1] <- 1
-
-for (t in 2:steps){ # repeat steps 2-4 (step 5)
-  
-  # propose candidate value for prob of success (step 2)
-  theta_star <- move(theta.post[t-1])
-  
-  # calculate ratio R (step 3)
-  pstar <- posterior(survived, p = theta_star)  
-  pprev <- posterior(survived, p = theta.post[t-1])
-  logR <- pstar - pprev
-  R <- exp(logR)
-  
-  # accept candidate value or keep current value (step 4)
-  X <- runif(1, 0, 1) # spin continuous spinner
-  if (X < R){
-    theta.post[t] <- theta_star
-    accept[t] <- 1
-  }
-  else{
-    theta.post[t] <- theta.post[t-1]
-    accept[t] <- 0
-  }
-}
-
-df <- data.frame(x = 1:steps, y = theta.post)
-df %>%
-  ggplot() +
-  geom_line(aes(x = x, y = y), size = 1, color = wesanderson::wes_palettes$Zissou1[1]) + 
-  labs(x = "iterations", y = "values from posterior distribution") + 
-  ylim(0.1, 0.6) + 
-  geom_hline(aes(yintercept = mean(theta.post), linetype = "posterior mean")) + 
-  scale_linetype_manual(name = "", values = c(2,2)) 
-#  geom_hline(aes(yintercept = ), 
-#             color = wesanderson::wes_palettes$Zissou1[3],
-#             size = 1.2) #+ 
-#  geom_hline(aes(yintercept = 19/57), 
-#             color = wesanderson::wes_palettes$Zissou1[5],
-#             size = 1.2)
-```
-
-This is what we're after, a trace plot that looks like a beautiful lawn, see Section \@ref(convergence-diag).  I find it informative to look at the animated version of Figure \@ref(fig:longchain), it helps understanding the stochastic behavior of the algorithm, and also to realise how the chains converge to their stationary distribution, see Figure \@ref(fig:animlongchain).
-
-```{r echo = FALSE, eval = FALSE}
-# load packages
-library(tidyverse)
-theme_set(theme_light(base_size = 16))
-library(gganimate)
-library(magick)
-
-# deer data, 19 "success" out of 57 "attempts"
-survived <- 19
-released <- 57
-
+```{r echo = FALSE}
 # log-likelihood function
 loglikelihood <- function(x, p){
   dbinom(x = x, size = released, prob = p, log = TRUE)
@@ -469,7 +370,7 @@ move <- function(x, away = .2){
   return(candidate)
 }
 
-metropolis <- function(steps = 100, inits = 0.5){
+metropolis <- function(steps = 100, inits = 0.5, away = 1){
   
   # pre-alloc memory
   theta.post <- rep(NA, steps)
@@ -480,7 +381,7 @@ metropolis <- function(steps = 100, inits = 0.5){
   for (t in 2:steps){
     
     # propose candidate value for prob of success
-    theta_star <- move(theta.post[t-1])
+    theta_star <- move(theta.post[t-1], away = away)
     
     # calculate ratio R
     pstar <- posterior(survived, p = theta_star)  
@@ -499,6 +400,48 @@ metropolis <- function(steps = 100, inits = 0.5){
   }
   theta.post
 }
+
+```
+
+
+Can we run another chain and start at initial value 0.2 this time? Yes, just go through the same algorithm again, and visualise the results in Figure \@ref(fig:twochains). 
+```{r twochains, echo = FALSE, fig.align='center', fig.cap = "Trace plot of survival for two chains starting at 0.2 (yellow) and 0.5 (blue) run for 100 steps."}
+theta.post2 <- metropolis(steps = 100, inits = 0.2)
+df2 <- data.frame(x = 1:steps, y = theta.post2)
+ggplot() +
+  geom_line(data = df, aes(x = x, y = y), size = 1.5, color = wesanderson::wes_palettes$Zissou1[1]) + 
+  geom_line(data = df2, aes(x = x, y = y), size = 1.5, color = wesanderson::wes_palettes$Zissou1[3]) + 
+  labs(x = "iterations", y = "values from posterior distribution") + 
+  ylim(0.1, 0.6)
+```
+
+Notice that we do not get the exact same results because the algorithm is stochastic. The question is to know whether we have reached the stationary distribution. Let's increase the number of steps and run a chain with 5000 iterations as in Figure \@ref(fig:longchain).
+```{r longchain, echo = FALSE, fig.align='center', fig.cap = "Trace plot of survival for a chains starting at 0.5 and 1000 steps."}
+steps <- 5000
+set.seed(1234)
+theta.post <- metropolis(steps = steps, inits = 0.5)
+df <- data.frame(x = 1:steps, y = theta.post)
+df %>%
+  ggplot() +
+  geom_line(aes(x = x, y = y), size = 1, color = wesanderson::wes_palettes$Zissou1[1]) + 
+  labs(x = "iterations", y = "values from posterior distribution") + 
+  ylim(0.1, 0.6) + 
+  geom_hline(aes(yintercept = mean(theta.post), linetype = "posterior mean")) + 
+  scale_linetype_manual(name = "", values = c(2,2)) 
+```
+
+This is what we're after, a trace plot that looks like a beautiful lawn, see Section \@ref(convergence-diag). I find it informative to look at the animated version of Figure \@ref(fig:longchain), it helps understanding the stochastic behavior of the algorithm, and also to realise how the chains converge to their stationary distribution, see Figure \@ref(fig:animlongchain).
+
+```{r echo = FALSE, eval = FALSE}
+# load packages
+library(tidyverse)
+theme_set(theme_light(base_size = 16))
+library(gganimate)
+library(magick)
+
+# deer data, 19 "success" out of 57 "attempts"
+survived <- 19
+released <- 57
 
 #---------- apply Metropolis
 
@@ -537,39 +480,6 @@ a_gif <- animate(animated_tsplot,
                  units = "in")
 
 # get file in directory str(a_gif)
-
-#---------- histogram
-
-# histogram
-static_hist <- df %>% 
-  mutate(posterior_mean = mean(value)) %>%
-  split(.$iter) %>% 
-  accumulate(~ bind_rows(.x, .y)) %>% 
-  bind_rows(.id = "frame") %>% 
-  mutate(frame = as.integer(frame)) %>%
-  ggplot(aes(x = value, fill = chain)) +
-  geom_histogram(color = "white", bins = 15, alpha = 0.7, position = "identity") + 
-  labs(x = "survival", y = "samples", fill = "") +
-  geom_vline(aes(xintercept = posterior_mean), lty = 2)
-static_hist
-
-# animate
-anim_hist <- static_hist + 
-  transition_manual(frame) +
-  ease_aes("linear") +
-  enter_fade() +
-  exit_fade()
-
-anim_hist
-
-# save
-b_gif <- animate(anim_hist,
-                 width = 6, 
-                 height = 3,
-                 res = 600,
-                 units = "in")
-
-# get file in directory str(b_gif)
 ```
 ```{r animlongchain, echo = FALSE, out.width="100%", fig.align='center', fig.cap = "Animated trace plot of survival with three chains starting at 0.2, 0.5 and 0.7 run for 1000 steps."}
 knitr::include_graphics("images/traceplotMCMC.gif")
@@ -591,34 +501,7 @@ The simplest method to determine the length of the burn-in period is to look at 
 
 # set up the scene
 steps <- 1000
-theta.post <- rep(NA, steps)
-set.seed(1234)
-
-# pick starting value (step 1)
-inits <- 0.99
-theta.post[1] <- inits
-
-for (t in 2:steps){ # repeat steps 2-4 (step 5)
-  
-  # propose candidate value for prob of success (step 2)
-  theta_star <- move(theta.post[t-1], away = 0.1)
-  
-  # calculate ratio R (step 3)
-  pstar <- posterior(survived, p = theta_star)  
-  pprev <- posterior(survived, p = theta.post[t-1])
-  logR <- pstar - pprev
-  R <- exp(logR)
-  
-    # accept candidate value or keep current value (step 4)
-    X <- runif(1, 0, 1) # spin continuous spinner
-    if (X < R){
-      theta.post[t] <- theta_star
-    }
-    else{
-      theta.post[t] <- theta.post[t-1]
-    }
-  }
-
+theta.post <- metropolis(steps = steps, inits = 0.99)
 df <- data.frame(x = 1:steps, y = theta.post)
 df %>%
   ggplot() +
@@ -637,38 +520,14 @@ df %>%
 Inspecting the trace plot for a single run of the Markov chain is useful. However, we usually run the Markov chain several times, starting from different over-dispersed points, to check that all replicates achieve the same target distribution. This approach is formalised by using the Brooks-Gelman-Rubin (BGR) statistic $\hat{R}$ which measures the ratio of the total variability combining multiple chains (between-chain plus within-chain) to the within-chain variability. The BGR statistic asks whether there is a chain effect, and is very much alike the $F$ test in an analysis of variance. Values below 1.1 indicate likely convergence.
 
 ```{r, echo = FALSE, cache = TRUE}
-
-# function to simulate
 simul.bgr <- function(steps, inits){
   
   nb.replicates <- length(inits)
   theta.post <- matrix(NA, nrow = nb.replicates, ncol = steps)
-  
   for (i in 1:nb.replicates){
-    theta.post[i,1] <- inits[i]
-    for (t in 2:steps){ # repeat steps 2-4 (step 5)
-      
-      # propose candidate value for prob of success (step 2)
-      theta_star <- move(theta.post[i,t-1], away = 0.1)
-      
-      # calculate ratio R (step 3)
-      pstar <- posterior(survived, p = theta_star)  
-      pprev <- posterior(survived, p = theta.post[i,t-1])
-      logR <- pstar - pprev
-      R <- exp(logR)
-      
-      # decide to accept candidate value or to keep current value (step 4)
-      # accept candidate value or keep current value (step 4)
-      X <- runif(1, 0, 1) # spin continuous spinner
-      if (X < R){
-        theta.post[i,t] <- theta_star
-      }
-      else{
-        theta.post[i,t] <- theta.post[i,t-1]
-      }
-    }
+    theta.post[i,1:steps] <- metropolis(steps = steps, inits = inits[i])
   }
-
+  
   df <- data.frame(x = rep(1:steps, nb.replicates), 
                    y = c(t(theta.post)), 
                    chain = paste0("chain ",gl(nb.replicates, steps))) %>%
@@ -697,7 +556,7 @@ for (i in 1:length(steps)){
 df <- data.frame(iterations = steps, bgr = bgr)
 ```
 
-Back to our example, we run two Markov chains with starting values 0.2 and 0.8 using 100 up to 5000 iterations, and calculate the BGR statistic using half the number of iterations as the length of the burn-in. From Figure \@ref(fig:bgr), we get a value of the BGR statistic near 1 by up to 2500 iterations, which suggests that with 2500 iterations as a burn-in, there is no evidence of a lack of convergence. 
+Back to our example, we run two Markov chains with starting values 0.2 and 0.8 using 100 up to 5000 iterations, and calculate the BGR statistic using half the number of iterations as the length of the burn-in. From Figure \@ref(fig:bgr), we get a value of the BGR statistic near 1 by up to 2000 iterations, which suggests that with 2000 iterations as a burn-in, there is no evidence of a lack of convergence. 
 
 ```{r bgr, echo=FALSE, fig.cap = "Brooks-Gelman-Rubin statistic as a function of the number of iterations."}
 df %>%
@@ -711,105 +570,19 @@ It is important to bear in mind that a value near 1 for the BGR statistic is onl
 ### Chain length
   
 ```{r, echo = FALSE}
-# from https://bookdown.org/content/3686/markov-chain-monte-carlo.html
-# specify the data, to be used in the likelihood function.
-my_data <- c(rep(0, 38), rep(1, 19))
+# inspired from https://bookdown.org/content/3686/markov-chain-monte-carlo.html
 
-# define the Bernoulli likelihood function, p(D|theta).
-# the argument theta could be a vector, not just a scalar
-likelihood <- function(theta, data) {
-  z <- sum(data)
-  n <- length(data)
-  p_data_given_theta <- theta^z * (1 - theta)^(n - z)
-  # the theta values passed into this function are generated at random,
-  # and therefore might be inadvertently greater than 1 or less than 0.
-  # the likelihood for theta > 1 or for theta < 0 is zero
-  p_data_given_theta[theta > 1 | theta < 0] <- 0
-  return(p_data_given_theta)
-}
-
-# define the prior density function. 
-prior_d <- function(theta) {
-  p_theta <- dbeta(theta, 1, 1)
-  # the theta values passed into this function are generated at random,
-  # and therefore might be inadvertently greater than 1 or less than 0.
-  # the prior for theta > 1 or for theta < 0 is zero
-  p_theta[theta > 1 | theta < 0] = 0
-  return(p_theta)
-}
-
-# define the relative probability of the target distribution, 
-# as a function of vector theta. for our application, this
-# target distribution is the unnormalized posterior distribution
-target_rel_prob <- function(theta, data) {
-  target_rel_prob <- likelihood(theta, data) * prior_d(theta)
-  return(target_rel_prob)
-}
-
-# specify the length of the trajectory, i.e., the number of jumps to try:
-traj_length <- 10000 # this is just an arbitrary large number
-
-# initialize the vector that will store the results
-trajectory <- rep(0, traj_length)
-
-# specify where to start the trajectory:
-trajectory[1] <- 0.01 # another arbitrary value
-
-# specify the burn-in period
-burn_in <- ceiling(0.0 * traj_length) # arbitrary number, less than `traj_length`
-
-# initialize accepted, rejected counters, just to monitor performance:
-n_accepted <- 0
-n_rejected <- 0
-
-my_metropolis <- function(proposal_sd) {
-  
-  # now generate the random walk. the 't' index is time or trial in the walk.
-  # specify seed to reproduce same random walk
-  set.seed(47405)
-  
-  for (t in 1:(traj_length - 1)) {
-    current_position <- trajectory[t]
-    # use the proposal distribution to generate a proposed jump
-    proposed_jump <- rnorm(1, mean = 0, sd = proposal_sd)
-    # compute the probability of accepting the proposed jump
-    prob_accept <- min(1,
-                       target_rel_prob(current_position + proposed_jump, my_data)
-                       / target_rel_prob(current_position, my_data))
-    # generate a random uniform value from the interval [0, 1] to
-    # decide whether or not to accept the proposed jump
-    if (runif(1) < prob_accept) {
-      # accept the proposed jump
-      trajectory[t + 1] <- current_position + proposed_jump
-      # increment the accepted counter, just to monitor performance
-      if (t > burn_in) {n_accepted <- n_accepted + 1}
-    } else {
-      # reject the proposed jump, stay at current position
-      trajectory[t + 1] <- current_position
-      # increment the rejected counter, just to monitor performance
-      if (t > burn_in) {n_rejected <- n_rejected + 1}
-    }
-  }
-  
-  # extract the post-burn_in portion of the trajectory
-  accepted_traj <- trajectory[(burn_in + 1) : length(trajectory)]
-  
-  tibble(accepted_traj = accepted_traj,
-         n_accepted    = n_accepted, 
-         n_rejected    = n_rejected)
-  # end of Metropolis algorithm
-  
-}
+n_steps <- 10000
 
 d <-
-  tibble(proposal_sd = c(0.02, 0.2, 2.0)) %>% 
-  mutate(accepted_traj = map(proposal_sd, my_metropolis)) %>% 
+  tibble(away = c(0.1, 1, 10)) %>% 
+  mutate(accepted_traj = map(away, metropolis, steps = n_steps, inits = 0.1)) %>% 
   unnest(accepted_traj)
 
 d <-
   d %>% 
-  mutate(proposal_sd = str_c("Proposal SD = ", proposal_sd),
-         iter        = rep(1:traj_length, times = 3))
+  mutate(proposal_sd = str_c("Proposal SD = ", away),
+         iter        = rep(1:n_steps, times = 3))
 
 trace <- d %>% 
   ggplot(aes(y = accepted_traj, x = iter)) +
@@ -817,17 +590,18 @@ trace <- d %>%
   geom_point(size = 1/2, alpha = 1/2, color = "steelblue") +
   scale_y_continuous("survival", breaks = 0:5 * 0.1, limits = c(0.15, 0.5)) +
   scale_x_continuous("iterations", 
-                     breaks = seq(traj_length-traj_length*10/100,traj_length,by = 600), 
-                     limits = c(traj_length-traj_length*10/100, traj_length)) +
+                     breaks = seq(n_steps-n_steps*10/100,n_steps,by = 600), 
+                     limits = c(n_steps-n_steps*10/100, n_steps)) +
   facet_wrap(~proposal_sd, ncol = 3) +
   theme_light(base_size = 14)
+
 library(forecast)
-plot1 <- ggAcf(x = d$accepted_traj[d$proposal_sd=="Proposal SD = 0.02"]) + ggtitle("Proposal SD = 0.02")
-plot2 <- ggAcf(x = d$accepted_traj[d$proposal_sd=="Proposal SD = 0.2"]) + ggtitle("Proposal SD = 0.2")
-plot3 <- ggAcf(x = d$accepted_traj[d$proposal_sd=="Proposal SD = 2"]) + ggtitle("Proposal SD = 2")
+plot1 <- ggAcf(x = d$accepted_traj[d$proposal_sd=="Proposal SD = 0.1"]) + ggtitle("Proposal SD = 0.1")
+plot2 <- ggAcf(x = d$accepted_traj[d$proposal_sd=="Proposal SD = 1"]) + ggtitle("Proposal SD = 1")
+plot3 <- ggAcf(x = d$accepted_traj[d$proposal_sd=="Proposal SD = 10"]) + ggtitle("Proposal SD = 10")
 ```
 
-How long of a chain is needed to produce reliable parameter estimates? To answer this question, you need to keep in mind that successive steps in a Markov chain are near each other, and are not independent -- this is usually referred to as *autocorrelation*. Ideally, we would like to keep autocorrelation as low as possible. Here again, trace plots are useful to diagnose issues with autocorrelation. Let's get back to our survival example. Figure \@ref(fig:tracechainlength) shows trace plots for different values of the standard deviation (parameter *away*) of the (normal) proposal distribution we use to propose a candidate value (Section \@ref(metropolis-algorithm)). Small and big moves provide high correlations between successive observations of the Markov chain, whereas a standard deviation of 0.2 allows efficient exploration of the parameter space. The movement around the parameter space is referred to as *mixing*. Mixing is bad when the chain makes small and big moves, and good otherwise. 
+How long of a chain is needed to produce reliable parameter estimates? To answer this question, you need to keep in mind that successive steps in a Markov chain are near each other, and are not independent -- this is usually referred to as *autocorrelation*. Ideally, we would like to keep autocorrelation as low as possible. Here again, trace plots are useful to diagnose issues with autocorrelation. Let's get back to our survival example. Figure \@ref(fig:tracechainlength) shows trace plots for different values of the standard deviation (parameter *away*) of the (normal) proposal distribution we use to propose a candidate value (Section \@ref(metropolis-algorithm)). Small and big moves provide high correlations between successive observations of the Markov chain, whereas a standard deviation of 1 allows efficient exploration of the parameter space. The movement around the parameter space is referred to as *mixing*. Mixing is bad when the chain makes small and big moves, and good otherwise. 
 
 ```{r tracechainlength, echo=FALSE, fig.cap = "Trace plots for different values of the standard deviation (SD) of the proposal distribution. Left: The chain exhibits small moves and mixing is bad. Right: The chain exhibits big moves and mixing is bad. Middle: The chain exhibits adequate moves and mixing is good. Only the thousand last iterations are shown."}
 trace
@@ -842,15 +616,15 @@ library(patchwork)
 
 Autocorrelation is not necessarily a big issue. Strongly correlated observations just require large sample sizes and therefore longer simulations. But how many iterations exactly? The effective sample size (`n.eff`) measures chain length while taking into account chain autocorrelation. You should check the `n.eff` of every parameter of interest, and of any interesting parameter combinations. In general, we need $\text{n.eff} \geq 1000$ independent steps to get reasonable Monte Carlo estimates of model parameters. In the animal survival example, `n.eff` can be calculated with the R `coda::effectiveSize()` function:
 ```{r neff, echo = FALSE}
-neff1 <- coda::effectiveSize(d$accepted_traj[d$proposal_sd=="Proposal SD = 0.02"])
-neff2 <- coda::effectiveSize(d$accepted_traj[d$proposal_sd=="Proposal SD = 0.2"])
-neff3 <- coda::effectiveSize(d$accepted_traj[d$proposal_sd=="Proposal SD = 2"])
-df <- tibble("Proposal SD" = c(0.02, 0.2, 2),
+neff1 <- coda::effectiveSize(d$accepted_traj[d$proposal_sd=="Proposal SD = 0.1"])
+neff2 <- coda::effectiveSize(d$accepted_traj[d$proposal_sd=="Proposal SD = 1"])
+neff3 <- coda::effectiveSize(d$accepted_traj[d$proposal_sd=="Proposal SD = 10"])
+df <- tibble("Proposal SD" = c(0.1, 1, 10),
                  "n.eff" = round(c(neff1, neff2, neff3)))
 knitr::kable(df, format = "markdown")
 ```
 
-As expected, `n.eff` is less than the number of MCMC iterations because of autocorrelation. Only when the standard deviation of the proposal distribution is 0.2 and mixing is good (Figures \@ref(fig:tracechainlength) and \@ref(fig:acfchainlength)) we get a satisfying effective sample size. 
+As expected, `n.eff` is less than the number of MCMC iterations because of autocorrelation. Only when the standard deviation of the proposal distribution is 1 and mixing is good (Figures \@ref(fig:tracechainlength) and \@ref(fig:acfchainlength)) we get a satisfying effective sample size. 
 
 ### What if you have issues of convergence?
   
