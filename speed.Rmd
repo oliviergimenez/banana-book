@@ -1,512 +1,512 @@
 # Fasten convergence {#speed}
 
-<!-- ## Our `nimble` workflow so far -->
-
-<!-- ```{r} -->
-<!-- knitr::include_graphics("images/nimble_workflow_sofar.png") -->
-<!-- ``` -->
-
-<!-- ## But `nimble` gives full access to the MCMC engine -->
-
-<!-- ```{r} -->
-<!-- knitr::include_graphics("images/nimble_workflow.png") -->
-<!-- ``` -->
-
-<!-- ## Steps to use NIMBLE at full capacity -->
-
-<!-- 1. Build the model. It is an R object. -->
-<!-- 2. Build the MCMC. -->
-<!-- 3. Compile the model and MCMC. -->
-<!-- 4. Run the MCMC. -->
-<!-- 5. Extract the samples. -->
-
-<!-- - `nimbleMCMC` does all of this at once. -->
-
-<!-- ## Back to CJS models with Dipper data.  -->
-
-<!-- ### Define model -->
-
-<!-- ```{r echo = FALSE} -->
-<!-- dipper <- read_csv(here::here("dat", "dipper.csv")) -->
-<!-- y <- dipper %>% -->
-<!--   select(year_1981:year_1987) %>% -->
-<!--   as.matrix() -->
-<!-- first <- apply(y, 1, function(x) min(which(x !=0))) -->
-<!-- my.constants <- list(N = nrow(y), T = ncol(y), first = first) -->
-<!-- my.data <- list(y = y + 1) -->
-<!-- zinits <- y + 1 # non-detection -> alive -->
-<!-- zinits[zinits == 2] <- 1 # dead -> alive -->
-<!-- initial.values <- function() list(phi = runif(1,0,1), -->
-<!--                                   p = runif(1,0,1), -->
-<!--                                   z = zinits) -->
-<!-- parameters.to.save <- c("phi", "p") -->
-<!-- n.iter <- 2500 -->
-<!-- n.burnin <- 1000 -->
-<!-- n.chains <- 2 -->
-<!-- ``` -->
-
-<!-- ```{r, eval = TRUE, echo = TRUE} -->
-<!-- hmm.phip <- nimbleCode({ -->
-<!--   delta[1] <- 1              # Pr(alive t = 1) = 1 -->
-<!--   delta[2] <- 0              # Pr(dead t = 1) = 0 -->
-<!--     phi ~ dunif(0, 1)     # prior survival -->
-<!--     gamma[1,1] <- phi        # Pr(alive t -> alive t+1) -->
-<!--     gamma[1,2] <- 1 - phi    # Pr(alive t -> dead t+1) -->
-<!--     gamma[2,1] <- 0          # Pr(dead t -> alive t+1) -->
-<!--     gamma[2,2] <- 1          # Pr(dead t -> dead t+1) -->
-<!--     p ~ dunif(0, 1)       # prior detection -->
-<!--     omega[1,1] <- 1 - p    # Pr(alive t -> non-detected t) -->
-<!--     omega[1,2] <- p        # Pr(alive t -> detected t) -->
-<!--     omega[2,1] <- 1        # Pr(dead t -> non-detected t) -->
-<!--     omega[2,2] <- 0        # Pr(dead t -> detected t) -->
-<!--   # likelihood -->
-<!--   for (i in 1:N){ -->
-<!--     z[i,first[i]] ~ dcat(delta[1:2]) -->
-<!--     for (j in (first[i]+1):T){ -->
-<!--       z[i,j] ~ dcat(gamma[z[i,j-1], 1:2]) -->
-<!--       y[i,j] ~ dcat(omega[z[i,j], 1:2]) -->
-<!--     } -->
-<!--   } -->
-<!-- }) -->
-<!-- ``` -->
-
-<!-- ### Run and summarise -->
-
-<!-- ```{r, eval = TRUE, echo = TRUE, cache = TRUE, message = TRUE} -->
-<!-- mcmc.phip <- nimbleMCMC(code = hmm.phip,  -->
-<!--                          constants = my.constants, -->
-<!--                          data = my.data,               -->
-<!--                          inits = initial.values, -->
-<!--                          monitors = parameters.to.save, -->
-<!--                          niter = n.iter, -->
-<!--                          nburnin = n.burnin,  -->
-<!--                          nchains = n.chains) -->
-<!-- ``` -->
-
-<!-- ```{r, eval = TRUE, echo=TRUE, message = TRUE} -->
-<!-- MCMCsummary(object = mcmc.phip, round = 2) -->
-<!-- ``` -->
-
-<!-- ## Detailed Nimble workflow -->
-
-<!-- ## 1. Build the model (R object) -->
-
-<!-- ```{r, eval = TRUE, echo = TRUE, message = TRUE} -->
-<!-- hmm.phip <- nimbleModel(code = hmm.phip, -->
-<!--                         constants = my.constants, -->
-<!--                         data = my.data, -->
-<!--                         inits = initial.values()) -->
-<!-- ``` -->
-
-<!-- ## 2. Build the MCMC -->
-
-<!-- ```{r, eval = TRUE, echo = TRUE, message = TRUE} -->
-<!-- phip.mcmc.configuration <- configureMCMC(hmm.phip) -->
-<!-- phip.mcmc <- buildMCMC(phip.mcmc.configuration) -->
-<!-- ``` -->
+## Our `nimble` workflow so far
+
+```{r}
+knitr::include_graphics("images/nimble_workflow_sofar.png")
+```
+
+## But `nimble` gives full access to the MCMC engine
+
+```{r}
+knitr::include_graphics("images/nimble_workflow.png")
+```
+
+## Steps to use NIMBLE at full capacity
+
+1. Build the model. It is an R object.
+2. Build the MCMC.
+3. Compile the model and MCMC.
+4. Run the MCMC.
+5. Extract the samples.
+
+- `nimbleMCMC` does all of this at once.
+
+## Back to CJS models with Dipper data.
+
+### Define model
+
+```{r echo = FALSE}
+dipper <- read_csv(here::here("dat", "dipper.csv"))
+y <- dipper %>%
+  select(year_1981:year_1987) %>%
+  as.matrix()
+first <- apply(y, 1, function(x) min(which(x !=0)))
+my.constants <- list(N = nrow(y), T = ncol(y), first = first)
+my.data <- list(y = y + 1)
+zinits <- y + 1 # non-detection -> alive
+zinits[zinits == 2] <- 1 # dead -> alive
+initial.values <- function() list(phi = runif(1,0,1),
+                                  p = runif(1,0,1),
+                                  z = zinits)
+parameters.to.save <- c("phi", "p")
+n.iter <- 2500
+n.burnin <- 1000
+n.chains <- 2
+```
+
+```{r, eval = TRUE, echo = TRUE}
+hmm.phip <- nimbleCode({
+  delta[1] <- 1              # Pr(alive t = 1) = 1
+  delta[2] <- 0              # Pr(dead t = 1) = 0
+    phi ~ dunif(0, 1)     # prior survival
+    gamma[1,1] <- phi        # Pr(alive t -> alive t+1)
+    gamma[1,2] <- 1 - phi    # Pr(alive t -> dead t+1)
+    gamma[2,1] <- 0          # Pr(dead t -> alive t+1)
+    gamma[2,2] <- 1          # Pr(dead t -> dead t+1)
+    p ~ dunif(0, 1)       # prior detection
+    omega[1,1] <- 1 - p    # Pr(alive t -> non-detected t)
+    omega[1,2] <- p        # Pr(alive t -> detected t)
+    omega[2,1] <- 1        # Pr(dead t -> non-detected t)
+    omega[2,2] <- 0        # Pr(dead t -> detected t)
+  # likelihood
+  for (i in 1:N){
+    z[i,first[i]] ~ dcat(delta[1:2])
+    for (j in (first[i]+1):T){
+      z[i,j] ~ dcat(gamma[z[i,j-1], 1:2])
+      y[i,j] ~ dcat(omega[z[i,j], 1:2])
+    }
+  }
+})
+```
+
+### Run and summarise
+
+```{r, eval = TRUE, echo = TRUE, cache = TRUE, message = TRUE}
+mcmc.phip <- nimbleMCMC(code = hmm.phip,
+                         constants = my.constants,
+                         data = my.data,
+                         inits = initial.values,
+                         monitors = parameters.to.save,
+                         niter = n.iter,
+                         nburnin = n.burnin,
+                         nchains = n.chains)
+```
+
+```{r, eval = TRUE, echo=TRUE, message = TRUE}
+MCMCsummary(object = mcmc.phip, round = 2)
+```
+
+## Detailed Nimble workflow
+
+## 1. Build the model (R object)
+
+```{r, eval = TRUE, echo = TRUE, message = TRUE}
+hmm.phip <- nimbleModel(code = hmm.phip,
+                        constants = my.constants,
+                        data = my.data,
+                        inits = initial.values())
+```
+
+## 2. Build the MCMC
+
+```{r, eval = TRUE, echo = TRUE, message = TRUE}
+phip.mcmc.configuration <- configureMCMC(hmm.phip)
+phip.mcmc <- buildMCMC(phip.mcmc.configuration)
+```
 
-<!-- ## 3. Compile the model and MCMC -->
+## 3. Compile the model and MCMC
 
-<!-- ```{r, eval = TRUE, echo = TRUE, message = TRUE} -->
-<!-- phip.model <- compileNimble(hmm.phip)  -->
-<!-- c.phip.mcmc <- compileNimble(phip.mcmc, project = phip.model) -->
-<!-- ``` -->
+```{r, eval = TRUE, echo = TRUE, message = TRUE}
+phip.model <- compileNimble(hmm.phip)
+c.phip.mcmc <- compileNimble(phip.mcmc, project = phip.model)
+```
 
-<!-- ## 4. Run the MCMC -->
+## 4. Run the MCMC
 
 
-<!-- ```{r, eval = TRUE, echo = TRUE, message = TRUE} -->
-<!-- samples <- runMCMC(c.phip.mcmc, niter = 1000) -->
-<!-- # Alternative: -->
-<!-- # c.phip.mcmc$run(1000) -->
-<!-- # samples <- as.matrix(c.phip.mcmc$mvSamples) -->
-<!-- ``` -->
-
-<!-- ## 5. Look at results -->
-
-<!-- ```{r, eval = TRUE, echo = TRUE, message = TRUE} -->
-<!-- summary(samples[,"phi"]) -->
-<!-- summary(samples[,"p"]) -->
-<!-- ``` -->
-
-<!-- ## Why is it useful?  -->
-
-<!-- ## Use and debug model in `R` -->
-
-<!-- + Makes your life easier when it comes to debugging -->
-
-<!-- + Inspect variables -->
-
-<!-- ```{r} -->
-<!-- hmm.phip$gamma -->
-<!-- ``` -->
-
-<!-- + Calculate likelihood -->
-
-<!-- ```{r} -->
-<!-- hmm.phip$calculate() -->
-<!-- ``` -->
-
-<!-- ## Example of debugging a model in `R` -->
-
-<!-- + Pretend an impossible state was given in inits, making a dead bird alive again. -->
-
-<!-- ```{r echo=FALSE} -->
-<!-- # Pretend that inits for the 6th bird are invalid, going from dead to alive. -->
-<!-- saved_z_6 <- phip.model$z[6,] -->
-<!-- phip.model$z[6,] <- c(1, 1, 2, 1, 2, 2, 2) -->
-<!-- ``` -->
-
-<!-- ```{r, eval = TRUE, echo = TRUE, message = TRUE} -->
-<!-- phip.model$calculate("z")        # We can see there is a problem in z (states). -->
-<!-- c(phip.model$calculate("z[5,]"), # Bird 5 is valid. -->
-<!--   phip.model$calculate("z[6,]")) # Bird 6 isn't. -->
-<!-- phip.model$z[6,]                 # We have found the problem -->
-<!-- ``` -->
-
-<!-- ```{r echo=FALSE} -->
-<!-- # Restore to valid valies -->
-<!-- phip.model$z[6,] <- saved_z_6 -->
-<!-- ``` -->
-
-<!-- ## Open the hood, and change/modify/write samplers -->
-
-<!-- + Slice samplers instead of Metropolis-Hastings. -->
-
-<!-- + Samplers on a log scale, especially for a variance, standard deviation, or precision parameter. -->
-
-<!-- + Blocking correlated parameters. -->
-
-<!-- + To know all samplers available in Nimble, type in `help(samplers)`. -->
-
-<!-- + Source code for samplers and distributions is **in R** and can be copied and modified. -->
-
-<!-- + Use [`compareMCMCs` package](https://github.com/nimble-dev/compareMCMCs) to compare options (including Stan and Jags!).  -->
-
-<!-- ## Consider a model with wing length and individual random effect on survival.   -->
-
-<!-- ```{r echo = FALSE} -->
-<!-- dipper <- read_csv(here::here("dat", "dipper.csv")) -->
-<!-- y <- dipper %>% -->
-<!--   select(year_1981:year_1987) %>% -->
-<!--   as.matrix() -->
-<!-- first <- apply(y, 1, function(x) min(which(x !=0))) -->
-<!-- wing.length.st <- as.vector(scale(dipper$wing_length)) -->
-<!-- my.constants <- list(N = nrow(y),  -->
-<!--                      T = ncol(y),  -->
-<!--                      first = first, -->
-<!--                      winglength = wing.length.st) -->
-<!-- zinits <- y + 1 # non-detection -> alive -->
-<!-- zinits[zinits == 2] <- 1 # dead -> alive -->
-<!-- initial.values <- function() list(beta = rnorm(2,0,1.5), -->
-<!--                                   sdeps = runif(1,0,3), -->
-<!--                                   p = runif(1,0,1), -->
-<!--                                   z = zinits) -->
-<!-- parameters.to.save <- c("beta", "sdeps", "p") -->
-<!-- n.iter <- 10000 -->
-<!-- n.burnin <- 2500 -->
-<!-- n.chains <- 2 -->
-<!-- ``` -->
-
-<!-- ```{r} -->
-<!-- hmm.phiwlrep <- nimbleCode({ -->
-<!--     p ~ dunif(0, 1) # prior detection -->
-<!--     omega[1,1] <- 1 - p    # Pr(alive t -> non-detected t) -->
-<!--     omega[1,2] <- p        # Pr(alive t -> detected t) -->
-<!--     omega[2,1] <- 1        # Pr(dead t -> non-detected t) -->
-<!--     omega[2,2] <- 0        # Pr(dead t -> detected t) -->
-<!--   for (i in 1:N){ -->
-<!--     logit(phi[i]) <- beta[1] + beta[2] * winglength[i] + eps[i] #<< -->
-<!--     eps[i] ~ dnorm(mean = 0, sd = sdeps) #<< -->
-<!--     gamma[1,1,i] <- phi[i]      # Pr(alive t -> alive t+1) -->
-<!--     gamma[1,2,i] <- 1 - phi[i]  # Pr(alive t -> dead t+1) -->
-<!--     gamma[2,1,i] <- 0           # Pr(dead t -> alive t+1) -->
-<!--     gamma[2,2,i] <- 1           # Pr(dead t -> dead t+1) -->
-<!--   } -->
-<!--   beta[1] ~ dnorm(mean = 0, sd = 1.5) -->
-<!--   beta[2] ~ dnorm(mean = 0, sd = 1.5) -->
-<!--   sdeps ~ dunif(0, 10) -->
-<!--   delta[1] <- 1          # Pr(alive t = 1) = 1 -->
-<!--   delta[2] <- 0          # Pr(dead t = 1) = 0 -->
-<!--   # likelihood -->
-<!--   for (i in 1:N){ -->
-<!--     z[i,first[i]] ~ dcat(delta[1:2]) -->
-<!--     for (j in (first[i]+1):T){ -->
-<!--       z[i,j] ~ dcat(gamma[z[i,j-1], 1:2, i]) #<< -->
-<!--       y[i,j] ~ dcat(omega[z[i,j], 1:2]) -->
-<!--     } -->
-<!--   } -->
-<!-- }) -->
-<!-- ``` -->
-
-<!-- ```{r echo = FALSE, eval = FALSE} -->
-<!-- # mcmc.phiwlrep <- nimbleMCMC(code = hmm.phiwlrep,  -->
-<!-- #                             constants = my.constants, -->
-<!-- #                             data = my.data,               -->
-<!-- #                             inits = initial.values, -->
-<!-- #                             monitors = parameters.to.save, -->
-<!-- #                             niter = n.iter, -->
-<!-- #                             nburnin = n.burnin,  -->
-<!-- #                             nchains = n.chains) -->
-<!-- hmm.phiwlrep.m <- nimbleModel(code = hmm.phiwlrep, -->
-<!--                               constants = my.constants, -->
-<!--                               data = my.data, -->
-<!--                               inits = initial.values()) -->
-<!-- Rmcmc <- buildMCMC(hmm.phiwlrep.m) -->
-<!-- Cmodel <- compileNimble(hmm.phiwlrep.m) -->
-<!-- Cmcmc <- compileNimble(Rmcmc, project=hmm.phiwlrep.m) -->
-<!-- times.phiwlrep <- system.time( mcmc.phiwlrep <- runMCMC(Cmcmc, niter = 10000, nchains = 2) ) -->
-<!-- # Alternative: -->
-<!-- # Cmcmc$run(10000) -->
-<!-- # samples1 <- as.matrix(Cmcmc$mvSamples) -->
-<!-- # Cmcmc$run(10000) -->
-<!-- # samples2 <- as.matrix(Cmcmc$mvSamples) -->
-<!-- save(times.phiwlrep, mcmc.phiwlrep, file = here::here("dat", "wl.RData")) -->
-<!-- ``` -->
-
-<!-- ## Trace plot for standard deviation of the random effect (default sampler) -->
-
-<!-- ```{r echo = FALSE, message=FALSE, warning=FALSE}  -->
-<!-- load(here::here("dat", "wl.RData")) -->
-<!-- ``` -->
-
-<!-- ```{r, echo = FALSE} -->
-<!-- MCMCtrace(mcmc.phiwlrep, params = "sdeps", pdf = FALSE) -->
-<!-- ``` -->
-
-<!-- ## Change samplers -->
-
-<!-- + Good sampling strategies depend on the model and data.  What are the samplers used by default? -->
-
-<!-- ```{r echo = FALSE} -->
-<!-- hmm.phiwlrep.m <- nimbleModel(code = hmm.phiwlrep, -->
-<!--                               constants = my.constants, -->
-<!--                               data = my.data, -->
-<!--                               inits = initial.values()) -->
-<!-- ``` -->
-
-
-<!-- ```{r} -->
-<!-- mcmcConf <- configureMCMC(hmm.phiwlrep.m) -->
-<!-- ``` -->
-
-<!-- ## Remove default sampler, and use slice sampler -->
-
-<!-- ```{r} -->
-<!-- mcmcConf$removeSamplers('sdeps') -->
-<!-- mcmcConf$addSampler(target = 'sdeps', -->
-<!--                     type = "slice") #<< -->
-<!-- mcmcConf -->
-<!-- ``` -->
-
-<!-- ```{r, echo = FALSE} -->
-<!-- Rmcmc <- buildMCMC(mcmcConf) -->
-<!-- Cmodel <- compileNimble(hmm.phiwlrep.m) -->
-<!-- Cmcmc <- compileNimble(Rmcmc, project=hmm.phiwlrep.m) -->
-<!-- times.phiwlrep.with.slice <- system.time( mcmc.phiwlrep.with.slice <- runMCMC(Cmcmc, niter = 10000, nchains = 2)) -->
-<!-- samples1 <- mcmc.phiwlrep.with.slice[[1]] -->
-<!-- samples2 <- mcmc.phiwlrep.with.slice[[2]] -->
-<!-- iUse <- 2501:10000 -->
-<!-- ESS.with.slice <- coda::effectiveSize(list(coda::as.mcmc(samples1[iUse, 'sdeps']), -->
-<!--                                            coda::as.mcmc(samples2[iUse, 'sdeps']))) -->
-<!-- # Cmcmc$run(10000) -->
-<!-- # samples1 <- as.matrix(Cmcmc$mvSamples) -->
-<!-- # Cmcmc$run(10000) -->
-<!-- # samples2 <- as.matrix(Cmcmc$mvSamples) -->
-<!-- df <- data.frame(iter = c(2501:10000, 2501:10000), -->
-<!--                  samples = c(samples1[2501:10000,"sdeps"], samples2[2501:10000,"sdeps"]), -->
-<!--                  chain = c(rep("chain 1", length(samples1[2501:10000,"sdeps"])), -->
-<!--                            rep("chain 2", length(samples2[2501:10000,"sdeps"])))) -->
-<!-- df.beta <- data.frame(iter = c(2501:10000, 2501:10000), -->
-<!--                  beta1 = c(samples1[2501:10000,"beta[1]"], samples2[2501:10000,"beta[1]"]), -->
-<!--                  beta2 = c(samples1[2501:10000,"beta[2]"], samples2[2501:10000,"beta[2]"]), -->
-<!--                  chain = c(rep("chain 1", length(samples1[2501:10000,"sdeps"])), -->
-<!--                            rep("chain 2", length(samples2[2501:10000,"sdeps"])))) -->
-<!-- ``` -->
-
-<!-- ## Trace plot for standard deviation of the random effect (slice sampler) -->
-
-<!-- ```{r, echo = FALSE} -->
-<!-- MCMCtrace(mcmc.phiwlrep.with.slice, params = "sdeps", pdf = FALSE) -->
-<!-- ``` -->
-
-<!-- ```{r, echo = FALSE} -->
-<!-- # df %>% -->
-<!-- #   ggplot() +  -->
-<!-- #   aes(x = iter, y = samples, group = chain, color = chain) +  -->
-<!-- #   geom_line() +  -->
-<!-- #   labs(x = "iterations", y = "random effect standard deviation", color = "") -->
-<!-- ``` -->
-
-<!-- ## Which is better? -->
-
-<!-- + MCMC efficiency depends on both mixing and computation time. -->
-
-<!-- + MCMC efficiency = Effective Sample Size (ESS) / computation time. -->
-
-<!-- + MCMC efficiency is the number of effectively independent posterior samples generated per second. -->
-
-<!-- + ESS is different for each parameter.  (Computation time is the same for each parameter.) -->
-
-<!-- + ESS can be estimated from packages `coda` or `mcmcse`. These give statistical estimates, so different runs will give different estimates. -->
-
-<!-- ```{r echo = FALSE} -->
-<!-- iUse <- 2501:10000 -->
-<!-- time_frac <- 0.75 # Include 75% of the time to count sampling of recorded sampled, which is not the only valid option. -->
-<!-- ESS <- coda::effectiveSize(list(coda::as.mcmc(mcmc.phiwlrep[[1]][iUse, 'sdeps']), -->
-<!--                                         coda::as.mcmc(mcmc.phiwlrep[[2]][iUse, 'sdeps']))) -->
-<!-- t1 <- (time_frac * times.phiwlrep[3]) -->
-<!-- efficiency <- ESS / t1 -->
-<!-- t.with.slice <- (time_frac * times.phiwlrep.with.slice[3]) -->
-<!-- efficiency.with.slice <- ESS.with.slice / t.with.slice -->
-<!-- rd2 <- function(x) round(x, digits = 2) -->
-<!-- ``` -->
-
-<!-- + Efficiency with default sampler = `r rd2(ESS)` / `r rd2(t1)` = `r rd2(efficiency)`. -->
-
-<!-- + Efficiency with slice sampler = `r rd2(ESS.with.slice)` / `r rd2(t.with.slice)` = `r rd2(efficiency.with.slice)`. -->
-
-<!-- ## Block sampling -->
-
-<!-- + High correlation in (regression) parameters may make independent samplers inefficient. -->
-
-<!-- ```{r, echo = FALSE} -->
-<!-- df.beta %>% -->
-<!--   ggplot() +  -->
-<!--   aes(x = beta1, y = beta2, group = chain, color = chain) + -->
-<!--   geom_point(alpha = .05) +  -->
-<!--   labs(x = "beta1", y = "beta2", color = "") -->
-<!-- ``` -->
-
-<!-- + Block sampling (propose candidate values from multivariate distribution) might help. -->
-
-<!-- ## Block sampling -->
-
-<!-- + Remove and replace independent RW samples by block sampling. Then proceed as usual. -->
-
-<!-- ```{r message = FALSE, warning=FALSE} -->
-<!-- mcmcConf$removeSamplers(c('beta[1]','beta[2]')) -->
-<!-- mcmcConf$addSampler(target = c('beta[1]','beta[2]'), -->
-<!--                     type = "RW_block") #<< -->
-<!-- ``` -->
-
-<!-- ## Block sampling -->
-
-<!-- ```{r message = FALSE, warning=FALSE} -->
-<!-- mcmcConf -->
-<!-- ``` -->
-
-<!-- ## Summary of strategies for improving MCMC  -->
-
-
-<!-- + Choose better initial values. -->
-
-<!-- + Customize sampler choice (more in [Chapter 7 of the User's manual](https://r-nimble.org/html_manual/cha-mcmc.html)). -->
-
-<!-- + Reparameterize, e.g. standardize covariates, deal with parameter redundancy. -->
+```{r, eval = TRUE, echo = TRUE, message = TRUE}
+samples <- runMCMC(c.phip.mcmc, niter = 1000)
+# Alternative:
+# c.phip.mcmc$run(1000)
+# samples <- as.matrix(c.phip.mcmc$mvSamples)
+```
+
+## 5. Look at results
+
+```{r, eval = TRUE, echo = TRUE, message = TRUE}
+summary(samples[,"phi"])
+summary(samples[,"p"])
+```
+
+## Why is it useful?
+
+## Use and debug model in `R`
+
++ Makes your life easier when it comes to debugging
+
++ Inspect variables
+
+```{r}
+hmm.phip$gamma
+```
+
++ Calculate likelihood
+
+```{r}
+hmm.phip$calculate()
+```
+
+## Example of debugging a model in `R`
+
++ Pretend an impossible state was given in inits, making a dead bird alive again.
+
+```{r echo=FALSE}
+# Pretend that inits for the 6th bird are invalid, going from dead to alive.
+saved_z_6 <- phip.model$z[6,]
+phip.model$z[6,] <- c(1, 1, 2, 1, 2, 2, 2)
+```
+
+```{r, eval = TRUE, echo = TRUE, message = TRUE}
+phip.model$calculate("z")        # We can see there is a problem in z (states).
+c(phip.model$calculate("z[5,]"), # Bird 5 is valid.
+  phip.model$calculate("z[6,]")) # Bird 6 isn't.
+phip.model$z[6,]                 # We have found the problem
+```
+
+```{r echo=FALSE}
+# Restore to valid valies
+phip.model$z[6,] <- saved_z_6
+```
+
+## Open the hood, and change/modify/write samplers
+
++ Slice samplers instead of Metropolis-Hastings.
+
++ Samplers on a log scale, especially for a variance, standard deviation, or precision parameter.
+
++ Blocking correlated parameters.
+
++ To know all samplers available in Nimble, type in `help(samplers)`.
+
++ Source code for samplers and distributions is **in R** and can be copied and modified.
+
++ Use [`compareMCMCs` package](https://github.com/nimble-dev/compareMCMCs) to compare options (including Stan and Jags!).
+
+## Consider a model with wing length and individual random effect on survival.
+
+```{r echo = FALSE}
+dipper <- read_csv(here::here("dat", "dipper.csv"))
+y <- dipper %>%
+  select(year_1981:year_1987) %>%
+  as.matrix()
+first <- apply(y, 1, function(x) min(which(x !=0)))
+wing.length.st <- as.vector(scale(dipper$wing_length))
+my.constants <- list(N = nrow(y),
+                     T = ncol(y),
+                     first = first,
+                     winglength = wing.length.st)
+zinits <- y + 1 # non-detection -> alive
+zinits[zinits == 2] <- 1 # dead -> alive
+initial.values <- function() list(beta = rnorm(2,0,1.5),
+                                  sdeps = runif(1,0,3),
+                                  p = runif(1,0,1),
+                                  z = zinits)
+parameters.to.save <- c("beta", "sdeps", "p")
+n.iter <- 10000
+n.burnin <- 2500
+n.chains <- 2
+```
+
+```{r}
+hmm.phiwlrep <- nimbleCode({
+    p ~ dunif(0, 1) # prior detection
+    omega[1,1] <- 1 - p    # Pr(alive t -> non-detected t)
+    omega[1,2] <- p        # Pr(alive t -> detected t)
+    omega[2,1] <- 1        # Pr(dead t -> non-detected t)
+    omega[2,2] <- 0        # Pr(dead t -> detected t)
+  for (i in 1:N){
+    logit(phi[i]) <- beta[1] + beta[2] * winglength[i] + eps[i] #<<
+    eps[i] ~ dnorm(mean = 0, sd = sdeps) #<<
+    gamma[1,1,i] <- phi[i]      # Pr(alive t -> alive t+1)
+    gamma[1,2,i] <- 1 - phi[i]  # Pr(alive t -> dead t+1)
+    gamma[2,1,i] <- 0           # Pr(dead t -> alive t+1)
+    gamma[2,2,i] <- 1           # Pr(dead t -> dead t+1)
+  }
+  beta[1] ~ dnorm(mean = 0, sd = 1.5)
+  beta[2] ~ dnorm(mean = 0, sd = 1.5)
+  sdeps ~ dunif(0, 10)
+  delta[1] <- 1          # Pr(alive t = 1) = 1
+  delta[2] <- 0          # Pr(dead t = 1) = 0
+  # likelihood
+  for (i in 1:N){
+    z[i,first[i]] ~ dcat(delta[1:2])
+    for (j in (first[i]+1):T){
+      z[i,j] ~ dcat(gamma[z[i,j-1], 1:2, i]) #<<
+      y[i,j] ~ dcat(omega[z[i,j], 1:2])
+    }
+  }
+})
+```
+
+```{r echo = FALSE, eval = FALSE}
+# mcmc.phiwlrep <- nimbleMCMC(code = hmm.phiwlrep,
+#                             constants = my.constants,
+#                             data = my.data,
+#                             inits = initial.values,
+#                             monitors = parameters.to.save,
+#                             niter = n.iter,
+#                             nburnin = n.burnin,
+#                             nchains = n.chains)
+hmm.phiwlrep.m <- nimbleModel(code = hmm.phiwlrep,
+                              constants = my.constants,
+                              data = my.data,
+                              inits = initial.values())
+Rmcmc <- buildMCMC(hmm.phiwlrep.m)
+Cmodel <- compileNimble(hmm.phiwlrep.m)
+Cmcmc <- compileNimble(Rmcmc, project=hmm.phiwlrep.m)
+times.phiwlrep <- system.time( mcmc.phiwlrep <- runMCMC(Cmcmc, niter = 10000, nchains = 2) )
+# Alternative:
+# Cmcmc$run(10000)
+# samples1 <- as.matrix(Cmcmc$mvSamples)
+# Cmcmc$run(10000)
+# samples2 <- as.matrix(Cmcmc$mvSamples)
+save(times.phiwlrep, mcmc.phiwlrep, file = here::here("dat", "wl.RData"))
+```
+
+## Trace plot for standard deviation of the random effect (default sampler)
+
+```{r echo = FALSE, message=FALSE, warning=FALSE}
+load(here::here("dat", "wl.RData"))
+```
+
+```{r, echo = FALSE}
+MCMCtrace(mcmc.phiwlrep, params = "sdeps", pdf = FALSE)
+```
+
+## Change samplers
+
++ Good sampling strategies depend on the model and data.  What are the samplers used by default?
+
+```{r echo = FALSE}
+hmm.phiwlrep.m <- nimbleModel(code = hmm.phiwlrep,
+                              constants = my.constants,
+                              data = my.data,
+                              inits = initial.values())
+```
+
+
+```{r}
+mcmcConf <- configureMCMC(hmm.phiwlrep.m)
+```
+
+## Remove default sampler, and use slice sampler
+
+```{r}
+mcmcConf$removeSamplers('sdeps')
+mcmcConf$addSampler(target = 'sdeps',
+                    type = "slice") #<<
+mcmcConf
+```
+
+```{r, echo = FALSE}
+Rmcmc <- buildMCMC(mcmcConf)
+Cmodel <- compileNimble(hmm.phiwlrep.m)
+Cmcmc <- compileNimble(Rmcmc, project=hmm.phiwlrep.m)
+times.phiwlrep.with.slice <- system.time( mcmc.phiwlrep.with.slice <- runMCMC(Cmcmc, niter = 10000, nchains = 2))
+samples1 <- mcmc.phiwlrep.with.slice[[1]]
+samples2 <- mcmc.phiwlrep.with.slice[[2]]
+iUse <- 2501:10000
+ESS.with.slice <- coda::effectiveSize(list(coda::as.mcmc(samples1[iUse, 'sdeps']),
+                                           coda::as.mcmc(samples2[iUse, 'sdeps'])))
+# Cmcmc$run(10000)
+# samples1 <- as.matrix(Cmcmc$mvSamples)
+# Cmcmc$run(10000)
+# samples2 <- as.matrix(Cmcmc$mvSamples)
+df <- data.frame(iter = c(2501:10000, 2501:10000),
+                 samples = c(samples1[2501:10000,"sdeps"], samples2[2501:10000,"sdeps"]),
+                 chain = c(rep("chain 1", length(samples1[2501:10000,"sdeps"])),
+                           rep("chain 2", length(samples2[2501:10000,"sdeps"]))))
+df.beta <- data.frame(iter = c(2501:10000, 2501:10000),
+                 beta1 = c(samples1[2501:10000,"beta[1]"], samples2[2501:10000,"beta[1]"]),
+                 beta2 = c(samples1[2501:10000,"beta[2]"], samples2[2501:10000,"beta[2]"]),
+                 chain = c(rep("chain 1", length(samples1[2501:10000,"sdeps"])),
+                           rep("chain 2", length(samples2[2501:10000,"sdeps"]))))
+```
+
+## Trace plot for standard deviation of the random effect (slice sampler)
+
+```{r, echo = FALSE}
+MCMCtrace(mcmc.phiwlrep.with.slice, params = "sdeps", pdf = FALSE)
+```
+
+```{r, echo = FALSE}
+# df %>%
+#   ggplot() +
+#   aes(x = iter, y = samples, group = chain, color = chain) +
+#   geom_line() +
+#   labs(x = "iterations", y = "random effect standard deviation", color = "")
+```
+
+## Which is better?
+
++ MCMC efficiency depends on both mixing and computation time.
+
++ MCMC efficiency = Effective Sample Size (ESS) / computation time.
+
++ MCMC efficiency is the number of effectively independent posterior samples generated per second.
+
++ ESS is different for each parameter.  (Computation time is the same for each parameter.)
+
++ ESS can be estimated from packages `coda` or `mcmcse`. These give statistical estimates, so different runs will give different estimates.
+
+```{r echo = FALSE}
+iUse <- 2501:10000
+time_frac <- 0.75 # Include 75% of the time to count sampling of recorded sampled, which is not the only valid option.
+ESS <- coda::effectiveSize(list(coda::as.mcmc(mcmc.phiwlrep[[1]][iUse, 'sdeps']),
+                                        coda::as.mcmc(mcmc.phiwlrep[[2]][iUse, 'sdeps'])))
+t1 <- (time_frac * times.phiwlrep[3])
+efficiency <- ESS / t1
+t.with.slice <- (time_frac * times.phiwlrep.with.slice[3])
+efficiency.with.slice <- ESS.with.slice / t.with.slice
+rd2 <- function(x) round(x, digits = 2)
+```
+
++ Efficiency with default sampler = `r rd2(ESS)` / `r rd2(t1)` = `r rd2(efficiency)`.
+
++ Efficiency with slice sampler = `r rd2(ESS.with.slice)` / `r rd2(t.with.slice)` = `r rd2(efficiency.with.slice)`.
+
+## Block sampling
+
++ High correlation in (regression) parameters may make independent samplers inefficient.
+
+```{r, echo = FALSE}
+df.beta %>%
+  ggplot() +
+  aes(x = beta1, y = beta2, group = chain, color = chain) +
+  geom_point(alpha = .05) +
+  labs(x = "beta1", y = "beta2", color = "")
+```
+
++ Block sampling (propose candidate values from multivariate distribution) might help.
+
+## Block sampling
+
++ Remove and replace independent RW samples by block sampling. Then proceed as usual.
+
+```{r message = FALSE, warning=FALSE}
+mcmcConf$removeSamplers(c('beta[1]','beta[2]'))
+mcmcConf$addSampler(target = c('beta[1]','beta[2]'),
+                    type = "RW_block") #<<
+```
+
+## Block sampling
+
+```{r message = FALSE, warning=FALSE}
+mcmcConf
+```
+
+## Summary of strategies for improving MCMC
+
+
++ Choose better initial values.
+
++ Customize sampler choice (more in [Chapter 7 of the User's manual](https://r-nimble.org/html_manual/cha-mcmc.html)).
+
++ Reparameterize, e.g. standardize covariates, deal with parameter redundancy.
 
-<!-- + Rewrite the model. -->
++ Rewrite the model.
 
-<!--     + Vectorize to improve computational efficiency (not covered). -->
-<!--     + Avoid long chains of deterministic dependencies. -->
-<!--     + Marginalize to remove parameters -->
-<!--     + Use new functions and new distributions written as nimbleFunctions. -->
+    + Vectorize to improve computational efficiency (not covered).
+    + Avoid long chains of deterministic dependencies.
+    + Marginalize to remove parameters
+    + Use new functions and new distributions written as nimbleFunctions.
 
-<!-- + Write new samplers that take advantage of particular model structures (not covered). -->
++ Write new samplers that take advantage of particular model structures (not covered).
 
-<!-- + Using multiple cores with parallelization: see how-to at <https://r-nimble.org/nimbleExamples/parallelizing_NIMBLE.html> -->
++ Using multiple cores with parallelization: see how-to at <https://r-nimble.org/nimbleExamples/parallelizing_NIMBLE.html>
 
-<!-- ## Marginalization -->
+## Marginalization
 
-<!-- + User-defined distributions is another neat feature of Nimble. -->
++ User-defined distributions is another neat feature of Nimble.
 
-<!-- + Integrate over latent states if those are not the focus of ecological inference (marginalization). -->
++ Integrate over latent states if those are not the focus of ecological inference (marginalization).
 
-<!-- + Marginalization often (but not always) improves MCMC. See [Ponisio et al. 2020](https://onlinelibrary.wiley.com/doi/full/10.1002/ece3.6053) for examples. -->
++ Marginalization often (but not always) improves MCMC. See [Ponisio et al. 2020](https://onlinelibrary.wiley.com/doi/full/10.1002/ece3.6053) for examples.
 
-<!-- + The [nimbleEcology](https://cran.r-project.org/web/packages/nimbleEcology/vignettes/Introduction_to_nimbleEcology.html) package implements capture-recapture models and HMMs with marginalization.  -->
++ The [nimbleEcology](https://cran.r-project.org/web/packages/nimbleEcology/vignettes/Introduction_to_nimbleEcology.html) package implements capture-recapture models and HMMs with marginalization.
 
-<!-- ### Our model $(\phi_A, \phi_B, \psi_{AB}, \psi_{BA}, p_A, p_B)$ -->
+### Our model $(\phi_A, \phi_B, \psi_{AB}, \psi_{BA}, p_A, p_B)$
 
-<!-- ```{r eval = FALSE} -->
-<!-- multisite <- nimbleCode({ -->
-<!-- ... -->
-<!--   # Likelihood  -->
-<!--   for (i in 1:N){ -->
-<!--     # Define latent state at first capture -->
-<!--     z[i,first[i]] <- y[i,first[i]] - 1 -->
-<!--     for (t in (first[i]+1):K){ -->
-<!--       # State process: draw S(t) given S(t-1) -->
-<!--       z[i,t] ~ dcat(gamma[z[i,t-1],1:3]) -->
-<!--       # Observation process: draw O(t) given S(t) -->
-<!--       y[i,t] ~ dcat(omega[z[i,t],1:3]) -->
-<!--     } -->
-<!--   } -->
-<!-- }) -->
-<!-- ``` -->
+```{r eval = FALSE}
+multisite <- nimbleCode({
+...
+  # Likelihood
+  for (i in 1:N){
+    # Define latent state at first capture
+    z[i,first[i]] <- y[i,first[i]] - 1
+    for (t in (first[i]+1):K){
+      # State process: draw S(t) given S(t-1)
+      z[i,t] ~ dcat(gamma[z[i,t-1],1:3])
+      # Observation process: draw O(t) given S(t)
+      y[i,t] ~ dcat(omega[z[i,t],1:3])
+    }
+  }
+})
+```
 
-<!-- ### Same model with nimbleEcology -->
+### Same model with nimbleEcology
 
-<!-- ```{r eval = FALSE} -->
-<!-- multisite <- nimbleCode({ -->
-<!-- ... -->
-<!-- # initial state probs -->
-<!-- for(i in 1:N) { -->
-<!--   init[i, 1:4] <- gamma[ y[i, first[i] ] - 1, 1:4 ] # first state propagation -->
-<!-- } -->
+```{r eval = FALSE}
+multisite <- nimbleCode({
+...
+# initial state probs
+for(i in 1:N) {
+  init[i, 1:4] <- gamma[ y[i, first[i] ] - 1, 1:4 ] # first state propagation
+}
 
-<!-- # likelihood  -->
-<!-- for (i in 1:N){ -->
-<!--   y[i,(first[i]+1):K] ~ dHMM(init = init[i,1:4],           # count data from first[i] + 1 -->
-<!--                              probObs = omega[1:4,1:4],     # observation matrix -->
-<!--                              probTrans = gamma[1:4,1:4],   # transition matrix -->
-<!--                              len = K - first[i],           # nb of occasions -->
-<!--                              checkRowSums = 0)             # do not check whether elements in a row sum tp 1 -->
-<!-- } -->
-<!-- ... -->
-<!-- ``` -->
+# likelihood
+for (i in 1:N){
+  y[i,(first[i]+1):K] ~ dHMM(init = init[i,1:4],           # count data from first[i] + 1
+                             probObs = omega[1:4,1:4],     # observation matrix
+                             probTrans = gamma[1:4,1:4],   # transition matrix
+                             len = K - first[i],           # nb of occasions
+                             checkRowSums = 0)             # do not check whether elements in a row sum tp 1
+}
+...
+```
 
-<!-- + This runs twice as fast as the standard formulation with explicit latent states. -->
++ This runs twice as fast as the standard formulation with explicit latent states.
 
-<!-- + Marginalizing typically gives better mixing. -->
++ Marginalizing typically gives better mixing.
 
-<!-- ### Reducing redundant calculations -->
+### Reducing redundant calculations
 
-<!-- + So far, a row of the dataset is an individual. However, several individuals may share the same encounter history.  -->
++ So far, a row of the dataset is an individual. However, several individuals may share the same encounter history.
 
-<!-- + The contribution of $M$ individuals with the same encounter history is the likelihood of this particular encounter history raised to the power $M$. -->
++ The contribution of $M$ individuals with the same encounter history is the likelihood of this particular encounter history raised to the power $M$.
 
-<!-- + Using this so-called **weighted likelihood** greatly decreases the computational burden. -->
++ Using this so-called **weighted likelihood** greatly decreases the computational burden.
 
-<!-- + This idea is used in most computer programs that implement maximum likelihood. In the Bayesian framework, the same idea was proposed in [Turek et al. (2016)](https://doi.org/10.1007/s10651-016-0353-z).  -->
++ This idea is used in most computer programs that implement maximum likelihood. In the Bayesian framework, the same idea was proposed in [Turek et al. (2016)](https://doi.org/10.1007/s10651-016-0353-z).
 
-<!-- + Cannot be done in Jags. Can be done in nimble thanks to nimble functions!  -->
++ Cannot be done in Jags. Can be done in nimble thanks to nimble functions!
 
-<!-- + The run is *much* faster. Also allows fitting models to big datasets. More details in dedicated Worksheet. -->
++ The run is *much* faster. Also allows fitting models to big datasets. More details in dedicated Worksheet.
 
-<!-- ## No live demo, but there is a worksheet. -->
+## No live demo, but there is a worksheet.
 
 
-<!-- ## Future directions for NIMBLE -->
+## Future directions for NIMBLE
 
-<!-- + NIMBLE is under active development.  Contributors are welcome, including those who want to get involved but don't know where. -->
++ NIMBLE is under active development.  Contributors are welcome, including those who want to get involved but don't know where.
 
-<!-- + Faster building of models and algorithms.  Ability to save and re-load compiled work. -->
++ Faster building of models and algorithms.  Ability to save and re-load compiled work.
 
-<!-- + Automatic differentiation of model calculations, enabling Hamiltonian Monte Carlo, other sampling strategies, and Laplace approximation. -->
++ Automatic differentiation of model calculations, enabling Hamiltonian Monte Carlo, other sampling strategies, and Laplace approximation.
 
-<!-- + Tools for building packages that use NIMBLE "under the hood". -->
++ Tools for building packages that use NIMBLE "under the hood".
 
-<!-- ## Further reading -->
+## Further reading
 
-<!-- + Turek, D., de Valpine, P. & Paciorek, C.J. [Efficient Markov chain Monte Carlo sampling for hierarchical hidden Markov models](https://doi.org/10.1007/s10651-016-0353-z) *Environ Ecol Stat* 23: 549–564 (2016). -->
++ Turek, D., de Valpine, P. & Paciorek, C.J. [Efficient Markov chain Monte Carlo sampling for hierarchical hidden Markov models](https://doi.org/10.1007/s10651-016-0353-z) *Environ Ecol Stat* 23: 549–564 (2016).
 
-<!-- + Ponisio, L.C., de Valpine, P., Michaud, N., and Turek, D. [One size does not fit all: Customizing MCMC methods for hierarchical models using NIMBLE](https://doi.org/10.1002/ece3.6053) *Ecol Evol.* 10: 2385–2416 (2020). -->
++ Ponisio, L.C., de Valpine, P., Michaud, N., and Turek, D. [One size does not fit all: Customizing MCMC methods for hierarchical models using NIMBLE](https://doi.org/10.1002/ece3.6053) *Ecol Evol.* 10: 2385–2416 (2020).
 
-<!-- + Nimble workshop to come 26-28 May, check out [here](https://r-nimble.org/nimble-virtual-short-course-may-26-28). -->
++ Nimble workshop to come 26-28 May, check out [here](https://r-nimble.org/nimble-virtual-short-course-may-26-28).
 
-<!-- + Nimble workshop material online available [here](https://github.com/nimble-training). -->
++ Nimble workshop material online available [here](https://github.com/nimble-training).
 
-<!-- + Nimble [manual](https://r-nimble.org/html_manual/cha-welcome-nimble.html) and [cheatsheet](https://r-nimble.org/cheatsheets/NimbleCheatSheet.pdf).  -->
++ Nimble [manual](https://r-nimble.org/html_manual/cha-welcome-nimble.html) and [cheatsheet](https://r-nimble.org/cheatsheets/NimbleCheatSheet.pdf).
 
 
