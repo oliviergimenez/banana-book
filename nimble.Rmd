@@ -1,55 +1,23 @@
-# NIMBLE {#intronimble}
-
-**coder Metropolis d'au-dessus dans Nimble**
-**basculer des trucs de speed up ici**
-**on peut utilise MCMCvis, et ce que fait l'équipe Nimble**
-**pourquoi Nimble plutôt que Jags? Dev team friendly, active dev, also much more flexible, and much more than just MCMC sampler. Pourquoi Nimble plutôt que Stan; syntaxe BUGS, also discrete latent states easier to deal with, no need to marginalise**
+# NIMBLE tutorial {#intronimble}
 
 ## Introduction
 
-In this second chapter, you will learn what the Bayesian theory is, and how you may use it with a simple example. You will also see how to implement simulation algorithms to implement the Bayesian method for more complex analyses. This is not an exhaustive treatment of Bayesian statistics, but you should get what you need to navigate through the rest of the book. 
+In this second chapter, you will get familiar with NIMBLE an R package that implements up-to-date MCMC algorithms for fitting complex models. NIMBLE spares you from coding the MCMC algorithms by hand, and only requires the specification of a likelihood and priors for model parameters. You will go through a simple example to illustrate NIMBLE main features, but the ideas hold for other problems.  
 
 ## What is NIMBLE?
 
-```{r pressure, echo=FALSE, fig.cap="(Meme created by Todd Arnold's wonderful students)", out.width = c('24%', '60%')}
-knitr::include_graphics(c("images/ToddStudents_Meme.jpg","images/RobRob_Comment_edited.png"))
-```
+NIMBLE stands for **N**umerical **I**nference for statistical **M**odels using **B**ayesian and **L**ikelihood **E**stimation. Briefly speaking, NIMBLE is an R package that implements for you MCMC algorithms to sample the posterior distribution of model parameters. Freed from the burden of coding your own MCMC algorithms, you only have to specify a likelihood and priors to apply the Bayes theorem. To do so, NIMBLE uses a syntax very similar to the R syntax, which makes your life easier. This so-called BUGS language is also used by other programs like WinBUGS, OpenBUGS, and JAGS. So why use NIMBLE you may ask? The short answer is that NIMBLE is capable of so much more! First, you will work from within R, but in the background NIMBLE will translate your code in C++ for faster computation (in general). Second, NIMBLE extends the BUGS language for writing new functions and statistical distributions of your own, or grab those written by others. Third, NIMBLE gives you full control of the MCMC samplers, and you may pick other algorithms than the defaults. Fourth, NIMBLE comes with a library of numerical methods other than MCMC, including sequential Monte Carlo (particle filtering) and Monte Carlo Expectation Maximization (maximum likelihood). Last but not least, the development team is friendly and helpful, and based on users' feedbacks, NIMBLE folks work constantly at improving the package capabilities. 
 
-+ **N**umerical **I**nference for statistical **M**odels using **B**ayesian and **L**ikelihood **E**stimation.
+## NIMBLE workflow
 
-+ A framework for hierarchical statistical models and algorithms.
+To run NIMBLE, you will need to specify three things: (1) a model (likelihood and priors), (2) some data, (3) parameters you want to sample from, (4) initial values and (5) MCMC details (number of chains, length of the burn-in period and number of iterations following burn-in).
 
-+ Uses almost the same model code as WinBUGS, OpenBUGS, and JAGS.
-
-+ An extension of the BUGS language: additional syntax, custom functions and distributions.
-
-+ A configurable system for MCMC.
-
-+ A library of other methods (SMC, MCEM).
-
-+ Sequential Monte Carlo (particle filtering)
-+ Monte Carlo Expectation Maximization (maximum likelihood)
-
-+ A model-generic programming system to write new analysis methods.
-
-+ because it extends the BUGS language for writing new functions and distributions,
-
-+ and provides samplers that can deal with discrete latent states
-
-The proposed semiparametric LVM and Bayesian inference were implemented via nimble. nimble is an R package for programming with BUGS models, which allows for fitting models specified using syntax similar to WinBUGS and JAGS, but with more flexibility in defining the models and algorithms. Users can operate from within R, and nimble will generate the C++ code for faster computation. In this section, we introduce how to carry out the proposed analysis using nimble 0.6–10 in R 3.4.1.
-
-```{block2 fake, type='rmdnote'}
-The *hypothesis* is a working assumption about which you want to learn using *data*. In capture--recapture analyses, the hypothesis might be a parameter like detection probability, or regression parameters in a relationship between survival probability and a covariate. Bayes' theorem tells us how to obtain the probability of a hypothesis given the data we have. 
-```
-
-## Load `nimble` package
-
+Load `nimble` package.
 ```{r}
 library(nimble)
 ```
 
-## Build model, made of likelihood and priors
-
+Build model, made of likelihood and priors. Back to our naive survival model.
 ```{r}
 naive.survival.model <- nimbleCode({
   # prior
@@ -59,7 +27,130 @@ naive.survival.model <- nimbleCode({
 })
 ```
 
+R2jags is that we can specify the model by creating a special kind of function.6 The avoids the need to create temporary files (as rjags requires) and keeps things tidier in our R markdown documents.
+
+Describe distributions. And also nodes. Stochastic. Deterministic. And distributed as. Provide list of built-in distributions? You can provide your own, see e.g. 
+
+Read in data. 
+```{r}
+my.data <- list(n = 57, y = 19)
+```
+
+Distinguish constants and data. To Nimble, not all "data" is data...
+```{r}
+my.constants <- list(n = 57)
+my.data <- list(y = 19)
+```
+
+**Constants**:
++ Can never be changed
++ Must be provided when a model is defined (part of the model structure)
++ E.g. vector of known index values, variables used to define for-loops, etc.
+
+After defining the model code, we should define the constants, initial values and data list. Compared to WinBUGS and JAGS, data and initial values can be defined in the same way, while ‘constants’ is a new list that contains the values that would not change, including the variables that define for-loop indices. In our settings, the lists of data, constants and initial values are given as follows:
+
+**Data**:
++ Can be changed without re-building the model
++ Can be (re-)simulated within a model
++ E.g. stuff that *only* appears to the left of a "~"
+
+For computational efficiency, better to specify as much as possible as constants. NIMBLE will help you with this!
+
+We can also control the starting point for the chains. Starting different chains and quite different parameter values can help
+
+verify that the MCMC algorithm is not overly sensitive to where we are starting from, and
+ensure that the MCMC algorithm has explored the posterior distribution sufficiently.
+
+On the other hand, if we start a chain too far from the peak of the posterior distribution, the chain may have trouble converging.
+
+We can provide either specific starting points for each chain or a function that generates random starting points.
+
+Specify initial values. 
+```{r}
+initial.values <- function() list(phi = runif(1,0,1))
+```
+
+```{r}
+initial.values()
+```
+
+Which parameters to save? Define parameters to keep track of (i.e., parameters of interest).
+```{r}
+parameters.to.save <- c("phi")
+```
+
+MCMC details
+```{r}
+n.iter <- 5000
+n.burnin <- 1000
+n.chains <- 2
+```
+
+Number of posterior samples per chain:
+$$n.posterior = \frac{n.iter - n.burnin}{n.thin}$$
+
+Run model, tadaa!
+```{r, cache = TRUE}
+mcmc.output <- nimbleMCMC(code = naive.survival.model,
+                          data = my.data,
+                          constants = my.constants,
+                          inits = initial.values,
+                          monitors = parameters.to.save,
+                          niter = n.iter,
+                          nburnin = n.burnin,
+                          nchains = n.chains)
+```
+
+Details on messages received. 
+
+Say we do not thin. But ok if you'd like, just think of $n.posterior = \frac{n.iter - n.burnin}{n.thin}$.
+
+### Post-process MCMC outputs by hand
+
+```{r}
+str(mcmc.output)
+```
+
+```{r}
+head(mcmc.output$chain1)
+```
+
+```{r, echo = FALSE}
+mcmc.output %>%
+  as_tibble() %>%
+  ggplot() +
+  geom_histogram(aes(x = chain1[,"phi"]), color = "white") +
+  labs(x = "survival probability")
+```
+
+### Post-process MCMC outputs without pain
+
+We use MCMCvis, but there are other perfectly valid options out there like ggmcmc and basicMCMCplots.
+
+Numerical summaries.
+```{r}
+library(MCMCvis)
+MCMCsummary(mcmc.output, round = 2)
+```
+
+Trace and posterior density
+
+```{r}
+MCMCtrace(mcmc.output,
+          pdf = FALSE)
+```
+
+```{r}
+MCMCtrace(mcmc.output,
+          pdf = FALSE,
+          ind = TRUE,
+          Rhat = TRUE,
+          n.eff = TRUE)
+```
+
 ## Syntax: what's new/better/different?
+
+**basculer des trucs de speed up ici**
 
 + Vectorization
 ```{r, eval = FALSE}
@@ -108,153 +199,6 @@ sum.x <- sum(x[1:Tmax])
 
 + & more...
 
-
-## Read in data
-
-Back to our naive survival model:
-
-```{r}
-naive.survival.model <- nimbleCode({
-  # prior
-  phi ~ dunif(0, 1)
-  # likelihood
-  y ~ dbinom(phi, n)
-})
-```
-
-```{r}
-my.data <- list(n = 57, y = 19)
-```
-
-
-## Distinguish constants and data
-
-To Nimble, not all "data" is data...
-```{r}
-my.constants <- list(n = 57)
-my.data <- list(y = 19)
-```
-
-**Constants**:
-+ Can never be changed
-+ Must be provided when a model is defined (part of the model structure)
-+ E.g. vector of known index values, variables used to define for-loops, etc.
-
-After defining the model code, we should define the constants, initial values and data list. Compared to WinBUGS and JAGS, data and initial values can be defined in the same way, while ‘constants’ is a new list that contains the values that would not change, including the variables that define for-loop indices. In our settings, the lists of data, constants and initial values are given as follows:
-
-To Nimble, not all "data" is data...
-```{r}
-my.constants <- list(n = 57)
-my.data <- list(y = 19)
-```
-
-**Data**:
-+ Can be changed without re-building the model
-+ Can be (re-)simulated within a model
-+ E.g. stuff that *only* appears to the left of a "~"
-
-For computational efficiency, better to specify as much as possible as constants.
-
-Nimble will help you with this!
-
-## Specify initial values
-
-```{r}
-initial.values <- function() list(phi = runif(1,0,1))
-```
-
-```{r}
-initial.values()
-```
-
-
-## Which parameters to save?
-
-```{r}
-parameters.to.save <- c("phi")
-```
-
-## MCMC details
-
-```{r}
-n.iter <- 5000
-n.burnin <- 1000
-n.chains <- 2
-n.thin <- 1
-```
-
-Number of posterior samples per chain:
-
-$$n.posterior = \frac{n.iter - n.burnin}{n.thin}$$
-
-## Run model, tadaa!
-
-```{r, eval = FALSE}
-mcmc.output <- nimbleMCMC(code = naive.survival.model,
-                          data = my.data,
-                          constants = my.constants,
-                          inits = initial.values,
-                          monitors = parameters.to.save,
-                          thin = n.thin,
-                          niter = n.iter,
-                          nburnin = n.burnin,
-                          nchains = n.chains)
-```
-
-```{r, cache = TRUE, echo = FALSE}
-mcmc.output <- nimbleMCMC(code = naive.survival.model,
-                          data = my.data,
-                          constants = my.constants,
-                          inits = initial.values,
-                          monitors = parameters.to.save,
-                          niter = n.iter,
-                          nburnin = n.burnin,
-                          nchains = n.chains,
-                          progressBar = FALSE)
-```
-
-## Explore MCMC outputs
-
-```{r}
-str(mcmc.output)
-```
-
-```{r}
-head(mcmc.output$chain1)
-```
-
-
-```{r, echo = FALSE}
-mcmc.output %>%
-  as_tibble() %>%
-  janitor::clean_names() %>%
-  ggplot() +
-  geom_histogram(aes(x = chain1[,"phi"]), color = "white") +
-  labs(x = "survival probability")
-```
-
-## Numerical summaries
-
-```{r}
-library(MCMCvis)
-MCMCsummary(mcmc.output, round = 2)
-```
-
-## Trace and posterior density
-
-```{r eval = FALSE}
-MCMCtrace(mcmc.output,
-          pdf = FALSE)
-```
-
-```{r eval = FALSE}
-MCMCtrace(mcmc.output,
-          pdf = FALSE,
-          ind = TRUE,
-          Rhat = TRUE,
-          n.eff = TRUE)
-```
-
 ## Our `nimble` workflow so far
 
 ```{r}
@@ -262,8 +206,7 @@ knitr::include_graphics("images/nimble_workflow_sofar.png")
 ```
 
 
-## But `nimble` gives full access to the MCMC engine
-
+But `nimble` gives full access to the MCMC engine
 
 ```{r}
 knitr::include_graphics("images/nimble_workflow.png")
@@ -274,7 +217,6 @@ knitr::include_graphics("images/I1bIY06.gif")
 ```
 
 ## Functions
-
 
 Say we want an R function that adds 2 to every value in a vector.
 ```{r}
@@ -404,12 +346,105 @@ library(MCMCvis)
 MCMCsummary(object = mcmc.out, round = 2)
 ```
 
+## Code your own sampler
+
+```{r eval = FALSE}
+library(nimble)
+load('matos/ressources-chapters/nimble/dipper_data.Rdata')
+
+dipperCode <- nimbleCode({
+    logit.p ~ dnorm(0, 0.001)
+    logit.phi ~ dnorm(0, 0.001)
+    p <- expit(logit.p)
+    phi <- expit(logit.phi)
+    ##phi ~ dunif(0, 1)
+    ##p ~ dunif(0, 1)
+    for(i in 1:N) {
+        x[i, first[i]] <- 1
+        y[i, first[i]] <- 1
+        for(t in (first[i]+1):T) {
+            x[i, t] ~ dbern(phi * x[i, t-1])
+            y[i, t] ~ dbern(p * x[i, t])
+        }
+    }
+})
+
+N <- dim(sightings)[1]
+T <- dim(sightings)[2]
+dipperConsts <- list(N = N, T = T, first = first)
+dipperData <- list(y = sightings)
+xInit <- ifelse(!is.na(sightings), 1, 0)
+dipperInits <- list(logit.phi = 0, logit.p = 0, x = xInit)
+
+samples <- nimbleMCMC(dipperCode, dipperConsts, dipperData, dipperInits,
+                      niter = 10000, nburnin = 5000,
+                      monitors = c('p', 'phi'))
+
+my_MH <- nimbleFunction(
+    name = 'my_MH',
+    contains = sampler_BASE,
+    setup = function(model, mvSaved, target, control) {
+        calcNodes <- model$getDependencies(target)
+        scale <- control$scale
+    },
+    run = function() {
+        initialLP <- model$getLogProb(calcNodes)
+        current <- model[[target]]
+        proposal <- rnorm(1, current, scale)
+        model[[target]] <<- proposal
+        proposalLP <- model$calculate(calcNodes)
+        lMHR <- proposalLP - initialLP
+        if(runif(1,0,1) < exp(lMHR)) {
+            ## accept
+            copy(from = model, to = mvSaved, nodes = calcNodes, logProb = TRUE, row = 1)
+        } else {
+            ## reject
+            copy(from = mvSaved, to = model, nodes = calcNodes, logProb = TRUE, row = 1)
+        }
+    },
+    methods = list(
+        reset = function() {}
+    )
+)
+
+scale <- 0.05
+
+Rmodel <- nimbleModel(dipperCode, dipperConsts, dipperData, dipperInits)
+conf <- configureMCMC(Rmodel, monitors = c('p', 'phi'))
+conf$printSamplers()
+conf$printSamplers(byType = TRUE)
+conf$removeSamplers(c('logit.p', 'logit.phi'))
+conf$addSampler(target = 'logit.p', type = 'my_MH', control = list(scale = scale))
+conf$addSampler(target = 'logit.phi', type = 'my_MH', control = list(scale = scale))
+conf$printSamplers()
+conf$printMonitors()
+Rmcmc <- buildMCMC(conf)
+
+out <- compileNimble(list(model=Rmodel, mcmc=Rmcmc))
+Cmcmc <- out$mcmc
+
+samples2 <- runMCMC(Cmcmc, niter = 10000, nburnin = 5000)
+
+samplesSummary(samples2)
+
+basicMCMCplots::chainsPlot(samples2)
+```
+
+## A dire quelque part?
+
+Pourquoi Nimble plutôt que Stan? Syntaxe BUGS, also discrete latent states easier to deal with, no need to marginalise. In Stan you marginalise (ref forward to relevant section of the book), but difficult endeavour, and you do not need to do that with NIMBLE, it has algorithms that work fine with discrete latent states. 
+
+## When things go wrong: Tip and tricks
+
 ## Summary
 
 + Blabla.
 
 + Reblabla. 
 
+```{block2 fake, type='rmdnote', eval = FALSE}
+The *hypothesis* is a working assumption about which you want to learn using *data*. In capture--recapture analyses, the hypothesis might be a parameter like detection probability, or regression parameters in a relationship between survival probability and a covariate. Bayes' theorem tells us how to obtain the probability of a hypothesis given the data we have. 
+```
 
 ## Suggested reading
 
