@@ -6,26 +6,55 @@ In this second chapter, you will get familiar with NIMBLE an R package that impl
 
 ## What is NIMBLE?
 
-NIMBLE stands for **N**umerical **I**nference for statistical **M**odels using **B**ayesian and **L**ikelihood **E**stimation. Briefly speaking, NIMBLE is an R package that implements for you MCMC algorithms to sample the posterior distribution of model parameters. Freed from the burden of coding your own MCMC algorithms, you only have to specify a likelihood and priors to apply the Bayes theorem. To do so, NIMBLE uses a syntax very similar to the R syntax, which makes your life easier. This so-called BUGS language is also used by other programs like WinBUGS, OpenBUGS, and JAGS. So why use NIMBLE you may ask? The short answer is that NIMBLE is capable of so much more! First, you will work from within R, but in the background NIMBLE will translate your code in C++ for faster computation (in general). Second, NIMBLE extends the BUGS language for writing new functions and statistical distributions of your own, or grab those written by others. Third, NIMBLE gives you full control of the MCMC samplers, and you may pick other algorithms than the defaults. Fourth, NIMBLE comes with a library of numerical methods other than MCMC, including sequential Monte Carlo (particle filtering) and Monte Carlo Expectation Maximization (maximum likelihood). Last but not least, the development team is friendly and helpful, and based on users' feedbacks, NIMBLE folks work constantly at improving the package capabilities. 
+NIMBLE stands for **N**umerical **I**nference for statistical **M**odels using **B**ayesian and **L**ikelihood **E**stimation. Briefly speaking, NIMBLE is an R package that implements for you MCMC algorithms to sample the posterior distribution of model parameters. Freed from the burden of coding your own MCMC algorithms, you only have to specify a likelihood and priors to apply the Bayes theorem. To do so, NIMBLE uses a syntax very similar to the R syntax, which makes your life easier. This so-called BUGS language is also used by other programs like WinBUGS, OpenBUGS, and JAGS. 
+
+So why use NIMBLE you may ask? The short answer is that NIMBLE is capable of so much more! First, you will work from within R, but in the background NIMBLE will translate your code in C++ for faster computation (in general). Second, NIMBLE extends the BUGS language for writing new functions and statistical distributions of your own, or grab those written by others. Third, NIMBLE gives you full control of the MCMC samplers, and you may pick other algorithms than the defaults. Fourth, NIMBLE comes with a library of numerical methods other than MCMC, including sequential Monte Carlo (particle filtering) and Monte Carlo Expectation Maximization (maximum likelihood). Last but not least, the development team is friendly and helpful, and based on users' feedbacks, NIMBLE folks work constantly at improving the package capabilities. 
 
 ## NIMBLE workflow
 
-To run NIMBLE, you will need to specify three things: (1) a model (likelihood and priors), (2) some data, (3) parameters you want to sample from, (4) initial values and (5) MCMC details (number of chains, length of the burn-in period and number of iterations following burn-in).
+To run NIMBLE, you will need to specify three things: (1) a model (likelihood and priors), (2) the data, (3) those parameters you want to say something about, (4) initial values and (5) MCMC details (number of chains, length of the burn-in period and number of iterations following burn-in). 
 
-Load `nimble` package.
+But first things firt, and do not forget to load the `nimble` package.
 ```{r}
 library(nimble)
 ```
 
-Build model, made of likelihood and priors. Back to our naive survival model.
+Now let's go back to our example on animal survival from previous chapter. First step is to build our model by specifying the binomial likelihood and a uniform prior on survival probability. We use the `nimbleCode()` function. 
 ```{r}
-naive.survival.model <- nimbleCode({
-  # prior
-  phi ~ dunif(0, 1)
+model <- nimbleCode({
   # likelihood
-  y ~ dbinom(phi, n)
+  survived ~ dbinom(theta, released)
+  # prior
+  theta ~ dunif(0, 1)
 })
 ```
+
+In the code above, the ~ means distributed as.
+
+BUGS is a declarative language for graphical (or hierarchical) models. Most programming languages are imperative, which means a series of commands will be executed in the order they are written. A declarative language like BUGS is more like building a machine before using it. Each line declares that a component should be plugged into the machine, but it doesn’t matter in what order they are declared as long as all the right components are plugged in by the end of the code.
+
+The machine in this case is a graphical model12. A node (sometimes called a vertex) holds one value, which may be a scalar or a vector. Edges define the relationships between nodes. A huge variety of statistical models can be thought of as graphs.
+
+Here is the code to define and create a simple linear regression model with four observations
+
+’ and deterministic relationships are declared with ‘<-’. For example, each y[i] follows a normal distribution with mean predicted.y[i] and standard deviation sigma. Each predicted.y[i] is the result of intercept + slope * x[i]. The for-loop yields the equivalent of writing four lines of code, each with a different value of i. It does not matter in what order the nodes are declared. Imagine that each line of code draws part of Figure 5.1, and all that matters is that the everything gets drawn in the end. Available distributions, default and alternative parameterizations, and functions are listed in Section 5.2.4.
+
+NIMBLE calls non-stochastic nodes ‘deterministic’, whereas BUGS ca
+
+The model definition consists of a series of relations inside a block delimited by curly brackets { and } and preceded by the keyword model. Here is a simple linear regression example:
+
+Each relation defines a node in the model. The node on the left of a relation is defined in
+terms of other nodes – referred to as parent nodes – that appear on the right hand side.
+Taken together, the nodes in the model form a directed acyclic graph (with the parent/child
+relationships represented as directed edges). The very top-level nodes in the graph, with no
+parents, are constant nodes, which are defined either in the model definition (e.g. 1.0E-3),
+or in the data when the model is compiled (e.g. x[1]).
+Relations can be of two types. A stochastic relation (~) defines a stochastic node, repre-
+senting a random variable in the model. A deterministic relation (<-) defines a deterministic
+node, the value of which is determined exactly by the values of its parents. The equals sign
+(=) can be used for a deterministic relation in place of the left arrow (<-).
+
+
 
 R2jags is that we can specify the model by creating a special kind of function.6 The avoids the need to create temporary files (as rjags requires) and keeps things tidier in our R markdown documents.
 
@@ -33,13 +62,13 @@ Describe distributions. And also nodes. Stochastic. Deterministic. And distribut
 
 Read in data. 
 ```{r}
-my.data <- list(n = 57, y = 19)
+my.data <- list(released = 57, survived = 19)
 ```
 
 Distinguish constants and data. To Nimble, not all "data" is data...
 ```{r}
-my.constants <- list(n = 57)
-my.data <- list(y = 19)
+my.constants <- list(released = 57)
+my.data <- list(survived = 19)
 ```
 
 **Constants**:
@@ -67,7 +96,7 @@ We can provide either specific starting points for each chain or a function that
 
 Specify initial values. 
 ```{r}
-initial.values <- function() list(phi = runif(1,0,1))
+initial.values <- function() list(theta = runif(1,0,1))
 ```
 
 ```{r}
@@ -76,7 +105,7 @@ initial.values()
 
 Which parameters to save? Define parameters to keep track of (i.e., parameters of interest).
 ```{r}
-parameters.to.save <- c("phi")
+parameters.to.save <- c("theta")
 ```
 
 MCMC details
@@ -91,7 +120,7 @@ $$n.posterior = \frac{n.iter - n.burnin}{n.thin}$$
 
 Run model, tadaa!
 ```{r, cache = TRUE}
-mcmc.output <- nimbleMCMC(code = naive.survival.model,
+mcmc.output <- nimbleMCMC(code = model,
                           data = my.data,
                           constants = my.constants,
                           inits = initial.values,
@@ -104,6 +133,8 @@ mcmc.output <- nimbleMCMC(code = naive.survival.model,
 Details on messages received. 
 
 Say we do not thin. But ok if you'd like, just think of $n.posterior = \frac{n.iter - n.burnin}{n.thin}$.
+
+Proposer le même modèle avec la bernoulli pour montrer une boucle. The binomial is just a sum of Bernoulli outcomes. Like flipping a coin for each individual and get a survivor with prob phi. Comme dans annexe Hobbs. Vectorize also. 
 
 ### Post-process MCMC outputs by hand
 
@@ -119,7 +150,7 @@ head(mcmc.output$chain1)
 mcmc.output %>%
   as_tibble() %>%
   ggplot() +
-  geom_histogram(aes(x = chain1[,"phi"]), color = "white") +
+  geom_histogram(aes(x = chain1[,"theta"]), color = "white") +
   labs(x = "survival probability")
 ```
 
