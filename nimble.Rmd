@@ -2,19 +2,19 @@
 
 ## Introduction
 
-In this second chapter, you will get familiar with NIMBLE an R package that implements up-to-date MCMC algorithms for fitting complex models. NIMBLE spares you from coding the MCMC algorithms by hand, and only requires the specification of a likelihood and priors for model parameters. You will go through a simple example to illustrate NIMBLE main features, but the ideas hold for other problems.  
+In this second chapter, you will get familiar with NIMBLE, an R package that implements up-to-date MCMC algorithms for fitting complex models. NIMBLE spares you from coding the MCMC algorithms by hand, and only requires the specification of a likelihood and priors for model parameters. You will go through a simple example to illustrate NIMBLE main features, but the ideas hold for other problems.  
 
 ## What is NIMBLE?
 
-NIMBLE stands for **N**umerical **I**nference for statistical **M**odels using **B**ayesian and **L**ikelihood **E**stimation. Briefly speaking, NIMBLE is an R package that implements for you MCMC algorithms to sample the posterior distribution of model parameters. Freed from the burden of coding your own MCMC algorithms, you only have to specify a likelihood and priors to apply the Bayes theorem. To do so, NIMBLE uses a syntax very similar to the R syntax, which makes your life easier. This so-called BUGS language is also used by other programs like WinBUGS, OpenBUGS, and JAGS. 
+NIMBLE stands for **N**umerical **I**nference for statistical **M**odels using **B**ayesian and **L**ikelihood **E**stimation. Briefly speaking, NIMBLE is an R package that implements for you MCMC algorithms to generate samples from the posterior distribution of model parameters. Freed from the burden of coding your own MCMC algorithms, you only have to specify a likelihood and priors to apply the Bayes theorem. To do so, NIMBLE uses a syntax very similar to the R syntax, which should make your life easier. This so-called BUGS language is also used by other programs like WinBUGS, OpenBUGS, and JAGS. 
 
-So why use NIMBLE you may ask? The short answer is that NIMBLE is capable of so much more! First, you will work from within R, but in the background NIMBLE will translate your code in C++ for faster computation (in general). Second, NIMBLE extends the BUGS language for writing new functions and statistical distributions of your own, or grab those written by others. Third, NIMBLE gives you full control of the MCMC samplers, and you may pick other algorithms than the defaults. Fourth, NIMBLE comes with a library of numerical methods other than MCMC, including sequential Monte Carlo (particle filtering) and Monte Carlo Expectation Maximization (maximum likelihood). Last but not least, the development team is friendly and helpful, and based on users' feedbacks, NIMBLE folks work constantly at improving the package capabilities. 
+So why use NIMBLE you may ask? The short answer is that NIMBLE is capable of so much more! First, you will work from within R, but in the background NIMBLE will translate your code in C++ for (in general) faster computation. Second, NIMBLE extends the BUGS language for writing new functions and statistical distributions of your own, or borrow those written by others. Third, NIMBLE gives you full control of the MCMC samplers, and you may pick other algorithms than the defaults. Fourth, NIMBLE comes with a library of numerical methods other than MCMC algorithms, including sequential Monte Carlo (particle filtering) and Monte Carlo Expectation Maximization (maximum likelihood). Last but not least, the development team is friendly and helpful, and based on users' feedbacks, NIMBLE folks work constantly at improving the package capabilities. 
 
 ## NIMBLE workflow
 
-To run NIMBLE, you will need to specify three things: (1) a model (likelihood and priors), (2) the data, (3) those parameters you want to say something about, (4) initial values and (5) MCMC details (number of chains, length of the burn-in period and number of iterations following burn-in). 
+To run NIMBLE, you will need to specify three things: (1) a model (likelihood and priors), (2) the data, (3) the parameters you want to make inference about, (4) initial values and (5) MCMC details (number of chains, length of the burn-in period and number of iterations following burn-in). 
 
-But first things firt, and do not forget to load the `nimble` package.
+First things first, let's not forget to load the `nimble` package.
 ```{r}
 library(nimble)
 ```
@@ -466,6 +466,18 @@ basicMCMCplots::chainsPlot(samples2)
 Pourquoi Nimble plutôt que Stan? Syntaxe BUGS, also discrete latent states easier to deal with, no need to marginalise. In Stan you marginalise (ref forward to relevant section of the book), but difficult endeavour, and you do not need to do that with NIMBLE, it has algorithms that work fine with discrete latent states. 
 
 ## When things go wrong: Tip and tricks
+
+## Full potential
+
+You're exactly right, Keith - those options are not available when using nimbleMCMC. The nimbleMCMC interface is designed only for running the "default" MCMC, which involves no customization of the MCMC sampling algorithms themselves. If you want to delve deeper into customizing the MCMC sampling strategies, then you're right, the workflow to use is:
+
+nimbleModel
+configureMCMC
+buildMCMC
+compileNimble
+runMCMC
+
+I know this is more steps than a single call to nimbleMCMC, but the changes from using nimbleMCMC to the functional workflow above are quite mechanical. If more direction on how/where the various arguments to those functions should be organized, then just let me know - no problem at all.
 
 ## Summary
 
