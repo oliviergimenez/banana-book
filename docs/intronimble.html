@@ -101,7 +101,12 @@
 <h3>
 <span class="header-section-number">2.3.1</span> The basics<a class="anchor" aria-label="anchor" href="#the-basics"><i class="fas fa-link"></i></a>
 </h3>
-<p>To run NIMBLE, you will need to specify a few things: (1) a model (likelihood and priors), (2) the data, (3) the parameters you want to make inference about, (4) initial values and (5) MCMC details (number of chains, length of the burn-in period and number of iterations following burn-in).</p>
+<p>To run NIMBLE, you will need to:<br>
+1. Build a model consisting of a likelihood and priors.<br>
+2. Read in some data.<br>
+3. Specify parameters you want to make inference about.<br>
+4. Pick initial values for parameters to be estimated (for each chain).<br>
+5. Provide MCMC details namely the number of chains, the length of the burn-in period and the number of iterations following burn-in.</p>
 <p>First things first, let’s not forget to load the <code>nimble</code> package:</p>
 <div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="va"><a href="https://r-nimble.org">nimble</a></span><span class="op">)</span></code></pre></div>
@@ -113,49 +118,24 @@
   <span class="co"># prior</span>
   <span class="va">theta</span> <span class="op">~</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html">dunif</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1</span><span class="op">)</span>
 <span class="op">}</span><span class="op">)</span></code></pre></div>
-<p>You may check that the <code>model</code> R object contains our code:</p>
+<p>You may check that the <code>model</code> R object contains your code:</p>
 <div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">model</span>
 <span class="co">## {</span>
 <span class="co">##     survived ~ dbinom(theta, released)</span>
 <span class="co">##     theta ~ dunif(0, 1)</span>
 <span class="co">## }</span></code></pre></div>
-<p>In the code above, <code>survived ~ dbinom(theta, released)</code> says that <code>survived</code> the number of successes or animals that have survived over winter is distributed as (that’s the <code><a href="https://rdrr.io/r/base/tilde.html">~</a></code>) as a binomial with <code>released</code> trials and probability of success or survival <code>theta</code>. Then <code>theta ~ dunif(0, 1)</code> assigns a uniform between 0 and 1 as a prior distribution to the survival probability. This is all you need, a likelihood and priors for model parameters, NIMBLE knows the Bayes theorem. A few comments:</p>
+<p>In the code above, <code>survived</code> and <code>released</code> are known data, only <code>theta</code> needs to be estimated. The line <code>survived ~ dbinom(theta, released)</code> says that the number of successes or animals that have survived over winter <code>survived</code> is distributed as (that’s the <code><a href="https://rdrr.io/r/base/tilde.html">~</a></code>) as a binomial with <code>released</code> trials and probability of success or survival <code>theta</code>. Then <code>theta ~ dunif(0, 1)</code> assigns a uniform between 0 and 1 as a prior distribution to the survival probability. This is all you need, a likelihood and priors for model parameters, NIMBLE knows the Bayes theorem.</p>
+<p>A few comments:</p>
 <ul>
-<li><p>All the distributions you need are available in NIMBLE<a class="footnote-ref" tabindex="0" data-toggle="popover" data-content="&lt;p&gt;Parallel w/ distributions in R? Forward ref to other distributions used in next chapters? Mention that you can write your own? Example below? Illustrate with dbeta(1,1) in place of dunif(0,1)&lt;/p&gt;"><sup>17</sup></a>.</p></li>
-<li><p>It does not matter in what order you write each line of code, NIMBLE uses what is called a declarative language for building models. In brief, you write code that tells NIMBLE what you want to achieve, and not how to get there. In contrast an imperative programming language requires that you write what you want to happen step by step.</p></li>
-<li><p><strong>“A node (sometimes called a vertex) holds one value, which may be a scalar or a vector. Edges define the relationships between nodes. A huge variety of statistical models can be thought of as graphs. Each relation defines a node in the model.” “The node on the left of a relation is defined in terms of other nodes – referred to as parent nodes – that appear on the right hand side. Taken together, the nodes in the model form a directed acyclic graph (with the parent/child relationships represented as directed edges). The very top-level nodes in the graph, with no parents, are constant nodes, which are defined either in the model definition (e.g. 1.0E-3), or in the data when the model is compiled (e.g. x[1]).”</strong></p></li>
-<li><p><code>survived</code> and <code>released</code> are known data, only <code>theta</code> needs to be estimated.</p></li>
+<li><p>Most usual distributions are available in NIMBLE. We will use later in the book <code>dbeta</code>, <code>dmultinom</code> and <code>dnorm</code> among others. If you cannot find what you need in NIMBLE, you can write your own distribution as illustrated in Section <a href="intronimble.html#write-your-own-distribution">2.5.6</a>.</p></li>
+<li><p>It does not matter in what order you write each line of code, NIMBLE uses what is called a declarative language for building models. In brief, you write code that tells NIMBLE what you want to achieve, and not how to get there. In contrast, an imperative language requires that you write what you want your program to do step by step.</p></li>
+<li><p><strong>“Some terminology to introduce. A node (sometimes called a vertex) holds one value, which may be a scalar or a vector. Edges define the relationships between nodes. A huge variety of statistical models can be thought of as graphs. Each relation defines a node in the model.” “The node on the left of a relation is defined in terms of other nodes – referred to as parent nodes – that appear on the right hand side. Taken together, the nodes in the model form a directed acyclic graph (with the parent/child relationships represented as directed edges). The very top-level nodes in the graph, with no parents, are constant nodes, which are defined either in the model definition (e.g. 1.0E-3), or in the data when the model is compiled (e.g. x[1]).”</strong></p></li>
 </ul>
-<p>Second step in our workflow is to read in some data. We use a list in which we name every component that match the name of variables in model specification:</p>
+<p>Second step in our workflow is to read in some data. We use a list in which each component corresponds to a known variable in the model:</p>
 <div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">my.data</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>released <span class="op">=</span> <span class="fl">57</span>, survived <span class="op">=</span> <span class="fl">19</span><span class="op">)</span></code></pre></div>
-<!-- Distinguish constants and data. To Nimble, not all "data" is data... -->
-<!-- ```{r} -->
-<!-- my.constants <- list(released = 57) -->
-<!-- my.data <- list(survived = 19) -->
-<!-- ``` -->
-<!-- **Constants**: -->
-<!-- + Can never be changed -->
-<!-- + Must be provided when a model is defined (part of the model structure) -->
-<!-- + E.g. vector of known index values, variables used to define for-loops, etc. -->
-<!-- After defining the model code, we should define the constants, initial values and data list. Compared to WinBUGS and JAGS, data and initial values can be defined in the same way, while ‘constants’ is a new list that contains the values that would not change, including the variables that define for-loop indices. In our settings, the lists of data, constants and initial values are given as follows: -->
-<!-- **Data**: -->
-<!-- + Can be changed without re-building the model -->
-<!-- + Can be (re-)simulated within a model -->
-<!-- + E.g. stuff that *only* appears to the left of a "~" -->
-<!-- For computational efficiency, better to specify as much as possible as constants. NIMBLE will help you with this! -->
-<!-- ```{r, eval = FALSE} -->
-<!-- mcmc.output <- nimbleMCMC(code = model, -->
-<!--                           data = my.data, -->
-<!--                           constants = my.constants, -->
-<!--                           inits = initial.values, -->
-<!--                           monitors = parameters.to.save, -->
-<!--                           niter = n.iter, -->
-<!--                           nburnin = n.burnin, -->
-<!--                           nchains = n.chains) -->
-<!-- ``` -->
-<p>Third step is to tell NIMBLE which parameters in your model you would like to keep track of, in other words the parameters you are interested in. In our simple model there is a single parameter <code>theta</code> for survival so not much of a choice really, but it will obviously not be the case in general.</p>
+<p>Third step is to tell NIMBLE which parameters in your model you would like to keep track of, in other words the parameters you are interested in. In our simple model there is a single parameter <code>theta</code> for survival so you do not have much of a choice. However, in general, you will have several parameters, including some of no prime interest, and having the control on verbosity will prove handy.</p>
 <div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">parameters.to.save</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimble-R-functions.html">c</a></span><span class="op">(</span><span class="st">"theta"</span><span class="op">)</span></code></pre></div>
 <p>Fourth step is to specify initial values for all model parameters. To make sure that the MCMC algorithm explores the posterior distribution, we start different chains with different parameter values. You can specify initial values for each chain in a list and put them in yet another list:</p>
@@ -226,6 +206,31 @@ Repeat workflow. Main steps. Likelihood and prior for parameters.
   <span class="va">life_expectancy</span> <span class="op">&lt;-</span> <span class="op">-</span><span class="fl">1</span><span class="op">/</span><span class="fu"><a href="https://rdrr.io/r/base/Log.html">log</a></span><span class="op">(</span><span class="va">theta</span><span class="op">)</span>
 <span class="op">}</span><span class="op">)</span></code></pre></div>
 <p>Note the <code>life_expectancy &lt;- -1/log(theta)</code> which gives life expectancy. <strong>Relations can be of two types. We have seen earlier a stochastic relation (<code><a href="https://rdrr.io/r/base/tilde.html">~</a></code>) that defines a stochastic node, representing a random variable in the model. A deterministic relation (<code><a href="https://rdrr.io/r/base/assignOps.html">&lt;-</a></code>) defines a deterministic node, the value of which is determined exactly by the values of its parents.</strong></p>
+<!-- Distinguish constants and data. To Nimble, not all "data" is data... -->
+<!-- ```{r} -->
+<!-- my.constants <- list(released = 57) -->
+<!-- my.data <- list(survived = 19) -->
+<!-- ``` -->
+<!-- **Constants**: -->
+<!-- + Can never be changed -->
+<!-- + Must be provided when a model is defined (part of the model structure) -->
+<!-- + E.g. vector of known index values, variables used to define for-loops, etc. -->
+<!-- After defining the model code, we should define the constants, initial values and data list. Compared to WinBUGS and JAGS, data and initial values can be defined in the same way, while ‘constants’ is a new list that contains the values that would not change, including the variables that define for-loop indices. In our settings, the lists of data, constants and initial values are given as follows: -->
+<!-- **Data**: -->
+<!-- + Can be changed without re-building the model -->
+<!-- + Can be (re-)simulated within a model -->
+<!-- + E.g. stuff that *only* appears to the left of a "~" -->
+<!-- For computational efficiency, better to specify as much as possible as constants. NIMBLE will help you with this! -->
+<!-- ```{r, eval = FALSE} -->
+<!-- mcmc.output <- nimbleMCMC(code = model, -->
+<!--                           data = my.data, -->
+<!--                           constants = my.constants, -->
+<!--                           inits = initial.values, -->
+<!--                           monitors = parameters.to.save, -->
+<!--                           niter = n.iter, -->
+<!--                           nburnin = n.burnin, -->
+<!--                           nchains = n.chains) -->
+<!-- ``` -->
 <div class="sourceCode" id="cb27"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">my.data</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>survived <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimble-R-functions.html">c</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimble-R-functions.html">rep</a></span><span class="op">(</span><span class="fl">1</span>,<span class="fl">19</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimble-R-functions.html">rep</a></span><span class="op">(</span><span class="fl">0</span>,<span class="fl">57</span><span class="op">-</span><span class="fl">19</span><span class="op">)</span><span class="op">)</span><span class="op">)</span>
 <span class="va">my.constants</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>released <span class="op">=</span> <span class="fl">57</span><span class="op">)</span></code></pre></div>
@@ -504,7 +509,7 @@ Repeat workflow. Main steps. Likelihood and prior for parameters.
 <span class="co">##                 mean   sd 2.5%  50% 97.5% Rhat n.eff</span>
 <span class="co">## life_expectancy 0.94 0.16 0.67 0.92  1.29    1  2870</span>
 <span class="co">## theta           0.34 0.06 0.23 0.34  0.46    1  2916</span></code></pre></div>
-<p>Your own Metropolis.</p>
+<p>Your own Metropolis. <strong>Introduce nimbleFunction earlier <a href="https://r-nimble.org/html_manual/cha-user-defined.html#sec:user-functions" class="uri">https://r-nimble.org/html_manual/cha-user-defined.html#sec:user-functions</a></strong></p>
 <div class="sourceCode" id="cb51"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">my_metropolis</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimbleFunction.html">nimbleFunction</a></span><span class="op">(</span>
   name <span class="op">=</span> <span class="st">'my_metropolis'</span>,
@@ -602,11 +607,11 @@ Repeat workflow. Main steps. Likelihood and prior for parameters.
 <div class="inline-figure"><img src="banana-book_files/figure-html/unnamed-chunk-68-1.png" width="672"></div>
 <p>Draw parallel with previous chapter.</p>
 </div>
-<div id="your-own-distribution" class="section level3" number="2.5.6">
+<div id="write-your-own-distribution" class="section level3" number="2.5.6">
 <h3>
-<span class="header-section-number">2.5.6</span> Your own distribution<a class="anchor" aria-label="anchor" href="#your-own-distribution"><i class="fas fa-link"></i></a>
+<span class="header-section-number">2.5.6</span> Write your own distribution<a class="anchor" aria-label="anchor" href="#write-your-own-distribution"><i class="fas fa-link"></i></a>
 </h3>
-<p>Example</p>
+<p>Example from <a href="https://r-nimble.org/html_manual/cha-user-defined.html#sec:user-distributions" class="uri">https://r-nimble.org/html_manual/cha-user-defined.html#sec:user-distributions</a>. Recode the beta distribution? Have a look to the raw NIMBLE code.</p>
 </div>
 </div>
 <div id="when-things-go-wrong-tip-and-tricks" class="section level2" number="2.6">
@@ -643,7 +648,6 @@ Repeat workflow. Main steps. Likelihood and prior for parameters.
 
 </div>
 </div>
-
   <div class="chapter-nav">
 <div class="prev"><a href="crashcourse.html"><span class="header-section-number">1</span> Bayesian statistics &amp; MCMC</a></div>
 <div class="next"><a href="hmmcapturerecapture.html"><span class="header-section-number">3</span> Hidden Markov models</a></div>
@@ -672,7 +676,7 @@ Repeat workflow. Main steps. Likelihood and prior for parameters.
 <li><a class="nav-link" href="#behind-the-hood"><span class="header-section-number">2.5.3</span> Behind the hood</a></li>
 <li><a class="nav-link" href="#call-r-functions-within-nimble"><span class="header-section-number">2.5.4</span> Call R functions within NIMBLE</a></li>
 <li><a class="nav-link" href="#code-your-own-sampler"><span class="header-section-number">2.5.5</span> Code your own sampler</a></li>
-<li><a class="nav-link" href="#your-own-distribution"><span class="header-section-number">2.5.6</span> Your own distribution</a></li>
+<li><a class="nav-link" href="#write-your-own-distribution"><span class="header-section-number">2.5.6</span> Write your own distribution</a></li>
 </ul>
 </li>
 <li><a class="nav-link" href="#when-things-go-wrong-tip-and-tricks"><span class="header-section-number">2.6</span> When things go wrong: Tip and tricks</a></li>

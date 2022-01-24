@@ -14,7 +14,12 @@ So why use NIMBLE you may ask? The short answer is that NIMBLE is capable of so 
 
 ### The basics
 
-To run NIMBLE, you will need to specify a few things: (1) a model (likelihood and priors), (2) the data, (3) the parameters you want to make inference about, (4) initial values and (5) MCMC details (number of chains, length of the burn-in period and number of iterations following burn-in). 
+To run NIMBLE, you will need to:  
+1. Build a model consisting of a likelihood and priors.   
+2. Read in some data.   
+3. Specify parameters you want to make inference about.   
+4. Pick initial values for parameters to be estimated (for each chain).   
+5. Provide MCMC details namely the number of chains, the length of the burn-in period and the number of iterations following burn-in.   
 
 First things first, let's not forget to load the `nimble` package:
 ```{r}
@@ -31,58 +36,27 @@ model <- nimbleCode({
 })
 ```
 
-You may check that the `model` R object contains our code:
+You may check that the `model` R object contains your code:
 ```{r}
 model
 ```
 
-In the code above, `survived ~ dbinom(theta, released)` says that `survived` the number of successes or animals that have survived over winter is distributed as (that's the `~`) as a binomial with `released` trials and probability of success or survival `theta`. Then `theta ~ dunif(0, 1)` assigns a uniform between 0 and 1 as a prior distribution to the survival probability. This is all you need, a likelihood and priors for model parameters, NIMBLE knows the Bayes theorem. A few comments:    
+In the code above, `survived` and `released` are known data, only `theta` needs to be estimated. The line `survived ~ dbinom(theta, released)` says that the number of successes or animals that have survived over winter  `survived` is distributed as (that's the `~`) as a binomial with `released` trials and probability of success or survival `theta`. Then `theta ~ dunif(0, 1)` assigns a uniform between 0 and 1 as a prior distribution to the survival probability. This is all you need, a likelihood and priors for model parameters, NIMBLE knows the Bayes theorem. 
 
-+ All the distributions you need are available in NIMBLE^[Parallel w/ distributions in R? Forward ref to other distributions used in next chapters? Mention that you can write your own? Example below? Illustrate with dbeta(1,1) in place of dunif(0,1)].  
+A few comments:    
 
-+ It does not matter in what order you write each line of code, NIMBLE uses what is called a declarative language for building models. In brief, you write code that tells NIMBLE what you want to achieve, and not how to get there. In contrast an imperative programming language requires that you write what you want to happen step by step.
++ Most usual distributions are available in NIMBLE. We will use later in the book `dbeta`, `dmultinom` and `dnorm` among others. If you cannot find what you need in NIMBLE, you can write your own distribution as illustrated in Section \@ref(write-your-own-distribution).
 
-+ **"A node (sometimes called a vertex) holds one value, which may be a scalar or a vector. Edges define the relationships between nodes. A huge variety of statistical models can be thought of as graphs. Each relation defines a node in the model." "The node on the left of a relation is defined in terms of other nodes – referred to as parent nodes – that appear on the right hand side. Taken together, the nodes in the model form a directed acyclic graph (with the parent/child relationships represented as directed edges). The very top-level nodes in the graph, with no parents, are constant nodes, which are defined either in the model definition (e.g. 1.0E-3), or in the data when the model is compiled (e.g. x[1])."** 
++ It does not matter in what order you write each line of code, NIMBLE uses what is called a declarative language for building models. In brief, you write code that tells NIMBLE what you want to achieve, and not how to get there. In contrast, an imperative language requires that you write what you want your program to do step by step.
 
-+ `survived` and `released` are known data, only `theta` needs to be estimated.
++ **"Some terminology to introduce. A node (sometimes called a vertex) holds one value, which may be a scalar or a vector. Edges define the relationships between nodes. A huge variety of statistical models can be thought of as graphs. Each relation defines a node in the model." "The node on the left of a relation is defined in terms of other nodes – referred to as parent nodes – that appear on the right hand side. Taken together, the nodes in the model form a directed acyclic graph (with the parent/child relationships represented as directed edges). The very top-level nodes in the graph, with no parents, are constant nodes, which are defined either in the model definition (e.g. 1.0E-3), or in the data when the model is compiled (e.g. x[1])."** 
 
-Second step in our workflow is to read in some data. We use a list in which we name every component that match the name of variables in model specification:
+Second step in our workflow is to read in some data. We use a list in which each component corresponds to a known variable in the model:
 ```{r}
 my.data <- list(released = 57, survived = 19)
 ```
 
-<!-- Distinguish constants and data. To Nimble, not all "data" is data... -->
-<!-- ```{r} -->
-<!-- my.constants <- list(released = 57) -->
-<!-- my.data <- list(survived = 19) -->
-<!-- ``` -->
-
-<!-- **Constants**: -->
-<!-- + Can never be changed -->
-<!-- + Must be provided when a model is defined (part of the model structure) -->
-<!-- + E.g. vector of known index values, variables used to define for-loops, etc. -->
-
-<!-- After defining the model code, we should define the constants, initial values and data list. Compared to WinBUGS and JAGS, data and initial values can be defined in the same way, while ‘constants’ is a new list that contains the values that would not change, including the variables that define for-loop indices. In our settings, the lists of data, constants and initial values are given as follows: -->
-
-<!-- **Data**: -->
-<!-- + Can be changed without re-building the model -->
-<!-- + Can be (re-)simulated within a model -->
-<!-- + E.g. stuff that *only* appears to the left of a "~" -->
-
-<!-- For computational efficiency, better to specify as much as possible as constants. NIMBLE will help you with this! -->
-
-<!-- ```{r, eval = FALSE} -->
-<!-- mcmc.output <- nimbleMCMC(code = model, -->
-<!--                           data = my.data, -->
-<!--                           constants = my.constants, -->
-<!--                           inits = initial.values, -->
-<!--                           monitors = parameters.to.save, -->
-<!--                           niter = n.iter, -->
-<!--                           nburnin = n.burnin, -->
-<!--                           nchains = n.chains) -->
-<!-- ``` -->
-
-Third step is to tell NIMBLE which parameters in your model you would like to keep track of, in other words the parameters you are interested in. In our simple model there is a single parameter `theta` for survival so not much of a choice really, but it will obviously not be the case in general.
+Third step is to tell NIMBLE which parameters in your model you would like to keep track of, in other words the parameters you are interested in. In our simple model there is a single parameter `theta` for survival so you do not have much of a choice. However, in general, you will have several parameters, including some of no prime interest, and having the control on verbosity will prove handy.
 ```{r}
 parameters.to.save <- c("theta")
 ```
@@ -142,6 +116,38 @@ model <- nimbleCode({
 ```
 
 Note the `life_expectancy <- -1/log(theta)` which gives life expectancy. **Relations can be of two types. We have seen earlier a stochastic relation (`~`) that defines a stochastic node, representing a random variable in the model. A deterministic relation (`<-`) defines a deterministic node, the value of which is determined exactly by the values of its parents.**
+
+<!-- Distinguish constants and data. To Nimble, not all "data" is data... -->
+<!-- ```{r} -->
+<!-- my.constants <- list(released = 57) -->
+<!-- my.data <- list(survived = 19) -->
+<!-- ``` -->
+
+<!-- **Constants**: -->
+<!-- + Can never be changed -->
+<!-- + Must be provided when a model is defined (part of the model structure) -->
+<!-- + E.g. vector of known index values, variables used to define for-loops, etc. -->
+
+<!-- After defining the model code, we should define the constants, initial values and data list. Compared to WinBUGS and JAGS, data and initial values can be defined in the same way, while ‘constants’ is a new list that contains the values that would not change, including the variables that define for-loop indices. In our settings, the lists of data, constants and initial values are given as follows: -->
+
+<!-- **Data**: -->
+<!-- + Can be changed without re-building the model -->
+<!-- + Can be (re-)simulated within a model -->
+<!-- + E.g. stuff that *only* appears to the left of a "~" -->
+
+<!-- For computational efficiency, better to specify as much as possible as constants. NIMBLE will help you with this! -->
+
+<!-- ```{r, eval = FALSE} -->
+<!-- mcmc.output <- nimbleMCMC(code = model, -->
+<!--                           data = my.data, -->
+<!--                           constants = my.constants, -->
+<!--                           inits = initial.values, -->
+<!--                           monitors = parameters.to.save, -->
+<!--                           niter = n.iter, -->
+<!--                           nburnin = n.burnin, -->
+<!--                           nchains = n.chains) -->
+<!-- ``` -->
+
 
 ```{r}
 my.data <- list(survived = c(rep(1,19), rep(0,57-19)))
@@ -476,9 +482,11 @@ basicMCMCplots::chainsPlot(samples)
 
 Draw parallel with previous chapter. 
 
-### Your own distribution
+### Write your own distribution {#write-your-own-distribution}
 
 Example from https://r-nimble.org/html_manual/cha-user-defined.html#sec:user-distributions. Recode the beta distribution? Have a look to the raw NIMBLE code.
+
+
 
 ## When things go wrong: Tip and tricks
 
