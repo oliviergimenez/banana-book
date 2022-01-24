@@ -2,7 +2,9 @@
 
 ## Introduction
 
-In this second chapter, you will get familiar with NIMBLE, an R package that implements up-to-date MCMC algorithms for fitting complex models. NIMBLE spares you from coding the MCMC algorithms by hand, and requires only the specification of a likelihood and priors for model parameters. We will illustrate NIMBLE main features with a simple example, but the ideas hold for other problems.  
+In this second chapter, you will get familiar with NIMBLE, an R package that implements up-to-date MCMC algorithms for fitting complex models. NIMBLE spares you from coding the MCMC algorithms by hand, and requires only the specification of a likelihood and priors for model parameters. We will illustrate NIMBLE main features with a simple example, but the ideas hold for other problems.
+
+**go through https://r-nimble.org/documentation-2 and https://r-nimble.org/examples**
 
 ## What is NIMBLE?
 
@@ -26,7 +28,7 @@ First things first, let's not forget to load the `nimble` package:
 library(nimble)
 ```
 
-Now let's go back to our example on animal survival from the previous chapter. First step is to build our model by specifying the binomial likelihood and a uniform prior on survival probability $\theta$. We use the `nimbleCode()` function and write code within curly brackets:
+Now let's go back to our example on animal survival from the previous chapter. First step is to build our model by specifying the binomial likelihood and a uniform prior on survival probability `theta`. We use the `nimbleCode()` function and wrap code within curly brackets:
 ```{r}
 model <- nimbleCode({
   # likelihood
@@ -45,18 +47,28 @@ In the code above, `survived` and `released` are known data, only `theta` needs 
 
 A few comments:    
 
-+ Most usual distributions are available in NIMBLE. We will use later in the book `dbeta`, `dmultinom` and `dnorm` among others. If you cannot find what you need in NIMBLE, you can write your own distribution as illustrated in Section \@ref(write-your-own-distribution).
++ The most common distributions are available in NIMBLE. For example we will use later in the book `dbeta`, `dmultinom` and `dnorm` among others. If you cannot find what you need in NIMBLE, you can write your own distribution as illustrated in Section \@ref(write-your-own-distribution).
 
 + It does not matter in what order you write each line of code, NIMBLE uses what is called a declarative language for building models. In brief, you write code that tells NIMBLE what you want to achieve, and not how to get there. In contrast, an imperative language requires that you write what you want your program to do step by step.
 
-+ **"Some terminology to introduce. A node (sometimes called a vertex) holds one value, which may be a scalar or a vector. Edges define the relationships between nodes. A huge variety of statistical models can be thought of as graphs. Each relation defines a node in the model." "The node on the left of a relation is defined in terms of other nodes – referred to as parent nodes – that appear on the right hand side. Taken together, the nodes in the model form a directed acyclic graph (with the parent/child relationships represented as directed edges). The very top-level nodes in the graph, with no parents, are constant nodes, which are defined either in the model definition (e.g. 1.0E-3), or in the data when the model is compiled (e.g. x[1])."** 
+Some terminology before continuing. Define node and graph, parent/child. If yes uncomment text.
+
+<!-- "A node holds one value, which may be a scalar or a vector. Edges define the relationships between nodes. A huge variety of statistical models can be thought of as graphs. Each relation defines a node in the model." And "The node on the left of a relation is defined in terms of other nodes – referred to as parent nodes – that appear on the right hand side. Taken together, the nodes in the model form a directed acyclic graph (with the parent/child relationships represented as directed edges). The very top-level nodes in the graph, with no parents, are constant nodes, which are defined either in the model definition (e.g. 1.0E-3), or in the data when the model is compiled (e.g. x[1])."  -->
+<!-- mc <- nimbleModel(model, data = list(released = 57, survived = 19)) -->
+<!-- mc$getVarNames() -->
+<!-- mc$getNodeNames() -->
+<!-- mc$getNodeNames(determOnly = TRUE) -->
+<!-- mc$getNodeNames(stochOnly = TRUE) -->
+<!-- mc$getNodeNames(dataOnly = TRUE) -->
+<!-- mc$getDependencies("theta") -->
+<!-- mc$plotGraph() -->
 
 Second step in our workflow is to read in some data. We use a list in which each component corresponds to a known variable in the model:
 ```{r}
 my.data <- list(released = 57, survived = 19)
 ```
 
-Third step is to tell NIMBLE which parameters in your model you would like to keep track of, in other words the parameters you are interested in. In our simple model there is a single parameter `theta` for survival so you do not have much of a choice. However, in general, you will have several parameters, including some of no prime interest, and having the control on verbosity will prove handy.
+Third step is to tell NIMBLE which parameters in your model you would like to keep track of, in other words the parameters you are interested in. In our simple model there is a single parameter `theta` for survival so you do not have much of a choice. However, in general you will have several parameters, including some of no primary interest, and having the control on verbosity will prove handy.
 ```{r}
 parameters.to.save <- c("theta")
 ```
@@ -115,7 +127,9 @@ model <- nimbleCode({
 })
 ```
 
-Note the `life_expectancy <- -1/log(theta)` which gives life expectancy. **Relations can be of two types. We have seen earlier a stochastic relation (`~`) that defines a stochastic node, representing a random variable in the model. A deterministic relation (`<-`) defines a deterministic node, the value of which is determined exactly by the values of its parents.**
+Note the `life_expectancy <- -1/log(theta)` which gives life expectancy. **Relations can be of two types. "We have seen earlier a stochastic relation (`~`) that defines a stochastic node, representing a random variable in the model. A deterministic relation (`<-`) defines a deterministic node, the value of which is determined exactly by the values of its parents."**
+
+**If you try nimbleMCMC it won't work. This is because we ned to distinguish data from constants. Uncomment code.**
 
 <!-- Distinguish constants and data. To Nimble, not all "data" is data... -->
 <!-- ```{r} -->
@@ -175,7 +189,7 @@ mcmc.output <- nimbleMCMC(code = model,
                           nchains = n.chains)
 ```
 
-Life expectancy directly monitored. But you can also calculate it outside NIMBLE by hand:
+Life expectancy directly monitored. But you can also calculate it outside NIMBLE by hand: **problem is that we show how to inspect mcmc.output below, not before, how to fix that? show the whole workflow first, then show these features.**
 ```{r}
 theta <- c(mcmc.output$chain1[,'theta'], 
   mcmc.output$chain2[,'theta'],
@@ -216,7 +230,7 @@ mcmc.output %>%
 
 ### Post-process MCMC outputs without pain
 
-We use MCMCvis, but there are other perfectly valid options out there like ggmcmc and basicMCMCplots.
+We use MCMCvis, but there are other perfectly valid options out there like ggmcmc and basicMCMCplots. **Show these other options?**
 
 <!-- Finally we want to look at our samples. NIMBLE returns samples as a simple matrix with named columns. There are numerous packages for processing MCMC output. If you want to use the coda package, you can convert a matrix to a coda mcmc object like this: -->
 
@@ -389,7 +403,8 @@ Display outputs.
 MCMCsummary(object = mcmc.output, round = 2)
 ```
 
-Helpful when object format unusual for NIMBLE, like spatial object. Global environment. **"In general if you do need a nimbleRcall like this, there are a couple of considerations. It is common to need to write a wrapper function, i.e. a function you access via nimbleRcall that calls your actual function of interest with arguments and then return value rearranged as needed. For example, if you just need the eigenvectors, a wrapper function could pick those out and return them.  The bigger issue is the returnType declaration: nimble type declarations do not include an R list of type declarations as a nimble type.  I think you could use a nimbleList data structure for this purpose.  You would have to create a nimbleList type and then use that as the declared returnType.  But you would still need to write a wrapper, so that you could convert the list returned from base::eigen into a nimbleList object to return from your wrapper.". See also https://kenkellner.com/blog/models-with-integrals.html.**
+Helpful when object format unusual for NIMBLE, like spatial object. Global environment. **Uncomment for more details**
+<!-- "In general if you do need a nimbleRcall like this, there are a couple of considerations. It is common to need to write a wrapper function, i.e. a function you access via nimbleRcall that calls your actual function of interest with arguments and then return value rearranged as needed. For example, if you just need the eigenvectors, a wrapper function could pick those out and return them.  The bigger issue is the returnType declaration: nimble type declarations do not include an R list of type declarations as a nimble type.  I think you could use a nimbleList data structure for this purpose.  You would have to create a nimbleList type and then use that as the declared returnType.  But you would still need to write a wrapper, so that you could convert the list returned from base::eigen into a nimbleList object to return from your wrapper.". See also https://kenkellner.com/blog/models-with-integrals.html. -->
 
 ### Code your own sampler
 
@@ -500,8 +515,6 @@ Draw parallel with previous chapter.
 ### Write your own distribution {#write-your-own-distribution}
 
 Example from https://r-nimble.org/html_manual/cha-user-defined.html#sec:user-distributions. Recode the beta distribution? Have a look to the raw NIMBLE code.
-
-
 
 ## When things go wrong: Tip and tricks
 
