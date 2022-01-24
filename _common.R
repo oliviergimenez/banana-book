@@ -6,7 +6,7 @@ library(MCMCvis)
 library(magick)
 library(pdftools)
 library(wesanderson)
-library(basicMCMCplots)
+#library(basicMCMCplots)
 
 # R options
 options(width = 60)
