@@ -12,6 +12,8 @@ So why use NIMBLE you may ask? The short answer is that NIMBLE is capable of so 
 
 ## Running NIMBLE
 
+### The basics
+
 To run NIMBLE, you will need to specify a few things: (1) a model (likelihood and priors), (2) the data, (3) the parameters you want to make inference about, (4) initial values and (5) MCMC details (number of chains, length of the burn-in period and number of iterations following burn-in). 
 
 First things first, let's not forget to load the `nimble` package:
@@ -36,13 +38,15 @@ model
 
 In the code above, `survived ~ dbinom(theta, released)` says that `survived` the number of successes or animals that have survived over winter is distributed as (that's the `~`) as a binomial with `released` trials and probability of success or survival `theta`. Then `theta ~ dunif(0, 1)` assigns a uniform between 0 and 1 as a prior distribution to the survival probability. This is all you need, a likelihood and priors for model parameters, NIMBLE knows the Bayes theorem. A few comments:    
 
-+ All the distributions you need are available in NIMBLE^[Parallel w/ distributions in R? Forward ref to other distributions used in next chapters? Mention that you can write your own? Example below?].  
++ All the distributions you need are available in NIMBLE^[Parallel w/ distributions in R? Forward ref to other distributions used in next chapters? Mention that you can write your own? Example below? Illustrate with dbeta(1,1) in place of dunif(0,1)].  
 
-+ It does not matter in what order you write each line of code, NIMBLE uses what is called a declarative language for building models^[Introduce nodes and edges here, along w/ stochastic vs. deterministic nodes? A node (sometimes called a vertex) holds one value, which may be a scalar or a vector. Edges define the relationships between nodes. A huge variety of statistical models can be thought of as graphs. Each relation defines a node in the model. The node on the left of a relation is defined in terms of other nodes – referred to as parent nodes – that appear on the right hand side. Taken together, the nodes in the model form a directed acyclic graph (with the parent/child relationships represented as directed edges). The very top-level nodes in the graph, with no parents, are constant nodes, which are defined either in the model definition (e.g. 1.0E-3), or in the data when the model is compiled (e.g. x[1]). Relations can be of two types. A stochastic relation (~) defines a stochastic node, representing a random variable in the model. A deterministic relation (<-) defines a deterministic node, the value of which is determined exactly by the values of its parents.]. In brief, you write code that tells NIMBLE what you want to achieve, and not how to get there. In contrast an imperative programming language requires that you write what you want to happen step by step.  
++ It does not matter in what order you write each line of code, NIMBLE uses what is called a declarative language for building models. In brief, you write code that tells NIMBLE what you want to achieve, and not how to get there. In contrast an imperative programming language requires that you write what you want to happen step by step.
+
++ **"A node (sometimes called a vertex) holds one value, which may be a scalar or a vector. Edges define the relationships between nodes. A huge variety of statistical models can be thought of as graphs. Each relation defines a node in the model." "The node on the left of a relation is defined in terms of other nodes – referred to as parent nodes – that appear on the right hand side. Taken together, the nodes in the model form a directed acyclic graph (with the parent/child relationships represented as directed edges). The very top-level nodes in the graph, with no parents, are constant nodes, which are defined either in the model definition (e.g. 1.0E-3), or in the data when the model is compiled (e.g. x[1])."** 
 
 + `survived` and `released` are known data, only `theta` needs to be estimated.
 
-Second step in our workflow is to read in some data^[Distinguish constants and data, see commented text]. We use a list in which we name every component that match the name of variables in model specification:
+Second step in our workflow is to read in some data. We use a list in which we name every component that match the name of variables in model specification:
 ```{r}
 my.data <- list(released = 57, survived = 19)
 ```
@@ -98,7 +102,7 @@ initial.values <- function() list(theta = runif(1,0,1))
 initial.values()
 ```
 
-Firth and last step, you need to tell NIMBLE the number of chains to run `n.chain`, how long the burn-in period should be `n.burnin` and the number of iterations to be used for posterior inference, that is following the burn-in period. In NIMBLE, you specify the total number of iterations `n.iter`, so that the number of posterior samples per chain is `n.iter - n.burnin`^[To be smoothed: these are R objects, not nimbleMCMC() arguments; also thinning in the formula, but by default is 1 and we do not use it, so just ignore.].
+Firth and last step, you need to tell NIMBLE the number of chains to run `n.chain`, how long the burn-in period should be `n.burnin` and the number of iterations to be used for posterior inference, that is following the burn-in period. In NIMBLE, you specify the total number of iterations `n.iter`, so that the number of posterior samples per chain is `n.iter - n.burnin`. **To be smoothed: these are R objects, not nimbleMCMC() arguments; also thinning in the formula, but by default is 1 and we do not use it, so just ignore.**
 ```{r}
 n.iter <- 5000
 n.burnin <- 1000
@@ -116,12 +120,78 @@ mcmc.output <- nimbleMCMC(code = model,
                           nchains = n.chains)
 ```
 
-NIMBLE goes through several steps that we will explain later on^[Say a few words on the messages we receive? Comment on arguments of the function? E.g. ProgressBar can be supressed if too depressing.]. 
+NIMBLE goes through several steps that we will explain later on. **Say a few words on the messages we receive. Comment on arguments of the function: E.g. ProgressBar can be supressed if too depressing.** 
+
+```{block2 nimble_workflow, type='rmdnote', eval = FALSE}
+Repeat workflow. Main steps. Likelihood and prior for parameters. 
+```
+
+### Into specifics
+
+Ici on reprend le modèle simple du dessus, et on l'exprime un peu différemment pour illustrer qqs autres features de NIMBLE: i) loops, ii) distinction between constants and data, iii) stochastic vs deterministic nodes, and edges. The binomial is just a sum of Bernoulli outcomes. Like flipping a coin for each individual and get a survivor with prob theta. Here survived is a Bernoulli random variable taking value 1 if animal survived, and 0 otherwise. **Voir dans annexe Hobbs**. E.g. `survived[1] ~ dbern(theta)` up to `survived[59] ~ dbern(theta)`. Likelihood contribution of individuals. Loops is the product. Iid. Instead of duplicating the same line of code `survived[i] ~ dbern(theta)` we use a loop. 
+```{r}
+model <- nimbleCode({
+  # likelihood
+  for (i in 1:released){
+    survived[i] ~ dbern(theta)
+  }
+  # prior
+  theta ~ dunif(0, 1)
+  life_expectancy <- -1/log(theta)
+})
+```
+
+Note the `life_expectancy <- -1/log(theta)` which gives life expectancy. **Relations can be of two types. We have seen earlier a stochastic relation (`~`) that defines a stochastic node, representing a random variable in the model. A deterministic relation (`<-`) defines a deterministic node, the value of which is determined exactly by the values of its parents.**
+
+```{r}
+my.data <- list(survived = c(rep(1,19), rep(0,57-19)))
+my.constants <- list(released = 57)
+```
+
+The rest is the same. Steps 3, 4 and 5. 
+```{r}
+parameters.to.save <- c("theta", "life_expectancy")
+initial.values <- function() list(theta = runif(1,0,1))
+n.iter <- 5000
+n.burnin <- 1000
+n.chains <- 3
+```
+
+Run model, add argument `constants = my.constants`.
+```{r}
+mcmc.output <- nimbleMCMC(code = model,
+                          data = my.data,
+                          constants = my.constants,
+                          inits = initial.values,
+                          monitors = parameters.to.save,
+                          niter = n.iter,
+                          nburnin = n.burnin,
+                          nchains = n.chains)
+```
+
+Life expectancy directly monitored. But you can also calculate it outside NIMBLE by hand:
+```{r}
+theta <- c(mcmc.output$chain1[,'theta'], 
+  mcmc.output$chain2[,'theta'],
+  mcmc.output$chain3[,'theta'])
+lambda <- -1/log(theta)
+head(lambda)
+```
+
+Visualise:
+```{r}
+lambda %>%
+  as_tibble() %>%
+  ggplot() +
+  geom_histogram(aes(x = value), color = "white") +
+  labs(x = "life expectancy")
+```
 
 ## Making sense of the MCMC outputs
 
 ### Post-process MCMC outputs by hand
 
+Inspect what's in there:
 ```{r}
 str(mcmc.output)
 ```
@@ -152,7 +222,8 @@ Trace and posterior density
 
 ```{r}
 MCMCtrace(mcmc.output,
-          pdf = FALSE)
+          pdf = FALSE,
+          params = "theta")
 ```
 
 ```{r}
@@ -160,45 +231,15 @@ MCMCtrace(mcmc.output,
           pdf = FALSE,
           ind = TRUE,
           Rhat = TRUE,
-          n.eff = TRUE)
+          n.eff = TRUE,
+          params = "theta")
 ```
 
-## 
+## Advanced stuff
 
-Proposer le même modèle avec la bernoulli pour montrer une boucle, et la distinctions data vs. constantes. The binomial is just a sum of Bernoulli outcomes. Like flipping a coin for each individual and get a survivor with prob phi. Comme dans annexe Hobbs. Vectorize also. Et si possible deterministic node? Life expectancy with $1/\log(\theta)$?
+**Move material from Speed slides here. Say that this section can be skipped.**
 
-```{r eval = FALSE}
-model <- nimbleCode({
-  # likelihood
-  for (i in 1:released){
-    survived[i] ~ dbern(theta)
-  }
-  # prior
-  theta ~ dunif(0, 1)
-})
-my.data <- list(survived = c(rep(1,19), rep(0,57-19)))
-my.constants <- list(released = 57)
-parameters.to.save <- c("theta")
-initial.values <- function() list(theta = runif(1,0,1))
-n.iter <- 5000
-n.burnin <- 1000
-n.chains <- 3
-mcmc.output <- nimbleMCMC(code = model,
-                          data = my.data,
-                          constants = my.constants,
-                          inits = initial.values,
-                          monitors = parameters.to.save,
-                          niter = n.iter,
-                          nburnin = n.burnin,
-                          nchains = n.chains)
-```
-
-
-## Syntax: what's new/better/different?
-
-**basculer des trucs de speed up ici**
-
-+ Vectorization
+### Vectorization
 ```{r, eval = FALSE}
 # JAGS (& Nimble)
 for(t in 1:Tmax){
@@ -209,7 +250,18 @@ for(t in 1:Tmax){
 x[1:Tmax] <- Mu.x + epsilon[1:Tmax]
 ```
 
-+ More flexible specification of distributions
+```{r eval = FALSE}
+model <- nimbleCode({
+  # likelihood
+  survived[1:released] ~ dbern(theta)
+  # prior
+  theta ~ dunif(0, 1)
+  life_expectancy <- -1/log(theta)
+})
+```
+
+
+### Flexible specification of distributions
 ```{r, eval = FALSE}
 # JAGS (& Nimble)
 for(t in 1:Tmax){
@@ -243,9 +295,7 @@ sum.x <- sum(x[])
 sum.x <- sum(x[1:Tmax])
 ```
 
-+ & more...
-
-## Behind the hood
+### Behind the hood
 
 Our workflow so far.
 
@@ -259,243 +309,176 @@ But `nimble` gives full access to the MCMC engine
 knitr::include_graphics("images/nimble_workflow.png")
 ```
 
-```{r}
-knitr::include_graphics("images/I1bIY06.gif")
-```
+The `nimbleMCMC()` interface runs the "default" MCMC, which precludes any customization of the MCMC sampling algorithms. This is fine for most use, but in some situations useful to know what's behind the hood. The workflow to use is: `nimbleModel()`, `configureMCMC()`, `buildMCMC()`, `compileNimble()` and `runMCMC()`. Why is it useful? **Go through example again. Show how to debug. Move stuff from Speed here.**
 
-You're exactly right, Keith - those options are not available when using nimbleMCMC. The nimbleMCMC interface is designed only for running the "default" MCMC, which involves no customization of the MCMC sampling algorithms themselves. If you want to delve deeper into customizing the MCMC sampling strategies, then you're right, the workflow to use is:
-
-+ nimbleModel
-
-+ configureMCMC
-
-+ buildMCMC
-
-+ compileNimble
-
-+ runMCMC
-
-I know this is more steps than a single call to nimbleMCMC, but the changes from using nimbleMCMC to the functional workflow above are quite mechanical. If more direction on how/where the various arguments to those functions should be organized, then just let me know - no problem at all.
-
-Go through example again. Show how to debug. Move stuff from Speed here.
-
-### Functions
+### Call R functions within NIMBLE
 
 Say we want an R function that adds 2 to every value in a vector.
 ```{r}
-add2 <- function(x) {
-   x + 2 
+calculate_life_expectancy <- function(x) {
+   -1/log(x)
 }
-Radd2 <- nimbleRcall(function(x = double(0)){}, 
-                     Rfun = 'add2',
-                     returnType = double(0))
-demoCode <- nimbleCode({
-  mu ~ dnorm(0,1)
-  for(i in 1:n) {
-    x[i] ~ dnorm(mu, sd = 1)
-    z[i] <- Radd2(x[i])
-    } 
-})
-
-param_names <- c("mu", "z")
-mcmc.out <- nimbleMCMC(code = demoCode, 
-                      constants = list(n = 4),
-                      data = list(x = c(-1, -2, 1, 2)), 
-                      inits = list(mu = rnorm(1)),
-                      monitors = param_names,
-                      nchains = 2, 
-                      niter = 1000,
-                      nburnin = 500)
-library(MCMCvis)
-MCMCsummary(object = mcmc.out, round = 2)
 ```
 
-Change format to vectorise.
+This function can be any function from R packages, easier to call with `name_package::my_function()`.
+
+Now a wrapper. 
 ```{r}
-add2 <- function(x) {
-   x + 2 
-}
-Radd2 <- nimbleRcall(function(x = double(1)){}, 
-                     Rfun = 'add2',
-                     returnType = double(1))
-demoCode <- nimbleCode({
-  mu ~ dnorm(0,1)
-  for(i in 1:n) {
-    x[i] ~ dnorm(mu, sd = 1)
-    }
-    z[1:4] <- Radd2(x[1:4])
-})
-
-param_names <- c("mu", "z")
-mcmc.out <- nimbleMCMC(code = demoCode, 
-                      constants = list(n = 4),
-                      data = list(x = c(-1, -2, 1, 2)), 
-                      inits = list(mu = rnorm(1)),
-                      monitors = param_names,
-                      nchains = 2, 
-                      niter = 1000,
-                      nburnin = 500)
-library(MCMCvis)
-MCMCsummary(object = mcmc.out, round = 2)
+Rcalculate_life_expectancy <- nimbleRcall(function(x = double(0)){}, 
+                     Rfun = 'calculate_life_expectancy',
+                     returnType = double(0))
 ```
 
-Now have paramater to estimate as parameter of your R function. 
+**Explain format. double(0), double(1), double(2). Best advice is to have a look to other functions.**
+
 ```{r}
-add2 <- function(x) {
-   x + 2 
-}
-Radd2 <- nimbleRcall(function(x = double(0)){}, 
-                     Rfun = 'add2',
-                     returnType = double(0))
-demoCode <- nimbleCode({
-  mu ~ dnorm(0,1)
-  for(i in 1:n) {x[i] ~ dnorm(mu, sd = 1)} 
-  z <- Radd2(mu)
+model <- nimbleCode({
+  # likelihood
+  for (i in 1:released){
+    survived[i] ~ dbern(theta)
+  }
+  # prior
+  theta ~ dunif(0, 1)
+  life_expectancy <- Rcalculate_life_expectancy(theta)
 })
+```
+Comment on the call to function `Rcalculate_life_expectancy()`.
 
-param_names <- c("mu", "z")
-mcmc.out <- nimbleMCMC(code = demoCode, 
-                      constants = list(n = 4),
-                      data = list(x = c(-1, -2, 1, 2)), 
-                      inits = list(mu = rnorm(1)),
-                      monitors = param_names,
-                      nchains = 2, 
-                      niter = 1000,
-                      nburnin = 500)
-library(MCMCvis)
-MCMCsummary(object = mcmc.out, round = 2)
+Rest is unchanged.
+```{r}
+my.data <- list(survived = c(rep(1,19), rep(0,57-19)))
+my.constants <- list(released = 57)
+parameters.to.save <- c("theta", "life_expectancy")
+initial.values <- function() list(theta = runif(1,0,1))
+n.iter <- 5000
+n.burnin <- 1000
+n.chains <- 3
+mcmc.output <- nimbleMCMC(code = model,
+                          data = my.data,
+                          constants = my.constants,
+                          inits = initial.values,
+                          monitors = parameters.to.save,
+                          niter = n.iter,
+                          nburnin = n.burnin,
+                          nchains = n.chains)
 ```
 
-In general if you do need a nimbleRcall like this, there are a couple of considerations. It is common to need to write a wrapper function, i.e. a function you access via nimbleRcall that calls your actual function of interest with arguments and then return value rearranged as needed. For example, if you just need the eigenvectors, a wrapper function could pick those out and return them.  The bigger issue is the returnType declaration: nimble type declarations do not include an R list of type declarations as a nimble type.  I think you could use a nimbleList data structure for this purpose.  You would have to create a nimbleList type and then use that as the declared returnType.  But you would still need to write a wrapper, so that you could convert the list returned from base::eigen into a nimbleList object to return from your wrapper.  I hope that makes sense.
-
-https://kenkellner.com/blog/models-with-integrals.html
-
-Same thing w/ global environment.
-
-```{r eval = FALSE}
-library(nimble)
-add2 <- function(x) {
-   x + 2 + globvar
-}
-add2(2)
-globvar <- 2020
-add2(2)
-Radd2 <- nimbleRcall(function(x = double(0)){}, 
-                     Rfun = 'add2',
-                     returnType = double(0))
-demoCode <- nimbleCode({
-  mu ~ dnorm(0,1)
-  for(i in 1:n) {x[i] ~ dnorm(mu, sd = 1)} 
-  z <- Radd2(mu)
-})
-
-param_names <- c("mu", "z")
-mcmc.out <- nimbleMCMC(code = demoCode, 
-                       constants = list(n = 4),
-                       data = list(x = c(-1, -2, 1, 2)), 
-                       inits = list(mu = rnorm(1)),
-                       monitors = param_names,
-                       nchains = 2, 
-                       niter = 1000,
-                       nburnin = 500)
-#printErrors()
-# pb is y is not recognized
-#ls()
-# assign y to global env
-# https://stackoverflow.com/questions/9726705/assign-multiple-objects-to-globalenv-from-within-a-function
-#assign("globvar", 20, envir = .GlobalEnv)
-
-library(MCMCvis)
-MCMCsummary(object = mcmc.out, round = 2)
+Display outputs. 
+```{r}
+MCMCsummary(object = mcmc.output, round = 2)
 ```
+
+Helpful when object format unusual for NIMBLE, like spatial object. Global environment. **"In general if you do need a nimbleRcall like this, there are a couple of considerations. It is common to need to write a wrapper function, i.e. a function you access via nimbleRcall that calls your actual function of interest with arguments and then return value rearranged as needed. For example, if you just need the eigenvectors, a wrapper function could pick those out and return them.  The bigger issue is the returnType declaration: nimble type declarations do not include an R list of type declarations as a nimble type.  I think you could use a nimbleList data structure for this purpose.  You would have to create a nimbleList type and then use that as the declared returnType.  But you would still need to write a wrapper, so that you could convert the list returned from base::eigen into a nimbleList object to return from your wrapper.". See also https://kenkellner.com/blog/models-with-integrals.html.**
 
 ### Code your own sampler
 
-```{r eval = FALSE}
-library(nimble)
-load('matos/ressources-chapters/nimble/dipper_data.Rdata')
-
-dipperCode <- nimbleCode({
-    logit.p ~ dnorm(0, 0.001)
-    logit.phi ~ dnorm(0, 0.001)
-    p <- expit(logit.p)
-    phi <- expit(logit.phi)
-    ##phi ~ dunif(0, 1)
-    ##p ~ dunif(0, 1)
-    for(i in 1:N) {
-        x[i, first[i]] <- 1
-        y[i, first[i]] <- 1
-        for(t in (first[i]+1):T) {
-            x[i, t] ~ dbern(phi * x[i, t-1])
-            y[i, t] ~ dbern(p * x[i, t])
-        }
-    }
+```{r}
+model <- nimbleCode({
+  # likelihood
+  for (i in 1:released){
+    survived[i] ~ dbern(theta)
+  }
+  # prior
+  theta ~ dunif(0, 1)
+  life_expectancy <- Rcalculate_life_expectancy(theta)
 })
+my.data <- list(survived = c(rep(1,19), rep(0,57-19)))
+my.constants <- list(released = 57)
+parameters.to.save <- c("theta", "life_expectancy")
+initial.values <- function() list(theta = runif(1,0,1))
+n.iter <- 5000
+n.burnin <- 1000
+n.chains <- 3
+mcmc.output <- nimbleMCMC(code = model,
+                          data = my.data,
+                          constants = my.constants,
+                          inits = initial.values,
+                          monitors = parameters.to.save,
+                          niter = n.iter,
+                          nburnin = n.burnin,
+                          nchains = n.chains)
+MCMCsummary(object = mcmc.output, round = 2)
+```
 
-N <- dim(sightings)[1]
-T <- dim(sightings)[2]
-dipperConsts <- list(N = N, T = T, first = first)
-dipperData <- list(y = sightings)
-xInit <- ifelse(!is.na(sightings), 1, 0)
-dipperInits <- list(logit.phi = 0, logit.p = 0, x = xInit)
-
-samples <- nimbleMCMC(dipperCode, dipperConsts, dipperData, dipperInits,
-                      niter = 10000, nburnin = 5000,
-                      monitors = c('p', 'phi'))
-
-my_MH <- nimbleFunction(
-    name = 'my_MH',
-    contains = sampler_BASE,
-    setup = function(model, mvSaved, target, control) {
-        calcNodes <- model$getDependencies(target)
-        scale <- control$scale
-    },
-    run = function() {
-        initialLP <- model$getLogProb(calcNodes)
-        current <- model[[target]]
-        proposal <- rnorm(1, current, scale)
-        model[[target]] <<- proposal
-        proposalLP <- model$calculate(calcNodes)
-        lMHR <- proposalLP - initialLP
-        if(runif(1,0,1) < exp(lMHR)) {
-            ## accept
-            copy(from = model, to = mvSaved, nodes = calcNodes, logProb = TRUE, row = 1)
-        } else {
-            ## reject
-            copy(from = mvSaved, to = model, nodes = calcNodes, logProb = TRUE, row = 1)
-        }
-    },
-    methods = list(
-        reset = function() {}
-    )
+Your own Metropolis. **Introduce nimbleFunction earlier https://r-nimble.org/html_manual/cha-user-defined.html#sec:user-functions**
+```{r}
+my_metropolis <- nimbleFunction(
+  name = 'my_metropolis',
+  contains = sampler_BASE,
+  setup = function(model, mvSaved, target, control) {
+    calcNodes <- model$getDependencies(target)
+    scale <- control$scale
+  },
+  run = function() {
+    initialLP <- model$getLogProb(calcNodes)
+    current <- model[[target]]
+    lcurrent <- log(current / (1 - current))
+    lproposal <- lcurrent  + rnorm(1, 0, scale)
+    proposal <- plogis(lproposal)
+    model[[target]] <<- proposal
+    proposalLP <- model$calculate(calcNodes)
+    lMHR <- proposalLP - initialLP
+    if(runif(1,0,1) < exp(lMHR)) {
+      ## accept
+      copy(from = model, to = mvSaved, nodes = calcNodes, logProb = TRUE, row = 1)
+    } else {
+      ## reject
+      copy(from = mvSaved, to = model, nodes = calcNodes, logProb = TRUE, row = 1)
+    }
+  },
+  methods = list(
+    reset = function() {}
+  )
 )
+```
 
+Parameter to tune. Seek equivalent in previous chapter.
+```{r}
 scale <- 0.05
+```
 
-Rmodel <- nimbleModel(dipperCode, dipperConsts, dipperData, dipperInits)
-conf <- configureMCMC(Rmodel, monitors = c('p', 'phi'))
+Detailed workflow.
+```{r}
+Rmodel <- nimbleModel(model, my.constants, my.data, initial.values())
+conf <- configureMCMC(Rmodel, monitors = c('theta'))
 conf$printSamplers()
 conf$printSamplers(byType = TRUE)
-conf$removeSamplers(c('logit.p', 'logit.phi'))
-conf$addSampler(target = 'logit.p', type = 'my_MH', control = list(scale = scale))
-conf$addSampler(target = 'logit.phi', type = 'my_MH', control = list(scale = scale))
+conf$removeSamplers(c('theta'))
+conf$addSampler(target = 'theta', type = 'my_metropolis', control = list(scale = scale))
 conf$printSamplers()
 conf$printMonitors()
 Rmcmc <- buildMCMC(conf)
-
-out <- compileNimble(list(model=Rmodel, mcmc=Rmcmc))
+out <- compileNimble(list(model = Rmodel, mcmc = Rmcmc))
 Cmcmc <- out$mcmc
-
-samples2 <- runMCMC(Cmcmc, niter = 10000, nburnin = 5000)
-
-samplesSummary(samples2)
-
-basicMCMCplots::chainsPlot(samples2)
+samples <- runMCMC(Cmcmc, niter = 5000, nburnin = 1000)
+samplesSummary(samples)
+basicMCMCplots::chainsPlot(samples)
 ```
+
+Change parameter to tune.
+```{r}
+scale <- 2
+Rmodel <- nimbleModel(model, my.constants, my.data, initial.values())
+conf <- configureMCMC(Rmodel, monitors = c('theta'))
+conf$printSamplers()
+conf$printSamplers(byType = TRUE)
+conf$removeSamplers(c('theta'))
+conf$addSampler(target = 'theta', type = 'my_metropolis', control = list(scale = scale))
+conf$printSamplers()
+conf$printMonitors()
+Rmcmc <- buildMCMC(conf)
+out <- compileNimble(list(model = Rmodel, mcmc = Rmcmc))
+Cmcmc <- out$mcmc
+samples <- runMCMC(Cmcmc, niter = 5000, nburnin = 1000)
+samplesSummary(samples)
+basicMCMCplots::chainsPlot(samples)
+```
+
+Draw parallel with previous chapter. 
 
 ### Your own distribution
 
-Example
+Example from https://r-nimble.org/html_manual/cha-user-defined.html#sec:user-distributions. Recode the beta distribution? Have a look to the raw NIMBLE code.
 
 ## When things go wrong: Tip and tricks
 
@@ -506,10 +489,6 @@ Main problems. Call to community.
 + Blabla.
 
 + Reblabla. 
-
-```{block2 fake, type='rmdnote', eval = FALSE}
-The *hypothesis* is a working assumption about which you want to learn using *data*. In capture--recapture analyses, the hypothesis might be a parameter like detection probability, or regression parameters in a relationship between survival probability and a covariate. Bayes' theorem tells us how to obtain the probability of a hypothesis given the data we have. 
-```
 
 ## Suggested reading
 
