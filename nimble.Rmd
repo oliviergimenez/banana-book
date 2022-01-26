@@ -170,7 +170,7 @@ mcmc.output <- nimbleMCMC(code = model,
                           nchains = n.chains)
 ```
 
-NIMBLE goes through several steps that we will explain in Section \@ref(advanced-stuff). Function `nimbleMCMC()` takes other arguments that you might find useful. For example, you can suppress the progress bar if you find it to depressing when running long simulations with `progressBar = FALSE`. You can also get a summary of the outputs by specifying `summary = TRUE`. Check `?nimbleMCMC` for more details. 
+NIMBLE goes through several steps that we will explain in Section \@ref(advanced-stuff). **Cite correct section** Function `nimbleMCMC()` takes other arguments that you might find useful. For example, you can suppress the progress bar if you find it to depressing when running long simulations with `progressBar = FALSE`. You can also get a summary of the outputs by specifying `summary = TRUE`. Check `?nimbleMCMC` for more details. 
 
 Now let's inspect what we have in `mcmc.output`. 
 ```{r}
@@ -272,85 +272,78 @@ lifespan %>%
   labs(x = "lifespan")
 ```
 
+Now you're good to go. The NIMBLE workflow you now have available with `nimbleMCMC()` allows you to build models and make inference. In the next section, we cover some advanced material that you may skip and go back to if you need it.  
+
 ## Advanced stuff {#advanced-stuff}
 
-**Move material from Speed slides here. Say that this section can be skipped.**
+### nimbleFunctions
 
-### Vectorization
-```{r, eval = FALSE}
-# JAGS (& Nimble)
-for(t in 1:Tmax){
-  x[t] <- Mu.x + epsilon[t]
-}
+NIMBLE provides `nimbleFunctions` for ...
 
-# Nimble
-x[1:Tmax] <- Mu.x + epsilon[1:Tmax]
+<https://r-nimble.org/html_manual/cha-RCfunctions.html#sec:RC-intro>
+
+```{r}
+computeLifespan <- nimbleFunction(
+    run = function(theta = double(0)) { # type declarations
+        ans <- -1/log(theta)
+        return(ans)
+        returnType(double(0))  # return type declaration
+    } )
 ```
 
-```{r eval = FALSE}
+The x = double(0) argument and returnType(double(0)) establish that the input and output will both be zero-dimensional (scalar) numbers.
+
+```{r}
+computeLifespan(0.8)
+```
+
+You can compile it and use the C++ code for faster computation. 
+```{r}
+CcomputeLifespan <- compileNimble(computeLifespan)
+CcomputeLifespan(0.8)
+```
+
+Or you can use your function in a model. 
+
+```{r}
 model <- nimbleCode({
   # likelihood
-  survived[1:released] ~ dbern(theta)
+  survived ~ dbinom(theta, released)
   # prior
   theta ~ dunif(0, 1)
-  life_expectancy <- -1/log(theta)
+  # derived quantity
+  life_expectancy <- computeLifespan(theta)
 })
 ```
 
-
-### Flexible specification of distributions
-```{r, eval = FALSE}
-# JAGS (& Nimble)
-for(t in 1:Tmax){
-  epsilon[t] ~ dnorm(0, tau)
-}
-tau <- pow(sigma, -2)
-sigma ~ dunif(0, 5)
-
-# Nimble
-for(t in 1:Tmax){
-  epsilon[t] ~ dnorm(0, sd = sigma)
-}
-sigma ~ dunif(0, 5)
-```
-
-+ Your own functions and distributions
-```{r, eval = FALSE}
-x[1:Tmax] <- myNimbleFunction(a = Mu.x, b = epsilon[1:Tmax])
-```
-
-```{r, eval = FALSE}
-sigma ~ dCustomDistr(c = 0.5, z = 10)
-```
-
-+ The end of empty indices
-```{r, eval = FALSE}
-# JAGS
-sum.x <- sum(x[])
-
-# Nimble
-sum.x <- sum(x[1:Tmax])
-```
-
-Your own distribution is outside the scope of this book, reference NIMBLE manual.
-
-### Behind the hood
-
-Our workflow so far.
-
+Rest is unchanged.
 ```{r}
-knitr::include_graphics("images/nimble_workflow_sofar.png")
+my.data <- list(survived = 19, released = 57)
+parameters.to.save <- c("theta", "life_expectancy")
+initial.values <- function() list(theta = runif(1,0,1))
+n.iter <- 5000
+n.burnin <- 1000
+n.chains <- 3
+mcmc.output <- nimbleMCMC(code = model,
+                          data = my.data,
+                          inits = initial.values,
+                          monitors = parameters.to.save,
+                          niter = n.iter,
+                          nburnin = n.burnin,
+                          nchains = n.chains)
+MCMCsummary(object = mcmc.output, round = 2)
 ```
 
-But `nimble` gives full access to the MCMC engine
 
-```{r}
-knitr::include_graphics("images/nimble_workflow.png")
-```
+Chapter 11 of the NIMBLE manual.
 
-The `nimbleMCMC()` interface runs the "default" MCMC, which precludes any customization of the MCMC sampling algorithms. This is fine for most use, but in some situations useful to know what's behind the hood. The workflow to use is: `nimbleModel()`, `configureMCMC()`, `buildMCMC()`, `compileNimble()` and `runMCMC()`. Why is it useful? **Go through example again. Show how to debug. Move stuff from Speed here.**
+Distribution functions : https://r-nimble.org/html_manual/cha-RCfunctions.html#sec:nimble-dist-funs
+
+Supports flow control: if-then-else, for, while, and stop
 
 ### Call R functions within NIMBLE
+
+In the same spirit, you can write your own distribution and use it in your model with NIMBLE. This is outside the scope of this book, and I refer to the NIMBLE manual at <https://r-nimble.org/html_manual/cha-user-defined.html#sec:user-distributions> for further details and examples. 
 
 Say we want an R function that adds 2 to every value in a vector.
 ```{r}
@@ -373,9 +366,7 @@ Rcalculate_life_expectancy <- nimbleRcall(function(x = double(0)){},
 ```{r}
 model <- nimbleCode({
   # likelihood
-  for (i in 1:released){
-    survived[i] ~ dbern(theta)
-  }
+  survived ~ dbern(theta)
   # prior
   theta ~ dunif(0, 1)
   life_expectancy <- Rcalculate_life_expectancy(theta)
@@ -385,8 +376,7 @@ Comment on the call to function `Rcalculate_life_expectancy()`.
 
 Rest is unchanged.
 ```{r}
-my.data <- list(survived = c(rep(1,19), rep(0,57-19)))
-my.constants <- list(released = 57)
+my.data <- list(survived = 19, released = 57)
 parameters.to.save <- c("theta", "life_expectancy")
 initial.values <- function() list(theta = runif(1,0,1))
 n.iter <- 5000
@@ -394,7 +384,6 @@ n.burnin <- 1000
 n.chains <- 3
 mcmc.output <- nimbleMCMC(code = model,
                           data = my.data,
-                          constants = my.constants,
                           inits = initial.values,
                           monitors = parameters.to.save,
                           niter = n.iter,
@@ -409,6 +398,25 @@ MCMCsummary(object = mcmc.output, round = 2)
 
 Helpful when object format unusual for NIMBLE, like spatial object. Global environment. **Uncomment for more details**
 <!-- "In general if you do need a nimbleRcall like this, there are a couple of considerations. It is common to need to write a wrapper function, i.e. a function you access via nimbleRcall that calls your actual function of interest with arguments and then return value rearranged as needed. For example, if you just need the eigenvectors, a wrapper function could pick those out and return them.  The bigger issue is the returnType declaration: nimble type declarations do not include an R list of type declarations as a nimble type.  I think you could use a nimbleList data structure for this purpose.  You would have to create a nimbleList type and then use that as the declared returnType.  But you would still need to write a wrapper, so that you could convert the list returned from base::eigen into a nimbleList object to return from your wrapper.". See also https://kenkellner.com/blog/models-with-integrals.html. -->
+
+## Behind the hood
+
+Our workflow so far.
+
+But `nimble` gives full access to the MCMC engine
+
+The `nimbleMCMC()` interface runs the "default" MCMC, which precludes any customization of the MCMC sampling algorithms. This is fine for most use, but in some situations useful to know what's behind the hood. The workflow to use is: `nimbleModel()`, `configureMCMC()`, `buildMCMC()`, `compileNimble()` and `runMCMC()`. Why is it useful? **Go through example again. Show how to debug. Move stuff from Speed here.**
+
+Steps to use NIMBLE at full capacity
+    Build the model. It is an R object.
+    Build the MCMC.
+    Compile the model and MCMC.
+    Run the MCMC.
+    Extract the samples.
+
+nimbleMCMC does all of this at once.
+
+Why is it useful? First, helps you debug. 
 
 ### Code your own sampler
 
@@ -523,6 +531,44 @@ Example from https://r-nimble.org/html_manual/cha-user-defined.html#sec:user-dis
 ## When things go wrong: Tip and tricks
 
 Main problems. Call to community.
+
+## Stuff I don't know where to put yet
+
+### Vectorization
+```{r, eval = FALSE}
+# JAGS (& Nimble)
+for(t in 1:Tmax){
+  x[t] <- Mu.x + epsilon[t]
+}
+
+# Nimble
+x[1:Tmax] <- Mu.x + epsilon[1:Tmax]
+```
+
+### Flexible specification of distributions
+```{r, eval = FALSE}
+# JAGS (& Nimble)
+for(t in 1:Tmax){
+  epsilon[t] ~ dnorm(0, tau)
+}
+tau <- pow(sigma, -2)
+sigma ~ dunif(0, 5)
+
+# Nimble
+for(t in 1:Tmax){
+  epsilon[t] ~ dnorm(0, sd = sigma)
+}
+sigma ~ dunif(0, 5)
+```
+
+### The end of empty indices
+```{r, eval = FALSE}
+# JAGS
+sum.x <- sum(x[])
+
+# Nimble
+sum.x <- sum(x[1:Tmax])
+```
 
 ## Summary
 
