@@ -12,9 +12,7 @@ NIMBLE stands for **N**umerical **I**nference for statistical **M**odels using *
 
 So why use NIMBLE you may ask? The short answer is that NIMBLE is capable of so much more! First, you will work from within R, but in the background NIMBLE will translate your code in C++ for (in general) faster computation. Second, NIMBLE extends the BUGS language for writing new functions and statistical distributions of your own, or borrow those written by others. Third, NIMBLE gives you full control of the MCMC samplers, and you may pick other algorithms than the defaults. Fourth, NIMBLE comes with a library of numerical methods other than MCMC algorithms, including sequential Monte Carlo (for particle filtering) and Monte Carlo Expectation Maximization (for maximum likelihood). Last but not least, the development team is friendly and helpful, and based on users' feedbacks, NIMBLE folks work constantly at improving the package capabilities. 
 
-## Running NIMBLE
-
-### Workflow
+## Getting started
 
 ```{block2 nimble_workflow, type='rmdnote', eval = FALSE}
 To run NIMBLE, you will need to:  
@@ -37,15 +35,17 @@ model <- nimbleCode({
   survived ~ dbinom(theta, released)
   # prior
   theta ~ dunif(0, 1)
+  # derived quantity
+  lifespan <- -1/log(theta)
 })
 ```
 
-You may check that the `model` R object contains your code:
+You can check that the `model` R object contains your code:
 ```{r}
 model
 ```
 
-In the code above, `survived` and `released` are known data, only `theta` needs to be estimated. The line `survived ~ dbinom(theta, released)` states that the number of successes or animals that have survived over winter  `survived` is distributed as (that's the `~`) as a binomial with `released` trials and probability of success or survival `theta`. Then the line `theta ~ dunif(0, 1)` assigns a uniform between 0 and 1 as a prior distribution to the survival probability. This is all you need, a likelihood and priors for model parameters, NIMBLE knows the Bayes theorem. 
+In the code above, `survived` and `released` are known, only `theta` needs to be estimated. The line `survived ~ dbinom(theta, released)` states that the number of successes or animals that have survived over winter  `survived` is distributed as (that's the `~`) as a binomial with `released` trials and probability of success or survival `theta`. Then the line `theta ~ dunif(0, 1)` assigns a uniform between 0 and 1 as a prior distribution to the survival probability. This is all you need, a likelihood and priors for model parameters, NIMBLE knows the Bayes theorem. The last line `lifespan <- - 1/log(theta)` calculates a quantity derived from `theta`, which is the expected lifespan assuming constant survival^[Cook LM, Brower LP, Croze HJ (1967) The accuracy of a population estimation from multiple recapture data. J Anim Ecol 36:57–60].
 
 A few comments:    
 
@@ -53,29 +53,89 @@ A few comments:
 
 + It does not matter in what order you write each line of code, NIMBLE uses what is called a declarative language for building models. In brief, you write code that tells NIMBLE what you want to achieve, and not how to get there. In contrast, an imperative language requires that you write what you want your program to do step by step.
 
-**Some terminology before continuing. Define node and graph, parent/child. If yes uncomment text.**
++ You can think of models in NIMBLE as graphs as in Figure \@ref(fig:dag-survival). A graph is made of relations (or edges) that can be of two types. A stochastic relation is signaled by a `~` sign and defines a random variable in the model, such as `survived` or `theta`. A deterministic relation is signaled by a `<-` sign, like `lifespan`. Relations define nodes on the left - the children - in terms of other nodes on the right - the parents, and relations are directed edges from parents to children. Such graphs are called directed acyclic graph or DAG.
+```{r dag-survival, echo = FALSE, fig.cap = "Graph of the animal survival model. Survived is a stochastic node defined by its parents `released` and `theta`, while `lifespan` is a deterministic node the value of which is defined exactly by the value of its parent `theta`."}
+mc <- nimbleModel(model, data = list(released = 57, survived = 19))
+#mc$getVarNames()
+#mc$getNodeNames()
+#mc$getNodeNames(determOnly = TRUE)
+#mc$getNodeNames(stochOnly = TRUE)
+#mc$getNodeNames(dataOnly = TRUE)
+#mc$getDependencies("theta")
+mc$plotGraph()
+```
 
-<!-- "A node holds one value, which may be a scalar or a vector. Edges define the relationships between nodes. A huge variety of statistical models can be thought of as graphs. Each relation defines a node in the model." And "The node on the left of a relation is defined in terms of other nodes – referred to as parent nodes – that appear on the right hand side. Taken together, the nodes in the model form a directed acyclic graph (with the parent/child relationships represented as directed edges). The very top-level nodes in the graph, with no parents, are constant nodes, which are defined either in the model definition (e.g. 1.0E-3), or in the data when the model is compiled (e.g. x[1])."  -->
-<!-- mc <- nimbleModel(model, data = list(released = 57, survived = 19)) -->
-<!-- mc$getVarNames() -->
-<!-- mc$getNodeNames() -->
-<!-- mc$getNodeNames(determOnly = TRUE) -->
-<!-- mc$getNodeNames(stochOnly = TRUE) -->
-<!-- mc$getNodeNames(dataOnly = TRUE) -->
-<!-- mc$getDependencies("theta") -->
-<!-- mc$plotGraph() -->
-
-Second step in our workflow is to read in some data. We use a list in which each component corresponds to a known variable in the model:
+Second step in our workflow is to read in some data. We use a list in which each component corresponds to a known quantity in the model:
 ```{r}
 my.data <- list(released = 57, survived = 19)
 ```
 
-Third step is to tell NIMBLE which parameters in your model you would like to keep track of, in other words the parameters you are interested in. In our simple model there is a single parameter `theta` for survival so you do not have much of a choice:
+You can proceed with data passed this way, but you should know a little more about how NIMBLE sees data. NIMBLE distinguishes data and constants. Constants are values that do not change, e.g. vectors of known index values or the indices used to define for-loops. Data are values that you might want to change, basically anything that only appears on the left of a `~`. Declaring relevant values as constants is better for computational efficiency, but it is easy to forget, and fortunately NIMBLE will by itself distinguish data and constants. **More details? Forward reference to an example with constants?**
+
+<!-- In passing say that full indexing is needed, you cannot let NIMBLE guess dimensions. -->
+<!-- Ici on reprend le modèle simple du dessus, et on l'exprime un peu différemment pour illustrer qqs autres features de NIMBLE: i) loops, ii) distinction between constants and data. The binomial is a sum of independent Bernoulli outcomes with same probability. the Like flipping a coin for each individual and get a survivor with prob theta. Here survived is. Going back to our animal survival example, it means that the likelihood can be written as a Bernoulli random variable taking value 1 if animal survived, and 0 otherwise. **Voir dans annexe Hobbs**. E.g. `survived[1] ~ dbern(theta)` up to `survived[59] ~ dbern(theta)`. Likelihood contribution of individuals. Loops is the product. Iid. Instead of duplicating the same line of code `survived[i] ~ dbern(theta)` we use a loop. -->
+<!-- ```{r} -->
+<!-- model <- nimbleCode({ -->
+<!--   # likelihood -->
+<!--   for (i in 1:released){ -->
+<!--     survived[i] ~ dbern(theta) -->
+<!--   } -->
+<!--   # prior -->
+<!--   theta ~ dunif(0, 1) -->
+<!-- }) -->
+<!-- ``` -->
+
+<!-- **If you try nimbleMCMC it won't work. This is because we ned to distinguish data from constants. Uncomment code.** -->
+
+<!-- Distinguih constants and data. To Nimble, not all "data" is data... -->
+<!-- ```{r} -->
+<!-- my.constants <- list(released = 57) -->
+<!-- my.data <- list(survived = 19) -->
+<!-- ``` -->
+<!-- ```{r, eval = FALSE} -->
+<!-- mcmc.output <- nimbleMCMC(code = model, -->
+<!--                           data = my.data, -->
+<!--                           constants = my.constants, -->
+<!--                           inits = initial.values, -->
+<!--                           monitors = parameters.to.save, -->
+<!--                           niter = n.iter, -->
+<!--                           nburnin = n.burnin, -->
+<!--                           nchains = n.chains) -->
+<!-- ``` -->
+
+
+<!-- ```{r} -->
+<!-- my.data <- list(survived = c(rep(1,19), rep(0,57-19))) -->
+<!-- my.constants <- list(released = 57) -->
+<!-- ``` -->
+
+<!-- The rest is the same. Steps 3, 4 and 5. -->
+<!-- ```{r} -->
+<!-- parameters.to.save <- c("theta", "life_expectancy") -->
+<!-- initial.values <- function() list(theta = runif(1,0,1)) -->
+<!-- n.iter <- 5000 -->
+<!-- n.burnin <- 1000 -->
+<!-- n.chains <- 3 -->
+<!-- ``` -->
+
+<!-- Run model, add argument `constants = my.constants`. -->
+<!-- ```{r} -->
+<!-- mcmc.output <- nimbleMCMC(code = model, -->
+<!--                           data = my.data, -->
+<!--                           constants = my.constants, -->
+<!--                           inits = initial.values, -->
+<!--                           monitors = parameters.to.save, -->
+<!--                           niter = n.iter, -->
+<!--                           nburnin = n.burnin, -->
+<!--                           nchains = n.chains) -->
+<!-- ``` -->
+
+Third step is to tell NIMBLE which nodes in your model you would like to keep track of, in other words the quantities you'd like to do inference about. In our model we want survival `theta` and `lifespan`:
 ```{r}
-parameters.to.save <- c("theta")
+parameters.to.save <- c("theta", "lifespan")
 ```
 
-In general you will have many parameters in your model, including some of no focal interest, and having full control on verbosity will prove handy.
+In general you have many quantities in your model, including some of little interest that are not worth displaying, and having full control on verbosity will prove handy.
 
 Fourth step is to specify initial values for all model parameters. To make sure that the MCMC algorithm explores the posterior distribution, we start different chains with different parameter values. You can specify initial values for each chain in a list and put them in yet another list:
 ```{r}
@@ -86,13 +146,13 @@ initial.values <- list(init1, init2, init3)
 initial.values
 ```
 
-Alternatively, you may write a simple R function that generates random initial values:
+Alternatively, you can write a simple R function that generates random initial values:
 ```{r}
 initial.values <- function() list(theta = runif(1,0,1))
 initial.values()
 ```
 
-Firth and last step, you need to tell NIMBLE the number of chains to run, say `n.chain`, how long the burn-in period should be, say `n.burnin`, and the number of iterations following the burn-in period to be used for posterior inference. In NIMBLE, you specify the total number of iterations, say `n.iter`, so that the number of posterior samples per chain is `n.iter - n.burnin`. NIMBLE also allows discarding samples after burn-in, a procedure known as thinning, which we will not use in this book^[Link, W.A. and Eaton, M.J. (2012), On thinning of chains in MCMC. Methods in Ecology and Evolution, 3: 112-115.]
+Firth and last step, you need to tell NIMBLE the number of chains to run, say `n.chain`, how long the burn-in period should be, say `n.burnin`, and the number of iterations following the burn-in period to be used for posterior inference. In NIMBLE, you specify the total number of iterations, say `n.iter`, so that the number of posterior samples per chain is `n.iter - n.burnin`. NIMBLE also allows discarding samples after burn-in, a procedure known as thinning, which I will not use in this book^[Link, W.A. and Eaton, M.J. (2012), On thinning of chains in MCMC. Methods in Ecology and Evolution, 3: 112-115.]
 ```{r}
 n.iter <- 5000
 n.burnin <- 1000
@@ -110,7 +170,7 @@ mcmc.output <- nimbleMCMC(code = model,
                           nchains = n.chains)
 ```
 
-NIMBLE goes through several steps that we will explain later on. **Reference forward. Say a few words on the messages we receive. Comment on arguments of the function: E.g. ProgressBar can be supressed if too depressing.** 
+NIMBLE goes through several steps that we will explain in Section \@ref(advanced-stuff). Function `nimbleMCMC()` takes other arguments that you might find useful. For example, you can suppress the progress bar if you find it to depressing when running long simulations with `progressBar = FALSE`. You can also get a summary of the outputs by specifying `summary = TRUE`. Check `?nimbleMCMC` for more details. 
 
 Now let's inspect what we have in `mcmc.output`. 
 ```{r}
@@ -123,14 +183,14 @@ dim(mcmc.output$chain1)
 head(mcmc.output$chain1)
 ```
 
-We have `r dim(mcmc.output$chain1)[1]` samples from the posterior distribution of `theta`, which corresponds to `n.iter - n.burnin`. From there, you may want to compute the posterior mean of `theta`:
+Each component of the list is a matrix. In rows, you have `r dim(mcmc.output$chain1)[1]` samples from the posterior distribution of `theta`, which corresponds to `n.iter - n.burnin`. In columns, you have the quantities we monitor, `theta` and `lifespan`. From there, you can compute the posterior mean of `theta`:
 ```{r}
-mean(mcmc.output$chain1)
+mean(mcmc.output$chain1[,'theta'])
 ```
 
-You may also obtain the 95% credible interval for `theta`:
+You can also obtain the 95% credible interval for `theta`:
 ```{r}
-quantile(mcmc.output$chain1, probs = c(2.5, 97.5)/100)
+quantile(mcmc.output$chain1[,'theta'], probs = c(2.5, 97.5)/100)
 ```
 
 Let's visualise the posterior distribution of `theta` with a histogram: 
@@ -144,6 +204,11 @@ mcmc.output %>%
 
 There are less painful ways of doing posterior inference. In this book, I will use the R package `MCMCvis`^[https://github.com/caseyyoungflesh/MCMCvis] to summarise and visualize MCMC outputs, but there are other perfectly valid options out there like `ggmcmc`^[Fernández-i-Marín, X. (2016). ggmcmc: Analysis of MCMC Samples and Bayesian Inference. Journal of Statistical Software, 70(9), 1–20] and `basicMCMCplots`^[https://cran.r-project.org/web/packages/basicMCMCplots/index.html]. **Shall I demonstrate these other options?.**
 
+<!-- Finally we want to look at our samples. NIMBLE returns samples as a simple matrix with named columns. There are numerous packages for processing MCMC output. If you want to use the coda package, you can convert a matrix to a coda mcmc object like this: -->
+<!-- library(coda) -->
+<!-- coda.samples <- as.mcmc(samples) -->
+<!-- Alternatively, if you call nimbleMCMC with the argument samplesAsCodaMCMC = TRUE, the samples will be returned as a coda object. -->
+
 Let's load the package `MCMCvis`:
 ```{r}
 library(MCMCvis)
@@ -151,12 +216,12 @@ library(MCMCvis)
 
 To get the most common numerical summaries, the function `MCMCsummary()` does the job:
 ```{r}
-MCMCsummary(mcmc.output, round = 2)
+MCMCsummary(object = mcmc.output, round = 2)
 ```
 
-You may use a caterpillar plot to visualise the posterior distributions of `theta` with `MCMCplot()`:
+You can use a caterpillar plot to visualise the posterior distributions of `theta` with `MCMCplot()`:
 ```{r}
-MCMCplot(mcmc.output, 
+MCMCplot(object = mcmc.output, 
          params = 'theta')
 ```
 
@@ -164,127 +229,50 @@ The point represents the posterior median, the thick line is the 50% credible in
 
 The trace and posterior density of theta can be obtained with `MCMCtrace()`:
 ```{r}
-MCMCtrace(mcmc.output,
-          pdf = FALSE,
+MCMCtrace(object = mcmc.output,
+          pdf = FALSE, # no export to PDF
+          ind = TRUE, # separate density lines per chain
           params = "theta")
 ```
 
-You may also add the diagnostics of convergence we discussed in the previous chapter:
+You can also add the diagnostics of convergence we discussed in the previous chapter:
 ```{r}
-MCMCtrace(mcmc.output,
+MCMCtrace(object = mcmc.output,
           pdf = FALSE,
           ind = TRUE,
-          Rhat = TRUE,
-          n.eff = TRUE,
+          Rhat = TRUE, # add Rhat
+          n.eff = TRUE, # add eff sample size
           params = "theta")
 ```
 
-
-<!-- Finally we want to look at our samples. NIMBLE returns samples as a simple matrix with named columns. There are numerous packages for processing MCMC output. If you want to use the coda package, you can convert a matrix to a coda mcmc object like this: -->
-
-<!-- library(coda) -->
-<!-- coda.samples <- as.mcmc(samples) -->
-
-<!-- Alternatively, if you call nimbleMCMC with the argument samplesAsCodaMCMC = TRUE, the samples will be returned as a coda object. -->
-
-
-### Into specifics
-
-Ici on reprend le modèle simple du dessus, et on l'exprime un peu différemment pour illustrer qqs autres features de NIMBLE: i) loops, ii) distinction between constants and data, iii) stochastic vs deterministic nodes, and edges. The binomial is just a sum of Bernoulli outcomes. Like flipping a coin for each individual and get a survivor with prob theta. Here survived is a Bernoulli random variable taking value 1 if animal survived, and 0 otherwise. **Voir dans annexe Hobbs**. E.g. `survived[1] ~ dbern(theta)` up to `survived[59] ~ dbern(theta)`. Likelihood contribution of individuals. Loops is the product. Iid. Instead of duplicating the same line of code `survived[i] ~ dbern(theta)` we use a loop. 
+We calculated lifespan directly in our model with `lifespan <- -1/log(theta)`. But you can also calculate this quantity from outside NIMBLE. This is a nice by-product of using MCMC simulations: you can obtain the posterior distribution of any quantity that is function of your model parameters by applying this function to samples from the posterior distribution of these parameters. In our example, all you need is samples from the posterior distribution of `theta`, which we pool between the three chains with:
 ```{r}
-model <- nimbleCode({
-  # likelihood
-  for (i in 1:released){
-    survived[i] ~ dbern(theta)
-  }
-  # prior
-  theta ~ dunif(0, 1)
-  life_expectancy <- -1/log(theta)
-})
+theta_samples <- c(mcmc.output$chain1[,'theta'], 
+                   mcmc.output$chain2[,'theta'],
+                   mcmc.output$chain3[,'theta'])
 ```
 
-Note the `life_expectancy <- -1/log(theta)` which gives life expectancy. **Relations can be of two types. "We have seen earlier a stochastic relation (`~`) that defines a stochastic node, representing a random variable in the model. A deterministic relation (`<-`) defines a deterministic node, the value of which is determined exactly by the values of its parents."**
-
-**If you try nimbleMCMC it won't work. This is because we ned to distinguish data from constants. Uncomment code.**
-
-<!-- Distinguish constants and data. To Nimble, not all "data" is data... -->
-<!-- ```{r} -->
-<!-- my.constants <- list(released = 57) -->
-<!-- my.data <- list(survived = 19) -->
-<!-- ``` -->
-
-<!-- **Constants**: -->
-<!-- + Can never be changed -->
-<!-- + Must be provided when a model is defined (part of the model structure) -->
-<!-- + E.g. vector of known index values, variables used to define for-loops, etc. -->
-
-<!-- After defining the model code, we should define the constants, initial values and data list. Compared to WinBUGS and JAGS, data and initial values can be defined in the same way, while ‘constants’ is a new list that contains the values that would not change, including the variables that define for-loop indices. In our settings, the lists of data, constants and initial values are given as follows: -->
-
-<!-- **Data**: -->
-<!-- + Can be changed without re-building the model -->
-<!-- + Can be (re-)simulated within a model -->
-<!-- + E.g. stuff that *only* appears to the left of a "~" -->
-
-<!-- For computational efficiency, better to specify as much as possible as constants. NIMBLE will help you with this! -->
-
-<!-- ```{r, eval = FALSE} -->
-<!-- mcmc.output <- nimbleMCMC(code = model, -->
-<!--                           data = my.data, -->
-<!--                           constants = my.constants, -->
-<!--                           inits = initial.values, -->
-<!--                           monitors = parameters.to.save, -->
-<!--                           niter = n.iter, -->
-<!--                           nburnin = n.burnin, -->
-<!--                           nchains = n.chains) -->
-<!-- ``` -->
-
-
+To get samples from the posterior distribution of lifespan, we apply the function to calculate lifespan to the samples from the posterior distribution of survival:
 ```{r}
-my.data <- list(survived = c(rep(1,19), rep(0,57-19)))
-my.constants <- list(released = 57)
+lifespan <- -1/log(theta_samples)
 ```
 
-The rest is the same. Steps 3, 4 and 5. 
+As usual then, you can calculate the posterior mean and 95% credible interval:
 ```{r}
-parameters.to.save <- c("theta", "life_expectancy")
-initial.values <- function() list(theta = runif(1,0,1))
-n.iter <- 5000
-n.burnin <- 1000
-n.chains <- 3
+mean(lifespan)
+quantile(lifespan, probs = c(2.5, 97.5)/100)
 ```
 
-Run model, add argument `constants = my.constants`.
+You can also visualise the posterior distribution of lifespan:
 ```{r}
-mcmc.output <- nimbleMCMC(code = model,
-                          data = my.data,
-                          constants = my.constants,
-                          inits = initial.values,
-                          monitors = parameters.to.save,
-                          niter = n.iter,
-                          nburnin = n.burnin,
-                          nchains = n.chains)
-```
-
-Life expectancy directly monitored. But you can also calculate it outside NIMBLE by hand: **problem is that we show how to inspect mcmc.output below, not before, how to fix that? show the whole workflow first, then show these features.**
-```{r}
-theta <- c(mcmc.output$chain1[,'theta'], 
-  mcmc.output$chain2[,'theta'],
-  mcmc.output$chain3[,'theta'])
-lambda <- -1/log(theta)
-head(lambda)
-```
-
-Visualise:
-```{r}
-lambda %>%
+lifespan %>%
   as_tibble() %>%
   ggplot() +
   geom_histogram(aes(x = value), color = "white") +
-  labs(x = "life expectancy")
+  labs(x = "lifespan")
 ```
 
-
-## Advanced stuff
+## Advanced stuff {#advanced-stuff}
 
 **Move material from Speed slides here. Say that this section can be skipped.**
 
@@ -343,6 +331,8 @@ sum.x <- sum(x[])
 # Nimble
 sum.x <- sum(x[1:Tmax])
 ```
+
+Your own distribution is outside the scope of this book, reference NIMBLE manual.
 
 ### Behind the hood
 
