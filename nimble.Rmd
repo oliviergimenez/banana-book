@@ -4,13 +4,15 @@
 
 In this second chapter, you will get familiar with NIMBLE, an R package that implements up-to-date MCMC algorithms for fitting complex models. NIMBLE spares you from coding the MCMC algorithms by hand, and requires only the specification of a likelihood and priors for model parameters. We will illustrate NIMBLE main features with a simple example, but the ideas hold for other problems.
 
-**go through https://r-nimble.org/documentation-2 and https://r-nimble.org/examples**
+**go through https://r-nimble.org/documentation-2 and https://r-nimble.org/examples; also see workshop FAQ https://oliviergimenez.github.io/bayesian-cr-workshop/; check forum and my gmail**
 
 ## What is NIMBLE?
 
 NIMBLE stands for **N**umerical **I**nference for statistical **M**odels using **B**ayesian and **L**ikelihood **E**stimation. Briefly speaking, NIMBLE is an R package that implements for you MCMC algorithms to generate samples from the posterior distribution of model parameters. Freed from the burden of coding your own MCMC algorithms, you only have to specify a likelihood and priors to apply the Bayes theorem. To do so, NIMBLE uses a syntax very similar to the R syntax, which should make your life easier. This so-called BUGS language is also used by other programs like WinBUGS, OpenBUGS, and JAGS. 
 
 So why use NIMBLE you may ask? The short answer is that NIMBLE is capable of so much more! First, you will work from within R, but in the background NIMBLE will translate your code in C++ for (in general) faster computation. Second, NIMBLE extends the BUGS language for writing new functions and statistical distributions of your own, or borrow those written by others. Third, NIMBLE gives you full control of the MCMC samplers, and you may pick other algorithms than the defaults. Fourth, NIMBLE comes with a library of numerical methods other than MCMC algorithms, including sequential Monte Carlo (for particle filtering) and Monte Carlo Expectation Maximization (for maximum likelihood). Last but not least, the development team is friendly and helpful, and based on users' feedbacks, NIMBLE folks work constantly at improving the package capabilities. 
+
+**Figure avec logo Nimble**
 
 ## Getting started
 
@@ -274,9 +276,7 @@ lifespan %>%
 
 Now you're good to go. The NIMBLE workflow you now have available with `nimbleMCMC()` allows you to build models and make inference. In the next section, we cover some advanced material that you may skip and go back to if you need it.  
 
-## Advanced stuff {#advanced-stuff}
-
-### nimbleFunctions
+## Functions in NIMBLE
 
 NIMBLE provides `nimbleFunctions` for ...
 
@@ -334,16 +334,13 @@ mcmc.output <- nimbleMCMC(code = model,
 MCMCsummary(object = mcmc.output, round = 2)
 ```
 
-
 Chapter 11 of the NIMBLE manual.
 
 Distribution functions : https://r-nimble.org/html_manual/cha-RCfunctions.html#sec:nimble-dist-funs
 
 Supports flow control: if-then-else, for, while, and stop
 
-### Call R functions within NIMBLE
-
-In the same spirit, you can write your own distribution and use it in your model with NIMBLE. This is outside the scope of this book, and I refer to the NIMBLE manual at <https://r-nimble.org/html_manual/cha-user-defined.html#sec:user-distributions> for further details and examples. 
+You can R functions within NIMBLE. From packages for example, or complex function you don't feel like recoding as nimbleFunctions. You lose the compilation and speed, but convenient and flexible even though slow. 
 
 Say we want an R function that adds 2 to every value in a vector.
 ```{r}
@@ -399,6 +396,8 @@ MCMCsummary(object = mcmc.output, round = 2)
 Helpful when object format unusual for NIMBLE, like spatial object. Global environment. **Uncomment for more details**
 <!-- "In general if you do need a nimbleRcall like this, there are a couple of considerations. It is common to need to write a wrapper function, i.e. a function you access via nimbleRcall that calls your actual function of interest with arguments and then return value rearranged as needed. For example, if you just need the eigenvectors, a wrapper function could pick those out and return them.  The bigger issue is the returnType declaration: nimble type declarations do not include an R list of type declarations as a nimble type.  I think you could use a nimbleList data structure for this purpose.  You would have to create a nimbleList type and then use that as the declared returnType.  But you would still need to write a wrapper, so that you could convert the list returned from base::eigen into a nimbleList object to return from your wrapper.". See also https://kenkellner.com/blog/models-with-integrals.html. -->
 
+In the same spirit, you can write your own distribution and use it in your model with NIMBLE. This is outside the scope of this book, and I refer to the NIMBLE manual at <https://r-nimble.org/html_manual/cha-user-defined.html#sec:user-distributions> for further details and examples. 
+
 ## Behind the hood
 
 Our workflow so far.
@@ -416,7 +415,11 @@ Steps to use NIMBLE at full capacity
 
 nimbleMCMC does all of this at once.
 
-Why is it useful? First, helps you debug. 
+Why is it useful? First, helps you debug. Second, play around with samplers. Change default, or write your own. 
+
+### Debug
+
+### Change default sampler
 
 ### Code your own sampler
 
@@ -524,28 +527,11 @@ samplesSummary(samples)
 
 Draw parallel with previous chapter. 
 
-### Write your own distribution {#write-your-own-distribution}
+## Tip and tricks
 
-Example from https://r-nimble.org/html_manual/cha-user-defined.html#sec:user-distributions. Recode the beta distribution? Have a look to the raw NIMBLE code.
+Main problems ans solutions. Call to community.
 
-## When things go wrong: Tip and tricks
-
-Main problems. Call to community.
-
-## Stuff I don't know where to put yet
-
-### Vectorization
-```{r, eval = FALSE}
-# JAGS (& Nimble)
-for(t in 1:Tmax){
-  x[t] <- Mu.x + epsilon[t]
-}
-
-# Nimble
-x[1:Tmax] <- Mu.x + epsilon[1:Tmax]
-```
-
-### Flexible specification of distributions
+Flexible specification of distributions
 ```{r, eval = FALSE}
 # JAGS (& Nimble)
 for(t in 1:Tmax){
@@ -561,7 +547,7 @@ for(t in 1:Tmax){
 sigma ~ dunif(0, 5)
 ```
 
-### The end of empty indices
+The end of empty indices
 ```{r, eval = FALSE}
 # JAGS
 sum.x <- sum(x[])
@@ -569,6 +555,88 @@ sum.x <- sum(x[])
 # Nimble
 sum.x <- sum(x[1:Tmax])
 ```
+
+Try using "calculate=FALSE" in the call to nimbleModel. For such a large model, the uncompiled calculation can be a substantial portion of the time. When you get to configureMCMC, try using "useConjugacy=FALSE" to make that faster.
+
+Thanks for posting. As a quick reply, please try using "calculate = FALSE" in the call to nimbleModel.
+
+By default (calculate = TRUE), nimbleModel iterates through every node of the model, in order, trying to calculate, which means calculating values for deterministic nodes and log probabilities for stochastic nodes. For large models, this can take a long time because it is uncompiled and also doing some laborious keeping track of model structure. It can be helpful for debugging or catching issues, but it isn't strictly necessary.
+
+Non-parametric?
+
+The NA or NaN messages are saying that the log probability calculation for a node is not valid.  That usually means not that the input data for the node is invalid but that some initial values for its parent nodes are giving an invalid probability. This may or may not be a problem. The MCMC does try to initialize everything. A good way to diagnose issues is to run the MCMC for 0 iterations (which will trigger the initialization) and then inspect the compiled model object.  For example, if it is called Cmodel, you can do:
+
+Cmodel$calculate("y[5, 10]") # perhaps this is NA
+# Then inspect parent nodes to see how this is happening:
+Cmodel$beta1[5, 10] # etc.
+
+
+
+here a couple of tips. A first tip would be to use the argument calculate = FALSE when using the nimbleModel() function, which will build the nimble models faster. By default, calculate is set to TRUE, meaning that nimble calculates all deterministic nodes and logProbability values when creating the model, and with large models this can eat up a good amount of time and memory.
+
+Second, it may be helpful in this case to write Z and prob in a vectorized form; this should help in that the resulting model would have less nodes to handle (i.e. two vector nodes instead of 2xn scalar nodes).  To do so, you would need a user-defined distribution for the vectorized version of the Bernoulli variable, that takes a vector of probabilities and returns the total log-probability.  If you are not familiar with user-defined distributions, they are covered in Chapter 12.2 of the User Manual, plus there are a couple of examples using them in our examples page on the website ("Writing a new distribution" and the "stochastic volatility" ones). And of course, feel free to ask for clarifications here!
+
+Back to your needs: Here is a way to work around some of nimble's scaling issues.  You can use nimbleRcall to keep large constant objects entirely out of the model.  In the example below, I have kept X and pCov out of the model.  In effect, nimble is still managing the model graph and using its MCMC system, but some of the big calculations are thrown back to R.  There will be some overhead from going back to R, but maybe those costs won't be too bad compared to the cost of the large calculations.  Of course, I don't know if you want to expand the model to have X and/or pCov be non-constant, but if so you can build on the basic scheme shown below.  It would also be possible to have the large objects like X and pCov be in C++ objects used by C++ functions via nimbleExternalCall, but that would take some direct C++ coding.
+
+
+The warnings about variables not being fully initialized are just that, warnings, not errors.  A difference from JAGS is that you do not need all inits and data to be set up when you call nimbleModel, although many find it convenient to do so.  By default, nimbleModel tries calculating the entire model and lets you know if anything is not initialized, in case you thought it was fully initialized.  If you don't want it to do this (e.g. after you have your workflow working smoothly), you can do 'calculate=FALSE' in the nimbleModel call.
+
+If you run MCMC with incomplete initial values, it might work or it might not.  You may get those warnings from a full calculation at the start and then it might run fine.  The MCMC will try to initialize a node that is NA by drawing from its prior.  In some models, that value can make something that depends on it invalid, with a log probability of -Inf, if the value of one node determines the valid range of values for another.  Sometimes the MCMC will successfully mix its way out of invalid initial states, sometimes not.  In summary, if you get a slew of warnings, and then they stop, and then you get reasonable MCMC results, you are probably fine.  Either way, many people find it helpful to achieve full initialization.  The nodes that need to be initialized are stochastic nodes.  A related issue is that even if drawing initial values from priors does not give warnings or errors, those are often not very good initial values.
+
+From reading your code, I am not quickly seeing what nodes are not fully initialized.  You can use the model object to debug the situation.  For example, if the messages are telling you that survNT is not fully initialized, you can do:
+
+model$survNT # look at the values
+model$calculate('survNT') # look at their log probability sum
+model$calculate('survNT[3]') # one by one if needed
+(assuming "model" is from model <- nimbleModel(<your inputs>)
+
+If the problem is further down and unclear where, you can do something like this:
+
+for(yNode in model$expandNodeNames('y')) {
+  logProb <- model$calculate(yNode)
+  cat(paste("logProb for", yNode, "=", logProb))
+}
+
+If you determine a specific yNode has an invalid logProb, you can check its inputs:
+
+model$po[<indices as needed>]
+model$z
+
+and so on.
+
+
+First step, not the problem: after you build the model (nimbleModel), Rmodel$calculate() returns NA.  This is not necessarily an error but indicates incomplete initialization, which may later be filled in manually or by the MCMC drawing from priors.
+# I explored like this:
+Rmodel$calculate() #NA
+for(v in Rmodel$getVarNames())
+  print(paste(v, Rmodel$calculate(v)))
+for(node in Rmodel$expandNodeNames("state"))
+  print(paste(node, Rmodel$calculate(node)))
+Rmodel$gamma_Matrix
+Rmodel$temp
+
+
+nimbleRcall is a way to pass control back to an R function, even from compiled nimble code.  It does impose the overhead of using the R evaluator, much slower than compiled C++, but possibly not a problem for a quick step.  If speed becomes an issue, you could also do it via a nimbleExternalCall, which can call separately compiled code, if you get set up to use an eigen decomposition outside of nimble.
+
+
+NIMBLE is much more than MCMC sampler. Model ^rogrammaing language. 
+
+Parallelization https://r-nimble.org/nimbleExamples/parallelizing_NIMBLE.html When you follow the code in that example of running chains in parallel, one is simply setting a different seed for each chain. This is similar to JAGS once JAGS gets to a fifth chain (after using different generators for the first four).
+By default, runMCMC and nimbleMCMC just have the random number generation for each chain pick up where the previous chain left off, which of course guarantees independence. But if you use setSeed, then that will also set different seeds for each chain.
+
+In general, setting different seeds is very likely to be fine. It's hard to find reliable information about this, but my understanding is that different seeds should be quite far apart in the period sequence that random numbers generate. That said, it's possible that the pseudo-random numbers for two chains could overlap, but if this happened, it would happen such that the initial random numbers for one chain occurred at some point later in the sequence of numbers for the second chain. I doubt that this would cause any impactful dependence given that an MCMC will depend in a complex way on the full history of the chain.
+
+
+
+Tomas, if you've already used runMCMC(Cmcmc, ...), then yes, you can still extend the current MCMC chain, using:
+
+Cmcmc$run(niter, reset = FALSE)
+
+where niter is the number of additional MCMC iterations you wish to run.  After that, you can extract the full maxtrix of MCMC samples (which will include the ones you previously executed in the first call of runMCMC), using:
+
+full_matrix_of_samples <- as.matrix(Cmcmc$mvSamples)
+
+
 
 ## Summary
 
@@ -595,4 +663,8 @@ sum.x <- sum(x[1:Tmax])
 
 <!-- Pourquoi Nimble plutôt que Stan? Syntaxe BUGS, also discrete latent states easier to deal with, no need to marginalise. In Stan you marginalise (ref forward to relevant section of the book), but difficult endeavour, and you do not need to do that with NIMBLE, it has algorithms that work fine with discrete latent states.  -->
 
+<!-- What about vectorization? -->
 
+<!-- And parallelization à la jagsUI? -->
+
+<!-- Simulations also? Generate initial values, cf code Maud? -->
