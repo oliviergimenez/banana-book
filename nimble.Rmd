@@ -452,33 +452,21 @@ Csurvival$theta
 **Play with MLE here?**
 
 ```{r eval = FALSE}
-Rmodel <- nimbleModel(codeOcc, constants, data, inits)
+Rmodel <- nimbleModel(code = model, 
+                      data = my.data, 
+                      inits = initial.values())
 Rmodel$calculate()
-
-Rmodel$alpha
-Rmodel$beta <- c(-1, -1)
-Rmodel$beta
+Rmodel$theta
+Rmodel$theta <- 0.5
+Rmodel$theta
 Rmodel$calculate()
-
 Cmodel <- compileNimble(Rmodel)
+Cmodel$theta
+Cmodel[['theta']] <- 0.9
+Cmodel[['theta']]
 
-Cmodel$beta
-Cmodel$beta[1]
-Cmodel$beta[2]
-Cmodel[['beta[1]']] <- 99
-Cmodel[['beta[1]']]
-Cmodel[['beta[2]']]
-Cmodel[['alpha[2]']]
-
-list$element
-list[['element']]
-
-
-f <- function(par) {  ## par is: (a1, a2, b1, b2)
-    Cmodel[['alpha[1]']] <- par[1]
-    Cmodel[['alpha[2]']] <- par[2]
-    Cmodel[['beta[1]']]  <- par[3]
-    Cmodel[['beta[2]']]  <- par[4]
+f <- function(par) {  ## par is theta
+    Cmodel[['theta']] <- par
     ll <- Cmodel$calculate()
     return(-ll)
 }
@@ -486,15 +474,30 @@ f <- function(par) {  ## par is: (a1, a2, b1, b2)
 ## inital values to start the optimization at,
 ## a function to maximize, or minimize
 
-Cmodel$alpha
-Cmodel$beta
+Cmodel$theta
 
-f( c(0,0,-1,-1) )
+f( 0.5 )
+f( 0.9 )
 
-system.time(out <- optim(c(0,0,0,0), f))
+out <- optimize(f, interval = c(0,1))
+round(out$minimum, 2)
 
-out$convergence
-round(out$par, 2)
+f <- function(par) {  ## par is theta
+    Rmodel$theta <- par
+    ll <- Rmodel$calculate()
+    return(-ll)
+}
+
+## inital values to start the optimization at,
+## a function to maximize, or minimize
+
+Rmodel$theta
+
+f( 0.5 )
+f( 0.9 )
+
+out <- optimize(f, interval = c(0,1))
+round(out$minimum, 2)
 ```
 
 
@@ -582,8 +585,6 @@ summary(samples2)
 
 Many samplers, to know all samplers available in NIMBLE, type in `?samplers`. Eg block sampling for correlated parameters. High correlation in (regression) parameters may make independent samplers inefficient. Block sampling (propose candidate values from multivariate distribution) might help.
 
-
-
 ### Code your own sampler
 
 ```{r}
@@ -596,9 +597,6 @@ model <- nimbleCode({
 my.data <- list(survived = 19, released = 57)
 parameters.to.save <- c("theta")
 initial.values <- function() list(theta = runif(1,0,1))
-n.iter <- 5000
-n.burnin <- 1000
-n.chains <- 3
 #mcmc.output <- nimbleMCMC(code = model,
 #                          data = my.data,
 #                          inits = initial.values,
@@ -649,7 +647,7 @@ scale <- 0.1
 ```
 
 Detailed workflow.
-```{r eval = FALSE}
+```{r}
 Rmodel <- nimbleModel(code = model, data = my.data, inits = initial.values())
 conf <- configureMCMC(Rmodel, monitors = c('theta'))
 conf$printSamplers()
@@ -662,11 +660,11 @@ out <- compileNimble(list(model = Rmodel, mcmc = Rmcmc))
 Cmcmc <- out$mcmc
 samples <- runMCMC(Cmcmc, niter = 10000, nburnin = 9000)
 samplesSummary(samples)
-basicMCMCplots::chainsPlot(samples)
+#basicMCMCplots::chainsPlot(samples)
 ```
 
 Re-run by changing scale of proposal with 1 and 10, and compare to traceplots in previous chapter Figure \@ref(fig:tracechainlength):
-```{r echo = FALSE}
+```{r echo = FALSE, message = FALSE, warning = FALSE}
 scale <- 1
 Rmodel <- nimbleModel(code = model, data = my.data, inits = initial.values())
 conf <- configureMCMC(Rmodel, monitors = c('theta'))
