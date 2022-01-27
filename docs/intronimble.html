@@ -199,7 +199,7 @@ Figure 2.1: Graph of the animal survival model. Survived is a stochastic node de
 <code class="sourceCode R"><span class="va">initial.values</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>theta <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html">runif</a></span><span class="op">(</span><span class="fl">1</span>,<span class="fl">0</span>,<span class="fl">1</span><span class="op">)</span><span class="op">)</span>
 <span class="fu">initial.values</span><span class="op">(</span><span class="op">)</span>
 <span class="co">## $theta</span>
-<span class="co">## [1] 0.9099888</span></code></pre></div>
+<span class="co">## [1] 0.6607038</span></code></pre></div>
 <p>Firth and last step, you need to tell NIMBLE the number of chains to run, say <code>n.chain</code>, how long the burn-in period should be, say <code>n.burnin</code>, and the number of iterations following the burn-in period to be used for posterior inference. In NIMBLE, you specify the total number of iterations, say <code>n.iter</code>, so that the number of posterior samples per chain is <code>n.iter - n.burnin</code>. NIMBLE also allows discarding samples after burn-in, a procedure known as thinning, which I will not use in this book<a class="footnote-ref" tabindex="0" data-toggle="popover" data-content="&lt;p&gt;Link, W.A. and Eaton, M.J. (2012), On thinning of chains in MCMC. Methods in Ecology and Evolution, 3: 112-115.&lt;/p&gt;"><sup>2</sup></a></p>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">n.iter</span> <span class="op">&lt;-</span> <span class="fl">5000</span>
@@ -487,8 +487,66 @@ Figure 2.1: Graph of the animal survival model. Survived is a stochastic node de
 <span class="co">## [1] 0.5</span></code></pre></div>
 <p><strong>Models and nimbleFunctions need to be compiled before they can be used to specify a project. Once compiled you can use an R model or nimbleFunction to specify the project.</strong></p>
 <p><strong>Play with MLE here?</strong></p>
-<p>Third we create a MCMC configuration for our model:</p>
 <div class="sourceCode" id="cb41"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="va">survival</span><span class="op">$</span><span class="fu">calculate</span><span class="op">(</span><span class="op">)</span>
+<span class="co">## [1] -5.421624</span>
+<span class="va">survival</span><span class="op">$</span><span class="va">theta</span>
+<span class="co">## [1] 0.5</span>
+<span class="va">survival</span><span class="op">$</span><span class="va">theta</span> <span class="op">&lt;-</span> <span class="fl">0.9</span>
+<span class="va">survival</span><span class="op">$</span><span class="va">theta</span>
+<span class="co">## [1] 0.9</span>
+<span class="va">survival</span><span class="op">$</span><span class="fu">calculate</span><span class="op">(</span><span class="op">)</span>
+<span class="co">## [1] -55.41232</span>
+
+<span class="va">Csurvival</span><span class="op">$</span><span class="va">theta</span>
+<span class="co">## [1] 0.5</span>
+<span class="va">Csurvival</span><span class="op">[[</span><span class="st">'theta'</span><span class="op">]</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0.9</span>
+<span class="va">Csurvival</span><span class="op">[[</span><span class="st">'theta'</span><span class="op">]</span><span class="op">]</span>
+<span class="co">## [1] 0.9</span>
+
+<span class="va">f</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">par</span><span class="op">)</span> <span class="op">{</span>  <span class="co">## par is theta</span>
+    <span class="va">Csurvival</span><span class="op">[[</span><span class="st">'theta'</span><span class="op">]</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="va">par</span>
+    <span class="va">ll</span> <span class="op">&lt;-</span> <span class="va">Csurvival</span><span class="op">$</span><span class="fu">calculate</span><span class="op">(</span><span class="op">)</span>
+    <span class="kw"><a href="https://rdrr.io/r/base/function.html">return</a></span><span class="op">(</span><span class="op">-</span><span class="va">ll</span><span class="op">)</span>
+<span class="op">}</span>
+
+<span class="co">## inital values to start the optimization at,</span>
+<span class="co">## a function to maximize, or minimize</span>
+
+<span class="va">Csurvival</span><span class="op">$</span><span class="va">theta</span>
+<span class="co">## [1] 0.9</span>
+
+<span class="fu">f</span><span class="op">(</span> <span class="fl">0.5</span> <span class="op">)</span>
+<span class="co">## [1] 5.421624</span>
+<span class="fu">f</span><span class="op">(</span> <span class="fl">0.9</span> <span class="op">)</span>
+<span class="co">## [1] 55.41232</span>
+
+<span class="va">out</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/optimize.html">optimize</a></span><span class="op">(</span><span class="va">f</span>, interval <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimble-R-functions.html">c</a></span><span class="op">(</span><span class="fl">0</span>,<span class="fl">1</span><span class="op">)</span><span class="op">)</span>
+<span class="fu"><a href="https://rdrr.io/r/base/Round.html">round</a></span><span class="op">(</span><span class="va">out</span><span class="op">$</span><span class="va">minimum</span>, <span class="fl">2</span><span class="op">)</span>
+<span class="co">## [1] 0.33</span>
+
+<span class="va">f</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">par</span><span class="op">)</span> <span class="op">{</span>  <span class="co">## par is theta</span>
+    <span class="va">survival</span><span class="op">$</span><span class="va">theta</span> <span class="op">&lt;-</span> <span class="va">par</span>
+    <span class="va">ll</span> <span class="op">&lt;-</span> <span class="va">survival</span><span class="op">$</span><span class="fu">calculate</span><span class="op">(</span><span class="op">)</span>
+    <span class="kw"><a href="https://rdrr.io/r/base/function.html">return</a></span><span class="op">(</span><span class="op">-</span><span class="va">ll</span><span class="op">)</span>
+<span class="op">}</span>
+
+<span class="co">## inital values to start the optimization at,</span>
+<span class="co">## a function to maximize, or minimize</span>
+
+<span class="va">survival</span><span class="op">$</span><span class="va">theta</span>
+<span class="co">## [1] 0.9</span>
+
+<span class="fu">f</span><span class="op">(</span> <span class="fl">0.5</span> <span class="op">)</span>
+<span class="co">## [1] 5.421624</span>
+<span class="fu">f</span><span class="op">(</span> <span class="fl">0.9</span> <span class="op">)</span>
+<span class="co">## [1] 55.41232</span>
+
+<span class="va">out</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/optimize.html">optimize</a></span><span class="op">(</span><span class="va">f</span>, interval <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimble-R-functions.html">c</a></span><span class="op">(</span><span class="fl">0</span>,<span class="fl">1</span><span class="op">)</span><span class="op">)</span>
+<span class="fu"><a href="https://rdrr.io/r/base/Round.html">round</a></span><span class="op">(</span><span class="va">out</span><span class="op">$</span><span class="va">minimum</span>, <span class="fl">2</span><span class="op">)</span>
+<span class="co">## [1] 0.33</span></code></pre></div>
+<p>Third we create a MCMC configuration for our model:</p>
+<div class="sourceCode" id="cb42"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">survivalConf</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/configureMCMC.html">configureMCMC</a></span><span class="op">(</span><span class="va">survival</span><span class="op">)</span>
 <span class="co">## ===== Monitors =====</span>
 <span class="co">## thin = 1: theta</span>
@@ -497,7 +555,7 @@ Figure 2.1: Graph of the animal survival model. Survived is a stochastic node de
 <span class="co">##   - theta</span></code></pre></div>
 <p>This steps tells you the nodes that are monitored by default, and the MCMC samplers than have been assigned to them. Here <code>theta</code> is monitored, and samples from its posterior distribution are simulated with a random walk sampler <strong>reference to previous chapter</strong>.</p>
 <p>To monitor <code>lifespan</code> as well:</p>
-<div class="sourceCode" id="cb42"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb43"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">survivalConf</span><span class="op">$</span><span class="fu">addMonitors</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimble-R-functions.html">c</a></span><span class="op">(</span><span class="st">"lifespan"</span><span class="op">)</span><span class="op">)</span>
 <span class="co">## thin = 1: theta, lifespan</span>
 <span class="va">survivalConf</span>
@@ -507,11 +565,11 @@ Figure 2.1: Graph of the animal survival model. Survived is a stochastic node de
 <span class="co">## RW sampler (1)</span>
 <span class="co">##   - theta</span></code></pre></div>
 <p>Third, we create a MCMC function and compile it:</p>
-<div class="sourceCode" id="cb43"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb44"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">survivalMCMC</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/buildMCMC.html">buildMCMC</a></span><span class="op">(</span><span class="va">survivalConf</span><span class="op">)</span>
 <span class="va">CsurvivalMCMC</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/compileNimble.html">compileNimble</a></span><span class="op">(</span><span class="va">survivalMCMC</span>, project <span class="op">=</span> <span class="va">survival</span><span class="op">)</span></code></pre></div>
 <p>Fourth, we run NIMBLE:</p>
-<div class="sourceCode" id="cb44"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb45"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">n.iter</span> <span class="op">&lt;-</span> <span class="fl">5000</span>
 <span class="va">n.burnin</span> <span class="op">&lt;-</span> <span class="fl">1000</span>
 <span class="va">samples</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/runMCMC.html">runMCMC</a></span><span class="op">(</span><span class="va">CsurvivalMCMC</span>, 
@@ -520,25 +578,25 @@ Figure 2.1: Graph of the animal survival model. Survived is a stochastic node de
 <span class="co">## |-------------|-------------|-------------|-------------|</span>
 <span class="co">## |-------------------------------------------------------|</span></code></pre></div>
 <p>You can look into <code>samples</code>:</p>
-<div class="sourceCode" id="cb45"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb46"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/r/utils/head.html">head</a></span><span class="op">(</span><span class="va">samples</span><span class="op">)</span>
 <span class="co">##       lifespan     theta</span>
-<span class="co">## [1,] 0.9185010 0.3366436</span>
-<span class="co">## [2,] 1.1173169 0.4086071</span>
-<span class="co">## [3,] 1.1173169 0.4086071</span>
-<span class="co">## [4,] 0.7912521 0.2825726</span>
-<span class="co">## [5,] 0.7912521 0.2825726</span>
-<span class="co">## [6,] 0.8451078 0.3062722</span></code></pre></div>
+<span class="co">## [1,] 0.7512560 0.2641854</span>
+<span class="co">## [2,] 0.7512560 0.2641854</span>
+<span class="co">## [3,] 1.0904150 0.3996836</span>
+<span class="co">## [4,] 1.0904150 0.3996836</span>
+<span class="co">## [5,] 0.8877708 0.3241928</span>
+<span class="co">## [6,] 0.8877708 0.3241928</span></code></pre></div>
 <p>From here, you can obtain numerical summaries:</p>
-<div class="sourceCode" id="cb46"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb47"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/r/base/summary.html">summary</a></span><span class="op">(</span><span class="va">samples</span><span class="op">)</span>
 <span class="co">##     lifespan          theta       </span>
-<span class="co">##  Min.   :0.5319   Min.   :0.1526  </span>
-<span class="co">##  1st Qu.:0.8278   1st Qu.:0.2988  </span>
-<span class="co">##  Median :0.9236   Median :0.3387  </span>
-<span class="co">##  Mean   :0.9393   Mean   :0.3403  </span>
-<span class="co">##  3rd Qu.:1.0295   3rd Qu.:0.3786  </span>
-<span class="co">##  Max.   :1.6434   Max.   :0.5442</span></code></pre></div>
+<span class="co">##  Min.   :0.4937   Min.   :0.1319  </span>
+<span class="co">##  1st Qu.:0.8166   1st Qu.:0.2939  </span>
+<span class="co">##  Median :0.9151   Median :0.3353  </span>
+<span class="co">##  Mean   :0.9285   Mean   :0.3358  </span>
+<span class="co">##  3rd Qu.:1.0201   3rd Qu.:0.3752  </span>
+<span class="co">##  Max.   :2.0196   Max.   :0.6095</span></code></pre></div>
 <p>Why is it useful? First, helps you debug. Second, play around with samplers. Change default, or write your own.</p>
 </div>
 <div id="debugging" class="section level2" number="2.6">
@@ -555,22 +613,22 @@ Figure 2.1: Graph of the animal survival model. Survived is a stochastic node de
 <span class="header-section-number">2.7.1</span> Change default sampler<a class="anchor" aria-label="anchor" href="#change-default-sampler"><i class="fas fa-link"></i></a>
 </h3>
 <p>What samplers do we use by default?</p>
-<div class="sourceCode" id="cb47"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb48"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="co">#survivalConf &lt;- configureMCMC(survival)</span>
 <span class="va">survivalConf</span><span class="op">$</span><span class="fu">printSamplers</span><span class="op">(</span><span class="op">)</span>
 <span class="co">## [1] RW sampler: theta</span></code></pre></div>
 <p>Remove it:</p>
-<div class="sourceCode" id="cb48"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb49"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">survivalConf</span><span class="op">$</span><span class="fu">removeSamplers</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimble-R-functions.html">c</a></span><span class="op">(</span><span class="st">'theta'</span><span class="op">)</span><span class="op">)</span>
 <span class="va">survivalConf</span><span class="op">$</span><span class="fu">printSamplers</span><span class="op">(</span><span class="op">)</span></code></pre></div>
 <p>Change it for a slice sampler:</p>
-<div class="sourceCode" id="cb49"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb50"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">survivalConf</span><span class="op">$</span><span class="fu">addSampler</span><span class="op">(</span>target <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimble-R-functions.html">c</a></span><span class="op">(</span><span class="st">'theta'</span><span class="op">)</span>,
                         type <span class="op">=</span> <span class="st">'slice'</span><span class="op">)</span>
 <span class="va">survivalConf</span><span class="op">$</span><span class="fu">printSamplers</span><span class="op">(</span><span class="op">)</span>
 <span class="co">## [1] slice sampler: theta</span></code></pre></div>
 <p>Now resume the workflow:</p>
-<div class="sourceCode" id="cb50"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb51"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="co"># create a new MCMC function and compile it:</span>
 <span class="va">survivalMCMC2</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/buildMCMC.html">buildMCMC</a></span><span class="op">(</span><span class="va">survivalConf</span><span class="op">)</span>
 <span class="va">CsurvivalMCMC2</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/compileNimble.html">compileNimble</a></span><span class="op">(</span><span class="va">survivalMCMC2</span>, 
@@ -587,19 +645,19 @@ Figure 2.1: Graph of the animal survival model. Survived is a stochastic node de
 <span class="co"># obtain numerical summaries:</span>
 <span class="fu"><a href="https://rdrr.io/r/base/summary.html">summary</a></span><span class="op">(</span><span class="va">samples2</span><span class="op">)</span>
 <span class="co">##     lifespan          theta       </span>
-<span class="co">##  Min.   :0.5448   Min.   :0.1595  </span>
-<span class="co">##  1st Qu.:0.8223   1st Qu.:0.2964  </span>
-<span class="co">##  Median :0.9171   Median :0.3361  </span>
-<span class="co">##  Mean   :0.9351   Mean   :0.3384  </span>
-<span class="co">##  3rd Qu.:1.0276   3rd Qu.:0.3779  </span>
-<span class="co">##  Max.   :1.9503   Max.   :0.5989</span></code></pre></div>
+<span class="co">##  Min.   :0.5417   Min.   :0.1579  </span>
+<span class="co">##  1st Qu.:0.8185   1st Qu.:0.2947  </span>
+<span class="co">##  Median :0.9152   Median :0.3353  </span>
+<span class="co">##  Mean   :0.9340   Mean   :0.3381  </span>
+<span class="co">##  3rd Qu.:1.0254   3rd Qu.:0.3771  </span>
+<span class="co">##  Max.   :2.0610   Max.   :0.6156</span></code></pre></div>
 <p>Many samplers, to know all samplers available in NIMBLE, type in <code><a href="https://rdrr.io/pkg/nimble/man/samplers.html">?samplers</a></code>. Eg block sampling for correlated parameters. High correlation in (regression) parameters may make independent samplers inefficient. Block sampling (propose candidate values from multivariate distribution) might help.</p>
 </div>
 <div id="code-your-own-sampler" class="section level3" number="2.7.2">
 <h3>
 <span class="header-section-number">2.7.2</span> Code your own sampler<a class="anchor" aria-label="anchor" href="#code-your-own-sampler"><i class="fas fa-link"></i></a>
 </h3>
-<div class="sourceCode" id="cb51"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb52"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">model</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimbleCode.html">nimbleCode</a></span><span class="op">(</span><span class="op">{</span>
   <span class="co"># likelihood</span>
   <span class="va">survived</span> <span class="op">~</span> <span class="fu"><a href="https://rdrr.io/r/stats/Binomial.html">dbinom</a></span><span class="op">(</span><span class="va">theta</span>, <span class="va">released</span><span class="op">)</span>
@@ -609,9 +667,6 @@ Figure 2.1: Graph of the animal survival model. Survived is a stochastic node de
 <span class="va">my.data</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>survived <span class="op">=</span> <span class="fl">19</span>, released <span class="op">=</span> <span class="fl">57</span><span class="op">)</span>
 <span class="va">parameters.to.save</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimble-R-functions.html">c</a></span><span class="op">(</span><span class="st">"theta"</span><span class="op">)</span>
 <span class="va">initial.values</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>theta <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html">runif</a></span><span class="op">(</span><span class="fl">1</span>,<span class="fl">0</span>,<span class="fl">1</span><span class="op">)</span><span class="op">)</span>
-<span class="va">n.iter</span> <span class="op">&lt;-</span> <span class="fl">5000</span>
-<span class="va">n.burnin</span> <span class="op">&lt;-</span> <span class="fl">1000</span>
-<span class="va">n.chains</span> <span class="op">&lt;-</span> <span class="fl">3</span>
 <span class="co">#mcmc.output &lt;- nimbleMCMC(code = model,</span>
 <span class="co">#                          data = my.data,</span>
 <span class="co">#                          inits = initial.values,</span>
@@ -621,28 +676,28 @@ Figure 2.1: Graph of the animal survival model. Survived is a stochastic node de
 <span class="co">#                          nchains = n.chains)</span>
 <span class="co">#MCMCsummary(object = mcmc.output, round = 2)</span></code></pre></div>
 <p>Your own Metropolis.</p>
-<div class="sourceCode" id="cb52"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb53"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">my_metropolis</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimbleFunction.html">nimbleFunction</a></span><span class="op">(</span>
-  name <span class="op">=</span> <span class="st">'my_metropolis'</span>,
-  contains <span class="op">=</span> <span class="va">sampler_BASE</span>,
+  name <span class="op">=</span> <span class="st">'my_metropolis'</span>, <span class="co"># fancy name for our MCMC sampler</span>
+  contains <span class="op">=</span> <span class="va">sampler_BASE</span>, 
   setup <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">model</span>, <span class="va">mvSaved</span>, <span class="va">target</span>, <span class="va">control</span><span class="op">)</span> <span class="op">{</span>
-    <span class="va">calcNodes</span> <span class="op">&lt;-</span> <span class="va">model</span><span class="op">$</span><span class="fu">getDependencies</span><span class="op">(</span><span class="va">target</span><span class="op">)</span>
-    <span class="va">scale</span> <span class="op">&lt;-</span> <span class="va">control</span><span class="op">$</span><span class="va">scale</span>
+    <span class="va">calcNodes</span> <span class="op">&lt;-</span> <span class="va">model</span><span class="op">$</span><span class="fu">getDependencies</span><span class="op">(</span><span class="va">target</span><span class="op">)</span> <span class="co"># get dependencies for 'target' = param of interest in 'model'</span>
+    <span class="va">scale</span> <span class="op">&lt;-</span> <span class="va">control</span><span class="op">$</span><span class="va">scale</span> <span class="co"># SD of proposal distribution</span>
   <span class="op">}</span>,
   run <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="op">)</span> <span class="op">{</span>
-    <span class="va">initialLP</span> <span class="op">&lt;-</span> <span class="va">model</span><span class="op">$</span><span class="fu">getLogProb</span><span class="op">(</span><span class="va">calcNodes</span><span class="op">)</span>
-    <span class="va">current</span> <span class="op">&lt;-</span> <span class="va">model</span><span class="op">[[</span><span class="va">target</span><span class="op">]</span><span class="op">]</span>
-    <span class="va">lcurrent</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Log.html">log</a></span><span class="op">(</span><span class="va">current</span> <span class="op">/</span> <span class="op">(</span><span class="fl">1</span> <span class="op">-</span> <span class="va">current</span><span class="op">)</span><span class="op">)</span>
-    <span class="va">lproposal</span> <span class="op">&lt;-</span> <span class="va">lcurrent</span>  <span class="op">+</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html">rnorm</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">0</span>, <span class="va">scale</span><span class="op">)</span>
-    <span class="va">proposal</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/Logistic.html">plogis</a></span><span class="op">(</span><span class="va">lproposal</span><span class="op">)</span>
-    <span class="va">model</span><span class="op">[[</span><span class="va">target</span><span class="op">]</span><span class="op">]</span> <span class="op">&lt;&lt;-</span> <span class="va">proposal</span>
-    <span class="va">proposalLP</span> <span class="op">&lt;-</span> <span class="va">model</span><span class="op">$</span><span class="fu">calculate</span><span class="op">(</span><span class="va">calcNodes</span><span class="op">)</span>
-    <span class="va">lMHR</span> <span class="op">&lt;-</span> <span class="va">proposalLP</span> <span class="op">-</span> <span class="va">initialLP</span>
-    <span class="kw">if</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html">runif</a></span><span class="op">(</span><span class="fl">1</span>,<span class="fl">0</span>,<span class="fl">1</span><span class="op">)</span> <span class="op">&lt;</span> <span class="fu"><a href="https://rdrr.io/r/base/Log.html">exp</a></span><span class="op">(</span><span class="va">lMHR</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span>
-      <span class="co">## accept</span>
+    <span class="va">initialLP</span> <span class="op">&lt;-</span> <span class="va">model</span><span class="op">$</span><span class="fu">getLogProb</span><span class="op">(</span><span class="va">calcNodes</span><span class="op">)</span> <span class="co"># log-lik at current value</span>
+    <span class="va">current</span> <span class="op">&lt;-</span> <span class="va">model</span><span class="op">[[</span><span class="va">target</span><span class="op">]</span><span class="op">]</span> <span class="co"># current parameter value</span>
+    <span class="va">lcurrent</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Log.html">log</a></span><span class="op">(</span><span class="va">current</span> <span class="op">/</span> <span class="op">(</span><span class="fl">1</span> <span class="op">-</span> <span class="va">current</span><span class="op">)</span><span class="op">)</span> <span class="co"># logit transform</span>
+    <span class="va">lproposal</span> <span class="op">&lt;-</span> <span class="va">lcurrent</span>  <span class="op">+</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html">rnorm</a></span><span class="op">(</span><span class="fl">1</span>, mean <span class="op">=</span> <span class="fl">0</span>, <span class="va">scale</span><span class="op">)</span> <span class="co"># propose candidate value</span>
+    <span class="va">proposal</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/Logistic.html">plogis</a></span><span class="op">(</span><span class="va">lproposal</span><span class="op">)</span> <span class="co"># back-transform</span>
+    <span class="va">model</span><span class="op">[[</span><span class="va">target</span><span class="op">]</span><span class="op">]</span> <span class="op">&lt;&lt;-</span> <span class="va">proposal</span> 
+    <span class="va">proposalLP</span> <span class="op">&lt;-</span> <span class="va">model</span><span class="op">$</span><span class="fu">calculate</span><span class="op">(</span><span class="va">calcNodes</span><span class="op">)</span> <span class="co"># log-lik at candidate value</span>
+    <span class="va">lMHR</span> <span class="op">&lt;-</span> <span class="va">proposalLP</span> <span class="op">-</span> <span class="va">initialLP</span> <span class="co"># compute lik ratio on log scale</span>
+    <span class="kw">if</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html">runif</a></span><span class="op">(</span><span class="fl">1</span>,<span class="fl">0</span>,<span class="fl">1</span><span class="op">)</span> <span class="op">&lt;</span> <span class="fu"><a href="https://rdrr.io/r/base/Log.html">exp</a></span><span class="op">(</span><span class="va">lMHR</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span> <span class="co"># spin continuous spinner</span>
+      <span class="co"># if candidate value is accepted, update current value</span>
       <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimCopy.html">copy</a></span><span class="op">(</span>from <span class="op">=</span> <span class="va">model</span>, to <span class="op">=</span> <span class="va">mvSaved</span>, nodes <span class="op">=</span> <span class="va">calcNodes</span>, logProb <span class="op">=</span> <span class="cn">TRUE</span>, row <span class="op">=</span> <span class="fl">1</span><span class="op">)</span>
     <span class="op">}</span> <span class="kw">else</span> <span class="op">{</span>
-      <span class="co">## reject</span>
+      <span class="co">## if candidate value is accepted, keep current value</span>
       <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimCopy.html">copy</a></span><span class="op">(</span>from <span class="op">=</span> <span class="va">mvSaved</span>, to <span class="op">=</span> <span class="va">model</span>, nodes <span class="op">=</span> <span class="va">calcNodes</span>, logProb <span class="op">=</span> <span class="cn">TRUE</span>, row <span class="op">=</span> <span class="fl">1</span><span class="op">)</span>
     <span class="op">}</span>
   <span class="op">}</span>,
@@ -652,23 +707,35 @@ Figure 2.1: Graph of the animal survival model. Survived is a stochastic node de
 <span class="op">)</span></code></pre></div>
 <p><strong>Explain sections of the code. Check NIMBLE JSS paper by Perry et al.</strong></p>
 <p>Parameter to tune. Seek equivalent in previous chapter.</p>
-<div class="sourceCode" id="cb53"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb54"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">scale</span> <span class="op">&lt;-</span> <span class="fl">0.1</span></code></pre></div>
 <p>Detailed workflow.</p>
-<div class="sourceCode" id="cb54"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb55"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">Rmodel</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimbleModel.html">nimbleModel</a></span><span class="op">(</span>code <span class="op">=</span> <span class="va">model</span>, data <span class="op">=</span> <span class="va">my.data</span>, inits <span class="op">=</span> <span class="fu">initial.values</span><span class="op">(</span><span class="op">)</span><span class="op">)</span>
 <span class="va">conf</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/configureMCMC.html">configureMCMC</a></span><span class="op">(</span><span class="va">Rmodel</span>, monitors <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimble-R-functions.html">c</a></span><span class="op">(</span><span class="st">'theta'</span><span class="op">)</span><span class="op">)</span>
+<span class="co">## ===== Monitors =====</span>
+<span class="co">## thin = 1: theta</span>
+<span class="co">## ===== Samplers =====</span>
+<span class="co">## RW sampler (1)</span>
+<span class="co">##   - theta</span>
 <span class="va">conf</span><span class="op">$</span><span class="fu">printSamplers</span><span class="op">(</span><span class="op">)</span>
+<span class="co">## [1] RW sampler: theta</span>
 <span class="va">conf</span><span class="op">$</span><span class="fu">removeSamplers</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimble-R-functions.html">c</a></span><span class="op">(</span><span class="st">'theta'</span><span class="op">)</span><span class="op">)</span>
 <span class="va">conf</span><span class="op">$</span><span class="fu">addSampler</span><span class="op">(</span>target <span class="op">=</span> <span class="st">'theta'</span>, type <span class="op">=</span> <span class="st">'my_metropolis'</span>, control <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>scale <span class="op">=</span> <span class="va">scale</span><span class="op">)</span><span class="op">)</span>
 <span class="va">conf</span><span class="op">$</span><span class="fu">printSamplers</span><span class="op">(</span><span class="op">)</span>
+<span class="co">## [1] my_metropolis sampler: theta,  scale: 0.10000000000000001</span>
 <span class="va">conf</span><span class="op">$</span><span class="fu">printMonitors</span><span class="op">(</span><span class="op">)</span>
+<span class="co">## thin = 1: theta</span>
 <span class="va">Rmcmc</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/buildMCMC.html">buildMCMC</a></span><span class="op">(</span><span class="va">conf</span><span class="op">)</span>
 <span class="va">out</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/compileNimble.html">compileNimble</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>model <span class="op">=</span> <span class="va">Rmodel</span>, mcmc <span class="op">=</span> <span class="va">Rmcmc</span><span class="op">)</span><span class="op">)</span>
 <span class="va">Cmcmc</span> <span class="op">&lt;-</span> <span class="va">out</span><span class="op">$</span><span class="va">mcmc</span>
-<span class="va">samples</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/runMCMC.html">runMCMC</a></span><span class="op">(</span><span class="va">Cmcmc</span>, niter <span class="op">=</span> <span class="fl">5000</span>, nburnin <span class="op">=</span> <span class="fl">1000</span><span class="op">)</span>
+<span class="va">samples</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/runMCMC.html">runMCMC</a></span><span class="op">(</span><span class="va">Cmcmc</span>, niter <span class="op">=</span> <span class="fl">10000</span>, nburnin <span class="op">=</span> <span class="fl">9000</span><span class="op">)</span>
+<span class="co">## |-------------|-------------|-------------|-------------|</span>
+<span class="co">## |-------------------------------------------------------|</span>
 <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimble-internal.html">samplesSummary</a></span><span class="op">(</span><span class="va">samples</span><span class="op">)</span>
-<span class="fu">basicMCMCplots</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/basicMCMCplots/man/chainsPlot.html">chainsPlot</a></span><span class="op">(</span><span class="va">samples</span><span class="op">)</span></code></pre></div>
+<span class="co">##            Mean    Median    St.Dev. 95%CI_low 95%CI_upp</span>
+<span class="co">## theta 0.3303528 0.3296996 0.06154411  0.191953 0.4455181</span>
+<span class="co">#basicMCMCplots::chainsPlot(samples)</span></code></pre></div>
 <p>Re-run by changing scale of proposal with 1 and 10, and compare to traceplots in previous chapter Figure <a href="#fig:tracechainlength"><strong>??</strong></a>:</p>
 <pre><code>## ===== Monitors =====
 ## thin = 1: theta
@@ -684,7 +751,7 @@ Figure 2.1: Graph of the animal survival model. Survived is a stochastic node de
 ##   - theta
 ## |-------------|-------------|-------------|-------------|
 ## |-------------------------------------------------------|</code></pre>
-<div class="inline-figure"><img src="banana-book_files/figure-html/unnamed-chunk-58-1.png" width="672"></div>
+<div class="inline-figure"><img src="banana-book_files/figure-html/unnamed-chunk-59-1.png" width="672"></div>
 </div>
 </div>
 <div id="tip-and-tricks" class="section level2" number="2.8">
@@ -696,7 +763,7 @@ Figure 2.1: Graph of the animal survival model. Survived is a stochastic node de
 <h3>
 <span class="header-section-number">2.8.1</span> Flexible specification of distributions<a class="anchor" aria-label="anchor" href="#flexible-specification-of-distributions"><i class="fas fa-link"></i></a>
 </h3>
-<div class="sourceCode" id="cb56"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb57"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="co"># JAGS (&amp; Nimble)</span>
 <span class="kw">for</span><span class="op">(</span><span class="va">t</span> <span class="kw">in</span> <span class="fl">1</span><span class="op">:</span><span class="va">Tmax</span><span class="op">)</span><span class="op">{</span>
   <span class="va">epsilon</span><span class="op">[</span><span class="va">t</span><span class="op">]</span> <span class="op">~</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html">dnorm</a></span><span class="op">(</span><span class="fl">0</span>, <span class="va">tau</span><span class="op">)</span>
@@ -714,7 +781,7 @@ Figure 2.1: Graph of the animal survival model. Survived is a stochastic node de
 <h3>
 <span class="header-section-number">2.8.2</span> The end of empty indices<a class="anchor" aria-label="anchor" href="#the-end-of-empty-indices"><i class="fas fa-link"></i></a>
 </h3>
-<div class="sourceCode" id="cb57"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb58"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="co"># JAGS</span>
 <span class="va">sum.x</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/sum.html">sum</a></span><span class="op">(</span><span class="va">x</span><span class="op">[</span><span class="op">]</span><span class="op">)</span>
 
@@ -742,7 +809,7 @@ Figure 2.1: Graph of the animal survival model. Survived is a stochastic node de
 </h3>
 <p>Tomas, if you’ve already used runMCMC(Cmcmc, …), then yes, you can still extend the current MCMC chain, using:
 Cmcmc$run(niter, reset = FALSE)
-where niter is the number of additional MCMC iterations you wish to run.  After that, you can extract the full maxtrix of MCMC samples (which will include the ones you previously executed in the first call of runMCMC), using:</p>
+where niter is the number of additional MCMC iterations you wish to run. After that, you can extract the full maxtrix of MCMC samples (which will include the ones you previously executed in the first call of runMCMC), using:</p>
 <p>full_matrix_of_samples &lt;- as.matrix(Cmcmc$mvSamples)</p>
 </div>
 </div>
@@ -800,7 +867,7 @@ where niter is the number of additional MCMC iterations you wish to run.  After
 <footer class="bg-primary text-light mt-5"><div class="container"><div class="row">
 
   <div class="col-12 col-md-6 mt-3">
-    <p>"<strong>Bayesian Analysis of Capture-Recapture Data with Hidden Markov Models</strong>: Theory and Case Studies in R" was written by Olivier Gimenez. It was last built on 2022-01-27.</p>
+    <p>"<strong>Bayesian Analysis of Capture-Recapture Data with Hidden Markov Models</strong>: Theory and Case Studies in R" was written by Olivier Gimenez. It was last built on 2022-01-28.</p>
   </div>
 
   <div class="col-12 col-md-6 mt-3">
