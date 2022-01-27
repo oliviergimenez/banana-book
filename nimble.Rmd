@@ -394,7 +394,7 @@ Having `nimbleFunctions` offer infinite possibilities which I do not cover exhau
 
 So far, you have used `nimbleMCMC()` which runs the "default" MCMC. This is perfecly fine for most applications. However, in some situations you need to customize the MCMC samplers to improve or fasten convergence. NIMBLE allows you to look under the hood by using a workflow in several steps: `nimbleModel()`, `configureMCMC()`, `buildMCMC()`, `compileNimble()` and `runMCMC()`. Note that `nimbleMCMC()` does all of this at once.
 
-First you write the model code, data and initial values as you did before:
+We write the model code, read in data and pick initial values as before, with the only difference that we use a single chain:
 ```{r}
 model <- nimbleCode({
   # likelihood
@@ -405,14 +405,10 @@ model <- nimbleCode({
   lifespan <- -1/log(theta)
 })
 my.data <- list(survived = 19, released = 57)
-#parameters.to.save <- c("theta", "lifespan")
 initial.values <- list(theta = 0.5)
-#n.iter <- 5000
-#n.burnin <- 1000
-#n.chains <- 3
 ```
 
-First we create the model as an R object:
+First step is to create the model as an R object (uncompiled model):
 ```{r}
 survival <- nimbleModel(code = model,
                         data = my.data,
@@ -441,38 +437,103 @@ You can obtain the graph of the model as in Figure \@ref(fig:dag-survival) with:
 survival$plotGraph()
 ```
 
-Compile the model:
+Second we compile the model:
 ```{r}
 Csurvival <- compileNimble(survival)
-#c.mcmc <- compileNimble(mcmc, project = survival.model)
 ```
 
+With `compileNimble()`, the C++ code is generated, compiled and loaded back into R so that it can be used in R (compiled model):
+```{r}
+Csurvival$theta
+```
+
+**Models and nimbleFunctions need to be compiled before they can be used to specify a project. Once compiled you can use an R model or nimbleFunction to specify the project.**
+
+**Play with MLE here?**
+
+```{r eval = FALSE}
+Rmodel <- nimbleModel(codeOcc, constants, data, inits)
+Rmodel$calculate()
+
+Rmodel$alpha
+Rmodel$beta <- c(-1, -1)
+Rmodel$beta
+Rmodel$calculate()
+
+Cmodel <- compileNimble(Rmodel)
+
+Cmodel$beta
+Cmodel$beta[1]
+Cmodel$beta[2]
+Cmodel[['beta[1]']] <- 99
+Cmodel[['beta[1]']]
+Cmodel[['beta[2]']]
+Cmodel[['alpha[2]']]
+
+list$element
+list[['element']]
+
+
+f <- function(par) {  ## par is: (a1, a2, b1, b2)
+    Cmodel[['alpha[1]']] <- par[1]
+    Cmodel[['alpha[2]']] <- par[2]
+    Cmodel[['beta[1]']]  <- par[3]
+    Cmodel[['beta[2]']]  <- par[4]
+    ll <- Cmodel$calculate()
+    return(-ll)
+}
+
+## inital values to start the optimization at,
+## a function to maximize, or minimize
+
+Cmodel$alpha
+Cmodel$beta
+
+f( c(0,0,-1,-1) )
+
+system.time(out <- optim(c(0,0,0,0), f))
+
+out$convergence
+round(out$par, 2)
+```
+
+
+Third we create a MCMC configuration for our model:
 ```{r}
 survivalConf <- configureMCMC(survival)
 ```
 
-RW sampler on `theta`. 
+This steps tells you the nodes that are monitored by default, and the MCMC samplers than have been assigned to them. Here `theta` is monitored, and samples from its posterior distribution are simulated with a random walk sampler **reference to previous chapter**. 
 
+To monitor `lifespan` as well:
+```{r}
+survivalConf$addMonitors(c("lifespan"))
+survivalConf
+```
 
+Third, we create a MCMC function and compile it:
 ```{r}
 survivalMCMC <- buildMCMC(survivalConf)
 CsurvivalMCMC <- compileNimble(survivalMCMC, project = survival)
+```
 
+Fourth, we run NIMBLE:
+```{r}
 n.iter <- 5000
 n.burnin <- 1000
 samples <- runMCMC(CsurvivalMCMC, 
                    niter = n.iter,
                    nburnin = n.burnin)
-# Alternative:
-# c.mcmc$run(5000)
-# samples <- as.matrix(c.mcmc$mvSamples)
 ```
 
-By default one chain, but can be changed. 
-
-Extract the samples:
+You can look into `samples`:
 ```{r}
-summary(samples[,"theta"])
+head(samples)
+```
+
+From here, you can obtain numerical summaries:
+```{r}
+summary(samples)
 ```
 
 Why is it useful? First, helps you debug. Second, play around with samplers. Change default, or write your own. 
@@ -483,9 +544,49 @@ Why is it useful? First, helps you debug. Second, play around with samplers. Cha
 
 ### Change default sampler
 
+What samplers do we use by default?
+```{r}
+#survivalConf <- configureMCMC(survival)
+survivalConf$printSamplers()
+```
+
+Remove it:
+```{r}
+survivalConf$removeSamplers(c('theta'))
+survivalConf$printSamplers()
+```
+
+Change it for a slice sampler:
+```{r}
+survivalConf$addSampler(target = c('theta'),
+                        type = 'slice')
+survivalConf$printSamplers()
+```
+
+Now resume the workflow:
+```{r}
+# create a new MCMC function and compile it:
+survivalMCMC2 <- buildMCMC(survivalConf)
+CsurvivalMCMC2 <- compileNimble(survivalMCMC2, 
+                                project = survival,
+                                resetFunctions = TRUE) # to compile new pieces 
+                                                       # into existing project, 
+                                                       # need to reset nimbleFunctions
+# run NIMBLE:
+samples2 <- runMCMC(CsurvivalMCMC2, 
+                   niter = n.iter,
+                   nburnin = n.burnin)
+# obtain numerical summaries:
+summary(samples2)
+```
+
+Many samplers, to know all samplers available in NIMBLE, type in `?samplers`. Eg block sampling for correlated parameters. High correlation in (regression) parameters may make independent samplers inefficient. Block sampling (propose candidate values from multivariate distribution) might help.
+
+
+
 ### Code your own sampler
 
-```{r eval = FALSE}
+```{r}
 model <- nimbleCode({
   # likelihood
   survived ~ dbinom(theta, released)
@@ -498,39 +599,39 @@ initial.values <- function() list(theta = runif(1,0,1))
 n.iter <- 5000
 n.burnin <- 1000
 n.chains <- 3
-mcmc.output <- nimbleMCMC(code = model,
-                          data = my.data,
-                          inits = initial.values,
-                          monitors = parameters.to.save,
-                          niter = n.iter,
-                          nburnin = n.burnin,
-                          nchains = n.chains)
-MCMCsummary(object = mcmc.output, round = 2)
+#mcmc.output <- nimbleMCMC(code = model,
+#                          data = my.data,
+#                          inits = initial.values,
+#                          monitors = parameters.to.save,
+#                          niter = n.iter,
+#                          nburnin = n.burnin,
+#                          nchains = n.chains)
+#MCMCsummary(object = mcmc.output, round = 2)
 ```
 
 Your own Metropolis. 
-```{r eval = FALSE}
+```{r}
 my_metropolis <- nimbleFunction(
-  name = 'my_metropolis',
-  contains = sampler_BASE,
+  name = 'my_metropolis', # fancy name for our MCMC sampler
+  contains = sampler_BASE, 
   setup = function(model, mvSaved, target, control) {
-    calcNodes <- model$getDependencies(target)
-    scale <- control$scale
+    calcNodes <- model$getDependencies(target) # get dependencies for 'target' = param of interest in 'model'
+    scale <- control$scale # SD of proposal distribution
   },
   run = function() {
-    initialLP <- model$getLogProb(calcNodes)
-    current <- model[[target]]
-    lcurrent <- log(current / (1 - current))
-    lproposal <- lcurrent  + rnorm(1, 0, scale)
-    proposal <- plogis(lproposal)
-    model[[target]] <<- proposal
-    proposalLP <- model$calculate(calcNodes)
-    lMHR <- proposalLP - initialLP
-    if(runif(1,0,1) < exp(lMHR)) {
-      ## accept
+    initialLP <- model$getLogProb(calcNodes) # log-lik at current value
+    current <- model[[target]] # current parameter value
+    lcurrent <- log(current / (1 - current)) # logit transform
+    lproposal <- lcurrent  + rnorm(1, mean = 0, scale) # propose candidate value
+    proposal <- plogis(lproposal) # back-transform
+    model[[target]] <<- proposal 
+    proposalLP <- model$calculate(calcNodes) # log-lik at candidate value
+    lMHR <- proposalLP - initialLP # compute lik ratio on log scale
+    if(runif(1,0,1) < exp(lMHR)) { # spin continuous spinner
+      # if candidate value is accepted, update current value
       copy(from = model, to = mvSaved, nodes = calcNodes, logProb = TRUE, row = 1)
     } else {
-      ## reject
+      ## if candidate value is accepted, keep current value
       copy(from = mvSaved, to = model, nodes = calcNodes, logProb = TRUE, row = 1)
     }
   },
@@ -540,17 +641,18 @@ my_metropolis <- nimbleFunction(
 )
 ```
 
+**Explain sections of the code. Check NIMBLE JSS paper by Perry et al.**
+
 Parameter to tune. Seek equivalent in previous chapter.
 ```{r}
-scale <- 0.05
+scale <- 0.1
 ```
 
 Detailed workflow.
 ```{r eval = FALSE}
-Rmodel <- nimbleModel(model, my.constants, my.data, initial.values())
+Rmodel <- nimbleModel(code = model, data = my.data, inits = initial.values())
 conf <- configureMCMC(Rmodel, monitors = c('theta'))
 conf$printSamplers()
-conf$printSamplers(byType = TRUE)
 conf$removeSamplers(c('theta'))
 conf$addSampler(target = 'theta', type = 'my_metropolis', control = list(scale = scale))
 conf$printSamplers()
@@ -558,31 +660,52 @@ conf$printMonitors()
 Rmcmc <- buildMCMC(conf)
 out <- compileNimble(list(model = Rmodel, mcmc = Rmcmc))
 Cmcmc <- out$mcmc
-samples <- runMCMC(Cmcmc, niter = 5000, nburnin = 1000)
+samples <- runMCMC(Cmcmc, niter = 10000, nburnin = 9000)
 samplesSummary(samples)
-#chainsPlot(samples)
+basicMCMCplots::chainsPlot(samples)
 ```
 
-Change parameter to tune.
-```{r eval = FALSE}
-scale <- 2
-Rmodel <- nimbleModel(model, my.constants, my.data, initial.values())
+Re-run by changing scale of proposal with 1 and 10, and compare to traceplots in previous chapter Figure \@ref(fig:tracechainlength):
+```{r echo = FALSE}
+scale <- 1
+Rmodel <- nimbleModel(code = model, data = my.data, inits = initial.values())
 conf <- configureMCMC(Rmodel, monitors = c('theta'))
-conf$printSamplers()
-conf$printSamplers(byType = TRUE)
 conf$removeSamplers(c('theta'))
 conf$addSampler(target = 'theta', type = 'my_metropolis', control = list(scale = scale))
-conf$printSamplers()
-conf$printMonitors()
 Rmcmc <- buildMCMC(conf)
 out <- compileNimble(list(model = Rmodel, mcmc = Rmcmc))
 Cmcmc <- out$mcmc
-samples <- runMCMC(Cmcmc, niter = 5000, nburnin = 1000)
-samplesSummary(samples)
-#chainsPlot(samples)
+samples_sd1 <- runMCMC(Cmcmc, niter = 10000, nburnin = 9000)
+scale <- 10
+Rmodel <- nimbleModel(code = model, data = my.data, inits = initial.values())
+conf <- configureMCMC(Rmodel, monitors = c('theta'))
+conf$removeSamplers(c('theta'))
+conf$addSampler(target = 'theta', type = 'my_metropolis', control = list(scale = scale))
+Rmcmc <- buildMCMC(conf)
+out <- compileNimble(list(model = Rmodel, mcmc = Rmcmc))
+Cmcmc <- out$mcmc
+samples_sd10 <- runMCMC(Cmcmc, niter = 10000, nburnin = 9000)
+plot01 <- samples %>%
+  as_tibble() %>%
+  ggplot() + 
+  aes(x = 9001:10000, y = theta) +
+  geom_line() + 
+  labs(x = "iterations", title = "proposal SD = 0.1")
+plot1 <- samples_sd1 %>%
+  as_tibble() %>%
+  ggplot() + 
+  aes(x = 9001:10000, y = theta) +
+  geom_line() + 
+  labs(x = "iterations", title = "proposal SD = 1")
+plot10 <- samples_sd10 %>%
+  as_tibble() %>%
+  ggplot() + 
+  aes(x = 9001:10000, y = theta) +
+  geom_line() + 
+  labs(x = "iterations", title = "proposal SD = 10")
+library(patchwork)
+plot01 + plot1 + plot10
 ```
-
-Draw parallel with previous chapter. 
 
 ## Tip and tricks
 
@@ -635,7 +758,7 @@ Cmodel$beta1[5, 10] # etc.
 
 Tomas, if you've already used runMCMC(Cmcmc, ...), then yes, you can still extend the current MCMC chain, using:
 Cmcmc$run(niter, reset = FALSE)
-where niter is the number of additional MCMC iterations you wish to run.  After that, you can extract the full maxtrix of MCMC samples (which will include the ones you previously executed in the first call of runMCMC), using:
+where niter is the number of additional MCMC iterations you wish to run. After that, you can extract the full maxtrix of MCMC samples (which will include the ones you previously executed in the first call of runMCMC), using:
 
 full_matrix_of_samples <- as.matrix(Cmcmc$mvSamples)
 
