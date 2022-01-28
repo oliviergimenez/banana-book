@@ -450,53 +450,23 @@ Csurvival$theta
 **Models and nimbleFunctions need to be compiled before they can be used to specify a project. Once compiled you can use an R model or nimbleFunction to specify the project.**
 
 **Play with MLE here?**
-
+Now you have two versions of the model, `survival` is in R and `Csurvival` in C++. Being able to separate the step of model building from that of parameter estimation is a strength of NIMBLE. This gives you a lot of flexibility in both steps. For example, imagine you would like to fit your model with maximum likelihood, then you can do it by wrapping your model in an R function that gets the likelihood and maximise this function. Using the C version of the model, you can write:
 ```{r}
-survival$calculate()
-survival$theta
-survival$theta <- 0.9
-survival$theta
-survival$calculate()
-
-Csurvival$theta
-Csurvival[['theta']] <- 0.9
-Csurvival[['theta']]
-
-f <- function(par) {  ## par is theta
-    Csurvival[['theta']] <- par
-    ll <- Csurvival$calculate()
-    return(-ll)
+# function for negative log-likelihood to minimize
+f <- function(par) {
+    Csurvival[['theta']] <- par # assign par to theta 
+    ll <- Csurvival$calculate() # update log-likelihood with par value
+    return(-ll) # return negative log-likelihood
 }
-
-## inital values to start the optimization at,
-## a function to maximize, or minimize
-
-Csurvival$theta
-
-f( 0.5 )
-f( 0.9 )
-
-out <- optimize(f, interval = c(0,1))
-round(out$minimum, 2)
-
-f <- function(par) {  ## par is theta
-    survival$theta <- par
-    ll <- survival$calculate()
-    return(-ll)
-}
-
-## inital values to start the optimization at,
-## a function to maximize, or minimize
-
-survival$theta
-
-f( 0.5 )
-f( 0.9 )
-
+# evaluate function at 0.5 and 0.9
+f(0.5)
+f(0.9)
+# minimize function
 out <- optimize(f, interval = c(0,1))
 round(out$minimum, 2)
 ```
 
+By maximising the likelihood (or minimising the negative log-lieklihood), you obtain the maximum likelihood estimate of animal survival, which is exactly 19 surviving animals over 57 released animals `r 19/57`.
 
 Third we create a MCMC configuration for our model:
 ```{r}
