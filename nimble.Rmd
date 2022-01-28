@@ -813,7 +813,23 @@ mcmc.output2$summary$all.chains
 
 + Something on parallelization à la jagsUI? https://r-nimble.org/nimbleExamples/parallelizing_NIMBLE.html
 
+<!-- Parallelization https://r-nimble.org/nimbleExamples/parallelizing_NIMBLE.html When you follow the code in that example of running chains in parallel, one is simply setting a different seed for each chain. This is similar to JAGS once JAGS gets to a fifth chain (after using different generators for the first four). -->
+<!-- By default, runMCMC and nimbleMCMC just have the random number generation for each chain pick up where the previous chain left off, which of course guarantees independence. But if you use setSeed, then that will also set different seeds for each chain. -->
+
+
 + Something on initialization and the NA (or NaN) messages. 
+
+<!-- If you run MCMC with incomplete initial values, it might work or it might not.  You may get those warnings from a full calculation at the start and then it might run fine.  The MCMC will try to initialize a node that is NA by drawing from its prior.  In some models, that value can make something that depends on it invalid, with a log probability of -Inf, if the value of one node determines the valid range of values for another.  Sometimes the MCMC will successfully mix its way out of invalid initial states, sometimes not.  In summary, if you get a slew of warnings, and then they stop, and then you get reasonable MCMC results, you are probably fine.  Either way, many people find it helpful to achieve full initialization.  The nodes that need to be initialized are stochastic nodes.  A related issue is that even if drawing initial values from priors does not give warnings or errors, those are often not very good initial values. -->
+
+<!-- First step, not the problem: after you build the model (nimbleModel), Rmodel$calculate() returns NA.  This is not necessarily an error but indicates incomplete initialization, which may later be filled in manually or by the MCMC drawing from priors. -->
+<!-- # I explored like this: -->
+<!-- Rmodel$calculate() #NA -->
+<!-- for(v in Rmodel$getVarNames()) -->
+<!--   print(paste(v, Rmodel$calculate(v))) -->
+<!-- for(node in Rmodel$expandNodeNames("state")) -->
+<!--   print(paste(node, Rmodel$calculate(node))) -->
+<!-- Rmodel$gamma_Matrix -->
+<!-- Rmodel$temp -->
 
 + Something on vectorization?
 
