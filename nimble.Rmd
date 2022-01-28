@@ -25,10 +25,14 @@ To run NIMBLE, you will need to:
 5. Provide MCMC details namely the number of chains, the length of the burn-in period and the number of iterations following burn-in.
 ```
 
+**Here I need to tell how to install the nimble package**
+
 First things first, let's not forget to load the `nimble` package:
 ```{r}
 library(nimble)
 ```
+
+Note before you install `nimble` like any other R package, Windows users will need to install `Rtools`, and Mac users will need to install `Xcode`. More at <https://r-nimble.org/download>. 
 
 Now let's go back to our example on animal survival from the previous chapter. First step is to build our model by specifying the binomial likelihood and a uniform prior on survival probability `theta`. We use the `nimbleCode()` function and wrap code within curly brackets:
 ```{r}
@@ -394,7 +398,7 @@ Evaluating an R function from within NIMBLE slows MCMC sampling down, but if you
 
 Another advantage of using `nimbleRcall()` (or `nimbleExternalCall()`) is that you can keep large objects out of your model, so that NIMBLE does not have to handle them in MCMC sampling. These objects should be constants and not change when you run NIMBLE. Letting R manipulating these objects will save you time, usually more than the time you lose by calling R from within NIMBLE.
 
-Having `nimbleFunctions` offer infinite possibilities which I do not cover exhaustively here. Worth mentionning is that you can write your own distributions and use them in your model with NIMBLE. See the NIMBLE manual at <https://r-nimble.org/html_manual/cha-user-defined.html#sec:user-distributions> for details and examples. Another possibility worth mentionning is that you can write your own samplers. We will see an example in a minute, but I first need to tell you more about the NIMBLE workflow. 
+Having `nimbleFunctions` offer infinite possibilities which I do not cover exhaustively here. Worth mentioning is that you can write your own distributions and use them in your model with NIMBLE. See the NIMBLE manual at <https://r-nimble.org/html_manual/cha-user-defined.html#sec:user-distributions> for details and examples. Another possibility worth mentioning is that you can write your own samplers. We will see an example in a minute, but I first need to tell you more about the NIMBLE workflow. 
 
 ## Under the hood {#under-the-hood}
 
@@ -471,14 +475,14 @@ out <- optimize(f, interval = c(0,1))
 round(out$minimum, 2)
 ```
 
-By maximising the likelihood (or minimising the negative log-lieklihood), you obtain the maximum likelihood estimate of animal survival, which is exactly 19 surviving animals over 57 released animals or `r round(19/57, 2)`.
+By maximising the likelihood (or minimising the negative log-likelihood), you obtain the maximum likelihood estimate of animal survival, which is exactly 19 surviving animals over 57 released animals or `r round(19/57, 2)`.
 
 Third we create a MCMC configuration for our model with `configureMCMC()`:
 ```{r}
 survivalConf <- configureMCMC(survival)
 ```
 
-This steps tells you the nodes that are monitored by default, and the MCMC samplers than have been assigned to them. Here `theta` is monitored, and samples from its posterior distribution are simulated with a random walk sampler similar to the sampler we coded in the previous chapter in Section \@ref(metropolis-algorithm). 
+This steps tells you the nodes that are monitored by default, and the MCMC samplers than have been assigned to them. Here `theta` is monitored, and samples from its posterior distribution are simulated with a random walk sampler similar to the Metropolis sampler we coded in the previous chapter in Section \@ref(metropolis-algorithm). 
 
 To monitor `lifespan` in addition to `theta`, you write:
 ```{r}
@@ -492,34 +496,36 @@ survivalMCMC <- buildMCMC(survivalConf)
 CsurvivalMCMC <- compileNimble(survivalMCMC, project = survival)
 ```
 
+Note that models and `nimbleFunctions` need to be compiled before they can be used to specify a project.
+
 Fourth, we run NIMBLE with `runMCMC()`:
 ```{r}
 n.iter <- 5000
 n.burnin <- 1000
-samples <- runMCMC(CsurvivalMCMC, 
+samples <- runMCMC(mcmc = CsurvivalMCMC, 
                    niter = n.iter,
                    nburnin = n.burnin)
 ```
 
 We run a single chain but `runMCMC()` allows you to use multiple chains as with `nimbleMCMC()`. 
 
-You can look into `samples` which containts values simulated from the posterior distribution of the parameters we monitor:
+You can look into `samples` which contains values simulated from the posterior distribution of the parameters we monitor:
 ```{r}
 head(samples)
 ```
 
-From here, you can obtain numerical summaries:
+From here, you can obtain numerical summaries with `samplesSummary()`:
 ```{r}
-summary(samples)
+samplesSummary(samples)
 ```
 
-At first glance, using several steps instead of doing all these at once with `nimbleMCMC()` seem odds. Why is it useful? First, knowing what is under the hood can help you debug your code which is something I have always find hard to do with other software. Second, mastering the whole sequence of steps allows you to play around with samplers, and the default options or even write your own.
+At first glance, using several steps instead of doing all these at once with `nimbleMCMC()` seems odds. Why is it useful? First, knowing what is under the hood can help you debug your code which is something I have always find hard to do with other software. Second, mastering the whole sequence of steps allows you to play around with samplers, by changing the samplers that NIMBLE pick by defaults, or even write your own samplers.
 
 ## Debugging
 
 ## Playing around with MCMC samplers
 
-### Changing default sampler
+### Changing default sampler {#change-sampler}
 
 What is the default sampler used by NIMBLE in our example? You can answer this question by inspecting the MCMC configuration obtained with `configureMCMC()`:
 ```{r}
@@ -527,13 +533,13 @@ What is the default sampler used by NIMBLE in our example? You can answer this q
 survivalConf$printSamplers()
 ```
 
-Now that we have control on the MCMC configure, let's change it a little. We start by removing the default sampler:
+Now that we have control on the MCMC configuration, let's mess it up. We start by removing the default sampler:
 ```{r}
 survivalConf$removeSamplers(c('theta'))
 survivalConf$printSamplers()
 ```
 
-And we whange it for a slice sampler:
+And we change it for a slice sampler:
 ```{r}
 survivalConf$addSampler(target = c('theta'),
                         type = 'slice')
@@ -550,40 +556,51 @@ CsurvivalMCMC2 <- compileNimble(survivalMCMC2,
                                                        # into existing project, 
                                                        # need to reset nimbleFunctions
 # run NIMBLE:
-samples2 <- runMCMC(CsurvivalMCMC2, 
-                   niter = n.iter,
-                   nburnin = n.burnin)
+samples2 <- runMCMC(mcmc = CsurvivalMCMC2, 
+                    niter = n.iter,
+                    nburnin = n.burnin)
 # obtain numerical summaries:
-summary(samples2)
+samplesSummary(samples2)
 ```
 
-NIMBLE has many samplers available, and a list is available with `?samplers`. For example, high correlation in (regression) parameters can make independent samplers inefficient. In that situation, block sampling might help which consists in proposing candidate values from a multivariate distribution that acknowledges correlation between parameters. Another example 
+NIMBLE implements many samplers, and a list is available with `?samplers`. For example, high correlation in (regression) parameters can make independent samplers inefficient. In that situation, block sampling might help which consists in proposing candidate values from a multivariate distribution that acknowledges correlation between parameters. **Say something on how default samplers are chosen by NIMBLE?**
 
 ### Coding your own sampler
 
-Allowing you to code your own sampler is another topic on which NIMBLE thrives. As an example, we focus on the Metropolis algorithm of Section \@ref(metropolis-algorithm) which we coded in R. In this section, we make it a `nimbleFunction` so that we can compile it for improved performance: 
+Allowing you to code your own sampler is another topic on which NIMBLE thrives. As an example, we focus on the Metropolis algorithm of Section \@ref(metropolis-algorithm) which we coded in R. In this section, we make it a `nimbleFunction` so that we can use it within our model: 
 ```{r}
 my_metropolis <- nimbleFunction(
   name = 'my_metropolis', # fancy name for our MCMC sampler
-  contains = sampler_BASE, # has to be included
-  setup = function(model, mvSaved, target, control) { # has to be included
-    calcNodes <- model$getDependencies(target) # get dependencies for 'target' = param of interest in 'model'
-    scale <- control$scale # SD of proposal distribution
+  contains = sampler_BASE,
+  setup = function(model, mvSaved, target, control) {
+    # i) get dependencies for 'target' in 'model'
+    calcNodes <- model$getDependencies(target) 
+    # ii) get sd of proposal distribution
+    scale <- control$scale 
   },
   run = function() {
-    initialLP <- model$getLogProb(calcNodes) # log-lik at current value
-    current <- model[[target]] # current parameter value
-    lcurrent <- log(current / (1 - current)) # logit transform
-    lproposal <- lcurrent  + rnorm(1, mean = 0, scale) # propose candidate value
-    proposal <- plogis(lproposal) # back-transform
+    # (1) log-lik at current value
+    initialLP <- model$getLogProb(calcNodes) 
+    # (2) current parameter value
+    current <- model[[target]] 
+    # (3) logit transform
+    lcurrent <- log(current / (1 - current))
+    # (4) propose candidate value
+    lproposal <- lcurrent  + rnorm(1, mean = 0, scale) 
+    # (5) back-transform
+    proposal <- plogis(lproposal)
+    # (6) plug candidate value in model 
     model[[target]] <<- proposal 
-    proposalLP <- model$calculate(calcNodes) # log-lik at candidate value
-    lMHR <- proposalLP - initialLP # compute lik ratio on log scale
-    if(runif(1,0,1) < exp(lMHR)) { # spin continuous spinner
-      # if candidate value is accepted, update current value
+    # (7) log-lik at candidate value
+    proposalLP <- model$calculate(calcNodes)
+    # (8) compute lik ratio on log scale
+    lMHR <- proposalLP - initialLP 
+    # (9) spin continuous spinner and compare to ratio
+    if(runif(1,0,1) < exp(lMHR)) { 
+      # (10) if candidate value is accepted, update current value
       copy(from = model, to = mvSaved, nodes = calcNodes, logProb = TRUE, row = 1)
     } else {
-      ## if candidate value is accepted, keep current value
+      ## (11) if candidate value is accepted, keep current value
       copy(from = mvSaved, to = model, nodes = calcNodes, logProb = TRUE, row = 1)
     }
   },
@@ -593,58 +610,9 @@ my_metropolis <- nimbleFunction(
 )
 ```
 
-**Explain sections of the code.**
+Compared to `nimbleFunctions` we wrote earlier, `my_metropolis()` contains a `setup` function which i) gets the dependencies of the parameter to update in the `run` function with Metropolis, the target node, that would be `theta` in our example and ii) extracts control parameters, that would be `scale` the standard deviation of the proposal distribution in our example. Then the `run` function implements the steps of the Metropolis algorithm: (1) get the log-likelihood function evaluated at the current value, (2) get the current value, (3) apply the logit transform to it, (4) propose a candidate value by perturbing the current value with some normal noise controled by the standard deviation `scale`, (5) back-transform the candidate value and (6) plug it in the model, (7) calculate the log-likelihood function at the candidate value, (8) compute the Metropolis ratio on the log scale, (9) compare output of a spinner and the Metropolis ratio to decide whether to (10) accept the candidate value and copy from the model to `mvSaved` or (11) reject it and keep the current value by copying from `mvSaved` to the model. Because this `nimbleFunction` is to be used as a MCMC sampler, several constraints need to be respected like having a `contains = sampler_BASE` statement or using the four arguments `model`, `mvSaved`, `target` and `control` in the `setup` function. Of course, NIMBLE implements a more advanced and efficient version of the Metropolis algorithm, you can look into it at <https://github.com/cran/nimble/blob/master/R/MCMC_samplers.R#L184>. 
 
-<!-- Suppose we want a sampler for theta[4] in the pump model. An example specialization -->
-<!-- step would be theta4sampler <- simple MH(model = pumpModel, currentState -->
-<!-- = mvState, targetNode = "theta[4]"). Here mvState is a modelValues object with -->
-<!-- variables that match those in the model, with only one of each. This is used to store the -->
-<!-- current state of the model. We assume that on entry to the run function, mvState will -->
-<!-- contain a copy of all model variables and log probabilities, and on exit the run function -->
-<!-- must ensure that the same is true, re -->
-<!-- ecting any updates to those states. As in the importance -->
-<!-- sampling example, the only real work to be done in the setup function is to -->
-<!-- query the model to determine the stochastic dependencies of the targetNode. In this case -->
-<!-- calculationNodes will be (theta[4], lambda[4], x[4]). -->
-<!-- The run function illustrates the compactness of expressing a Metropolis-Hastings algorithm -->
-<!-- using language elements like calculate, getLogProb, copy, and list-like access to -->
-<!-- a model node. The scale run-time argument is the standard deviation for the normally -->
-<!-- distributed proposal value. In the full, released version of this algorithm (sampler RW), -->
-<!-- the setup code includes some error trapping, and there is additional code to implement -->
-<!-- adaptation of the scale parameter (Haario et al., 2001) rather than taking it as a runtime -->
-<!-- argument. The simplified version here is less cluttered for illustration. In addition -->
-<!-- the full version is more efficient by using calculateDiff instead of both getLogProb and -->
-<!-- calculate, but here we use the latter to illustrate the steps more clearly. -->
-<!-- The lines of run (1) obtain the current sum of log probabilities of the stochastic dependents -->
-<!-- of the target node (including itself); (2) simulate a new value centered on the current -->
-<!-- value (model[[targetNode]]); (3) put that value in the model; (4) calculate the new sum -->
-<!-- of log probabilities of the same stochastic dependents; (5) determine the log acceptance -->
-<!-- probability; (6) call the utility function decide that determines the accept/reject decision; -->
-<!-- and (7) copy from the model to the currentState for (7a) an acceptance or (7b) vice-versa -->
-<!-- for a rejection. Again, the setup and run functions are fully model-generic. -->
-<!-- This example illustrates natural R-like access to nodes and variables in models, such -->
-<!-- as model[[targetNode]], but making this model-generic leads to some surprising syntax. -->
-<!-- Every node has a unique character name that includes indices, such as "theta[4]". This -->
-<!-- leads to the syntax model[["theta[4]"]], rather than model[["theta"]][4]. The latter -->
-<!-- is also valid, but it is not model-generic because, in another specialization of simple MH, -->
-<!-- targetNode may have a different number of indices. For example, if targetNode is "y[2, -->
-<!-- 3]", model[[targetNode]] accesses the same value as model[["y"]][2,3]. The NIMBLE -->
-<!-- DSL also provides vectorized access to groups of nodes and/or variables. -->
-
-<!-- To be used within the MCMC engine, sampler functions definitions must adhere exactly to the following: -->
-
-<!-- + The nimbleFunction must include the contains statement contains = sampler_BASE. -->
-<!-- + The setup function must have the four arguments model, mvSaved, target, control, in that order. -->
-<!-- + The run function must accept no arguments, and have no return value. Further, after execution it must leave the mvSaved modelValues object as an up-to-date copy of the values and logProb values in the model object. -->
-<!-- + The nimbleFunction must have a member method called reset, which takes no arguments and has no return value. -->
-
-<!-- The purpose of the setup function is generally two-fold. First, to extract control parameters from the control list; in the example, the proposal standard deviation scale. It is good practice to specify default values for any control parameters that are not provided in the control argument, as done in the example. Second, to generate any sets of nodes needed in the run function. In many sampling algorithms, as here, calcNodes is used to represent the target node(s) and dependencies up to the first layer of stochastic nodes, as this is precisely what is required for calculating the Metropolis-Hastings acceptance probability. These probability calculations are done using model$calculate(calcNodes). -->
-
-<!-- The purpose of the mvSaved modelValues object is to store the state of the model, including both node values and log probability values, as it exists before any changes are made by the sampler. This allows restoration of the state when a proposal is rejected, as can be seen in the example above. When a proposal is accepted, one should copy from the model into the mvSaved object. NIMBLE’s MCMC engine expects that mvSaved contains an up-to-date copy of model values and logProb values at the end of the run code of a sampler. -->
-
-<!-- Note that NIMBLE generally expects the user-defined sampler to be defined in the global environment. If you define it in a function (which would generally be the case if you are using it in the context of parallelization), one approach would be to assign the user-defined sampler to the global environment in your function: -->
-
-
+Now that we have our user-defined MCMC algorithm, we can change the default sampler for our new sampler as in Section \@ref(change-sampler). We start from scratch:
 ```{r}
 model <- nimbleCode({
   # likelihood
@@ -653,42 +621,47 @@ model <- nimbleCode({
   theta ~ dunif(0, 1)
 })
 my.data <- list(survived = 19, released = 57)
-parameters.to.save <- c("theta")
 initial.values <- function() list(theta = runif(1,0,1))
-#mcmc.output <- nimbleMCMC(code = model,
-#                          data = my.data,
-#                          inits = initial.values,
-#                          monitors = parameters.to.save,
-#                          niter = n.iter,
-#                          nburnin = n.burnin,
-#                          nchains = n.chains)
-#MCMCsummary(object = mcmc.output, round = 2)
+survival <- nimbleModel(code = model, 
+                        data = my.data, 
+                        inits = initial.values())
+Csurvival <- compileNimble(survival)
+survivalConf <- configureMCMC(survival)
 ```
 
-Parameter to tune. Seek equivalent in previous chapter.
+We print the samplers used by default, remove the default sampler for `theta`, replace it with our `my_metropolis()` sampler with the standard deviation of the proposal distribution set to 0.1, and print again to make sure NIMBLE now uses our new sampler:
 ```{r}
+survivalConf$printSamplers()
+survivalConf$removeSamplers(c('theta'))
+survivalConf$addSampler(target = 'theta', 
+                        type = 'my_metropolis', 
+                        control = list(scale = 0.1)) # standard deviation
+                                                     # of proposal distribution
+survivalConf$printSamplers()
+```
+
+The rest of the workflow is unchanged:
+```{r}
+survivalMCMC <- buildMCMC(survivalConf)
+CsurvivalMCMC <- compileNimble(survivalMCMC, 
+                               project = survival)
+samples <- runMCMC(mcmc = CsurvivalMCMC, 
+                   niter = 5000, 
+                   nburnin = 1000)
+samplesSummary(samples)
+```
+
+You can re-run the analysis by setting the standard deviation of the proposal to different values, say 1 and 10, and compare Figure \@ref(fig:traceown) to traceplots we obtained with our R implementation of the Metropolis algorithm in the previous chapter at Figure \@ref(fig:tracechainlength):
+```{r traceown, echo = FALSE, fig.align="center", out.width="100%", fig.cap = "Trace plots for different values of the standard deviation (scale) of the proposal distribution."}
 scale <- 0.1
-```
-
-Detailed workflow.
-```{r}
 Rmodel <- nimbleModel(code = model, data = my.data, inits = initial.values())
-conf <- configureMCMC(Rmodel, monitors = c('theta'))
-conf$printSamplers()
+conf <- configureMCMC(Rmodel, monitors = c('theta'), print = FALSE)
 conf$removeSamplers(c('theta'))
 conf$addSampler(target = 'theta', type = 'my_metropolis', control = list(scale = scale))
-conf$printSamplers()
-conf$printMonitors()
 Rmcmc <- buildMCMC(conf)
 out <- compileNimble(list(model = Rmodel, mcmc = Rmcmc))
 Cmcmc <- out$mcmc
-samples <- runMCMC(Cmcmc, niter = 10000, nburnin = 9000)
-samplesSummary(samples)
-#basicMCMCplots::chainsPlot(samples)
-```
-
-Re-run by changing scale of proposal with 1 and 10, and compare to traceplots in previous chapter Figure \@ref(fig:tracechainlength):
-```{r traceown, echo = FALSE, fig.align="center", out.width="100%", fig.cap = "Trace plots for different values of the standard deviation (scale) of the proposal distribution. "}
+samples_sd01 <- runMCMC(Cmcmc, niter = 10000, nburnin = 9000, progressBar = FALSE)
 scale <- 1
 Rmodel <- nimbleModel(code = model, data = my.data, inits = initial.values())
 conf <- configureMCMC(Rmodel, monitors = c('theta'), print = FALSE)
@@ -697,7 +670,7 @@ conf$addSampler(target = 'theta', type = 'my_metropolis', control = list(scale =
 Rmcmc <- buildMCMC(conf)
 out <- compileNimble(list(model = Rmodel, mcmc = Rmcmc))
 Cmcmc <- out$mcmc
-samples_sd1 <- runMCMC(Cmcmc, niter = 10000, nburnin = 9000)
+samples_sd1 <- runMCMC(Cmcmc, niter = 10000, nburnin = 9000, progressBar = FALSE)
 scale <- 10
 Rmodel <- nimbleModel(code = model, data = my.data, inits = initial.values())
 conf <- configureMCMC(Rmodel, monitors = c('theta'), print = FALSE)
@@ -706,8 +679,8 @@ conf$addSampler(target = 'theta', type = 'my_metropolis', control = list(scale =
 Rmcmc <- buildMCMC(conf)
 out <- compileNimble(list(model = Rmodel, mcmc = Rmcmc))
 Cmcmc <- out$mcmc
-samples_sd10 <- runMCMC(Cmcmc, niter = 10000, nburnin = 9000)
-plot01 <- samples %>%
+samples_sd10 <- runMCMC(Cmcmc, niter = 10000, nburnin = 9000, progressBar = FALSE)
+plot01 <- samples_sd01 %>%
   as_tibble() %>%
   ggplot() + 
   aes(x = 9001:10000, y = theta) +
@@ -786,7 +759,6 @@ full_matrix_of_samples <- as.matrix(Cmcmc$mvSamples)
 
 ### Compile, compile, compile
 
-Models and nimbleFunctions need to be compiled before they can be used to specify a project. Once compiled you can use an R model or nimbleFunction to specify the project.
 
 
 ## Summary
@@ -797,27 +769,20 @@ Models and nimbleFunctions need to be compiled before they can be used to specif
 
 ## Suggested reading
 
-+ only scratch the surface of what NIMBLE is capable of. 
+I this chapter, I have only scratched the surface of what NIMBLE is capable of. Below is a list of pointers that should help you going further with NIMBLE. 
 
-+ Official website [https://r-nimble.org](https://r-nimble.org)
+- The NIMBLE folks make a lot of useful resources available through the official website [https://r-nimble.org](https://r-nimble.org). 
 
-+ User Manual [https://r-nimble.org/html_manual/cha-welcome-nimble.html](https://r-nimble.org/html_manual/cha-welcome-nimble.html) and [cheatsheet](https://r-nimble.org/cheatsheets/NimbleCheatSheet.pdf).
+- The NIMBLE manual [https://r-nimble.org/html_manual/cha-welcome-nimble.html](https://r-nimble.org/html_manual/cha-welcome-nimble.html) reads like a book with clear explanations and relevant examples. 
 
-+ Users mailing list [https://groups.google.com/forum/#!forum/nimble-users](https://groups.google.com/forum/#!forum/nimble-users)
+- You can learn a lot by going through the training material from NIMBLE workshops at [https://github.com/nimble-training](https://github.com/nimble-training).
 
-+ Training material [https://github.com/nimble-training](https://github.com/nimble-training)
+- You can keep the NIMBLE [cheatsheet](https://r-nimble.org/cheatsheets/NimbleCheatSheet.pdf) near you to remind yourself of the workflow, how to write and use models, or which functions and distributions are available.
 
-+ Reference to cite when using nimble in a publication:
+- The motivation to write this book comes from a workshop I co-teach with colleagues, including Perry de Valpine and Daniel from the NIMBLE development team. The material (slides and videos) is available at [https://github.com/oliviergimenez/bayesian-cr-workshop](https://github.com/oliviergimenez/bayesian-cr-workshop). 
+
+- If you have questions, feel free to get in touch with the community of NIMBLE users by emailing the discussion group [https://groups.google.com/forum/#!forum/nimble-users](https://groups.google.com/forum/#!forum/nimble-users). This is a great place to learn, and folks who take the time to answer questions are kind and provide constructive answers. When possible, make sure to provide a reproducible example illustrating your problem. 
+
+- Last, you can cite the following reference when using NIMBLE in a publication:
 
 > de Valpine, P., D. Turek, C. J. Paciorek, C. Anderson-Bergman, D. Temple Lang, and R. Bodik (2017). [Programming With Models: Writing Statistical Algorithms for General Model Structures With NIMBLE](https://arxiv.org/pdf/1505.05093.pdf). *Journal of Computational and Graphical Statistics* **26** (2): 403–13.
-
-
-<!-- ## A dire quelque part? -->
-
-<!-- Pourquoi Nimble plutôt que Stan? Syntaxe BUGS, also discrete latent states easier to deal with, no need to marginalise. In Stan you marginalise (ref forward to relevant section of the book), but difficult endeavour, and you do not need to do that with NIMBLE, it has algorithms that work fine with discrete latent states.  -->
-
-<!-- What about vectorization? -->
-
-<!-- And parallelization à la jagsUI? -->
-
-<!-- Simulations also? Generate initial values, cf code Maud? -->
