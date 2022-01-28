@@ -94,7 +94,7 @@
 <p>So why use NIMBLE you may ask? The short answer is that NIMBLE is capable of so much more than just running MCMC algorithms! First, you will work from within R, but in the background NIMBLE will translate your code in C++ for (in general) faster computation. Second, NIMBLE extends the BUGS language for writing new functions and distributions of your own, or borrow those written by others. Third, NIMBLE gives you full control of the MCMC samplers, and you may pick other algorithms than the defaults. Fourth, NIMBLE comes with a library of numerical methods other than MCMC algorithms, including sequential Monte Carlo (for particle filtering) and Monte Carlo Expectation Maximization (for maximum likelihood). Last but not least, the development team is friendly and helpful, and based on users’ feedbacks, NIMBLE folks work constantly at improving the package capabilities.</p>
 <div class="figure" style="text-align: center">
 <span style="display:block;" id="fig:nimblelogo"></span>
-<img src="images/nimble-icon.png" alt="Logo of the NIMBLE R package designed by Luke Larson. **Ask Perry for context and meaning.**" width="100%"><p class="caption">
+<img src="images/nimble-icon.png" alt="Logo of the NIMBLE R package designed by Luke Larson. **Ask Perry for context and meaning.**" width="50%"><p class="caption">
 Figure 2.1: Logo of the NIMBLE R package designed by Luke Larson. <strong>Ask Perry for context and meaning.</strong>
 </p>
 </div>
@@ -112,11 +112,10 @@ To run NIMBLE, you will need to:<br>
 4. Pick initial values for parameters to be estimated (for each chain).<br>
 5. Provide MCMC details namely the number of chains, the length of the burn-in period and the number of iterations following burn-in.
 </div>
-<p><strong>Here I need to tell how to install the nimble package</strong></p>
 <p>First things first, let’s not forget to load the <code>nimble</code> package:</p>
 <div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="va"><a href="https://r-nimble.org">nimble</a></span><span class="op">)</span></code></pre></div>
-<p>Note before you install <code>nimble</code> like any other R package, Windows users will need to install <code>Rtools</code>, and Mac users will need to install <code>Xcode</code>. More at <a href="https://r-nimble.org/download" class="uri">https://r-nimble.org/download</a>.</p>
+<p>Note that before you can install <code>nimble</code> like any other R package, Windows users will need to install <code>Rtools</code>, and Mac users will need to install <code>Xcode</code>. More at <a href="https://r-nimble.org/download" class="uri">https://r-nimble.org/download</a>.</p>
 <p>Now let’s go back to our example on animal survival from the previous chapter. First step is to build our model by specifying the binomial likelihood and a uniform prior on survival probability <code>theta</code>. We use the <code><a href="https://rdrr.io/pkg/nimble/man/nimbleCode.html">nimbleCode()</a></code> function and wrap code within curly brackets:</p>
 <div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">model</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimbleCode.html">nimbleCode</a></span><span class="op">(</span><span class="op">{</span>
@@ -508,7 +507,7 @@ Figure 2.2: Graph of the animal survival model. Survived is a stochastic node de
 <div class="sourceCode" id="cb51"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">survival</span><span class="op">$</span><span class="fu">getNodeNames</span><span class="op">(</span><span class="op">)</span>
 <span class="co">## [1] "theta"    "lifespan" "survived"</span></code></pre></div>
-<p>You can look at the values stored at each node.</p>
+<p>You can look at the values stored at each node:</p>
 <div class="sourceCode" id="cb52"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">survival</span><span class="op">$</span><span class="va">theta</span>
 <span class="co">## [1] 0.5</span>
@@ -517,11 +516,12 @@ Figure 2.2: Graph of the animal survival model. Survived is a stochastic node de
 <span class="va">survival</span><span class="op">$</span><span class="va">lifespan</span> 
 <span class="co">## [1] 1.443</span>
 <span class="co"># this is -1/log(0.5)</span></code></pre></div>
-<p>We can also look at the log-likelihood evaluated at the initial value for <code>theta</code>.</p>
+<p>We can also calculate the log-likelihood at the initial value for <code>theta</code>:</p>
 <div class="sourceCode" id="cb53"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="va">survival</span><span class="op">$</span><span class="va">logProb_survived</span>
+<code class="sourceCode R"><span class="va">survival</span><span class="op">$</span><span class="fu">calculate</span><span class="op">(</span><span class="op">)</span>
 <span class="co">## [1] -5.422</span>
 <span class="co"># this is dbinom(x = 19, size = 57, prob = 0.5, log = TRUE)</span></code></pre></div>
+<p>The ability in NIMBLE to access the nodes of your model and to evaluate the model likelihood can help you in identifying bugs in your code. <strong>Give example? Provide negative initial value for theta, or released in data &lt; survived.</strong></p>
 <p>You can obtain the graph of the model as in Figure <a href="intronimble.html#fig:dag-survival">2.2</a> with:</p>
 <div class="sourceCode" id="cb54"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">survival</span><span class="op">$</span><span class="fu">plotGraph</span><span class="op">(</span><span class="op">)</span></code></pre></div>
@@ -601,20 +601,15 @@ Figure 2.2: Graph of the animal survival model. Survived is a stochastic node de
 <span class="co">##            Mean Median St.Dev. 95%CI_low 95%CI_upp</span>
 <span class="co">## lifespan 0.9408 0.9221 0.15921    0.6759    1.2974</span>
 <span class="co">## theta    0.3407 0.3381 0.06023    0.2277    0.4627</span></code></pre></div>
-<p>At first glance, using several steps instead of doing all these at once with <code><a href="https://rdrr.io/pkg/nimble/man/nimbleMCMC.html">nimbleMCMC()</a></code> seems odds. Why is it useful? First, knowing what is under the hood can help you debug your code which is something I have always find hard to do with other software. Second, mastering the whole sequence of steps allows you to play around with samplers, by changing the samplers that NIMBLE pick by defaults, or even write your own samplers.</p>
+<p>At first glance, using several steps instead of doing all these at once with <code><a href="https://rdrr.io/pkg/nimble/man/nimbleMCMC.html">nimbleMCMC()</a></code> seems odds. Why is it useful? Mastering the whole sequence of steps allows you to play around with samplers, by changing the samplers NIMBLE picks by default, or even writing your own samplers.</p>
 </div>
-<div id="debugging" class="section level2" number="2.6">
+<div id="playing-around-with-mcmc-samplers" class="section level2" number="2.6">
 <h2>
-<span class="header-section-number">2.6</span> Debugging<a class="anchor" aria-label="anchor" href="#debugging"><i class="fas fa-link"></i></a>
+<span class="header-section-number">2.6</span> Playing around with MCMC samplers<a class="anchor" aria-label="anchor" href="#playing-around-with-mcmc-samplers"><i class="fas fa-link"></i></a>
 </h2>
-</div>
-<div id="playing-around-with-mcmc-samplers" class="section level2" number="2.7">
-<h2>
-<span class="header-section-number">2.7</span> Playing around with MCMC samplers<a class="anchor" aria-label="anchor" href="#playing-around-with-mcmc-samplers"><i class="fas fa-link"></i></a>
-</h2>
-<div id="change-sampler" class="section level3" number="2.7.1">
+<div id="change-sampler" class="section level3" number="2.6.1">
 <h3>
-<span class="header-section-number">2.7.1</span> Changing default sampler<a class="anchor" aria-label="anchor" href="#change-sampler"><i class="fas fa-link"></i></a>
+<span class="header-section-number">2.6.1</span> Changing default sampler<a class="anchor" aria-label="anchor" href="#change-sampler"><i class="fas fa-link"></i></a>
 </h3>
 <p>What is the default sampler used by NIMBLE in our example? You can answer this question by inspecting the MCMC configuration obtained with <code><a href="https://rdrr.io/pkg/nimble/man/configureMCMC.html">configureMCMC()</a></code>:</p>
 <div class="sourceCode" id="cb64"><pre class="downlit sourceCode r">
@@ -653,9 +648,9 @@ Figure 2.2: Graph of the animal survival model. Survived is a stochastic node de
 <span class="co">## theta    0.3394 0.3376 0.05959    0.2268    0.4604</span></code></pre></div>
 <p>NIMBLE implements many samplers, and a list is available with <code><a href="https://rdrr.io/pkg/nimble/man/samplers.html">?samplers</a></code>. For example, high correlation in (regression) parameters can make independent samplers inefficient. In that situation, block sampling might help which consists in proposing candidate values from a multivariate distribution that acknowledges correlation between parameters. <strong>Say something on how default samplers are chosen by NIMBLE?</strong></p>
 </div>
-<div id="coding-your-own-sampler" class="section level3" number="2.7.2">
+<div id="coding-your-own-sampler" class="section level3" number="2.6.2">
 <h3>
-<span class="header-section-number">2.7.2</span> Coding your own sampler<a class="anchor" aria-label="anchor" href="#coding-your-own-sampler"><i class="fas fa-link"></i></a>
+<span class="header-section-number">2.6.2</span> Coding your own sampler<a class="anchor" aria-label="anchor" href="#coding-your-own-sampler"><i class="fas fa-link"></i></a>
 </h3>
 <p>Allowing you to code your own sampler is another topic on which NIMBLE thrives. As an example, we focus on the Metropolis algorithm of Section <a href="crashcourse.html#metropolis-algorithm">1.5.3</a> which we coded in R. In this section, we make it a <code>nimbleFunction</code> so that we can use it within our model:</p>
 <div class="sourceCode" id="cb68"><pre class="downlit sourceCode r">
@@ -699,7 +694,7 @@ Figure 2.2: Graph of the animal survival model. Survived is a stochastic node de
   <span class="op">)</span>
 <span class="op">)</span></code></pre></div>
 <p>Compared to <code>nimbleFunctions</code> we wrote earlier, <code>my_metropolis()</code> contains a <code>setup</code> function which i) gets the dependencies of the parameter to update in the <code>run</code> function with Metropolis, the target node, that would be <code>theta</code> in our example and ii) extracts control parameters, that would be <code>scale</code> the standard deviation of the proposal distribution in our example. Then the <code>run</code> function implements the steps of the Metropolis algorithm: (1) get the log-likelihood function evaluated at the current value, (2) get the current value, (3) apply the logit transform to it, (4) propose a candidate value by perturbing the current value with some normal noise controled by the standard deviation <code>scale</code>, (5) back-transform the candidate value and (6) plug it in the model, (7) calculate the log-likelihood function at the candidate value, (8) compute the Metropolis ratio on the log scale, (9) compare output of a spinner and the Metropolis ratio to decide whether to (10) accept the candidate value and copy from the model to <code>mvSaved</code> or (11) reject it and keep the current value by copying from <code>mvSaved</code> to the model. Because this <code>nimbleFunction</code> is to be used as a MCMC sampler, several constraints need to be respected like having a <code>contains = sampler_BASE</code> statement or using the four arguments <code>model</code>, <code>mvSaved</code>, <code>target</code> and <code>control</code> in the <code>setup</code> function. Of course, NIMBLE implements a more advanced and efficient version of the Metropolis algorithm, you can look into it at <a href="https://github.com/cran/nimble/blob/master/R/MCMC_samplers.R#L184" class="uri">https://github.com/cran/nimble/blob/master/R/MCMC_samplers.R#L184</a>.</p>
-<p>Now that we have our user-defined MCMC algorithm, we can change the default sampler for our new sampler as in Section <a href="intronimble.html#change-sampler">2.7.1</a>. We start from scratch:</p>
+<p>Now that we have our user-defined MCMC algorithm, we can change the default sampler for our new sampler as in Section <a href="intronimble.html#change-sampler">2.6.1</a>. We start from scratch:</p>
 <div class="sourceCode" id="cb69"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">model</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimbleCode.html">nimbleCode</a></span><span class="op">(</span><span class="op">{</span>
   <span class="co"># likelihood</span>
@@ -752,64 +747,145 @@ Figure 2.3: Trace plots for different values of the standard deviation (scale) o
 </div>
 </div>
 </div>
-<div id="tip-and-tricks" class="section level2" number="2.8">
+<div id="tips-and-tricks" class="section level2" number="2.7">
 <h2>
-<span class="header-section-number">2.8</span> Tip and tricks<a class="anchor" aria-label="anchor" href="#tip-and-tricks"><i class="fas fa-link"></i></a>
+<span class="header-section-number">2.7</span> Tips and tricks<a class="anchor" aria-label="anchor" href="#tips-and-tricks"><i class="fas fa-link"></i></a>
 </h2>
-<p>Things to know. Grab from NIMBLE user’s list. NIMBLE users what’s yours?</p>
-<div id="flexible-specification-of-distributions" class="section level3" number="2.8.1">
+<p>Before closing this chapter on NIMBLE, I thought it’d be useful to have a section gathering a few tips and tricks that would make your life easier. <strong>This is my tips and tricks, NIMBLE users, I’d be happy to hear yours: <a href="mailto:olivier.gimenez@cefe.cnrs.fr">email me</a>, <a href="https://github.com/oliviergimenez/banana-book/edit/master/nimble.Rmd">edit the chapter</a> or <a href="https://github.com/oliviergimenez/banana-book/issues">file an issue</a> on GitHub.</strong></p>
+<div id="flexible-specification-of-distributions" class="section level3" number="2.7.1">
 <h3>
-<span class="header-section-number">2.8.1</span> Flexible specification of distributions<a class="anchor" aria-label="anchor" href="#flexible-specification-of-distributions"><i class="fas fa-link"></i></a>
+<span class="header-section-number">2.7.1</span> Flexible specification of distributions<a class="anchor" aria-label="anchor" href="#flexible-specification-of-distributions"><i class="fas fa-link"></i></a>
 </h3>
+<p>In other sotware like JAGS, the normal distribution is parameterized with mean <code>mu</code> and a parameter called precision, often denoted <code>tau</code>, the inverse of the variance you are used to. Say we use a normal prior on some parameter <code>epsilon</code> with <code>epsilon ~ dnorm(mu, tau)</code>. We’d like this prior to be vague, therefore <code>tau</code> should be small, say 0.01 so that the variance of the normal distribution is large, 1/0.01 = 100 here. This subtlety is the source of problems (and frustration) when you forget that the second parameter is precision and use <code>epsilon ~ dnorm(mu, 100)</code>, because then the variance is actually 1/100 = 0.01 and the prior is very informative, and peaked on <code>mu</code>. In NIMBLE you can use this parameterisation as well as the more natural parameterisation <code>epsilon ~ dnorm(mu, sd = 100)</code>.</p>
+</div>
+<div id="the-end-of-empty-indices" class="section level3" number="2.7.2">
+<h3>
+<span class="header-section-number">2.7.2</span> The end of empty indices<a class="anchor" aria-label="anchor" href="#the-end-of-empty-indices"><i class="fas fa-link"></i></a>
+</h3>
+<p>NIMBLE does not guess the dimensions of objects. In other software like JAGS you can write <code>sum.x &lt;- sum(x[])</code> to calculate the sum over all components of <code>x</code>. In NIMBLE you need to write <code>sum.x &lt;- sum(x[1:n])</code> the sum the components of <code>x</code> from 1 up to n. Specifying dimensions can be annoying, but it forces me to think of what I am doing and keep my code self-explaining.</p>
+</div>
+<div id="faster-compilation" class="section level3" number="2.7.3">
+<h3>
+<span class="header-section-number">2.7.3</span> Faster compilation<a class="anchor" aria-label="anchor" href="#faster-compilation"><i class="fas fa-link"></i></a>
+</h3>
+<p>You might have noticed that compilation in NIMBLE takes time. When you have large models (with lots of nodes), compilation can take forever. You can set <code>calculate = FALSE</code> in <code><a href="https://rdrr.io/pkg/nimble/man/nimbleModel.html">nimbleModel()</a></code> to disable the calculation of all deterministic nodes and log-likelihood. You can also use <code>useConjugacy = FALSE</code> in <code><a href="https://rdrr.io/pkg/nimble/man/configureMCMC.html">configureMCMC()</a></code> to disable the search for conjugate samplers. With the animal survival example, you would do:</p>
 <div class="sourceCode" id="cb72"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="co"># JAGS (&amp; Nimble)</span>
-<span class="kw">for</span><span class="op">(</span><span class="va">t</span> <span class="kw">in</span> <span class="fl">1</span><span class="op">:</span><span class="va">Tmax</span><span class="op">)</span><span class="op">{</span>
-  <span class="va">epsilon</span><span class="op">[</span><span class="va">t</span><span class="op">]</span> <span class="op">~</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html">dnorm</a></span><span class="op">(</span><span class="fl">0</span>, <span class="va">tau</span><span class="op">)</span>
-<span class="op">}</span>
-<span class="va">tau</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimble-math.html">pow</a></span><span class="op">(</span><span class="va">sigma</span>, <span class="op">-</span><span class="fl">2</span><span class="op">)</span>
-<span class="va">sigma</span> <span class="op">~</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html">dunif</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">5</span><span class="op">)</span>
-
-<span class="co"># Nimble</span>
-<span class="kw">for</span><span class="op">(</span><span class="va">t</span> <span class="kw">in</span> <span class="fl">1</span><span class="op">:</span><span class="va">Tmax</span><span class="op">)</span><span class="op">{</span>
-  <span class="va">epsilon</span><span class="op">[</span><span class="va">t</span><span class="op">]</span> <span class="op">~</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html">dnorm</a></span><span class="op">(</span><span class="fl">0</span>, sd <span class="op">=</span> <span class="va">sigma</span><span class="op">)</span>
-<span class="op">}</span>
-<span class="va">sigma</span> <span class="op">~</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html">dunif</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">5</span><span class="op">)</span></code></pre></div>
+<code class="sourceCode R"><span class="va">model</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimbleCode.html">nimbleCode</a></span><span class="op">(</span><span class="op">{</span>
+  <span class="co"># likelihood</span>
+  <span class="va">survived</span> <span class="op">~</span> <span class="fu"><a href="https://rdrr.io/r/stats/Binomial.html">dbinom</a></span><span class="op">(</span><span class="va">theta</span>, <span class="va">released</span><span class="op">)</span>
+  <span class="co"># prior</span>
+  <span class="va">theta</span> <span class="op">~</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html">dunif</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1</span><span class="op">)</span>
+<span class="op">}</span><span class="op">)</span>
+<span class="va">my.data</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>survived <span class="op">=</span> <span class="fl">19</span>, released <span class="op">=</span> <span class="fl">57</span><span class="op">)</span>
+<span class="va">initial.values</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>theta <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html">runif</a></span><span class="op">(</span><span class="fl">1</span>,<span class="fl">0</span>,<span class="fl">1</span><span class="op">)</span><span class="op">)</span>
+<span class="va">survival</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimbleModel.html">nimbleModel</a></span><span class="op">(</span>code <span class="op">=</span> <span class="va">model</span>, 
+                        data <span class="op">=</span> <span class="va">my.data</span>, 
+                        inits <span class="op">=</span> <span class="fu">initial.values</span><span class="op">(</span><span class="op">)</span>,
+                        calculate <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span> <span class="co"># first tip</span>
+<span class="va">Csurvival</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/compileNimble.html">compileNimble</a></span><span class="op">(</span><span class="va">survival</span><span class="op">)</span>
+<span class="va">survivalConf</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/configureMCMC.html">configureMCMC</a></span><span class="op">(</span><span class="va">survival</span><span class="op">)</span>
+<span class="co">## ===== Monitors =====</span>
+<span class="co">## thin = 1: theta</span>
+<span class="co">## ===== Samplers =====</span>
+<span class="co">## RW sampler (1)</span>
+<span class="co">##   - theta</span>
+<span class="va">survivalMCMC</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/buildMCMC.html">buildMCMC</a></span><span class="op">(</span><span class="va">survivalConf</span>, useConjugacy <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span> <span class="co"># second tip</span>
+<span class="va">CsurvivalMCMC</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/compileNimble.html">compileNimble</a></span><span class="op">(</span><span class="va">survivalMCMC</span>, 
+                               project <span class="op">=</span> <span class="va">survival</span><span class="op">)</span>
+<span class="va">samples</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/runMCMC.html">runMCMC</a></span><span class="op">(</span>mcmc <span class="op">=</span> <span class="va">CsurvivalMCMC</span>, 
+                   niter <span class="op">=</span> <span class="fl">5000</span>, 
+                   nburnin <span class="op">=</span> <span class="fl">1000</span><span class="op">)</span>
+<span class="co">## |-------------|-------------|-------------|-------------|</span>
+<span class="co">## |-------------------------------------------------------|</span>
+<span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimble-internal.html">samplesSummary</a></span><span class="op">(</span><span class="va">samples</span><span class="op">)</span>
+<span class="co">##         Mean Median St.Dev. 95%CI_low 95%CI_upp</span>
+<span class="co">## theta 0.3388 0.3363 0.05941    0.2277    0.4628</span></code></pre></div>
 </div>
-<div id="the-end-of-empty-indices" class="section level3" number="2.8.2">
+<div id="running-nimble-a-little-bit-longer" class="section level3" number="2.7.4">
 <h3>
-<span class="header-section-number">2.8.2</span> The end of empty indices<a class="anchor" aria-label="anchor" href="#the-end-of-empty-indices"><i class="fas fa-link"></i></a>
+<span class="header-section-number">2.7.4</span> Running NIMBLE a little bit longer<a class="anchor" aria-label="anchor" href="#running-nimble-a-little-bit-longer"><i class="fas fa-link"></i></a>
 </h3>
+<p>Sometimes it is useful to run your MCMC chains a little bit longer to improve convergence. Re-starting from the run in previous section, you can use:</p>
 <div class="sourceCode" id="cb73"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="co"># JAGS</span>
-<span class="va">sum.x</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/sum.html">sum</a></span><span class="op">(</span><span class="va">x</span><span class="op">[</span><span class="op">]</span><span class="op">)</span>
-
-<span class="co"># Nimble</span>
-<span class="va">sum.x</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/sum.html">sum</a></span><span class="op">(</span><span class="va">x</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="va">Tmax</span><span class="op">]</span><span class="op">)</span></code></pre></div>
+<code class="sourceCode R"><span class="va">niter_ad</span> <span class="op">&lt;-</span> <span class="fl">6000</span>
+<span class="va">CsurvivalMCMC</span><span class="op">$</span><span class="fu">run</span><span class="op">(</span><span class="va">niter_ad</span>, reset <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span>
+<span class="co">## |-------------|-------------|-------------|-------------|</span>
+<span class="co">## |-------------------------------------------------------|</span>
+<span class="co">## NULL</span></code></pre></div>
+<p>Then you can extract the matrix of previous MCMC samples augmented with new ones and obtain numerical summaries:</p>
+<div class="sourceCode" id="cb74"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="va">more_samples</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html">as.matrix</a></span><span class="op">(</span><span class="va">CsurvivalMCMC</span><span class="op">$</span><span class="va">mvSamples</span><span class="op">)</span>
+<span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimble-internal.html">samplesSummary</a></span><span class="op">(</span><span class="va">more_samples</span><span class="op">)</span>
+<span class="co">##         Mean Median St.Dev. 95%CI_low 95%CI_upp</span>
+<span class="co">## theta 0.3376 0.3354 0.05965    0.2259     0.458</span></code></pre></div>
+<p>You can check that <code>more_samples</code> contains 10000 samples, 4000 from the call to <code><a href="https://rdrr.io/pkg/nimble/man/runMCMC.html">runMCMC()</a></code> plus 6000 additional samples.</p>
 </div>
-<div id="make-compilation-faster" class="section level3" number="2.8.3">
+<div id="reproducibility" class="section level3" number="2.7.5">
 <h3>
-<span class="header-section-number">2.8.3</span> Make compilation faster<a class="anchor" aria-label="anchor" href="#make-compilation-faster"><i class="fas fa-link"></i></a>
+<span class="header-section-number">2.7.5</span> Reproducibility<a class="anchor" aria-label="anchor" href="#reproducibility"><i class="fas fa-link"></i></a>
 </h3>
-<p>Try using “calculate=FALSE” in the call to nimbleModel. For such a large model, the uncompiled calculation can be a substantial portion of the time. When you get to configureMCMC, try using “useConjugacy=FALSE” to make that faster.</p>
-<p>By default (calculate = TRUE), nimbleModel iterates through every node of the model, in order, trying to calculate, which means calculating values for deterministic nodes and log probabilities for stochastic nodes. For large models, this can take a long time because it is uncompiled and also doing some laborious keeping track of model structure. It can be helpful for debugging or catching issues, but it isn’t strictly necessary.</p>
-<p>here a couple of tips. A first tip would be to use the argument calculate = FALSE when using the nimbleModel() function, which will build the nimble models faster. By default, calculate is set to TRUE, meaning that nimble calculates all deterministic nodes and logProbability values when creating the model, and with large models this can eat up a good amount of time and memory.</p>
+<p>If you want your results to be reproducible, you can control the state of R the random number generator with the <code>setSeed</code> argument in function <code><a href="https://rdrr.io/pkg/nimble/man/nimbleMCMC.html">nimbleMCMC()</a></code> and <code><a href="https://rdrr.io/pkg/nimble/man/runMCMC.html">runMCMC()</a></code>. Going back to the animal survival example, you can check that two calls to <code><a href="https://rdrr.io/pkg/nimble/man/nimbleMCMC.html">nimbleMCMC()</a></code> give the same results when <code>setSeed</code> is set to the same value:</p>
+<div class="sourceCode" id="cb75"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="co"># first call to nimbleMCMC()</span>
+<span class="va">mcmc.output1</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimbleMCMC.html">nimbleMCMC</a></span><span class="op">(</span>code <span class="op">=</span> <span class="va">model</span>,
+                          data <span class="op">=</span> <span class="va">my.data</span>,
+                          inits <span class="op">=</span> <span class="va">initial.values</span>,
+                          niter <span class="op">=</span> <span class="fl">5000</span>,
+                          nburnin <span class="op">=</span> <span class="fl">1000</span>,
+                          nchains <span class="op">=</span> <span class="fl">3</span>,
+                          summary <span class="op">=</span> <span class="cn">TRUE</span>,
+                          setSeed <span class="op">=</span> <span class="fl">123</span><span class="op">)</span>
+<span class="co">## |-------------|-------------|-------------|-------------|</span>
+<span class="co">## |-------------------------------------------------------|</span>
+<span class="co">## |-------------|-------------|-------------|-------------|</span>
+<span class="co">## |-------------------------------------------------------|</span>
+<span class="co">## |-------------|-------------|-------------|-------------|</span>
+<span class="co">## |-------------------------------------------------------|</span>
+<span class="co"># second call to nimbleMCMC()</span>
+<span class="va">mcmc.output2</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimbleMCMC.html">nimbleMCMC</a></span><span class="op">(</span>code <span class="op">=</span> <span class="va">model</span>,
+                          data <span class="op">=</span> <span class="va">my.data</span>,
+                          inits <span class="op">=</span> <span class="va">initial.values</span>,
+                          niter <span class="op">=</span> <span class="fl">5000</span>,
+                          nburnin <span class="op">=</span> <span class="fl">1000</span>,
+                          nchains <span class="op">=</span> <span class="fl">3</span>,
+                          summary <span class="op">=</span> <span class="cn">TRUE</span>,
+                          setSeed <span class="op">=</span> <span class="fl">123</span><span class="op">)</span>
+<span class="co">## |-------------|-------------|-------------|-------------|</span>
+<span class="co">## |-------------------------------------------------------|</span>
+<span class="co">## |-------------|-------------|-------------|-------------|</span>
+<span class="co">## |-------------------------------------------------------|</span>
+<span class="co">## |-------------|-------------|-------------|-------------|</span>
+<span class="co">## |-------------------------------------------------------|</span>
+<span class="co"># outputs from both calls are the same</span>
+<span class="va">mcmc.output1</span><span class="op">$</span><span class="va">summary</span><span class="op">$</span><span class="va">all.chains</span>
+<span class="co">##         Mean Median St.Dev. 95%CI_low 95%CI_upp</span>
+<span class="co">## theta 0.3387  0.336 0.05968    0.2282    0.4608</span>
+<span class="va">mcmc.output2</span><span class="op">$</span><span class="va">summary</span><span class="op">$</span><span class="va">all.chains</span>
+<span class="co">##         Mean Median St.Dev. 95%CI_low 95%CI_upp</span>
+<span class="co">## theta 0.3387  0.336 0.05968    0.2282    0.4608</span></code></pre></div>
+<!-- ### Initialization -->
+<!-- The NA or NaN messages are saying that the log probability calculation for a node is not valid. That usually means not that the input data for the node is invalid but that some initial values for its parent nodes are giving an invalid probability. This may or may not be a problem. The MCMC does try to initialize everything. A good way to diagnose issues is to run the MCMC for 0 iterations (which will trigger the initialization) and then inspect the compiled model object. For example, if it is called Cmodel, you can do: -->
+<!-- ```{r} -->
+<!-- samples <- runMCMC(mcmc = CsurvivalMCMC,  -->
+<!--                    niter = 0) -->
+<!-- ``` -->
+<!-- Cmodel$calculate("y[5, 10]") # perhaps this is NA -->
+<!-- Then inspect parent nodes to see how this is happening: -->
+<!-- Cmodel$beta1[5, 10] # etc. -->
 </div>
-<div id="initialization" class="section level3" number="2.8.4">
-<h3>
-<span class="header-section-number">2.8.4</span> Initialization<a class="anchor" aria-label="anchor" href="#initialization"><i class="fas fa-link"></i></a>
-</h3>
-<p>The NA or NaN messages are saying that the log probability calculation for a node is not valid. That usually means not that the input data for the node is invalid but that some initial values for its parent nodes are giving an invalid probability. This may or may not be a problem. The MCMC does try to initialize everything. A good way to diagnose issues is to run the MCMC for 0 iterations (which will trigger the initialization) and then inspect the compiled model object. For example, if it is called Cmodel, you can do:</p>
-<p>Cmodel<span class="math inline">\(calculate("y[5, 10]") # perhaps this is NA Then inspect parent nodes to see how this is happening: Cmodel\)</span>beta1[5, 10] # etc.</p>
 </div>
-<div id="running-nimble-a-little-bit-longer" class="section level3" number="2.8.5">
-<h3>
-<span class="header-section-number">2.8.5</span> Running NIMBLE a little bit longer<a class="anchor" aria-label="anchor" href="#running-nimble-a-little-bit-longer"><i class="fas fa-link"></i></a>
-</h3>
-<p>Tomas, if you’ve already used runMCMC(Cmcmc, …), then yes, you can still extend the current MCMC chain, using:
-Cmcmc$run(niter, reset = FALSE)
-where niter is the number of additional MCMC iterations you wish to run. After that, you can extract the full maxtrix of MCMC samples (which will include the ones you previously executed in the first call of runMCMC), using:</p>
-<p>full_matrix_of_samples &lt;- as.matrix(Cmcmc$mvSamples)</p>
-</div>
+<div id="thoughts" class="section level2" number="2.8">
+<h2>
+<span class="header-section-number">2.8</span> Thoughts<a class="anchor" aria-label="anchor" href="#thoughts"><i class="fas fa-link"></i></a>
+</h2>
+<ul>
+<li><p>Something on parallelization à la jagsUI? <a href="https://r-nimble.org/nimbleExamples/parallelizing_NIMBLE.html" class="uri">https://r-nimble.org/nimbleExamples/parallelizing_NIMBLE.html</a></p></li>
+<li><p>Something on initialization and the NA (or NaN) messages.</p></li>
+<li><p>Something on vectorization?</p></li>
+<li><p>Something on how to use NIMBLE to simulate data? Example with generate initial values for complex models?</p></li>
+<li><p>Why NIMBLE over Stan? i) The BUGS language is cool, ii) discrete latent states easier to deal with NIMBLE, no need to marginalise like with Stan (ref forward to relevant section of the book for marginalization in NIMBLE), iii) also HMC is on its way in NIMBLE, so NIMBLE includes STAN and has so much more to offer the users.</p></li>
+<li><p>Introduce MCMC efficiency?</p></li>
+</ul>
 </div>
 <div id="summary-1" class="section level2" number="2.9">
 <h2>
@@ -820,20 +896,20 @@ where niter is the number of additional MCMC iterations you wish to run. After t
 <li><p>NIMBLE is more than just another MCMC engine. It provides a programming environment so that you have full control when building models and estimating parameters.</p></li>
 <li><p>At the core of NIMBLE are <code>nimbleFunctions</code> which you can write and compile for faster computation. With <code>nimbleFunctions</code> you can mimic basic R syntax, work with vectors and matrices, use logical operators and flow control, and specify many distributions.</p></li>
 <li><p>There are two workflows to run NIMBLE. In most situations, <code><a href="https://rdrr.io/pkg/nimble/man/nimbleMCMC.html">nimbleMCMC()</a></code> will serve you well. When you need more control, you can adopt a detailed workflow with <code><a href="https://rdrr.io/pkg/nimble/man/nimbleModel.html">nimbleModel()</a></code>, <code><a href="https://rdrr.io/pkg/nimble/man/configureMCMC.html">configureMCMC()</a></code>, <code><a href="https://rdrr.io/pkg/nimble/man/buildMCMC.html">buildMCMC()</a></code>, <code><a href="https://rdrr.io/pkg/nimble/man/compileNimble.html">compileNimble()</a></code> and <code><a href="https://rdrr.io/pkg/nimble/man/runMCMC.html">runMCMC()</a></code>.</p></li>
-<li><p>By having full control of the workflow, you can debug your code in NIMBLE, change default MCMC samplers or even write your own samplerr.</p></li>
+<li><p>By having full control of the workflow, you can change default MCMC samplers and even write your own samplers.</p></li>
 </ul>
 </div>
 <div id="suggested-reading-1" class="section level2" number="2.10">
 <h2>
 <span class="header-section-number">2.10</span> Suggested reading<a class="anchor" aria-label="anchor" href="#suggested-reading-1"><i class="fas fa-link"></i></a>
 </h2>
-<p>I this chapter, I have only scratched the surface of what NIMBLE is capable of. Below is a list of pointers that should help you going further with NIMBLE.</p>
+<p>In this chapter, I have only scratched the surface of what NIMBLE is capable of. Below is a list of pointers that should help you going further with NIMBLE.</p>
 <ul>
 <li><p>The NIMBLE folks make a lot of useful resources available through the official website <a href="https://r-nimble.org">https://r-nimble.org</a>.</p></li>
 <li><p>The NIMBLE manual <a href="https://r-nimble.org/html_manual/cha-welcome-nimble.html">https://r-nimble.org/html_manual/cha-welcome-nimble.html</a> reads like a book with clear explanations and relevant examples.</p></li>
-<li><p>You can learn a lot by going through the training material from NIMBLE workshops at <a href="https://github.com/nimble-training">https://github.com/nimble-training</a>.</p></li>
-<li><p>You can keep the NIMBLE <a href="https://r-nimble.org/cheatsheets/NimbleCheatSheet.pdf">cheatsheet</a> near you to remind yourself of the workflow, how to write and use models, or which functions and distributions are available.</p></li>
-<li><p>The motivation to write this book comes from a workshop I co-teach with colleagues, including Perry de Valpine and Daniel from the NIMBLE development team. The material (slides and videos) is available at <a href="https://github.com/oliviergimenez/bayesian-cr-workshop">https://github.com/oliviergimenez/bayesian-cr-workshop</a>.</p></li>
+<li><p>You can learn a lot by going through examples at <a href="https://r-nimble.org/examples">https://r-nimble.org/examples</a> and training material from NIMBLE workshops at <a href="https://github.com/nimble-training">https://github.com/nimble-training</a>.</p></li>
+<li><p>You can keep the NIMBLE cheatsheet <a href="https://r-nimble.org/cheatsheets/NimbleCheatSheet.pdf">https://r-nimble.org/cheatsheets/NimbleCheatSheet.pdf</a> near you to remind yourself of the workflow, how to write and use models, or which functions and distributions are available.</p></li>
+<li><p>The motivation to write this book comes from a workshop I co-teach with colleagues, including Perry de Valpine and Daniel Turek from the NIMBLE development team. The material (slides and videos) is available at <a href="https://github.com/oliviergimenez/bayesian-cr-workshop">https://github.com/oliviergimenez/bayesian-cr-workshop</a>.</p></li>
 <li><p>If you have questions, feel free to get in touch with the community of NIMBLE users by emailing the discussion group <a href="https://groups.google.com/forum/#!forum/nimble-users">https://groups.google.com/forum/#!forum/nimble-users</a>. This is a great place to learn, and folks who take the time to answer questions are kind and provide constructive answers. When possible, make sure to provide a reproducible example illustrating your problem.</p></li>
 <li><p>Last, you can cite the following reference when using NIMBLE in a publication:</p></li>
 </ul>
@@ -861,22 +937,22 @@ where niter is the number of additional MCMC iterations you wish to run. After t
 </ul>
 </li>
 <li><a class="nav-link" href="#under-the-hood"><span class="header-section-number">2.5</span> Under the hood</a></li>
-<li><a class="nav-link" href="#debugging"><span class="header-section-number">2.6</span> Debugging</a></li>
 <li>
-<a class="nav-link" href="#playing-around-with-mcmc-samplers"><span class="header-section-number">2.7</span> Playing around with MCMC samplers</a><ul class="nav navbar-nav">
-<li><a class="nav-link" href="#change-sampler"><span class="header-section-number">2.7.1</span> Changing default sampler</a></li>
-<li><a class="nav-link" href="#coding-your-own-sampler"><span class="header-section-number">2.7.2</span> Coding your own sampler</a></li>
+<a class="nav-link" href="#playing-around-with-mcmc-samplers"><span class="header-section-number">2.6</span> Playing around with MCMC samplers</a><ul class="nav navbar-nav">
+<li><a class="nav-link" href="#change-sampler"><span class="header-section-number">2.6.1</span> Changing default sampler</a></li>
+<li><a class="nav-link" href="#coding-your-own-sampler"><span class="header-section-number">2.6.2</span> Coding your own sampler</a></li>
 </ul>
 </li>
 <li>
-<a class="nav-link" href="#tip-and-tricks"><span class="header-section-number">2.8</span> Tip and tricks</a><ul class="nav navbar-nav">
-<li><a class="nav-link" href="#flexible-specification-of-distributions"><span class="header-section-number">2.8.1</span> Flexible specification of distributions</a></li>
-<li><a class="nav-link" href="#the-end-of-empty-indices"><span class="header-section-number">2.8.2</span> The end of empty indices</a></li>
-<li><a class="nav-link" href="#make-compilation-faster"><span class="header-section-number">2.8.3</span> Make compilation faster</a></li>
-<li><a class="nav-link" href="#initialization"><span class="header-section-number">2.8.4</span> Initialization</a></li>
-<li><a class="nav-link" href="#running-nimble-a-little-bit-longer"><span class="header-section-number">2.8.5</span> Running NIMBLE a little bit longer</a></li>
+<a class="nav-link" href="#tips-and-tricks"><span class="header-section-number">2.7</span> Tips and tricks</a><ul class="nav navbar-nav">
+<li><a class="nav-link" href="#flexible-specification-of-distributions"><span class="header-section-number">2.7.1</span> Flexible specification of distributions</a></li>
+<li><a class="nav-link" href="#the-end-of-empty-indices"><span class="header-section-number">2.7.2</span> The end of empty indices</a></li>
+<li><a class="nav-link" href="#faster-compilation"><span class="header-section-number">2.7.3</span> Faster compilation</a></li>
+<li><a class="nav-link" href="#running-nimble-a-little-bit-longer"><span class="header-section-number">2.7.4</span> Running NIMBLE a little bit longer</a></li>
+<li><a class="nav-link" href="#reproducibility"><span class="header-section-number">2.7.5</span> Reproducibility</a></li>
 </ul>
 </li>
+<li><a class="nav-link" href="#thoughts"><span class="header-section-number">2.8</span> Thoughts</a></li>
 <li><a class="nav-link" href="#summary-1"><span class="header-section-number">2.9</span> Summary</a></li>
 <li><a class="nav-link" href="#suggested-reading-1"><span class="header-section-number">2.10</span> Suggested reading</a></li>
 </ul>

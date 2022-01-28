@@ -10,7 +10,7 @@ NIMBLE stands for **N**umerical **I**nference for statistical **M**odels using *
 
 So why use NIMBLE you may ask? The short answer is that NIMBLE is capable of so much more than just running MCMC algorithms! First, you will work from within R, but in the background NIMBLE will translate your code in C++ for (in general) faster computation. Second, NIMBLE extends the BUGS language for writing new functions and distributions of your own, or borrow those written by others. Third, NIMBLE gives you full control of the MCMC samplers, and you may pick other algorithms than the defaults. Fourth, NIMBLE comes with a library of numerical methods other than MCMC algorithms, including sequential Monte Carlo (for particle filtering) and Monte Carlo Expectation Maximization (for maximum likelihood). Last but not least, the development team is friendly and helpful, and based on users' feedbacks, NIMBLE folks work constantly at improving the package capabilities. 
 
-```{r nimblelogo, echo = FALSE, fig.align="center", out.width="100%", fig.cap = "Logo of the NIMBLE R package designed by Luke Larson. **Ask Perry for context and meaning.**"}
+```{r nimblelogo, echo = FALSE, fig.align="center", out.width="50%", fig.cap = "Logo of the NIMBLE R package designed by Luke Larson. **Ask Perry for context and meaning.**"}
 knitr::include_graphics("images/nimble-icon.png")
 ```
 
@@ -25,14 +25,12 @@ To run NIMBLE, you will need to:
 5. Provide MCMC details namely the number of chains, the length of the burn-in period and the number of iterations following burn-in.
 ```
 
-**Here I need to tell how to install the nimble package**
-
 First things first, let's not forget to load the `nimble` package:
 ```{r}
 library(nimble)
 ```
 
-Note before you install `nimble` like any other R package, Windows users will need to install `Rtools`, and Mac users will need to install `Xcode`. More at <https://r-nimble.org/download>. 
+Note that before you can install `nimble` like any other R package, Windows users will need to install `Rtools`, and Mac users will need to install `Xcode`. More at <https://r-nimble.org/download>. 
 
 Now let's go back to our example on animal survival from the previous chapter. First step is to build our model by specifying the binomial likelihood and a uniform prior on survival probability `theta`. We use the `nimbleCode()` function and wrap code within curly brackets:
 ```{r}
@@ -430,7 +428,7 @@ You can look at its nodes:
 survival$getNodeNames()
 ```
 
-You can look at the values stored at each node. 
+You can look at the values stored at each node:
 ```{r}
 survival$theta
 survival$survived
@@ -438,11 +436,13 @@ survival$lifespan
 # this is -1/log(0.5)
 ```
 
-We can also look at the log-likelihood evaluated at the initial value for `theta`.
+We can also calculate the log-likelihood at the initial value for `theta`:
 ```{r}
-survival$logProb_survived
+survival$calculate()
 # this is dbinom(x = 19, size = 57, prob = 0.5, log = TRUE)
 ```
+
+The ability in NIMBLE to access the nodes of your model and to evaluate the model likelihood can help you in identifying bugs in your code. **Give example? Provide negative initial value for theta, or released in data < survived.**
 
 You can obtain the graph of the model as in Figure \@ref(fig:dag-survival) with:
 ```{r}
@@ -519,9 +519,7 @@ From here, you can obtain numerical summaries with `samplesSummary()`:
 samplesSummary(samples)
 ```
 
-At first glance, using several steps instead of doing all these at once with `nimbleMCMC()` seems odds. Why is it useful? First, knowing what is under the hood can help you debug your code which is something I have always find hard to do with other software. Second, mastering the whole sequence of steps allows you to play around with samplers, by changing the samplers that NIMBLE pick by defaults, or even write your own samplers.
-
-## Debugging
+At first glance, using several steps instead of doing all these at once with `nimbleMCMC()` seems odds. Why is it useful? Mastering the whole sequence of steps allows you to play around with samplers, by changing the samplers NIMBLE picks by default, or even writing your own samplers.
 
 ## Playing around with MCMC samplers
 
@@ -702,61 +700,128 @@ library(patchwork)
 plot01 + plot1 + plot10
 ```
 
-## Tip and tricks
+## Tips and tricks
 
-Things to know. Grab from NIMBLE user's list. NIMBLE users what's yours? 
+Before closing this chapter on NIMBLE, I thought it'd be useful to have a section gathering a few tips and tricks that would make your life easier. **This is my tips and tricks, NIMBLE users, I'd be happy to hear yours: [email me](mailto:olivier.gimenez@cefe.cnrs.fr), [edit the chapter](https://github.com/oliviergimenez/banana-book/edit/master/nimble.Rmd) or [file an issue](https://github.com/oliviergimenez/banana-book/issues) on GitHub.**
 
 ### Flexible specification of distributions
 
-```{r, eval = FALSE}
-# JAGS (& Nimble)
-for(t in 1:Tmax){
-  epsilon[t] ~ dnorm(0, tau)
-}
-tau <- pow(sigma, -2)
-sigma ~ dunif(0, 5)
-
-# Nimble
-for(t in 1:Tmax){
-  epsilon[t] ~ dnorm(0, sd = sigma)
-}
-sigma ~ dunif(0, 5)
-```
+In other sotware like JAGS, the normal distribution is parameterized with mean `mu` and a parameter called precision, often denoted `tau`, the inverse of the variance you are used to. Say we use a normal prior on some parameter `epsilon` with `epsilon ~ dnorm(mu, tau)`. We'd like this prior to be vague, therefore `tau` should be small, say 0.01 so that the variance of the normal distribution is large, 1/0.01 = 100 here. This subtlety is the source of problems (and frustration) when you forget that the second parameter is precision and use `epsilon ~ dnorm(mu, 100)`, because then the variance is actually 1/100 = 0.01 and the prior is very informative, and peaked on `mu`. In NIMBLE you can use this parameterisation as well as the more natural parameterisation `epsilon ~ dnorm(mu, sd = 100)`. 
 
 ### The end of empty indices
 
-```{r, eval = FALSE}
-# JAGS
-sum.x <- sum(x[])
+NIMBLE does not guess the dimensions of objects. In other software like JAGS you can write `sum.x <- sum(x[])` to calculate the sum over all components of `x`. In NIMBLE you need to write `sum.x <- sum(x[1:n])` the sum the components of `x` from 1 up to n. Specifying dimensions can be annoying, but it forces me to think of what I am doing and keep my code self-explaining. 
 
-# Nimble
-sum.x <- sum(x[1:Tmax])
+### Faster compilation
+
+You might have noticed that compilation in NIMBLE takes time. When you have large models (with lots of nodes), compilation can take forever. You can set `calculate = FALSE` in `nimbleModel()` to disable the calculation of all deterministic nodes and log-likelihood. You can also use `useConjugacy = FALSE` in `configureMCMC()` to disable the search for conjugate samplers. With the animal survival example, you would do:
+```{r}
+model <- nimbleCode({
+  # likelihood
+  survived ~ dbinom(theta, released)
+  # prior
+  theta ~ dunif(0, 1)
+})
+my.data <- list(survived = 19, released = 57)
+initial.values <- function() list(theta = runif(1,0,1))
+survival <- nimbleModel(code = model, 
+                        data = my.data, 
+                        inits = initial.values(),
+                        calculate = FALSE) # first tip
+Csurvival <- compileNimble(survival)
+survivalConf <- configureMCMC(survival)
+survivalMCMC <- buildMCMC(survivalConf, useConjugacy = FALSE) # second tip
+CsurvivalMCMC <- compileNimble(survivalMCMC, 
+                               project = survival)
+samples <- runMCMC(mcmc = CsurvivalMCMC, 
+                   niter = 5000, 
+                   nburnin = 1000)
+samplesSummary(samples)
 ```
-
-### Make compilation faster
-
-Try using "calculate=FALSE" in the call to nimbleModel. For such a large model, the uncompiled calculation can be a substantial portion of the time. When you get to configureMCMC, try using "useConjugacy=FALSE" to make that faster.
-
-By default (calculate = TRUE), nimbleModel iterates through every node of the model, in order, trying to calculate, which means calculating values for deterministic nodes and log probabilities for stochastic nodes. For large models, this can take a long time because it is uncompiled and also doing some laborious keeping track of model structure. It can be helpful for debugging or catching issues, but it isn't strictly necessary.
-
-here a couple of tips. A first tip would be to use the argument calculate = FALSE when using the nimbleModel() function, which will build the nimble models faster. By default, calculate is set to TRUE, meaning that nimble calculates all deterministic nodes and logProbability values when creating the model, and with large models this can eat up a good amount of time and memory.
-
-### Initialization
-
-The NA or NaN messages are saying that the log probability calculation for a node is not valid. That usually means not that the input data for the node is invalid but that some initial values for its parent nodes are giving an invalid probability. This may or may not be a problem. The MCMC does try to initialize everything. A good way to diagnose issues is to run the MCMC for 0 iterations (which will trigger the initialization) and then inspect the compiled model object. For example, if it is called Cmodel, you can do:
-
-Cmodel$calculate("y[5, 10]") # perhaps this is NA
-Then inspect parent nodes to see how this is happening:
-Cmodel$beta1[5, 10] # etc.
 
 ### Running NIMBLE a little bit longer
 
-Tomas, if you've already used runMCMC(Cmcmc, ...), then yes, you can still extend the current MCMC chain, using:
-Cmcmc$run(niter, reset = FALSE)
-where niter is the number of additional MCMC iterations you wish to run. After that, you can extract the full maxtrix of MCMC samples (which will include the ones you previously executed in the first call of runMCMC), using:
+Sometimes it is useful to run your MCMC chains a little bit longer to improve convergence. Re-starting from the run in previous section, you can use:
+```{r}
+niter_ad <- 6000
+CsurvivalMCMC$run(niter_ad, reset = FALSE)
+```
 
-full_matrix_of_samples <- as.matrix(Cmcmc$mvSamples)
+Then you can extract the matrix of previous MCMC samples augmented with new ones and obtain numerical summaries:
+```{r}
+more_samples <- as.matrix(CsurvivalMCMC$mvSamples)
+samplesSummary(more_samples)
+```
 
+You can check that `more_samples` contains `r length(more_samples)` samples, 4000 from the call to `runMCMC()` plus `r niter_ad` additional samples. 
+
+### Reproducibility
+
+```{r echo = FALSE}
+model <- nimbleCode({
+  # likelihood
+  survived ~ dbinom(theta, released)
+  # prior
+  theta ~ dunif(0, 1)
+})
+my.data <- list(survived = 19, released = 57)
+initial.values <- list(list(theta = 0.1),
+                       list(theta = 0.5),
+                       list(theta = 0.9))
+```
+
+If you want your results to be reproducible, you can control the state of R the random number generator with the `setSeed` argument in function `nimbleMCMC()` and `runMCMC()`. Going back to the animal survival example, you can check that two calls to `nimbleMCMC()` give the same results when `setSeed` is set to the same value:
+```{r}
+# first call to nimbleMCMC()
+mcmc.output1 <- nimbleMCMC(code = model,
+                          data = my.data,
+                          inits = initial.values,
+                          niter = 5000,
+                          nburnin = 1000,
+                          nchains = 3,
+                          summary = TRUE,
+                          setSeed = 123)
+# second call to nimbleMCMC()
+mcmc.output2 <- nimbleMCMC(code = model,
+                          data = my.data,
+                          inits = initial.values,
+                          niter = 5000,
+                          nburnin = 1000,
+                          nchains = 3,
+                          summary = TRUE,
+                          setSeed = 123)
+# outputs from both calls are the same
+mcmc.output1$summary$all.chains
+mcmc.output2$summary$all.chains
+```
+
+
+<!-- ### Initialization -->
+
+<!-- The NA or NaN messages are saying that the log probability calculation for a node is not valid. That usually means not that the input data for the node is invalid but that some initial values for its parent nodes are giving an invalid probability. This may or may not be a problem. The MCMC does try to initialize everything. A good way to diagnose issues is to run the MCMC for 0 iterations (which will trigger the initialization) and then inspect the compiled model object. For example, if it is called Cmodel, you can do: -->
+<!-- ```{r} -->
+<!-- samples <- runMCMC(mcmc = CsurvivalMCMC,  -->
+<!--                    niter = 0) -->
+
+<!-- ``` -->
+
+<!-- Cmodel$calculate("y[5, 10]") # perhaps this is NA -->
+<!-- Then inspect parent nodes to see how this is happening: -->
+<!-- Cmodel$beta1[5, 10] # etc. -->
+
+## Thoughts
+
++ Something on parallelization à la jagsUI? https://r-nimble.org/nimbleExamples/parallelizing_NIMBLE.html
+
++ Something on initialization and the NA (or NaN) messages. 
+
++ Something on vectorization?
+
++ Something on how to use NIMBLE to simulate data? Example with generate initial values for complex models? 
+
++ Why NIMBLE over Stan? i) The BUGS language is cool, ii) discrete latent states easier to deal with NIMBLE, no need to marginalise like with Stan (ref forward to relevant section of the book for marginalization in NIMBLE), iii) also HMC is on its way in NIMBLE, so NIMBLE includes STAN and has so much more to offer the users. 
+
++ Introduce MCMC efficiency?
 
 ## Summary
 
@@ -768,21 +833,21 @@ full_matrix_of_samples <- as.matrix(Cmcmc$mvSamples)
 
 + There are two workflows to run NIMBLE. In most situations, `nimbleMCMC()` will serve you well. When you need more control, you can adopt a detailed workflow with `nimbleModel()`, `configureMCMC()`, `buildMCMC()`, `compileNimble()` and `runMCMC()`.
 
-+ By having full control of the workflow, you can debug your code in NIMBLE, change default MCMC samplers or even write your own samplerr.
++ By having full control of the workflow, you can change default MCMC samplers and even write your own samplers.
 
 ## Suggested reading
 
-I this chapter, I have only scratched the surface of what NIMBLE is capable of. Below is a list of pointers that should help you going further with NIMBLE. 
+In this chapter, I have only scratched the surface of what NIMBLE is capable of. Below is a list of pointers that should help you going further with NIMBLE. 
 
 - The NIMBLE folks make a lot of useful resources available through the official website [https://r-nimble.org](https://r-nimble.org). 
 
 - The NIMBLE manual [https://r-nimble.org/html_manual/cha-welcome-nimble.html](https://r-nimble.org/html_manual/cha-welcome-nimble.html) reads like a book with clear explanations and relevant examples. 
 
-- You can learn a lot by going through the training material from NIMBLE workshops at [https://github.com/nimble-training](https://github.com/nimble-training).
+- You can learn a lot by going through examples at [https://r-nimble.org/examples](https://r-nimble.org/examples) and training material from NIMBLE workshops at [https://github.com/nimble-training](https://github.com/nimble-training).
 
-- You can keep the NIMBLE [cheatsheet](https://r-nimble.org/cheatsheets/NimbleCheatSheet.pdf) near you to remind yourself of the workflow, how to write and use models, or which functions and distributions are available.
+- You can keep the NIMBLE cheatsheet [https://r-nimble.org/cheatsheets/NimbleCheatSheet.pdf](https://r-nimble.org/cheatsheets/NimbleCheatSheet.pdf) near you to remind yourself of the workflow, how to write and use models, or which functions and distributions are available.
 
-- The motivation to write this book comes from a workshop I co-teach with colleagues, including Perry de Valpine and Daniel from the NIMBLE development team. The material (slides and videos) is available at [https://github.com/oliviergimenez/bayesian-cr-workshop](https://github.com/oliviergimenez/bayesian-cr-workshop). 
+- The motivation to write this book comes from a workshop I co-teach with colleagues, including Perry de Valpine and Daniel Turek from the NIMBLE development team. The material (slides and videos) is available at [https://github.com/oliviergimenez/bayesian-cr-workshop](https://github.com/oliviergimenez/bayesian-cr-workshop). 
 
 - If you have questions, feel free to get in touch with the community of NIMBLE users by emailing the discussion group [https://groups.google.com/forum/#!forum/nimble-users](https://groups.google.com/forum/#!forum/nimble-users). This is a great place to learn, and folks who take the time to answer questions are kind and provide constructive answers. When possible, make sure to provide a reproducible example illustrating your problem. 
 
