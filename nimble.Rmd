@@ -1,7 +1,5 @@
 # NIMBLE tutorial {#intronimble}
 
-**Do I need to show how NIMBLE can simulate data; do I need to introduce MCMC efficiency?**
-
 ## Introduction
 
 In this second chapter, you will get familiar with NIMBLE, an R package that implements up-to-date MCMC algorithms for fitting complex models. NIMBLE spares you from coding the MCMC algorithms by hand, and requires only the specification of a likelihood and priors for model parameters. We will illustrate NIMBLE main features with a simple example, but the ideas hold for other problems.
@@ -286,11 +284,11 @@ But NIMBLE is more than just another MCMC engine. It provides a programming envi
 
 I have to be honest, learning these improvements over other software takes some reading and experimentation, and it might well be that you do not need to use any of these features. And it's fine. In the next sections, I cover some of this advanced material. You may skip these sections and go back to this material later if you need it.
 
-## Functions in NIMBLE {#functions-in-nimble}
+## Programming {#functions-in-nimble}
 
 In NIMBLE you can write and use your own functions, or use existing R or C/C++ functions. This allows you to customize models the way you want. 
 
-### Write nimbleFunctions
+### NIMBLE functions
 
 NIMBLE provides `nimbleFunctions` for programming. A `nimbleFunction` is like an R function, plus it can be compiled for faster computation. Going back to our animal survival example, we can write a `nimbleFunction` to compute lifespan:
 ```{r}
@@ -349,7 +347,7 @@ With `nimbleFunctions`, you can mimic basic R syntax, do linear algebra (e.g. co
 
 To learn everything you need to know on writing `nimbleFunctions`, make sure to read chapter 11 of the NIMBLE manual at <https://r-nimble.org/html_manual/cha-RCfunctions.html#cha-RCfunctions>. 
 
-### Call existing R/C++ functions from NIMBLE
+### Calling R/C++ functions
 
 If you're like me, and too lazy to write your own functions, you can rely on the scientific community and use existing C, C++ or R code. The trick is to write a `nimbleFunction` that wraps access to that code which can then be used by NIMBLE. As an example, imagine you'd like to use an R function `myfunction()`, either a function you wrote yourself, or a function available in your favorite R package:
 ```{r}
@@ -400,7 +398,7 @@ Evaluating an R function from within NIMBLE slows MCMC sampling down, but if you
 
 Another advantage of using `nimbleRcall()` (or `nimbleExternalCall()`) is that you can keep large objects out of your model, so that NIMBLE does not have to handle them in MCMC sampling. These objects should be constants and not change when you run NIMBLE. Letting R manipulating these objects will save you time, usually more than the time you lose by calling R from within NIMBLE.
 
-### Write your own distribution
+### User-defined distributions
 
 With `nimbleFunctions` you can provide user-defined distributions to NIMBLE. You need to write functions for density (`d`) and simulation (`r`) for your distribution. As an example, we write our own binomial distribution:
 ```{r}
@@ -581,9 +579,9 @@ samplesSummary(samples)
 
 At first glance, using several steps instead of doing all these at once with `nimbleMCMC()` seems odds. Why is it useful? Mastering the whole sequence of steps allows you to play around with samplers, by changing the samplers NIMBLE picks by default, or even writing your own samplers.
 
-## Playing around with MCMC samplers
+## MCMC samplers
 
-### Changing default sampler {#change-sampler}
+### Default samplers {#change-sampler}
 
 What is the default sampler used by NIMBLE in our example? You can answer this question by inspecting the MCMC configuration obtained with `configureMCMC()`:
 ```{r}
@@ -623,7 +621,7 @@ samplesSummary(samples2)
 
 NIMBLE implements many samplers, and a list is available with `?samplers`. For example, high correlation in (regression) parameters can make independent samplers inefficient. In that situation, block sampling might help which consists in proposing candidate values from a multivariate distribution that acknowledges correlation between parameters. **Say something on how default samplers are chosen by NIMBLE?**
 
-### Coding your own sampler
+### User-defined samplers
 
 Allowing you to code your own sampler is another topic on which NIMBLE thrives. As an example, we focus on the Metropolis algorithm of Section \@ref(metropolis-algorithm) which we coded in R. In this section, we make it a `nimbleFunction` so that we can use it within our model: 
 ```{r}
@@ -764,11 +762,11 @@ plot01 + plot1 + plot10
 
 Before closing this chapter on NIMBLE, I thought it'd be useful to have a section gathering a few tips and tricks that would make your life easier. **These are my tips and tricks, NIMBLE users, I'd be happy to hear yours: [email me](mailto:olivier.gimenez@cefe.cnrs.fr), [edit the chapter](https://github.com/oliviergimenez/banana-book/edit/master/nimble.Rmd) or [file an issue](https://github.com/oliviergimenez/banana-book/issues) on GitHub.**
 
-### Flexible specification of distributions
+### Precision vs standard deviation
 
 In other sotware like JAGS, the normal distribution is parameterized with mean `mu` and a parameter called precision, often denoted `tau`, the inverse of the variance you are used to. Say we use a normal prior on some parameter `epsilon` with `epsilon ~ dnorm(mu, tau)`. We'd like this prior to be vague, therefore `tau` should be small, say 0.01 so that the variance of the normal distribution is large, 1/0.01 = 100 here. This subtlety is the source of problems (and frustration) when you forget that the second parameter is precision and use `epsilon ~ dnorm(mu, 100)`, because then the variance is actually 1/100 = 0.01 and the prior is very informative, and peaked on `mu`. In NIMBLE you can use this parameterisation as well as the more natural parameterisation `epsilon ~ dnorm(mu, sd = 100)` which avoids confusion. 
 
-### The end of empty indices
+### Indexing
 
 NIMBLE does not guess the dimensions of objects. In other software like JAGS you can write `sum.x <- sum(x[])` to calculate the sum over all components of `x`. In NIMBLE you need to write `sum.x <- sum(x[1:n])` to sum the components of `x` from 1 up to n. Specifying dimensions can be annoying, but I find it useful as it forces me to think of what I am doing and to keep my code self-explaining. 
 
@@ -799,7 +797,7 @@ samples <- runMCMC(mcmc = CsurvivalMCMC,
 samplesSummary(samples)
 ```
 
-### Running NIMBLE a little bit longer
+### Updating MCMC chains
 
 Sometimes it is useful to run your MCMC chains a little bit longer to improve convergence. Re-starting from the run in previous section, you can use:
 ```{r}
@@ -908,7 +906,7 @@ output <- parLapply(cl = my_cluster,
                     data = list(survived = 19, released = 57))
 ```
 
-In the call to `parLapply`, we specify `X = c(2022, 666)` to ensure reproducibility where 2022 and 666 are the values we use for seed in the `workflow()` function. Note that we also have a line `set.seed(123)` in the `workflow()` function because initial values are drawn randomly. 
+In the call to `parLapply`, we specify `X = c(2022, 666)` to ensure reproducibility. We use two alues 2022 and 666 to set the seed in `workflow()`, which means we run two instances of our workflow, or two MCMC chains. Note that we also have a line `set.seed(123)` in the `workflow()` function to ensure reproducibility while drawing randomly initial values. 
 
 It's good practice to close the cluster with `stopCluster()` so that processes do not continue to run in the background and slow down other processes:
 ```{r}
@@ -925,10 +923,9 @@ Eventually, you can obtain numerical summaries:
 MCMCsummary(output)
 ```
 
-### Incomplete initialization, NA or NaN messages and simulations
+### Incomplete initialization
 
-When you run `nimbleMCMC()` or `nimbleModel()`, you may get warnings thrown at you by NIMBLE like 'This model is not fully initialized' or 'value is NA
-or NaN even after trying to calculate'. NIMBLE tells you that this is not necessarily an error but 'reflects missing values in model variables' or incomplete initialization. NIMBLE tries to initialize nodes with NAs by drawing from priors, and it will work or not. When possible, I try to initialize all nodes or full initialization. The process can be a headache, but it helps understanding your model structure. Going back to our animal survival example, we purposedly forget to provide an initial value for `theta`:
+When you run `nimbleMCMC()` or `nimbleModel()`, you may get warnings thrown at you by NIMBLE like 'This model is not fully initialized' or 'value is NA or NaN even after trying to calculate'. This is not necessarily an error, but it 'reflects missing values in model variables' (incomplete initialization). In this situation, NIMBLE will initialize nodes with NAs by drawing from priors, and it will work or not. When possible, I try to initialize all nodes (full initialization). The process can be a bit of a headache, but it helps understanding the model structure better. Going back to our animal survival example, let's purposedly forget to provide an initial value for `theta`:
 ```{r}
 model <- nimbleCode({
   # likelihood
@@ -965,19 +962,19 @@ samplesSummary(samples)
 
 ### Vectorization
 
-Vectorization is the process of rewriting a loop so that instead of processing a single value at a time, you process a set of values at once in a vector. As an example, instead of writing:
+Vectorization is the process of replacing a loop by a vector so that instead of processing a single value at a time, you process a set of values at once. As an example, instead of writing:
 ```{r eval = FALSE}
 for(i in 1:n){ 
   x[i] <- mu + epsilon[i] 
 }
 ```
 
-You would write:
+you would write:
 ```{r eval = FALSE}
 x[1:n] <- mu + epsilon[1:n]
 ```
 
-Vectorization can make your code more efficient by manipulating one vector node `x[1:n]` instead of `n` nodes `x[1]`, ..., `x[n]`. 
+Vectorization can make your code more efficient by manipulating one vector node `x[1:n]` instead of `n` nodes `x[1]`, ..., `x[n]`. **Think of an example in relation to animal survival? Illustrate with vectorized Bernoulli or [vectorized Binomial](https://github.com/nimble-dev/nimbleSCR/blob/master/nimbleSCR/R/dbinom_vector.R)?**
 
 ## Summary
 
