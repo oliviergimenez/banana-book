@@ -5,4 +5,6 @@ People who sent feedback:
 -   Sarah Bauduin
 -   Patricia Rodrigues \@PatriRodrigs
 -   Benedick Schmidt \@Schmidt_Beni
+-   Mahdieh Tourani \@TouraniMa
+-   Cyrus Kavwele \@cyruskavwele
 
