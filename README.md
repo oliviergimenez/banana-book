@@ -7,4 +7,5 @@ People who sent feedback:
 -   Benedick Schmidt \@Schmidt_Beni
 -   Mahdieh Tourani \@TouraniMa
 -   Cyrus Kavwele \@cyruskavwele
-
+-   Rémi Fraysse
+-   
