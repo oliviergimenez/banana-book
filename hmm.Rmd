@@ -2,9 +2,7 @@
 
 ## Introduction
 
-In this third chapter, you will learn the basics on Markov models and how to fit them to longitudinal data using NIMBLE. Because in real life, individuals may go undetected and their status be unknow, you will also learn how to manipulate the extension of Markov models to hidden states, so-called hidden Markov models. 
-
-<!-- Mettre les 3 pbs des HMM dans le chapitre et marginalisation aussi -->
+In this third chapter, you will learn the basics on Markov models and how to fit them to longitudinal data using NIMBLE. Because in real life, individuals may go undetected and their status be unknow, you will also learn how to manipulate the extension of Markov models to hidden states, so-called hidden Markov models. **Mention marginalization and pooling. **
 
 ## Longitudinal data
 
@@ -58,7 +56,10 @@ z %>%
 
 ## A model for longitudinal data
 
-Let's think of a model for these data. The objective remains the same, estimating survival. To build this model, we'll make assumptions, go through its components and write down its likelihood. 
+Let's think of a model for these data. The objective remains the same, estimating survival. To build this model, we'll make assumptions, go through its components and write down its likelihood.
+
+**On a déjà vu chaîne Markov chapitre MCMC**
+
 ### Assumptions
 
 First, we assume that the state of an animal in a given winter, alive or dead, is only dependent on its state the winter before. In other words, the future depends only on the present, not the past. This is a Markov process.
@@ -265,26 +266,40 @@ The probability of having the sequence alive, alive and dead is the probability 
 
 Now that we have the likelihood of a Markov model, we can complement it with a prior for survival to apply the Bayes theorem. 
 
-Before implementing this model in NIMBLE, we note that the likelihood is a product of conditional probabilities of binary events (alive or dead) that are drawn in Bernoulli distributions, or for more generality, their extension multinomial distributions. **SMOOTH AND EXPLAIN MULTINOMIAL DISTRIBUTIONS**.
+Before implementing this model in NIMBLE, we note that the likelihood is a product of conditional probabilities of binary events (alive or dead) that are drawn in Bernoulli distributions, or for more generality, their extension categorical distributions. **SMOOTH AND EXPLAIN CATEGORICAL DISTRIBUTIONS. MENTION ITS MULTINOMIAL WITH ONE TRIAL**.
 
-Initial state is multinomial with one trial, and probability $\delta$. That is you have a dice with two faces, a coin, and you have some probability to be alive, and one minus that probability to be dead. Of course, it you want your Markov chain to start, you'd better say it's alive so that delta is just $(1,0)$:
+The categorical distribution is a multinomial distribution with a single draw.
+
+https://en.wikipedia.org/wiki/Categorical_distribution
+
+The categorical distribution is the generalization of the Bernoulli distribution for a categorical random variable, i.e. for a discrete variable with more than two possible outcomes, such as the roll of a dice. On the other hand, the categorical distribution is a special case of the multinomial distribution, in that it gives the probabilities of potential outcomes of a single drawing rather than multiple drawings.
+
+```{r}
+nimble::rcat(n = 20, prob = c(0.1, 0.3, 0.6))
+```
+
+```{r}
+nimble::rcat(n = 20, prob = c(0.1, 0.1, 0.4, 0.2, 0.2))
+```
+
+Initial state is categorical with probability $\delta$. That is you have a dice with two faces, a coin, and you have some probability to be alive, and one minus that probability to be dead. Of course, it you want your Markov chain to start, you'd better say it's alive so that delta is just $(1,0)$:
 
 \begin{align*}
-   z_1 &\sim \text{Multinomial}(1, \delta) &\text{[likelihood, }t = 1 \text{]}\\
+   z_1 &\sim \text{Categorical}(\delta) &\text{[likelihood, }t = 1 \text{]}\\
 \end{align*}
 
-Now the main part is the dynamic of the states. Our state at $t$ depends only on your state at $t-1$, and it is a multinomial random variable, with one trial. And the probabilities are given by the rows of the transition matrix:
+Now the main part is the dynamic of the states. Our state at $t$ depends only on your state at $t-1$, and it is a categorical random variable. And the probabilities are given by the rows of the transition matrix:
 
 \begin{align*}
-   z_1 &\sim \text{Multinomial}(1, \delta) &\text{[likelihood, }t = 1 \text{]}\\
-   z_t | z_{t-1} &\sim \text{Multinomial}(1, \gamma_{z_{t-1},z_{t}}) &\text{[likelihood, }t > 1 \text{]}\\
+   z_1 &\sim \text{Categorical}(\delta) &\text{[likelihood, }t = 1 \text{]}\\
+   z_t | z_{t-1} &\sim \text{Categorical}(\gamma_{z_{t-1},z_{t}}) &\text{[likelihood, }t > 1 \text{]}\\
 \end{align*}
 
 We also need a prior on survival. As usual we take a uniform distribution between 0 and 1, or a Beta distribution with parameters 1 and 1. Overall our model is: 
 
 \begin{align*}
-   z_1 &\sim \text{Multinomial}(1, \delta) &\text{[likelihood, }t = 1 \text{]}\\
-   z_t | z_{t-1} &\sim \text{Multinomial}(1, \gamma_{z_{t-1},z_{t}}) &\text{[likelihood, }t > 1 \text{]}\\
+   z_1 &\sim \text{Categorical}(\delta) &\text{[likelihood, }t = 1 \text{]}\\
+   z_t | z_{t-1} &\sim \text{Categorical}(\gamma_{z_{t-1},z_{t}}) &\text{[likelihood, }t > 1 \text{]}\\
   \phi &\sim \text{Beta}(1, 1) &\text{[prior for }\phi \text{]} \\
 \end{align*}
 
@@ -314,21 +329,9 @@ If dead you remain dead with probability equals to 1, $\color{blue}{\gamma_{z_{t
 
 ## Nimble implementation
 
-In Nimble, we will use the categorical distribution `dcat()`. The categorical distribution is a multinomial distribution with a single draw.
+**Introduce loops. First time we see them in the book. Maybe for a single individual first, then embed time loop in individual loop. **
 
-```{r}
-nimble::rcat(n = 20, prob = c(0.1, 0.3, 0.6))
-```
-
-```{r}
-nimble::rcat(n = 20, prob = c(0.1, 0.1, 0.4, 0.2, 0.2))
-```
-
-https://en.wikipedia.org/wiki/Categorical_distribution
-
-The categorical distribution is the generalization of the Bernoulli distribution for a categorical random variable, i.e. for a discrete variable with more than two possible outcomes, such as the roll of a dice. On the other hand, the categorical distribution is a special case of the multinomial distribution, in that it gives the probabilities of potential outcomes of a single drawing rather than multiple drawings.
-
-Nimble code:
+In Nimble, we will use the categorical distribution `dcat()`. Nimble code:
 ```{r}
 markov.survival <- nimbleCode({
   phi ~ dunif(0, 1) # prior
@@ -348,6 +351,8 @@ markov.survival <- nimbleCode({
 ```
 
 Vector $\delta$ is used as a placeholder for more complex models to come. Here, you could write `z[i,1] <- 1`.
+
+**SHOW SOME CODE**
 
 <!-- ## Nimble awesomness -->
 
@@ -374,6 +379,8 @@ my.constants
 
 my.data <- list(z = z)
 ```
+
+**Need to comment on constants, and backward reference to NIMBLE chapter and relevant section. **
 
 Initial values:
 ```{r}
@@ -445,499 +452,807 @@ z[z==0] <- 2 # 2 = dead, 1 = alive
 head(z) 
 ```
 
-<!-- ## Unfortunately, this is the data we wish we had. -->
+**Note also that dcat everywhere could be replaced by dbern. Different sampler? Dcat cool because allows more than two outcomes, forward reference to next chapters.**
 
-<!-- ## In real life -->
+## Hidden Markov models
 
-<!-- + Animals cannot be monitored exhaustively, like humans in a medical trial. -->
+### Capture-recapture data
 
-<!-- + Animals are captured, marked or identified then released alive. -->
+Unfortunately, this is the data we wish we had. In real life, animals cannot be monitored exhaustively, like humans in a medical trial. Animals are captured, marked or identified then released alive. Then, these animals may be detected again, or go undetected <span>&#8212;</span> **capture-recapture**. Whenever animals go undetected, it might be that they were alive but missed, or because they were dead and therefore could not be detected <span>&#8212;</span> **imperfect detection**^[Nice video here on the basics principles of capture-recapture experiments <https://www.youtube.com/embed/tyX79mPm2xY>]. Whenever animals go undetected, it might be that they were alive but missed, or because they were dead and therefore could not be detected <span>&#8212;</span> **imperfect detection**. The Markov process for survival is only partially observed <span>&#8212;</span> **hidden Markov models**.
 
-<!-- + Then, these animals may be detected again, or go undetected <span>&#8212;</span> **capture-recapture** -->
+The truth is in $z$:
 
-<!-- + Whenever animals go undetected, it might be that they were alive but missed, or because they were dead and therefore could not be detected <span>&#8212;</span> **imperfect detection**. -->
+```{r echo = FALSE}
+colnames(z) <- paste0("winter ", 1:nocc)
+z %>%
+  as_tibble() %>%
+  add_column(id = 1:nind, .before = "winter 1") %>%
+  kableExtra::kable() %>%
+  kableExtra::scroll_box(width = "100%", height = "300px")
+```
 
-<!-- <https://www.youtube.com/embed/tyX79mPm2xY> -->
+Unfortunately, we have only partial access to $z$. We do observe $y$ the detections and non-detections. How are $z$ and $y$ connected?
 
-<!-- + Whenever animals go undetected, it might be that they were alive but missed, or because they were dead and therefore could not be detected <span>&#8212;</span> **imperfect detection**. -->
+Dead animals go undetected. When an animal is dead i.e. $z = 2$, it cannot be detected, therefore $y = 0$.
 
-<!-- + The Markov process for survival is only partially observed <span>&#8212;</span> **hidden Markov models**. -->
+```{r echo = FALSE}
+colnames(z) <- paste0("winter ", 1:nocc)
+z %>%
+  as_tibble() %>%
+  replace(. == 2, 0) %>%
+  add_column(id = 1:nind, .before = "winter 1") %>%
+  kableExtra::kable() %>%
+  kableExtra::scroll_box(width = "100%", height = "300px")
+```
 
-<!-- ## The truth is in $z$ -->
+Alive animals may be detected or not. If animal is alive $z = 1$, it is detected $y = 1$ w/ prob $p$ or not $y = 0$ w/ prob $1-p$. Before **first** detection, we know nothing, and we proceed conditional on it.
 
-<!-- ```{r echo = FALSE} -->
-<!-- z %>% -->
-<!--   as_tibble() %>% -->
-<!--   add_column(id = 1:nind, .before = "winter 1") %>% -->
-<!--   kableExtra::kable() %>% -->
-<!--   kableExtra::scroll_box(width = "100%", height = "300px") -->
-<!-- ``` -->
+```{r echo = FALSE}
+set.seed(2022)
+p <- 0.6
+y <- z
+y[z==2] <- 0
+y[y==1] <- rbinom(n = sum(y==1), 1, p)
+nobs <- sum(apply(y,1,sum) != 0)
+y <- y[apply(y,1,sum) !=0, ]
+first <- apply(y, 1, function(x) min(which(x !=0)))
+for (i in 1:nobs){
+  if(first[i] > 1) y[i, 1:(first[i]-1)] <- NA
+}
+y %>%
+  as_tibble() %>%
+  add_column(id = 1:nobs, .before = "winter 1") %>%
+  kableExtra::kable() %>%
+  kableExtra::scroll_box(width = "100%", height = "300px")
+```
 
-<!-- + Unfortunately, we have only partial access to $z$. -->
+Compare with previous table. Some 1s have become 0s. This table $y$ is what we observe in real life. To make the connection between the observations, the $y$, and the true states, the $z$.  We need to describe how observations are made from the states
 
-<!-- + We do observe $y$ the detections and non-detections. -->
+### Observation matrix
 
-<!-- + How are $z$ and $y$ connected? -->
+The observation probabilities can be packed in an observation matrix $\mathbf{\Omega}$. In rows: the states alive $z = 1$ and dead $z = 2$. In columns: the observations non-detected $y = 1$ and detected $y = 2$ (previously coded 0 and 1 respectively).
 
-<!-- ## Dead animals go undetected -->
+\begin{align*}
+\mathbf{\Omega} =
+\left(\begin{array}{cc}
+\omega_{1,1} & \omega_{1,2}\\
+\omega_{2,1} & \omega_{2,2}
+\end{array}\right) =
+\left(\begin{array}{cc}
+1 - p & p\\
+1 & 0
+\end{array}\right)
+\end{align*}
 
-<!-- + When an animal is dead i.e. $z = 2$, it cannot be detected, therefore $y = 0$. -->
+Observation matrix:
 
-<!-- ```{r echo = FALSE} -->
-<!-- z %>% -->
-<!--   as_tibble() %>% -->
-<!--   replace(. == 2, 0) %>% -->
-<!--   add_column(id = 1:nind, .before = "winter 1") %>% -->
-<!--   kableExtra::kable() %>% -->
-<!--   kableExtra::scroll_box(width = "100%", height = "300px") -->
-<!-- ``` -->
+$$
+\begin{matrix}
+& \\
+\mathbf{\Omega} =
+    \left ( \vphantom{ \begin{matrix} 12 \\ 12 \end{matrix} } \right .
+\end{matrix}
+\hspace{-1.2em}
+\begin{matrix}
+    y_t=1 & y_t=2 \\ \hdashline
+1 - p & p\\
+1 & 0\\
+\end{matrix}
+\hspace{-0.2em}
+\begin{matrix}
+& \\
+\left . \vphantom{ \begin{matrix} 12 \\ 12 \end{matrix} } \right )
+    \begin{matrix}
+    z_{t}=A \\ z_{t}=D
+    \end{matrix}
+\end{matrix}
+$$
 
-<!-- ## Alive animals may be detected or not -->
+### Hidden Markov model
 
-<!-- + If animal is alive $z = 1$, it is detected $y = 1$ w/ prob $p$ or not $y = 0$ w/ prob $1-p$. -->
+Markov model:
 
-<!-- + Before **first** detection, we know nothing, and we proceed conditional on it. -->
+```{r, engine = 'tikz', echo = FALSE}
+\usetikzlibrary{arrows, fit, positioning, automata}
+\begin{tikzpicture}[node distance = 2cm]
+\tikzset{state/.style = {circle, draw, minimum size = 30pt, scale = 3, line width=1pt}}
+\node [state,fill=lightgray!75] (6) [] {$z_{t}$};
+\node [state,fill=lightgray!75] (5) [left = 20mm of 6] {$z_{t-1}$};
+\node [state,fill=lightgray!75] (4) [left = 20mm of 5] {$z_{t-2}$};
+\node [state,fill=lightgray!75] (3) [left = 20mm of 4] {$\cdots$};
+\node [state,fill=lightgray!75] (7) [right = 20mm of 6] {$z_{t+1}$};
+\node [state,fill=lightgray!75] (8) [right = 20mm of 7] {$z_{t+2}$};
+\node [state,fill=lightgray!75] (9) [right = 20mm of 8] {$\cdots$};
+\draw[->,black, line width=0.25mm,-latex] (3) to (4);
+\draw[->,black, line width=0.25mm,-latex] (4) to (5);
+\draw[->,black, line width=0.25mm,-latex] (5) to (6);
+\draw[->,black, line width=0.25mm,-latex] (6) to (7);
+\draw[->,black, line width=0.25mm,-latex] (7) to (8);
+\draw[->,black, line width=0.25mm,-latex] (8) to (9);
+\end{tikzpicture}
+```
 
-<!-- ```{r echo = FALSE} -->
-<!-- p <- 0.6 -->
-<!-- y <- z -->
-<!-- y[z==2] <- 0 -->
-<!-- y[y==1] <- rbinom(n = sum(y==1), 1, p) -->
-<!-- nobs <- sum(apply(y,1,sum) != 0) -->
-<!-- y <- y[apply(y,1,sum) !=0, ] -->
-<!-- first <- apply(y, 1, function(x) min(which(x !=0))) -->
-<!-- for (i in 1:nobs){ -->
-<!--   if(first[i] > 1) y[i, 1:(first[i]-1)] <- NA -->
-<!-- } -->
-<!-- y %>% -->
-<!--   as_tibble() %>% -->
-<!--   add_column(id = 1:nobs, .before = "winter 1") %>% -->
-<!--   kableExtra::kable() %>% -->
-<!--   kableExtra::scroll_box(width = "100%", height = "300px") -->
-<!-- ``` -->
+States $z$ are in gray. Remember the graphical representation of a Markov model. Hidden Markov model:
 
-<!-- + Compare with previous table -->
-<!-- + Some 1s have become 0s. -->
+```{r, engine = 'tikz', echo = FALSE}
+\usetikzlibrary{arrows, fit, positioning, automata}
+\begin{tikzpicture}[node distance = 2cm]
+\tikzset{state/.style = {circle, draw, minimum size = 30pt, scale = 3, line width=1pt}}
+\node [state,fill=lightgray!75] (6) [] {$z_{t}$};
+\node [state,fill=lightgray!75] (5) [left = 20mm of 6] {$z_{t-1}$};
+\node [state,fill=lightgray!75] (4) [left = 20mm of 5] {$z_{t-2}$};
+\node [state,fill=lightgray!75] (3) [left = 20mm of 4] {$\cdots$};
+\node [state,fill=lightgray!75] (7) [right = 20mm of 6] {$z_{t+1}$};
+\node [state,fill=lightgray!75] (8) [right = 20mm of 7] {$z_{t+2}$};
+\node [state,fill=lightgray!75] (9) [right = 20mm of 8] {$\cdots$};
+\node [state,fill=white] (16) [above = 20mm of 6] {$y_{t}$};
+\node [state,fill=white] (15) [above = 20mm of 5] {$y_{t-1}$};
+\node [state,fill=white] (14) [above = 20mm of 4] {$y_{t-2}$};
+\node [state,fill=white] (17) [above = 20mm of 7] {$y_{t+1}$};
+\node [state,fill=white] (18) [above = 20mm of 8] {$y_{t+2}$};
+\draw[->,black, line width=0.25mm,-latex] (3) to (4);
+\draw[->,black, line width=0.25mm,-latex] (4) to (5);
+\draw[->,black, line width=0.25mm,-latex] (5) to (6);
+\draw[->,black, line width=0.25mm,-latex] (6) to (7);
+\draw[->,black, line width=0.25mm,-latex] (7) to (8);
+\draw[->,black, line width=0.25mm,-latex] (8) to (9);
+\draw[->,black, line width=0.25mm,-latex] (4) to (14);
+\draw[->,black, line width=0.25mm,-latex] (5) to (15);
+\draw[->,black, line width=0.25mm,-latex] (6) to (16);
+\draw[->,black, line width=0.25mm,-latex] (7) to (17);
+\draw[->,black, line width=0.25mm,-latex] (8) to (18);
+\end{tikzpicture}
+```
 
-<!-- + This table $y$ is what we observe in real life. -->
+States $z$ are in gray. Observations $y$ are in white. A hidden Markov model is just two time series. One for the states with a Markovian property. The other of observations generated from the states. Run in parallel.
 
-<!-- + To make the connection between the observations, the y, and the true states, the z -->
-<!-- + We need to describe how observations are made from the states -->
+```{r, engine = 'tikz', echo = FALSE}
+\usetikzlibrary{arrows, fit, positioning, automata}
+\begin{tikzpicture}[node distance = 2cm]
+\tikzset{state/.style = {circle, draw, minimum size = 30pt, scale = 3, line width=1pt}}
+\node [state,fill=lightgray!75] (6) [] {$1$};
+\node [state,fill=lightgray!75] (5) [left = 20mm of 6] {$1$};
+\node [state,fill=lightgray!75] (4) [left = 20mm of 5] {$1$};
+\node [state,fill=lightgray!75] (3) [left = 20mm of 4] {$1$};
+\node [state,fill=lightgray!75] (7) [right = 20mm of 6] {$2$};
+\node [state,fill=lightgray!75] (8) [right = 20mm of 7] {$2$};
+\node [state,fill=lightgray!75] (9) [right = 20mm of 8] {$\cdots$};
+\node [state,fill=white] (16) [above = 20mm of 6] {$1$};
+\node [state,fill=white] (15) [above = 20mm of 5] {$2$};
+\node [state,fill=white] (14) [above = 20mm of 4] {$1$};
+\node [state,fill=white] (17) [above = 20mm of 7] {$1$};
+\node [state,fill=white] (18) [above = 20mm of 8] {$1$};
+\draw[->,black, line width=0.25mm,-latex] (3) -- node[above=3mm, align=center] {\huge $\varphi$} (4);
+\draw[->,black, line width=0.25mm,-latex] (4) -- node[above=3mm, align=center] {\huge $\varphi$} (5);
+\draw[->,black, line width=0.25mm,-latex] (5) -- node[above=3mm, align=center] {\huge $\varphi$} (6);
+\draw[->,black, line width=0.25mm,-latex] (6) -- node[above=3mm, align=center] {\huge $1 - \varphi$} (7);
+\draw[->,black, line width=0.25mm,-latex] (7) -- node[above=3mm, align=center] {\huge $1$} (8);
+\draw[->,black, line width=0.25mm,-latex] (8) -- node[above=3mm, align=center] {\huge $1$} (9);
+\draw[->,black, line width=0.25mm,-latex] (4) -- node[left=3mm, align=center] {\huge $1 - p$} (14);
+\draw[->,black, line width=0.25mm,-latex] (5) -- node[left=3mm, align=center] {\huge $p$} (15);
+\draw[->,black, line width=0.25mm,-latex] (6) -- node[left=3mm, align=center] {\huge $1 - p$} (16);
+\draw[->,black, line width=0.25mm,-latex] (7) -- node[left=3mm, align=center] {\huge $1$} (17);
+\draw[->,black, line width=0.25mm,-latex] (8) -- node[left=3mm, align=center] {\huge $1$} (18);
+\end{tikzpicture}
+```
 
-<!-- ## Observation matrix -->
+For states (in gray), $z = 1$ is alive, $z = 2$ is dead. For observations (in white), $y = 1$ is non-detected, $y = 2$ is detected. Now add the states alive and dead, 1 and 2s. The observations, non-detected and detected, 1 and 2s. And the parameters, $\phi$ for transition from 1 to 1. And $p$ for probability of $y$ being 2 detected given $z$ is 1 alive.
 
-<!-- + The observation probabilities can be packed in an observation matrix $\mathbf{\Omega}$. -->
+### Likelihood
 
-<!-- + In rows: the states alive $z = 1$ and dead $z = 2$. -->
+In the likelihood, we have observed $y$. Parameters are $\phi$, $p$ and unobserved or partially observed $z$. Shall we estimate the latent states $z$ or not? Treat them as parameters? 
 
-<!-- + In columns: the observations non-detected $y = 1$ and detected $y = 2$ (previously coded 0 and 1 respectively). -->
+We can get rid of the states, so that likelihood is a function of $\phi$ and $p$ only. This is the function we would maximize in a Frequentist approach. Reference forward to section below (forward algorithm). 
 
-<!-- \begin{align*} -->
-<!-- \mathbf{\Omega} = -->
-<!-- \left(\begin{array}{cc} -->
-<!-- \omega_{1,1} & \omega_{1,2}\\ -->
-<!-- \omega_{2,1} & \omega_{2,2} -->
-<!-- \end{array}\right) = -->
-<!-- \left(\begin{array}{cc} -->
-<!-- 1 - p & p\\ -->
-<!-- 1 & 0 -->
-<!-- \end{array}\right) -->
-<!-- \end{align*} -->
+The Bayesian approach with MCMC methods allows treating the latent states as if they were parameters, and to be estimated as such.
 
-<!-- Observation matrix: -->
+Infering the latent states $z$ can be useful to estimate prevalence, e.g. in animal epidemiology with [prevalence of a disease](https://veterinaryresearch.biomedcentral.com/articles/10.1186/1297-9716-45-39), in evolutionary ecology with [sex ratio](https://onlinelibrary.wiley.com/doi/abs/10.1002/cjs.5550360105) or in conservation biology with [prevalence of hybrids](https://onlinelibrary.wiley.com/doi/full/10.1002/ece3.4819?af=R).
 
-<!-- $$ -->
-<!-- \begin{matrix} -->
-<!-- & \\ -->
-<!-- \mathbf{\Omega} = -->
-<!--     \left ( \vphantom{ \begin{matrix} 12 \\ 12 \end{matrix} } \right . -->
-<!-- \end{matrix} -->
-<!-- \hspace{-1.2em} -->
-<!-- \begin{matrix} -->
-<!--     y_t=1 & y_t=2 \\ \hdashline -->
-<!-- 1 - p & p\\ -->
-<!-- 1 & 0\\ -->
-<!-- \end{matrix} -->
-<!-- \hspace{-0.2em} -->
-<!-- \begin{matrix} -->
-<!-- & \\ -->
-<!-- \left . \vphantom{ \begin{matrix} 12 \\ 12 \end{matrix} } \right ) -->
-<!--     \begin{matrix} -->
-<!--     z_{t}=A \\ z_{t}=D -->
-<!--     \end{matrix} -->
-<!-- \end{matrix} -->
-<!-- $$ -->
+Estimating the latent states is costly though, and if not required, marginalisation may speed up computations. Actually, you can estimate the states afterwards (Viterbi).
 
-<!-- ## Markov model -->
+More about so-called marginalisation in [Yackulic et al. (2020)](https://esajournals.onlinelibrary.wiley.com/doi/abs/10.1002/eap.2112). And reference forward to section below. 
 
-<!-- ```{r, engine = 'tikz', echo = FALSE} -->
-<!-- \usetikzlibrary{arrows, fit, positioning, automata} -->
-<!-- \begin{tikzpicture}[node distance = 2cm] -->
-<!-- \tikzset{state/.style = {circle, draw, minimum size = 30pt, scale = 3, line width=1pt}} -->
-<!-- \node [state,fill=lightgray!75] (6) [] {$z_{t}$}; -->
-<!-- \node [state,fill=lightgray!75] (5) [left = 20mm of 6] {$z_{t-1}$}; -->
-<!-- \node [state,fill=lightgray!75] (4) [left = 20mm of 5] {$z_{t-2}$}; -->
-<!-- \node [state,fill=lightgray!75] (3) [left = 20mm of 4] {$\cdots$}; -->
-<!-- \node [state,fill=lightgray!75] (7) [right = 20mm of 6] {$z_{t+1}$}; -->
-<!-- \node [state,fill=lightgray!75] (8) [right = 20mm of 7] {$z_{t+2}$}; -->
-<!-- \node [state,fill=lightgray!75] (9) [right = 20mm of 8] {$\cdots$}; -->
-<!-- \draw[->,black, line width=0.25mm,-latex] (3) to (4); -->
-<!-- \draw[->,black, line width=0.25mm,-latex] (4) to (5); -->
-<!-- \draw[->,black, line width=0.25mm,-latex] (5) to (6); -->
-<!-- \draw[->,black, line width=0.25mm,-latex] (6) to (7); -->
-<!-- \draw[->,black, line width=0.25mm,-latex] (7) to (8); -->
-<!-- \draw[->,black, line width=0.25mm,-latex] (8) to (9); -->
-<!-- \end{tikzpicture} -->
-<!-- ``` -->
+The neat thing with Nimble is that it provides marginalised models through nimbleEcology, we'll get back to it in section blabla.
 
-<!-- + States $z$ are in gray. -->
+## Fitting HMM with NIMBLE
 
-<!-- + Remember the graphical repres of a Markov model. -->
+Our model so far:
 
-<!-- ## Hidden Markov model -->
+\begin{align*}
+   z_{\text{first}} &\sim \text{Categorical}(1, \delta) &\text{[likelihood]}\\
+   z_t | z_{t-1} &\sim \text{Categorical}(1, \gamma_{z_{t-1},z_{t}}) &\text{[likelihood]}\\
+   y_t | z_{t} &\sim \text{Categorical}(1, \omega_{z_{t}}) &\text{[likelihood]}\\
+  \phi &\sim \text{Beta}(1, 1) &\text{[prior for }\phi \text{]} \\
+  p &\sim \text{Beta}(1, 1) &\text{[prior for }p \text{]} \\
+\end{align*}
 
-<!-- ```{r, engine = 'tikz', echo = FALSE} -->
-<!-- \usetikzlibrary{arrows, fit, positioning, automata} -->
-<!-- \begin{tikzpicture}[node distance = 2cm] -->
-<!-- \tikzset{state/.style = {circle, draw, minimum size = 30pt, scale = 3, line width=1pt}} -->
-<!-- \node [state,fill=lightgray!75] (6) [] {$z_{t}$}; -->
-<!-- \node [state,fill=lightgray!75] (5) [left = 20mm of 6] {$z_{t-1}$}; -->
-<!-- \node [state,fill=lightgray!75] (4) [left = 20mm of 5] {$z_{t-2}$}; -->
-<!-- \node [state,fill=lightgray!75] (3) [left = 20mm of 4] {$\cdots$}; -->
-<!-- \node [state,fill=lightgray!75] (7) [right = 20mm of 6] {$z_{t+1}$}; -->
-<!-- \node [state,fill=lightgray!75] (8) [right = 20mm of 7] {$z_{t+2}$}; -->
-<!-- \node [state,fill=lightgray!75] (9) [right = 20mm of 8] {$\cdots$}; -->
-<!-- \node [state,fill=white] (16) [above = 20mm of 6] {$y_{t}$}; -->
-<!-- \node [state,fill=white] (15) [above = 20mm of 5] {$y_{t-1}$}; -->
-<!-- \node [state,fill=white] (14) [above = 20mm of 4] {$y_{t-2}$}; -->
-<!-- \node [state,fill=white] (17) [above = 20mm of 7] {$y_{t+1}$}; -->
-<!-- \node [state,fill=white] (18) [above = 20mm of 8] {$y_{t+2}$}; -->
-<!-- \draw[->,black, line width=0.25mm,-latex] (3) to (4); -->
-<!-- \draw[->,black, line width=0.25mm,-latex] (4) to (5); -->
-<!-- \draw[->,black, line width=0.25mm,-latex] (5) to (6); -->
-<!-- \draw[->,black, line width=0.25mm,-latex] (6) to (7); -->
-<!-- \draw[->,black, line width=0.25mm,-latex] (7) to (8); -->
-<!-- \draw[->,black, line width=0.25mm,-latex] (8) to (9); -->
-<!-- \draw[->,black, line width=0.25mm,-latex] (4) to (14); -->
-<!-- \draw[->,black, line width=0.25mm,-latex] (5) to (15); -->
-<!-- \draw[->,black, line width=0.25mm,-latex] (6) to (16); -->
-<!-- \draw[->,black, line width=0.25mm,-latex] (7) to (17); -->
-<!-- \draw[->,black, line width=0.25mm,-latex] (8) to (18); -->
-<!-- \end{tikzpicture} -->
-<!-- ``` -->
+Now our model has an observation layer for the $y$'s, conditional on the $z$. And we need a prior for the detection probability.
 
-<!-- + States $z$ are in gray. -->
+How to implement this model in Nimble?
 
-<!-- + Observations $y$ are in white. -->
+```{r, echo=FALSE}
+hmm.survival <- nimbleCode({
+  phi ~ dunif(0, 1) # prior survival
+  p ~ dunif(0, 1) # prior detection
+  # likelihood
+  gamma[1,1] <- phi      # Pr(alive t -> alive t+1)
+  gamma[1,2] <- 1 - phi  # Pr(alive t -> dead t+1)
+  gamma[2,1] <- 0        # Pr(dead t -> alive t+1)
+  gamma[2,2] <- 1        # Pr(dead t -> dead t+1)
+  delta[1] <- 1          # Pr(alive t = 1) = 1
+  delta[2] <- 0          # Pr(dead t = 1) = 0
+  omega[1,1] <- 1 - p    # Pr(alive t -> non-detected t)
+  omega[1,2] <- p        # Pr(alive t -> detected t)
+  omega[2,1] <- 1        # Pr(dead t -> non-detected t)
+  omega[2,2] <- 0        # Pr(dead t -> detected t)
+  for (i in 1:N){
+    z[i,first[i]] ~ dcat(delta[1:2])
+    for (j in (first[i]+1):T){
+      z[i,j] ~ dcat(gamma[z[i,j-1], 1:2])
+      y[i,j] ~ dcat(omega[z[i,j], 1:2])
+    }
+  }
+})
+```
 
-<!-- + A hidden Markov model is just two time series. -->
-<!-- + One for the states with a Markovian property. -->
-<!-- + The other of observations generated from the states. -->
-<!-- + Run in parallel. -->
+Start with the priors:
+```{r eval=FALSE}
+hmm.survival <- nimbleCode({
+  phi ~ dunif(0, 1) # prior survival
+  p ~ dunif(0, 1) # prior detection
+...
+```
 
-<!-- ## Hidden Markov model for survival -->
+Then define initial states, transition and observation matrices:
+```{r eval=FALSE}
+...
+  # parameters
+  gamma[1,1] <- phi      # Pr(alive t -> alive t+1)
+  gamma[1,2] <- 1 - phi  # Pr(alive t -> dead t+1)
+  gamma[2,1] <- 0        # Pr(dead t -> alive t+1)
+  gamma[2,2] <- 1        # Pr(dead t -> dead t+1)
+  delta[1] <- 1          # Pr(alive t = 1) = 1
+  delta[2] <- 0          # Pr(dead t = 1) = 0
+  omega[1,1] <- 1 - p    # Pr(alive t -> non-detected t)
+  omega[1,2] <- p        # Pr(alive t -> detected t)
+  omega[2,1] <- 1        # Pr(dead t -> non-detected t)
+  omega[2,2] <- 0        # Pr(dead t -> detected t)
+...
+```
 
-<!-- ```{r, engine = 'tikz', echo = FALSE} -->
-<!-- \usetikzlibrary{arrows, fit, positioning, automata} -->
-<!-- \begin{tikzpicture}[node distance = 2cm] -->
-<!-- \tikzset{state/.style = {circle, draw, minimum size = 30pt, scale = 3, line width=1pt}} -->
-<!-- \node [state,fill=lightgray!75] (6) [] {$1$}; -->
-<!-- \node [state,fill=lightgray!75] (5) [left = 20mm of 6] {$1$}; -->
-<!-- \node [state,fill=lightgray!75] (4) [left = 20mm of 5] {$1$}; -->
-<!-- \node [state,fill=lightgray!75] (3) [left = 20mm of 4] {$1$}; -->
-<!-- \node [state,fill=lightgray!75] (7) [right = 20mm of 6] {$2$}; -->
-<!-- \node [state,fill=lightgray!75] (8) [right = 20mm of 7] {$2$}; -->
-<!-- \node [state,fill=lightgray!75] (9) [right = 20mm of 8] {$\cdots$}; -->
-<!-- \node [state,fill=white] (16) [above = 20mm of 6] {$1$}; -->
-<!-- \node [state,fill=white] (15) [above = 20mm of 5] {$2$}; -->
-<!-- \node [state,fill=white] (14) [above = 20mm of 4] {$1$}; -->
-<!-- \node [state,fill=white] (17) [above = 20mm of 7] {$1$}; -->
-<!-- \node [state,fill=white] (18) [above = 20mm of 8] {$1$}; -->
-<!-- \draw[->,black, line width=0.25mm,-latex] (3) -- node[above=3mm, align=center] {\huge $\varphi$} (4); -->
-<!-- \draw[->,black, line width=0.25mm,-latex] (4) -- node[above=3mm, align=center] {\huge $\varphi$} (5); -->
-<!-- \draw[->,black, line width=0.25mm,-latex] (5) -- node[above=3mm, align=center] {\huge $\varphi$} (6); -->
-<!-- \draw[->,black, line width=0.25mm,-latex] (6) -- node[above=3mm, align=center] {\huge $1 - \varphi$} (7); -->
-<!-- \draw[->,black, line width=0.25mm,-latex] (7) -- node[above=3mm, align=center] {\huge $1$} (8); -->
-<!-- \draw[->,black, line width=0.25mm,-latex] (8) -- node[above=3mm, align=center] {\huge $1$} (9); -->
-<!-- \draw[->,black, line width=0.25mm,-latex] (4) -- node[left=3mm, align=center] {\huge $1 - p$} (14); -->
-<!-- \draw[->,black, line width=0.25mm,-latex] (5) -- node[left=3mm, align=center] {\huge $p$} (15); -->
-<!-- \draw[->,black, line width=0.25mm,-latex] (6) -- node[left=3mm, align=center] {\huge $1 - p$} (16); -->
-<!-- \draw[->,black, line width=0.25mm,-latex] (7) -- node[left=3mm, align=center] {\huge $1$} (17); -->
-<!-- \draw[->,black, line width=0.25mm,-latex] (8) -- node[left=3mm, align=center] {\huge $1$} (18); -->
-<!-- \end{tikzpicture} -->
-<!-- ``` -->
+Then the likelihood:
+```{r eval=FALSE}
+...
+    # likelihood
+    for (i in 1:N){
+    z[i,first[i]] ~ dcat(delta[1:2])
+    for (j in (first[i]+1):T){
+      z[i,j] ~ dcat(gamma[z[i,j-1], 1:2])
+      y[i,j] ~ dcat(omega[z[i,j], 1:2])
+    }
+  }
+})
+```
 
-<!-- + For states (in gray), $z = 1$ is alive, $z = 2$ is dead. -->
+Overall, the code looks like:
+```{r eval = FALSE}
+hmm.survival <- nimbleCode({
+  phi ~ dunif(0, 1) # prior survival
+  p ~ dunif(0, 1) # prior detection
+  # likelihood
+  gamma[1,1] <- phi      # Pr(alive t -> alive t+1)
+  gamma[1,2] <- 1 - phi  # Pr(alive t -> dead t+1)
+  gamma[2,1] <- 0        # Pr(dead t -> alive t+1)
+  gamma[2,2] <- 1        # Pr(dead t -> dead t+1)
+  delta[1] <- 1          # Pr(alive t = 1) = 1
+  delta[2] <- 0          # Pr(dead t = 1) = 0
+  omega[1,1] <- 1 - p    # Pr(alive t -> non-detected t)
+  omega[1,2] <- p        # Pr(alive t -> detected t)
+  omega[2,1] <- 1        # Pr(dead t -> non-detected t)
+  omega[2,2] <- 0        # Pr(dead t -> detected t)
+  for (i in 1:N){
+    z[i,first[i]] ~ dcat(delta[1:2])
+    for (j in (first[i]+1):T){
+      z[i,j] ~ dcat(gamma[z[i,j-1], 1:2])
+      y[i,j] ~ dcat(omega[z[i,j], 1:2])
+    }
+  }
+})
+```
 
-<!-- + For observations (in white), $y = 1$ is non-detected, $y = 2$ is detected -->
 
-<!-- + Now add the states alive and dead, 1 and 2s. -->
-<!-- + The observations, non-detected and detected, 1 and 2s. -->
-<!-- + And the parameters, phi for transition from 1 to 1. -->
-<!-- + And p for prob of y being 2 detected given z is 1 alive. -->
+Now constants:
+```{r}
+first <- apply(y, 1, function(x) min(which(x !=0)))
+my.constants <- list(N = nrow(y), T = 5, first = first)
+my.constants
+```
 
-<!-- ## HMM likelihood -->
+The data are made of 0s for non-detections and 1s for detections. To use the categorical distribution, we need to code 1, 2, etc. Value 0 is not accepted. Add 1 to get the correct format $y=1$ for non-detection and $y = 2$ for detection:
+```{r}
+my.data <- list(y = y + 1)
+```
 
-<!-- + Using the formula of total probability, then the likelihood of a Markov chain: -->
+Initial values:
+```{r}
+zinits <- y + 1 # non-detection -> alive
+zinits[zinits == 2] <- 1 # dead -> alive
+initial.values <- function() list(phi = runif(1,0,1),
+                                  p = runif(1,0,1),
+                                  z = zinits)
+```
 
-<!-- \begin{align*} -->
-<!-- \Pr(\mathbf{y}) &= \Pr(y_1, y_{2}, \ldots, y_T)\\ -->
-<!--                 &= \sum_{z_1} \cdots \sum_{z_T} \Pr(y_1, y_{2}, \ldots, y_T | z_1, z_{2}, \ldots, z_T) \Pr(z_1, z_{2}, \ldots, z_T)\\ -->
-<!--                 &= \sum_{z_1} \cdots \sum_{z_T} \left(\prod_{t=1}^T{\omega_{z_{t}, y_t}}\right) \left(\Pr(z_{1}) \prod_{t=2}^T{\gamma_{z_{t-1},z_{t}}}\right)\\ -->
-<!-- \end{align*} -->
+Parameters to monitor:
+```{r}
+parameters.to.save <- c("phi", "p")
+parameters.to.save
+```
 
-<!-- + What is the likelihood of a HMM. -->
-<!-- + The thing here is that we don't know the states. -->
-<!-- + So we have to go through all possibilities, and sum over the possible states. -->
-<!-- + Hence these sums here. -->
-<!-- + Then this term is the likelihood of a Markov chain, we saw that before. -->
-<!-- + And this component are the elements of the observation matrix. -->
-<!-- + The likelihood has a matrix formulation that can be useful. -->
-<!-- + It is delta, initial states, then observation, then transitions, and so on. There is a vector of ones at the end to get the sum all the terms. -->
+MCMC details:
+```{r}
+n.iter <- 5000
+n.burnin <- 1000
+n.chains <- 2
+```
 
-<!-- + It has a matrix formulation: -->
+Run Nimble:
+```{r, message=FALSE, eval = FALSE}
+mcmc.output <- nimbleMCMC(code = hmm.survival,
+                          constants = my.constants,
+                          data = my.data,
+                          inits = initial.values,
+                          monitors = parameters.to.save,
+                          niter = n.iter,
+                          nburnin = n.burnin,
+                          nchains = n.chains)
+```
+
+```{r, message=FALSE, cache = TRUE, echo = FALSE}
+mcmc.output <- nimbleMCMC(code = hmm.survival,
+                          constants = my.constants,
+                          data = my.data,
+                          inits = initial.values,
+                          monitors = parameters.to.save,
+                          niter = n.iter,
+                          nburnin = n.burnin,
+                          nchains = n.chains,
+                          progressBar = FALSE)
+```
+
+Posterior distribution of survival:
+```{r}
+library(MCMCvis)
+MCMCsummary(mcmc.output, round = 2)
+```
+
+The data is simulated, with true survival $\phi = 0.8$ and detection $p = 0.6$.
+
+**Show simulation code. In all simulations, replace dbinom by dcat for coherence.**
+
+## Marginalization
+
+**Faire lien avec forward algorithm. Reprendre dHMM en la simplifiant au max et en faisant le lien avec l'algo. Match notation.**
+
+### Theory
+
+Using the formula of total probability, then the likelihood of a Markov chain:
+
+\begin{align*}
+\Pr(\mathbf{y}) &= \Pr(y_1, y_{2}, \ldots, y_T)\\
+                &= \sum_{z_1} \cdots \sum_{z_T} \Pr(y_1, y_{2}, \ldots, y_T | z_1, z_{2}, \ldots, z_T) \Pr(z_1, z_{2}, \ldots, z_T)\\
+                &= \sum_{z_1} \cdots \sum_{z_T} \left(\prod_{t=1}^T{\omega_{z_{t}, y_t}}\right) \left(\Pr(z_{1}) \prod_{t=2}^T{\gamma_{z_{t-1},z_{t}}}\right)\\
+\end{align*}
+
+What is the likelihood of a HMM. The thing here is that we don't know the states. So we have to go through all possibilities, and sum over the possible states. Hence these sums here. Then this term is the likelihood of a Markov chain, we saw that before. And this component are the elements of the observation matrix. The likelihood has a matrix formulation that can be useful. It is delta, initial states, then observation, then transitions, and so on. There is a vector of ones at the end to get the sum all the terms.
+
+<!-- It has a matrix formulation: -->
 <!-- \begin{align*} -->
 <!-- \Pr(\mathbf{y}) &= \mathbf{\delta} \; \mathbf{\Omega} \; \mathbf{\Gamma} \cdots \mathbf{\Omega} \; \mathbf{\Gamma} \; \mathbf{\Omega} \; \mathbb{1} -->
 <!-- \end{align*} -->
 
-<!-- ## Example -->
+### Example
 
-<!-- + Let assume an animal is detected, then missed. -->
+Let assume an animal is detected, then missed. We have $\mathbf{y} = (2, 1)$. What is the contribution of this animal to the likelihood?
 
-<!-- + We have $\mathbf{y} = (2, 1)$. What is the contribution of this animal to the likelihood? -->
+\begin{align*}
+\Pr(\mathbf{y} = (2, 1)) &= \sum_{z_1 = 1}^2 \; \sum_{z_2 = 1}^2 w_{z_1, y_1 = 2} w_{z_2, y_2 = 1} \Pr(z_1) \gamma_{z_1, z_2} \color{white}{\Pr(z_{T-1}, z_{T-2},\ldots, z_1, z_1, z_1, z_1)}\\
+\end{align*}
 
-<!-- \begin{align*} -->
-<!-- \Pr(\mathbf{y} = (2, 1)) &= \sum_{z_1 = 1}^2 \; \sum_{z_2 = 1}^2 w_{z_1, y_1 = 2} w_{z_2, y_2 = 1} \Pr(z_1) \gamma_{z_1, z_2} \color{white}{\Pr(z_{T-1}, z_{T-2},\ldots, z_1, z_1, z_1, z_1)}\\ -->
-<!-- \end{align*} -->
+Let assume an animal is detected, then missed. We have $\mathbf{y} = (2, 1)$. What is the contribution of this animal to the likelihood?
 
-<!-- ## Example -->
+\begin{align*}
+\Pr(\mathbf{y} = (2, 1)) &= \sum_{z_1 = 1}^2 \; \sum_{z_2 = 1}^2 w_{z_1, y_1 = 2} w_{z_2, y_2 = 1} \Pr(z_1) \gamma_{z_1, z_2} \color{white}{\Pr(z_{T-1}, z_{T-2},\ldots, z_1, z_1, z_1, z_1)}\\
+&= \sum_{z_1 = 1}^2 \left( w_{z_1, y_1 = 2} w_{z_2 = 1, y_2 = 1} \Pr(z_1) \gamma_{z_1, z_2 = 1} + w_{z_1, y_1 = 2} w_{z_2 = 2, y_2 = 1} \Pr(z_1) \gamma_{z_1, z_2 = 2} \right) \\
+\end{align*}
 
-<!-- + Let assume an animal is detected, then missed. -->
+Let assume an animal is detected, then missed. We have $\mathbf{y} = (2, 1)$. What is the contribution of this animal to the likelihood?
 
-<!-- + We have $\mathbf{y} = (2, 1)$. What is the contribution of this animal to the likelihood? -->
+\begin{align*}
+\Pr(\mathbf{y} = (2, 1)) &= \sum_{z_1 = 1}^2 \; \sum_{z_2 = 1}^2 w_{z_1, y_1 = 2} w_{z_2, y_2 = 1} \Pr(z_1) \gamma_{z_1, z_2} \color{white}{\Pr(z_{T-1}, z_{T-2},\ldots, z_1, z_1, z_1, z_1)}\\
+&= \sum_{z_1 = 1}^2 \left( w_{z_1, y_1 = 2} w_{z_2 = 1, y_2 = 1} \Pr(z_1) \gamma_{z_1, z_2 = 1} + w_{z_1, y_1 = 2} w_{z_2 = 2, y_2 = 1} \Pr(z_1) \gamma_{z_1, z_2 = 2} \right) \\
+&= w_{z_1 = 1, y_1 = 2} w_{z_2 = 1, y_2 = 1}\delta_1 \gamma_{z_1 = 1, z_2 = 1} + w_{z_1 = 1, y_1 = 2} w_{z_2 = 2, y_2 = 1} \delta_1 \gamma_{z_1 = 1, z_2 = 2}
+\end{align*}
 
-<!-- \begin{align*} -->
-<!-- \Pr(\mathbf{y} = (2, 1)) &= \sum_{z_1 = 1}^2 \; \sum_{z_2 = 1}^2 w_{z_1, y_1 = 2} w_{z_2, y_2 = 1} \Pr(z_1) \gamma_{z_1, z_2} \color{white}{\Pr(z_{T-1}, z_{T-2},\ldots, z_1, z_1, z_1, z_1)}\\ -->
-<!-- &= \sum_{z_1 = 1}^2 \left( w_{z_1, y_1 = 2} w_{z_2 = 1, y_2 = 1} \Pr(z_1) \gamma_{z_1, z_2 = 1} + w_{z_1, y_1 = 2} w_{z_2 = 2, y_2 = 1} \Pr(z_1) \gamma_{z_1, z_2 = 2} \right) \\ -->
-<!-- \end{align*} -->
+Note: $\Pr(z_1 = 1) = \delta_1 = 1$ and $\Pr(z_1 = 2) = 0$.
 
-<!-- + Let assume an animal is detected, then missed. -->
+Let assume an animal is detected, then missed. We have $\mathbf{y} = (2, 1)$. What is the contribution of this animal to the likelihood?
 
-<!-- + We have $\mathbf{y} = (2, 1)$. What is the contribution of this animal to the likelihood? -->
+\begin{align*}
+\Pr(\mathbf{y} = (2, 1)) &= \sum_{z_1 = 1}^2 \; \sum_{z_2 = 1}^2 w_{z_1, y_1 = 2} w_{z_2, y_2 = 1} \Pr(z_1) \gamma_{z_1, z_2} \color{white}{\Pr(z_{T-1}, z_{T-2},\ldots, z_1, z_1, z_1, z_1)}\\
+&= \sum_{z_1 = 1}^2 \left( w_{z_1, y_1 = 2} w_{z_2 = 1, y_2 = 1} \Pr(z_1) \gamma_{z_1, z_2 = 1} + w_{z_1, y_1 = 2} w_{z_2 = 2, y_2 = 1} \Pr(z_1) \gamma_{z_1, z_2 = 2} \right) \\
+&= w_{z_1 = 1, y_1 = 2} w_{z_2 = 1, y_2 = 1} \delta_1 \gamma_{z_1 = 1, z_2 = 1} + w_{z_1 = 1, y_1 = 2} w_{z_2 = 2, y_2 = 1} \delta_1 \gamma_{z_1 = 1, z_2 = 2}\\
+&= (1 - p) \phi + (1-\phi)
+\end{align*}
 
-<!-- \begin{align*} -->
-<!-- \Pr(\mathbf{y} = (2, 1)) &= \sum_{z_1 = 1}^2 \; \sum_{z_2 = 1}^2 w_{z_1, y_1 = 2} w_{z_2, y_2 = 1} \Pr(z_1) \gamma_{z_1, z_2} \color{white}{\Pr(z_{T-1}, z_{T-2},\ldots, z_1, z_1, z_1, z_1)}\\ -->
-<!-- &= \sum_{z_1 = 1}^2 \left( w_{z_1, y_1 = 2} w_{z_2 = 1, y_2 = 1} \Pr(z_1) \gamma_{z_1, z_2 = 1} + w_{z_1, y_1 = 2} w_{z_2 = 2, y_2 = 1} \Pr(z_1) \gamma_{z_1, z_2 = 2} \right) \\ -->
-<!-- &= w_{z_1 = 1, y_1 = 2} w_{z_2 = 1, y_2 = 1}\delta_1 \gamma_{z_1 = 1, z_2 = 1} + w_{z_1 = 1, y_1 = 2} w_{z_2 = 2, y_2 = 1} \delta_1 \gamma_{z_1 = 1, z_2 = 2} -->
-<!-- \end{align*} -->
+Note: $w_{z_1 = 1, y_1 = 2} = \Pr(y_1 = 2 | z_1 = 1) = 1$ because we condition on first capture.
 
-<!-- Note: $\Pr(z_1 = 1) = \delta_1 = 1$ and $\Pr(z_1 = 2) = 0$. -->
+### Implementation in NIMBLE
 
-<!-- + Let assume an animal is detected, then missed. -->
+Introduce NimbleEcology.
 
-<!-- + We have $\mathbf{y} = (2, 1)$. What is the contribution of this animal to the likelihood? -->
+```{r}
+library(nimbleEcology)
+```
 
-<!-- \begin{align*} -->
-<!-- \Pr(\mathbf{y} = (2, 1)) &= \sum_{z_1 = 1}^2 \; \sum_{z_2 = 1}^2 w_{z_1, y_1 = 2} w_{z_2, y_2 = 1} \Pr(z_1) \gamma_{z_1, z_2} \color{white}{\Pr(z_{T-1}, z_{T-2},\ldots, z_1, z_1, z_1, z_1)}\\ -->
-<!-- &= \sum_{z_1 = 1}^2 \left( w_{z_1, y_1 = 2} w_{z_2 = 1, y_2 = 1} \Pr(z_1) \gamma_{z_1, z_2 = 1} + w_{z_1, y_1 = 2} w_{z_2 = 2, y_2 = 1} \Pr(z_1) \gamma_{z_1, z_2 = 2} \right) \\ -->
-<!-- &= w_{z_1 = 1, y_1 = 2} w_{z_2 = 1, y_2 = 1} \delta_1 \gamma_{z_1 = 1, z_2 = 1} + w_{z_1 = 1, y_1 = 2} w_{z_2 = 2, y_2 = 1} \delta_1 \gamma_{z_1 = 1, z_2 = 2}\\ -->
-<!-- &= (1 - p) \phi + (1-\phi) -->
-<!-- \end{align*} -->
+Get the occasion of first capture for each individual:
+```{r}
+first <- apply(y, 1, function(x) min(which(x !=0)))
+```
 
-<!-- Note: $w_{z_1 = 1, y_1 = 2} = \Pr(y_1 = 2 | z_1 = 1) = 1$ because we condition on first capture. -->
+We filter out individuals that are first captured at last occasion. These individuals do not contribute to parameter estimation, and also they cause problems with nimbleEcology.
+```{r}
+mask <- which(first!=ncol(y)) # individuals that are not first encountered at last occasion
+y <- y[mask, ]                # keep only these
+first <- first[mask]
+```
 
-<!-- ## Estimating the latent states $z$ or not? -->
+Model code:
+```{r}
+hmm.survival.new <- nimbleCode({
+  phi ~ dunif(0, 1) # prior survival
+  p ~ dunif(0, 1) # prior detection
+  # likelihood
+  gamma[1,1] <- phi      # Pr(alive t -> alive t+1)
+  gamma[1,2] <- 1 - phi  # Pr(alive t -> dead t+1)
+  gamma[2,1] <- 0        # Pr(dead t -> alive t+1)
+  gamma[2,2] <- 1        # Pr(dead t -> dead t+1)
+  delta[1] <- 1          # Pr(alive t = 1) = 1
+  delta[2] <- 0          # Pr(dead t = 1) = 0
+  omega[1,1] <- 1 - p    # Pr(alive t -> non-detected t)
+  omega[1,2] <- p        # Pr(alive t -> detected t)
+  omega[2,1] <- 1        # Pr(dead t -> non-detected t)
+  omega[2,2] <- 0        # Pr(dead t -> detected t)
+  for(i in 1:N) {
+    init[i, 1:2] <- gamma[y[i, first[i] ] - 1, 1:2] # First state propagation
+  }
+  for (i in 1:N){
+    y[i,(first[i]+1):T] ~ dHMM(init = init[i,1:2], 
+                               probObs = omega[1:2,1:2], # observation matrix
+                               probTrans = gamma[1:2,1:2], # transition matrix
+                               len = T - first[i], # nb of sampling occasions
+                               checkRowSums = 1) # do not check whether elements in a row sum to 1
+  }
+})
+```
 
-<!-- + Next question is, shall we estimate the latent states or not? -->
+Rest is the same:
+```{r cache = TRUE}
+# Data and constants:
+my.data <- list(y = y + 1)
+my.constants <- list(N = nrow(y), T = ncol(y), first = first)
 
-<!-- + In previous example, we got rid of the states, so that likelihood was a function of $\phi$ and $p$ only. This is the function we would maximize in a Frequentist approach. -->
+# Initial values:
+zinits <- y + 1 # non-detection -> alive
+zinits[zinits == 2] <- 1 # dead -> alive
+initial.values <- function() list(phi = runif(1,0,1),
+                                  p = runif(1,0,1))
 
-<!-- + The Bayesian approach with MCMC methods allows treating the latent states as if they were parameters, and to be estimated as such. -->
+# Parameters to monitor:
+parameters.to.save <- c("phi", "p")
+parameters.to.save
 
-<!-- + Infering the latent states $z$ can be useful to estimate prevalence, e.g. in animal epidemiology with [prevalence of a disease](https://veterinaryresearch.biomedcentral.com/articles/10.1186/1297-9716-45-39), in evolutionary ecology with [sex ratio](https://onlinelibrary.wiley.com/doi/abs/10.1002/cjs.5550360105) or in conservation biology with [prevalence of hybrids](https://onlinelibrary.wiley.com/doi/full/10.1002/ece3.4819?af=R). -->
+# MCMC details:
+n.iter <- 5000
+n.burnin <- 1000
+n.chains <- 2
 
-<!-- + Estimating the latent states is costly though, and if not required, marginalisation may speed up computations. Actually, you can estimate the states afterwards (Viterbi). -->
+# Run NIMBLE:
+mcmc.output <- nimbleMCMC(code = hmm.survival.new,
+                          constants = my.constants,
+                          data = my.data,
+                          inits = initial.values,
+                          monitors = parameters.to.save,
+                          niter = n.iter,
+                          nburnin = n.burnin,
+                          nchains = n.chains)
 
-<!-- + More about so-called marginalisation in [Yackulic et al. (2020)](https://esajournals.onlinelibrary.wiley.com/doi/abs/10.1002/eap.2112). -->
+# Numerical summaries:
+MCMCsummary(mcmc.output, round = 2)
+```
 
-<!-- + The neat thing with Nimble is that it provides marginalised models through nimbleEcology, we'll get back to it in Class 8. -->
+**Computer number of nodes. Show that the z are no longer in there.**
 
-<!-- ## Our model -->
+## Pooled encounter histories
 
-<!-- \begin{align*} -->
-<!--    z_{\text{first}} &\sim \text{Multinomial}(1, \delta) &\text{[likelihood]}\\ -->
-<!--    z_t | z_{t-1} &\sim \text{Multinomial}(1, \gamma_{z_{t-1},z_{t}}) &\text{[likelihood]}\\ -->
-<!--    y_t | z_{t} &\sim \text{Multinomial}(1, \omega_{z_{t}}) &\text{[likelihood]}\\ -->
-<!--   \phi &\sim \text{Beta}(1, 1) &\text{[prior for }\phi \text{]} \\ -->
-<!--   p &\sim \text{Beta}(1, 1) &\text{[prior for }p \text{]} \\ -->
-<!-- \end{align*} -->
+In this section, we're gonna use NIMBLE functions to express the likelihood using pooled encounter histories. We use a vector mult that contains the number of individuals with a particular encounter history. We hacked the dHMM nimbleEcology function below. Courtesy of Chloé Nater. Implement of Turek et al. 
 
-<!-- + Now our model has an observation layer for the ys, conditional on the z. -->
-<!-- + And we need a prior for the detection probability. -->
+```{r}
+dHMMweighted <- nimbleFunction(
+  run = function (x = double(1), 
+                  init = double(1), 
+                  probObs = double(2),
+                  probTrans = double(2), 
+                  len = double(0),
+                  mult = double(0), # NEWLY ADDED: argument stating number of occurrences 
+                                    # of same encounter history in entire dataset 
+                  checkRowSums = integer(0, default = 0),  
+                  log = integer(0, default = 0)) 
+  {
+    if (length(x) != len) 
+      nimStop("In dHMM: Argument len must be length of x or 0.")
+    if (nimDim(probObs)[1] != nimDim(probTrans)[1]) 
+      nimStop("In dHMM: Length of dimension 1 in probObs must equal length of dimension 1 in probTrans.")
+    if (nimDim(probTrans)[1] != nimDim(probTrans)[2]) 
+      nimStop("In dHMM: probTrans must be a square matrix.")
+    ## There was a strict test for sum(init) == 1.  This could be true in R and false in C++!
+    if (abs(sum(init) - 1) > 1e-06) 
+      nimStop("In dHMM: Initial probabilities must sum to 1.")
+    if (checkRowSums) {
+      transCheckPasses <- TRUE
+      for (i in 1:nimDim(probTrans)[1]) {
+        thisCheckSum <- sum(probTrans[i, ])
+        if (abs(thisCheckSum - 1) > 1e-06) {
+          nimPrint("In dHMM: Problem with sum(probTrans[i,]) with i = ", 
+                   i, ". The sum should be 1 but is ", thisCheckSum)
+          transCheckPasses <- FALSE
+        }
+      }
+      obsCheckPasses <- TRUE
+      for (i in 1:nimDim(probObs)[1]) {
+        thisCheckSum <- sum(probObs[i, ])
+        if (abs(thisCheckSum - 1) > 1e-06) {
+          nimPrint("In dHMM: Problem with sum(probObs[i,]) with i = ", 
+                   i, ". The sum should be 1 but is ", thisCheckSum)
+          obsCheckPasses <- FALSE
+        }
+      }
+      if (!(transCheckPasses | obsCheckPasses)) 
+        nimStop("In dHMM: probTrans and probObs were not specified correctly.  Probabilities in each row (second dimension) must sum to 1.")
+      if (!transCheckPasses) 
+        nimStop("In dHMM: probTrans was not specified correctly.  Probabilities in each row (second dimension) must sum to 1.")
+      if (!obsCheckPasses) 
+        nimStop("In dHMM: probObs was not specified correctly. Probabilities in each row must sum to 1.")
+    }
+    pi <- init
+    logL <- 0
+    nObsClasses <- nimDim(probObs)[2]
+    for (t in 1:len) {
+      if (x[t] > nObsClasses | x[t] < 1) 
+        nimStop("In dHMM: Invalid value of x[t].")
+      Zpi <- probObs[, x[t]] * pi
+      sumZpi <- sum(Zpi)
+      logL <- logL + log(sumZpi) * mult # NEWLY ADDED
+      if (t != len) 
+        pi <- ((Zpi %*% probTrans)/sumZpi)[1, ]
+    }
+    if (log) 
+      return(logL)
+    return(exp(logL))
+    returnType(double())
+  })
+```
 
-<!-- ## Nimble implementation -->
 
-<!-- + How to implement this model in Nimble? -->
+Model code:
+```{r}
+hmm.survival.weighted <- nimbleCode({
+  phi ~ dunif(0, 1) # prior survival
+  p ~ dunif(0, 1) # prior detection
+  # likelihood
+  gamma[1,1] <- phi      # Pr(alive t -> alive t+1)
+  gamma[1,2] <- 1 - phi  # Pr(alive t -> dead t+1)
+  gamma[2,1] <- 0        # Pr(dead t -> alive t+1)
+  gamma[2,2] <- 1        # Pr(dead t -> dead t+1)
+  delta[1] <- 1          # Pr(alive t = 1) = 1
+  delta[2] <- 0          # Pr(dead t = 1) = 0
+  omega[1,1] <- 1 - p    # Pr(alive t -> non-detected t)
+  omega[1,2] <- p        # Pr(alive t -> detected t)
+  omega[2,1] <- 1        # Pr(dead t -> non-detected t)
+  omega[2,2] <- 0        # Pr(dead t -> detected t)
+  for(i in 1:N) {
+    init[i, 1:2] <- gamma[y[i, first[i] ] - 1, 1:2] # First state propagation
+  }
+  for (i in 1:N){
+    y[i,(first[i]+1):T] ~ dHMMweighted(init = init[i,1:2], 
+                                       mult = mult[i],
+                                       probObs = omega[1:2,1:2], # observation matrix
+                                       probTrans = gamma[1:2,1:2], # transition matrix
+                                       len = T - first[i], # nb of sampling occasions
+                                       checkRowSums = 1) # do not check whether elements in a row sum to 1
+  }
+})
+```
 
-<!-- ## Priors -->
 
-<!-- ```{r, echo=FALSE} -->
-<!-- hmm.survival <- nimbleCode({ -->
-<!--   phi ~ dunif(0, 1) # prior survival -->
-<!--   p ~ dunif(0, 1) # prior detection -->
-<!--   # likelihood -->
-<!--   gamma[1,1] <- phi      # Pr(alive t -> alive t+1) -->
-<!--   gamma[1,2] <- 1 - phi  # Pr(alive t -> dead t+1) -->
-<!--   gamma[2,1] <- 0        # Pr(dead t -> alive t+1) -->
-<!--   gamma[2,2] <- 1        # Pr(dead t -> dead t+1) -->
-<!--   delta[1] <- 1          # Pr(alive t = 1) = 1 -->
-<!--   delta[2] <- 0          # Pr(dead t = 1) = 0 -->
-<!--   omega[1,1] <- 1 - p    # Pr(alive t -> non-detected t) -->
-<!--   omega[1,2] <- p        # Pr(alive t -> detected t) -->
-<!--   omega[2,1] <- 1        # Pr(dead t -> non-detected t) -->
-<!--   omega[2,2] <- 0        # Pr(dead t -> detected t) -->
-<!--   for (i in 1:N){ -->
-<!--     z[i,first[i]] ~ dcat(delta[1:2]) -->
-<!--     for (j in (first[i]+1):T){ -->
-<!--       z[i,j] ~ dcat(gamma[z[i,j-1], 1:2]) -->
-<!--       y[i,j] ~ dcat(omega[z[i,j], 1:2]) -->
-<!--     } -->
-<!--   } -->
-<!-- }) -->
-<!-- ``` -->
+```{r}
+set.seed(2022)
+p <- 0.6
+y <- z
+y[z==2] <- 0
+y[y==1] <- rbinom(n = sum(y==1), 1, p)
+nobs <- sum(apply(y,1,sum) != 0)
+y <- y[apply(y,1,sum) !=0, ]
+first <- apply(y, 1, function(x) min(which(x !=0)))
+for (i in 1:nobs){
+  if(first[i] > 1) y[i, 1:(first[i]-1)] <- NA
+}
+y_weighted <- y %>% 
+  as_tibble() %>% 
+  group_by_all() %>% 
+  summarise(mult = n()) %>% 
+  relocate(mult) %>% 
+  as.matrix()
+head(y_weighted)
+```
 
-<!-- ```{r eval=FALSE} -->
-<!-- hmm.survival <- nimbleCode({ -->
-<!--   phi ~ dunif(0, 1) # prior survival -->
-<!--   p ~ dunif(0, 1) # prior detection -->
-<!-- ... -->
-<!-- ``` -->
+```{r}
+mult <- y_weighted[,1] # nb of individuals w/ a particular encounter history
+y <- y_weighted[,-1] # pooled data
+```
 
-<!-- ## HMM ingredients -->
+There are XX individuals that were detected only once, XX individuals that were detected only once...
 
-<!-- ```{r eval=FALSE} -->
-<!-- ... -->
-<!--   # parameters -->
-<!--   gamma[1,1] <- phi      # Pr(alive t -> alive t+1) -->
-<!--   gamma[1,2] <- 1 - phi  # Pr(alive t -> dead t+1) -->
-<!--   gamma[2,1] <- 0        # Pr(dead t -> alive t+1) -->
-<!--   gamma[2,2] <- 1        # Pr(dead t -> dead t+1) -->
-<!--   delta[1] <- 1          # Pr(alive t = 1) = 1 -->
-<!--   delta[2] <- 0          # Pr(dead t = 1) = 0 -->
-<!--   omega[1,1] <- 1 - p    # Pr(alive t -> non-detected t) -->
-<!--   omega[1,2] <- p        # Pr(alive t -> detected t) -->
-<!--   omega[2,1] <- 1        # Pr(dead t -> non-detected t) -->
-<!--   omega[2,2] <- 0        # Pr(dead t -> detected t) -->
-<!-- ... -->
-<!-- ``` -->
+Get the occasion of first capture for each history:
+```{r}
+get.first <- function(x) min(which(x != 0))
+first <- apply(y, 1, get.first)
+```
 
-<!-- ## Likelihood -->
+Filter out individuals that are first captured at last occasion.
+```{r}
+mask <- which(first!=ncol(y))
+y <- y[mask, ]
+```
 
-<!-- ```{r eval=FALSE} -->
-<!-- ... -->
-<!--     # likelihood -->
-<!--     for (i in 1:N){ -->
-<!--     z[i,first[i]] ~ dcat(delta[1:2]) -->
-<!--     for (j in (first[i]+1):T){ -->
-<!--       z[i,j] ~ dcat(gamma[z[i,j-1], 1:2]) -->
-<!--       y[i,j] ~ dcat(omega[z[i,j], 1:2]) -->
-<!--     } -->
-<!--   } -->
-<!-- }) -->
-<!-- ``` -->
+Apply filter on occasion of first capture and sample size.
+```{r}
+first <- first[mask]
+mult <- mult[mask]
+```
 
-<!-- ## Constants -->
+Rest is the same:
+```{r}
+# Data and constants:
+my.data <- list(y = y + 1)
+my.constants <- list(N = nrow(y), T = ncol(y), first = first, mult = mult)
 
-<!-- ```{r} -->
-<!-- first <- apply(y, 1, function(x) min(which(x !=0))) -->
-<!-- my.constants <- list(N = nrow(y), T = 5, first = first) -->
-<!-- my.constants -->
-<!-- ``` -->
+# Initial values:
+zinits <- y + 1 # non-detection -> alive
+zinits[zinits == 2] <- 1 # dead -> alive
+initial.values <- function() list(phi = runif(1,0,1),
+                                  p = runif(1,0,1))
 
-<!-- ## Data -->
+# Parameters to monitor:
+parameters.to.save <- c("phi", "p")
+parameters.to.save
 
-<!-- + The data are made of 0s for non-detections and 1s for detections. -->
+# MCMC details:
+n.iter <- 5000
+n.burnin <- 1000
+n.chains <- 2
+```
 
-<!-- + To use the categorical distribution, we need to code 1, 2, etc. Value 0 is not accepted. -->
+This won't work. You need a rHMMweighted. 
+```{r eval = FALSE}
+# Run NIMBLE:
+mcmc.output <- nimbleMCMC(code = hmm.survival.weighted,
+                          constants = my.constants,
+                          data = my.data,
+                          inits = initial.values,
+                          monitors = parameters.to.save,
+                          niter = n.iter,
+                          nburnin = n.burnin,
+                          nchains = n.chains)
+```
 
-<!-- + Add 1 to get the correct format $y=1$ for non-detection and $y = 2$ for detection. -->
+We need a `rHMMweighted` as well. 
+```{r}
+rHMMweighted <- nimbleFunction(
+  run = function(n = integer(),    ## Observed capture (state) history
+                 init = double(1),
+                 probObs = double(2),
+                 probTrans = double(2),
+                 len = double(0),
+                 mult = double(0),
+                 checkRowSums = double(0, default = 1)) {
+    returnType(double(1))
+    if (dim(probObs)[1] != dim(probTrans)[1]) stop("In rHMM: Number of cols in probObs must equal number of cols in probTrans.")
+    if (dim(probTrans)[1] != dim(probTrans)[2]) stop("In rHMM: probTrans must be a square matrix.")
+    if (abs(sum(init) - 1) > 1e-06) stop("In rHMM: Initial probabilities must sum to 1.")
+    if (checkRowSums) {
+      transCheckPasses <- TRUE
+      for (i in 1:dim(probTrans)[1]) {
+        thisCheckSum <- sum(probTrans[i,])
+        if (abs(thisCheckSum - 1) > 1e-6) {
+          ## Compilation doesn't support more than a simple string for stop()
+          ## so we provide more detail using a print().
+          print("In rHMM: Problem with sum(probTrans[i,]) with i = ", i, ". The sum should be 1 but is ", thisCheckSum)
+          transCheckPasses <- FALSE
+        }
+      }
+      obsCheckPasses <- TRUE
+      for (i in 1:dim(probObs)[1]) {
+        thisCheckSum <- sum(probObs[i,])
+        if (abs(thisCheckSum - 1) > 1e-6) {
+          print("In rHMM: Problem with sum(probObs[i,]) with i = ", i, ". The sum should be 1 but is ", thisCheckSum)
+          obsCheckPasses <- FALSE
+        }
+      }
+      if(!(transCheckPasses | obsCheckPasses))
+        stop("In rHMM: probTrans and probObs were not specified correctly.  Probabilities in each row (second dimension) must sum to 1.")
+      if(!transCheckPasses)
+        stop("In rHMM: probTrans was not specified correctly.  Probabilities in each row (second dimension) must sum to 1.")
+      if(!obsCheckPasses)
+        stop("In rHMM: probObs was not specified correctly. Probabilities in each row must sum to 1.")
+    }
+    ans <- numeric(len)
+    probInit <- init
+    trueInit <- 0
+    r <- runif(1, 0, 1)
+    j <- 1
+    while (r > sum(probInit[1:j])) j <- j + 1
+    trueInit <- j
+    trueState <- trueInit
+    for (i in 1:len) {
+      # Transition to a new true state
+      r <- runif(1, 0, 1)
+      j <- 1
+      while (r > sum(probTrans[trueState, 1:j])) j <- j + 1
+      trueState <- j
+      # Detect based on the true state
+      r <- runif(1, 0, 1)
+      j <- 1
+      while (r > sum(probObs[trueState, 1:j])) j <- j + 1
+      ans[i] <- j
+    }
+    return(ans)
+  })
+```
 
-<!-- ```{r} -->
-<!-- my.data <- list(y = y + 1) -->
-<!-- ``` -->
+```{r eval = FALSE}
+# Run NIMBLE:
+mcmc.output <- nimbleMCMC(code = hmm.survival.weighted,
+                          constants = my.constants,
+                          data = my.data,
+                          inits = initial.values,
+                          monitors = parameters.to.save,
+                          niter = n.iter,
+                          nburnin = n.burnin,
+                          nchains = n.chains)
 
-<!-- ## Initial values -->
+# Numerical summaries:
+MCMCsummary(mcmc.output, round = 2)
+```
 
-<!-- ```{r} -->
-<!-- zinits <- y + 1 # non-detection -> alive -->
-<!-- zinits[zinits == 2] <- 1 # dead -> alive -->
-<!-- initial.values <- function() list(phi = runif(1,0,1), -->
-<!--                                   p = runif(1,0,1), -->
-<!--                                   z = zinits) -->
-<!-- ``` -->
+**Something doesn't work. I found a fix during the workshop, but can't make it work here. Try and simplify the fn first, and make sense of rHMM. Then resume.**
 
-<!-- ## Parameters to monitor -->
+## Summary
 
-<!-- ```{r} -->
-<!-- parameters.to.save <- c("phi", "p") -->
-<!-- parameters.to.save -->
-<!-- ``` -->
++ Blabla.
 
-<!-- ## MCMC details -->
++ Blabla.
 
-<!-- ```{r} -->
-<!-- n.iter <- 5000 -->
-<!-- n.burnin <- 1000 -->
-<!-- n.chains <- 2 -->
-<!-- ``` -->
++ Recall 3 problems of HMM?
 
-<!-- ## Run Nimble -->
-<!-- ```{r, message=FALSE} -->
-<!-- mcmc.output <- nimbleMCMC(code = hmm.survival, -->
-<!--                           constants = my.constants, -->
-<!--                           data = my.data, -->
-<!--                           inits = initial.values, -->
-<!--                           monitors = parameters.to.save, -->
-<!--                           niter = n.iter, -->
-<!--                           nburnin = n.burnin, -->
-<!--                           nchains = n.chains) -->
-<!-- ``` -->
+## Suggested reading
 
-<!-- ```{r, message=FALSE, cache = TRUE} -->
-<!-- mcmc.output <- nimbleMCMC(code = hmm.survival, -->
-<!--                           constants = my.constants, -->
-<!--                           data = my.data, -->
-<!--                           inits = initial.values, -->
-<!--                           monitors = parameters.to.save, -->
-<!--                           niter = n.iter, -->
-<!--                           nburnin = n.burnin, -->
-<!--                           nchains = n.chains, -->
-<!--                           progressBar = FALSE) -->
-<!-- ``` -->
++ Zucchini, MacDonald and Langrock (2016) [Hidden Markov Models for Time Series: An Introduction Using R (2nd ed)](https://www.routledge.com/Hidden-Markov-Models-for-Time-Series-An-Introduction-Using-R-Second-Edition/Zucchini-MacDonald-Langrock/p/book/9781482253832). Chapman and Hall/CRC.
 
-<!-- ## Posterior distribution of survival -->
++ McClintock, B.T., Langrock, R., Gimenez, O., Cam, E., Borchers, D.L., Glennie, R. and Patterson, T.A. (2020), [Uncovering ecological state dynamics with hidden Markov models](https://onlinelibrary.wiley.com/doi/full/10.1111/ele.13610). Ecology Letters, 23: 1878-1903.
 
-<!-- ```{r} -->
-<!-- library(MCMCvis) -->
-<!-- MCMCsummary(mcmc.output, round = 2) -->
-<!-- ``` -->
++  Yackulic, C. B. Dodrill, M., Dzul, M., Sanderlin, J. S., and Reid, J. A.. (2020). [A need for speed in Bayesian population models: a practical guide to marginalizing and recovering discrete latent states](https://esajournals.onlinelibrary.wiley.com/doi/abs/10.1002/eap.2112). Ecological Applications 30:e02112.
 
-<!-- The data is simulated, with true survival $\phi = 0.8$ and detection $p = 0.6$. -->
++ L. R. Rabiner (1989). [A tutorial on hidden Markov models and selected applications in speech recognition](https://web.ece.ucsb.edu/Faculty/Rabiner/ece259/Reprints/tutorial%20on%20hmm%20and%20applications.pdf). Proceedings of the IEEE, 77:257-286.
 
-<!-- <!-- heller_novel_2021 --> -->
-
-<!-- ## Summary -->
-
-<!-- + Blabla. -->
-
-<!-- + Blabla.  -->
-
-<!-- ## Suggested reading -->
-
-<!-- + Zucchini, MacDonald and Langrock (2016) [Hidden Markov Models for Time Series: An Introduction Using R (2nd ed)](https://www.routledge.com/Hidden-Markov-Models-for-Time-Series-An-Introduction-Using-R-Second-Edition/Zucchini-MacDonald-Langrock/p/book/9781482253832). Chapman and Hall/CRC. -->
-
-<!-- + McClintock, B.T., Langrock, R., Gimenez, O., Cam, E., Borchers, D.L., Glennie, R. and Patterson, T.A. (2020), [Uncovering ecological state dynamics with hidden Markov models](https://onlinelibrary.wiley.com/doi/full/10.1111/ele.13610). Ecology Letters, 23: 1878-1903. -->
-
-<!-- +  Yackulic, C. B. Dodrill, M., Dzul, M., Sanderlin, J. S., and Reid, J. A.. (2020). [A need for speed in Bayesian population models: a practical guide to marginalizing and recovering discrete latent states](https://esajournals.onlinelibrary.wiley.com/doi/abs/10.1002/eap.2112). Ecological Applications 30:e02112. -->
-
-<!-- + L. R. Rabiner (1989). [A tutorial on hidden Markov models and selected applications in speech recognition](https://web.ece.ucsb.edu/Faculty/Rabiner/ece259/Reprints/tutorial%20on%20hmm%20and%20applications.pdf). Proceedings of the IEEE, 77:257-286. -->
+<!-- heller_novel_2021 -->
+<!-- Gimenez et al. 2007, Royle 2008. Recall difference between SSM and HMM? -->
