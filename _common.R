@@ -6,7 +6,7 @@ library(MCMCvis)
 library(magick)
 library(pdftools)
 library(wesanderson)
-library(nimbleEcology)
+#library(nimbleEcology)
 #library(basicMCMCplots)
 
 # R options
