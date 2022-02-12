@@ -85,8 +85,7 @@
 <h2>
 <span class="header-section-number">3.1</span> Introduction<a class="anchor" aria-label="anchor" href="#introduction-3"><i class="fas fa-link"></i></a>
 </h2>
-<p>In this third chapter, you will learn the basics on Markov models and how to fit them to longitudinal data using NIMBLE. Because in real life, individuals may go undetected and their status be unknow, you will also learn how to manipulate the extension of Markov models to hidden states, so-called hidden Markov models.</p>
-<!-- Mettre les 3 pbs des HMM dans le chapitre et marginalisation aussi -->
+<p>In this third chapter, you will learn the basics on Markov models and how to fit them to longitudinal data using NIMBLE. Because in real life, individuals may go undetected and their status be unknow, you will also learn how to manipulate the extension of Markov models to hidden states, so-called hidden Markov models. <strong>Mention marginalization and pooling. </strong></p>
 </div>
 <div id="longitudinal-data" class="section level2" number="3.2">
 <h2>
@@ -1278,8 +1277,12 @@ winter 5
 <h2>
 <span class="header-section-number">3.3</span> A model for longitudinal data<a class="anchor" aria-label="anchor" href="#a-model-for-longitudinal-data"><i class="fas fa-link"></i></a>
 </h2>
-<p>Let’s think of a model for these data. The objective remains the same, estimating survival. To build this model, we’ll make assumptions, go through its components and write down its likelihood.
-### Assumptions</p>
+<p>Let’s think of a model for these data. The objective remains the same, estimating survival. To build this model, we’ll make assumptions, go through its components and write down its likelihood.</p>
+<p><strong>On a déjà vu chaîne Markov chapitre MCMC</strong></p>
+<div id="assumptions" class="section level3" number="3.3.1">
+<h3>
+<span class="header-section-number">3.3.1</span> Assumptions<a class="anchor" aria-label="anchor" href="#assumptions"><i class="fas fa-link"></i></a>
+</h3>
 <p>First, we assume that the state of an animal in a given winter, alive or dead, is only dependent on its state the winter before. In other words, the future depends only on the present, not the past. This is a Markov process.</p>
 <p>Second, if an animal is alive in a given winter, the probability it survives to the next winter is <span class="math inline">\(\phi\)</span>. The probability it dies is <span class="math inline">\(1 - \phi\)</span>.</p>
 <p>Third, if an animal is dead a winter, it remains dead, unless you believe in zombies.</p>
@@ -1288,9 +1291,10 @@ winter 5
 <p>A realization of this Markov process is, for example:</p>
 <div class="inline-figure"><img src="banana-book_files/figure-html/unnamed-chunk-108-1.png" width="672"></div>
 <p>Going from a winter to the next is driven by survival and mortality processes. The probability of going from alive or 1 to alive or 1 is <span class="math inline">\(\phi\)</span>. Then from alive 1 to dead 2 is <span class="math inline">\(1 - \phi\)</span>. And the probability to remain dead is 1, that is to go from state 2 dead to state 2 for dead.</p>
-<div id="transition-matrix" class="section level3" number="3.3.1">
+</div>
+<div id="transition-matrix" class="section level3" number="3.3.2">
 <h3>
-<span class="header-section-number">3.3.1</span> Transition matrix<a class="anchor" aria-label="anchor" href="#transition-matrix"><i class="fas fa-link"></i></a>
+<span class="header-section-number">3.3.2</span> Transition matrix<a class="anchor" aria-label="anchor" href="#transition-matrix"><i class="fas fa-link"></i></a>
 </h3>
 <p>You might have figured it out already, the core of a Markov process is made of transition probabilities between states alive and dead.</p>
 <p>For example, the probability of transitioning from state alive at <span class="math inline">\(t-1\)</span> to state alive at <span class="math inline">\(t\)</span> is <span class="math inline">\(\Pr(z_{i,t} = 1 | z_{i,t-1} = 1) = \gamma_{1,1}\)</span>. It is the survival probability <span class="math inline">\(\phi\)</span>.</p>
@@ -1332,17 +1336,17 @@ winter 5
 \]</span></p>
 <p>Take the time you need to navigate through this matrix, and get familiar with it. For example, you may start alive at <span class="math inline">\(t\)</span> (first row) then end up dead at <span class="math inline">\(t+1\)</span> (first column) with probability <span class="math inline">\(1-\phi\)</span>.</p>
 </div>
-<div id="initial-states" class="section level3" number="3.3.2">
+<div id="initial-states" class="section level3" number="3.3.3">
 <h3>
-<span class="header-section-number">3.3.2</span> Initial states<a class="anchor" aria-label="anchor" href="#initial-states"><i class="fas fa-link"></i></a>
+<span class="header-section-number">3.3.3</span> Initial states<a class="anchor" aria-label="anchor" href="#initial-states"><i class="fas fa-link"></i></a>
 </h3>
 <p>A Markov process has to start somewhere. We need the probabilities of initial states, i.e. the states of an individual at <span class="math inline">\(t = 1\)</span>.</p>
 <p>We will gather the probability of being in each state (alive or 1 and dead or 2) in the first winter in a vector. We will use <span class="math inline">\(\mathbf{\delta} = \left(\Pr(z_{i,1} = 1), \Pr(z_{i,1} = 2)\right)\)</span>.</p>
 <p>All individuals are marked and released in the first winter, hence alive when first captured, which means that they are all in state alive or 1 for sure. Therefore we have <span class="math inline">\(\mathbf{\delta} = \left(1, 0\right)\)</span>.</p>
 </div>
-<div id="likelihood" class="section level3" number="3.3.3">
+<div id="likelihood" class="section level3" number="3.3.4">
 <h3>
-<span class="header-section-number">3.3.3</span> Likelihood<a class="anchor" aria-label="anchor" href="#likelihood"><i class="fas fa-link"></i></a>
+<span class="header-section-number">3.3.4</span> Likelihood<a class="anchor" aria-label="anchor" href="#likelihood"><i class="fas fa-link"></i></a>
 </h3>
 <p>Now that we have built a Markov model, we need its likelihood to apply the Bayes theorem. The likelihood is the probability of the data, given the model. Here the data are the <span class="math inline">\(z\)</span>, therefore we need <span class="math inline">\(\Pr(\mathbf{z}) = \Pr(z_1, z_2, \ldots, z_{T-2}, z_{T-1}, z_T)\)</span>.</p>
 <p>We’re gonna work backward, starting from the last sampling occasion. Using conditional probabilities, the likelihood can be written as the product of the probability of <span class="math inline">\(z_T\)</span> i.e. you’re alive or not on the last occasion given your past history, that is the states at previous occasions, times the probability of your past history:</p>
@@ -1404,9 +1408,9 @@ winter 5
 <!--                 &= \mathbf{\delta} \; \mathbf{\Gamma} \cdots \mathbf{\Gamma} -->
 <!-- \end{align*} -->
 </div>
-<div id="example" class="section level3" number="3.3.4">
+<div id="example" class="section level3" number="3.3.5">
 <h3>
-<span class="header-section-number">3.3.4</span> Example<a class="anchor" aria-label="anchor" href="#example"><i class="fas fa-link"></i></a>
+<span class="header-section-number">3.3.5</span> Example<a class="anchor" aria-label="anchor" href="#example"><i class="fas fa-link"></i></a>
 </h3>
 <p>I realise these calculations are a bit difficult to follow. Let’s take an example to fix ideas. Let’s assume an animal is alive, alive at time 2 then dies at time 3. We have <span class="math inline">\(\mathbf{z} = (1, 1, 2)\)</span>. What is the contribution of this animal to the likelihood? Let’s apply the formula we just derived:</p>
 <p><span class="math display">\[\begin{align*}
@@ -1421,20 +1425,29 @@ winter 5
 <span class="header-section-number">3.4</span> Bayesian formulation<a class="anchor" aria-label="anchor" href="#bayesian-formulation"><i class="fas fa-link"></i></a>
 </h2>
 <p>Now that we have the likelihood of a Markov model, we can complement it with a prior for survival to apply the Bayes theorem.</p>
-<p>Before implementing this model in NIMBLE, we note that the likelihood is a product of conditional probabilities of binary events (alive or dead) that are drawn in Bernoulli distributions, or for more generality, their extension multinomial distributions. <strong>SMOOTH AND EXPLAIN MULTINOMIAL DISTRIBUTIONS</strong>.</p>
-<p>Initial state is multinomial with one trial, and probability <span class="math inline">\(\delta\)</span>. That is you have a dice with two faces, a coin, and you have some probability to be alive, and one minus that probability to be dead. Of course, it you want your Markov chain to start, you’d better say it’s alive so that delta is just <span class="math inline">\((1,0)\)</span>:</p>
+<p>Before implementing this model in NIMBLE, we note that the likelihood is a product of conditional probabilities of binary events (alive or dead) that are drawn in Bernoulli distributions, or for more generality, their extension categorical distributions. <strong>SMOOTH AND EXPLAIN CATEGORICAL DISTRIBUTIONS. MENTION ITS MULTINOMIAL WITH ONE TRIAL</strong>.</p>
+<p>The categorical distribution is a multinomial distribution with a single draw.</p>
+<p><a href="https://en.wikipedia.org/wiki/Categorical_distribution" class="uri">https://en.wikipedia.org/wiki/Categorical_distribution</a></p>
+<p>The categorical distribution is the generalization of the Bernoulli distribution for a categorical random variable, i.e. for a discrete variable with more than two possible outcomes, such as the roll of a dice. On the other hand, the categorical distribution is a special case of the multinomial distribution, in that it gives the probabilities of potential outcomes of a single drawing rather than multiple drawings.</p>
+<div class="sourceCode" id="cb91"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="fu">nimble</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/nimble/man/Categorical.html">rcat</a></span><span class="op">(</span>n <span class="op">=</span> <span class="fl">20</span>, prob <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimble-R-functions.html">c</a></span><span class="op">(</span><span class="fl">0.1</span>, <span class="fl">0.3</span>, <span class="fl">0.6</span><span class="op">)</span><span class="op">)</span>
+<span class="co">##  [1] 3 3 3 3 1 3 3 2 3 3 2 3 3 2 3 1 2 3 2 3</span></code></pre></div>
+<div class="sourceCode" id="cb92"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="fu">nimble</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/nimble/man/Categorical.html">rcat</a></span><span class="op">(</span>n <span class="op">=</span> <span class="fl">20</span>, prob <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimble-R-functions.html">c</a></span><span class="op">(</span><span class="fl">0.1</span>, <span class="fl">0.1</span>, <span class="fl">0.4</span>, <span class="fl">0.2</span>, <span class="fl">0.2</span><span class="op">)</span><span class="op">)</span>
+<span class="co">##  [1] 2 5 3 5 2 3 1 4 3 4 3 4 3 3 4 5 3 3 4 1</span></code></pre></div>
+<p>Initial state is categorical with probability <span class="math inline">\(\delta\)</span>. That is you have a dice with two faces, a coin, and you have some probability to be alive, and one minus that probability to be dead. Of course, it you want your Markov chain to start, you’d better say it’s alive so that delta is just <span class="math inline">\((1,0)\)</span>:</p>
 <p><span class="math display">\[\begin{align*}
-   z_1 &amp;\sim \text{Multinomial}(1, \delta) &amp;\text{[likelihood, }t = 1 \text{]}\\
+   z_1 &amp;\sim \text{Categorical}(\delta) &amp;\text{[likelihood, }t = 1 \text{]}\\
 \end{align*}\]</span></p>
-<p>Now the main part is the dynamic of the states. Our state at <span class="math inline">\(t\)</span> depends only on your state at <span class="math inline">\(t-1\)</span>, and it is a multinomial random variable, with one trial. And the probabilities are given by the rows of the transition matrix:</p>
+<p>Now the main part is the dynamic of the states. Our state at <span class="math inline">\(t\)</span> depends only on your state at <span class="math inline">\(t-1\)</span>, and it is a categorical random variable. And the probabilities are given by the rows of the transition matrix:</p>
 <p><span class="math display">\[\begin{align*}
-   z_1 &amp;\sim \text{Multinomial}(1, \delta) &amp;\text{[likelihood, }t = 1 \text{]}\\
-   z_t | z_{t-1} &amp;\sim \text{Multinomial}(1, \gamma_{z_{t-1},z_{t}}) &amp;\text{[likelihood, }t &gt; 1 \text{]}\\
+   z_1 &amp;\sim \text{Categorical}(\delta) &amp;\text{[likelihood, }t = 1 \text{]}\\
+   z_t | z_{t-1} &amp;\sim \text{Categorical}(\gamma_{z_{t-1},z_{t}}) &amp;\text{[likelihood, }t &gt; 1 \text{]}\\
 \end{align*}\]</span></p>
 <p>We also need a prior on survival. As usual we take a uniform distribution between 0 and 1, or a Beta distribution with parameters 1 and 1. Overall our model is:</p>
 <p><span class="math display">\[\begin{align*}
-   z_1 &amp;\sim \text{Multinomial}(1, \delta) &amp;\text{[likelihood, }t = 1 \text{]}\\
-   z_t | z_{t-1} &amp;\sim \text{Multinomial}(1, \gamma_{z_{t-1},z_{t}}) &amp;\text{[likelihood, }t &gt; 1 \text{]}\\
+   z_1 &amp;\sim \text{Categorical}(\delta) &amp;\text{[likelihood, }t = 1 \text{]}\\
+   z_t | z_{t-1} &amp;\sim \text{Categorical}(\gamma_{z_{t-1},z_{t}}) &amp;\text{[likelihood, }t &gt; 1 \text{]}\\
   \phi &amp;\sim \text{Beta}(1, 1) &amp;\text{[prior for }\phi \text{]} \\
 \end{align*}\]</span></p>
 <p>If <span class="math inline">\(z\)</span> at <span class="math inline">\(t-1\)</span> is alive, it is the first row in <span class="math inline">\(\mathbf{\Gamma}\)</span>,</p>
@@ -1460,16 +1473,8 @@ winter 5
 <h2>
 <span class="header-section-number">3.5</span> Nimble implementation<a class="anchor" aria-label="anchor" href="#nimble-implementation"><i class="fas fa-link"></i></a>
 </h2>
-<p>In Nimble, we will use the categorical distribution <code><a href="https://rdrr.io/pkg/nimble/man/Categorical.html">dcat()</a></code>. The categorical distribution is a multinomial distribution with a single draw.</p>
-<div class="sourceCode" id="cb91"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="fu">nimble</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/nimble/man/Categorical.html">rcat</a></span><span class="op">(</span>n <span class="op">=</span> <span class="fl">20</span>, prob <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimble-R-functions.html">c</a></span><span class="op">(</span><span class="fl">0.1</span>, <span class="fl">0.3</span>, <span class="fl">0.6</span><span class="op">)</span><span class="op">)</span>
-<span class="co">##  [1] 3 3 3 3 1 3 3 2 3 3 2 3 3 2 3 1 2 3 2 3</span></code></pre></div>
-<div class="sourceCode" id="cb92"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="fu">nimble</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/nimble/man/Categorical.html">rcat</a></span><span class="op">(</span>n <span class="op">=</span> <span class="fl">20</span>, prob <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimble-R-functions.html">c</a></span><span class="op">(</span><span class="fl">0.1</span>, <span class="fl">0.1</span>, <span class="fl">0.4</span>, <span class="fl">0.2</span>, <span class="fl">0.2</span><span class="op">)</span><span class="op">)</span>
-<span class="co">##  [1] 2 5 3 5 2 3 1 4 3 4 3 4 3 3 4 5 3 3 4 1</span></code></pre></div>
-<p><a href="https://en.wikipedia.org/wiki/Categorical_distribution" class="uri">https://en.wikipedia.org/wiki/Categorical_distribution</a></p>
-<p>The categorical distribution is the generalization of the Bernoulli distribution for a categorical random variable, i.e. for a discrete variable with more than two possible outcomes, such as the roll of a dice. On the other hand, the categorical distribution is a special case of the multinomial distribution, in that it gives the probabilities of potential outcomes of a single drawing rather than multiple drawings.</p>
-<p>Nimble code:</p>
+<p><strong>Introduce loops. First time we see them in the book. Maybe for a single individual first, then embed time loop in individual loop. </strong></p>
+<p>In Nimble, we will use the categorical distribution <code><a href="https://rdrr.io/pkg/nimble/man/Categorical.html">dcat()</a></code>. Nimble code:</p>
 <div class="sourceCode" id="cb93"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">markov.survival</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimbleCode.html">nimbleCode</a></span><span class="op">(</span><span class="op">{</span>
   <span class="va">phi</span> <span class="op">~</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html">dunif</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1</span><span class="op">)</span> <span class="co"># prior</span>
@@ -1487,6 +1492,7 @@ winter 5
     <span class="op">}</span>
   <span class="op">}</span><span class="op">}</span><span class="op">)</span></code></pre></div>
 <p>Vector <span class="math inline">\(\delta\)</span> is used as a placeholder for more complex models to come. Here, you could write <code>z[i,1] &lt;- 1</code>.</p>
+<p><strong>SHOW SOME CODE</strong></p>
 <!-- ## Nimble awesomness -->
 <!-- You should be able to define vectors and matrices like you do in `R`. -->
 <!-- ```{r, eval = FALSE} -->
@@ -1513,6 +1519,7 @@ winter 5
 <span class="co">## [1] 5</span>
 
 <span class="va">my.data</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>z <span class="op">=</span> <span class="va">z</span><span class="op">)</span></code></pre></div>
+<p><strong>Need to comment on constants, and backward reference to NIMBLE chapter and relevant section. </strong></p>
 <p>Initial values:</p>
 <div class="sourceCode" id="cb95"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">initial.values</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>phi <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html">runif</a></span><span class="op">(</span><span class="fl">1</span>,<span class="fl">0</span>,<span class="fl">1</span><span class="op">)</span><span class="op">)</span>
@@ -1545,8 +1552,7 @@ winter 5
 <span class="co">## |-------------------------------------------------------|</span></code></pre></div>
 <p>Posterior distribution of survival:</p>
 <div class="sourceCode" id="cb99"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/caseyyoungflesh/MCMCvis">MCMCvis</a></span><span class="op">)</span>
-<span class="fu"><a href="https://rdrr.io/pkg/MCMCvis/man/MCMCsummary.html">MCMCsummary</a></span><span class="op">(</span><span class="va">mcmc.output</span>, round <span class="op">=</span> <span class="fl">2</span><span class="op">)</span>
+<code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/pkg/MCMCvis/man/MCMCsummary.html">MCMCsummary</a></span><span class="op">(</span><span class="va">mcmc.output</span>, round <span class="op">=</span> <span class="fl">2</span><span class="op">)</span>
 <span class="co">##     mean   sd 2.5%  50% 97.5% Rhat n.eff</span>
 <span class="co">## phi 0.77 0.03  0.7 0.77  0.83    1  1699</span></code></pre></div>
 <p>Posterior mean and median are close to <span class="math inline">\(0.8\)</span>. Cool! The data was simulated, with (true) survival <span class="math inline">\(\phi = 0.8\)</span>.</p>
@@ -1573,394 +1579,3895 @@ winter 5
 <span class="co">## [4,]    1    1    1    1    1</span>
 <span class="co">## [5,]    1    1    1    1    1</span>
 <span class="co">## [6,]    1    1    1    2    2</span></code></pre></div>
-<!-- ## Unfortunately, this is the data we wish we had. -->
-<!-- ## In real life -->
-<!-- + Animals cannot be monitored exhaustively, like humans in a medical trial. -->
-<!-- + Animals are captured, marked or identified then released alive. -->
-<!-- + Then, these animals may be detected again, or go undetected <span>&#8212;</span> **capture-recapture** -->
-<!-- + Whenever animals go undetected, it might be that they were alive but missed, or because they were dead and therefore could not be detected <span>&#8212;</span> **imperfect detection**. -->
-<!-- <https://www.youtube.com/embed/tyX79mPm2xY> -->
-<!-- + Whenever animals go undetected, it might be that they were alive but missed, or because they were dead and therefore could not be detected <span>&#8212;</span> **imperfect detection**. -->
-<!-- + The Markov process for survival is only partially observed <span>&#8212;</span> **hidden Markov models**. -->
-<!-- ## The truth is in $z$ -->
-<!-- ```{r echo = FALSE} -->
-<!-- z %>% -->
-<!--   as_tibble() %>% -->
-<!--   add_column(id = 1:nind, .before = "winter 1") %>% -->
-<!--   kableExtra::kable() %>% -->
-<!--   kableExtra::scroll_box(width = "100%", height = "300px") -->
-<!-- ``` -->
-<!-- + Unfortunately, we have only partial access to $z$. -->
-<!-- + We do observe $y$ the detections and non-detections. -->
-<!-- + How are $z$ and $y$ connected? -->
-<!-- ## Dead animals go undetected -->
-<!-- + When an animal is dead i.e. $z = 2$, it cannot be detected, therefore $y = 0$. -->
-<!-- ```{r echo = FALSE} -->
-<!-- z %>% -->
-<!--   as_tibble() %>% -->
-<!--   replace(. == 2, 0) %>% -->
-<!--   add_column(id = 1:nind, .before = "winter 1") %>% -->
-<!--   kableExtra::kable() %>% -->
-<!--   kableExtra::scroll_box(width = "100%", height = "300px") -->
-<!-- ``` -->
-<!-- ## Alive animals may be detected or not -->
-<!-- + If animal is alive $z = 1$, it is detected $y = 1$ w/ prob $p$ or not $y = 0$ w/ prob $1-p$. -->
-<!-- + Before **first** detection, we know nothing, and we proceed conditional on it. -->
-<!-- ```{r echo = FALSE} -->
-<!-- p <- 0.6 -->
-<!-- y <- z -->
-<!-- y[z==2] <- 0 -->
-<!-- y[y==1] <- rbinom(n = sum(y==1), 1, p) -->
-<!-- nobs <- sum(apply(y,1,sum) != 0) -->
-<!-- y <- y[apply(y,1,sum) !=0, ] -->
-<!-- first <- apply(y, 1, function(x) min(which(x !=0))) -->
-<!-- for (i in 1:nobs){ -->
-<!--   if(first[i] > 1) y[i, 1:(first[i]-1)] <- NA -->
-<!-- } -->
-<!-- y %>% -->
-<!--   as_tibble() %>% -->
-<!--   add_column(id = 1:nobs, .before = "winter 1") %>% -->
-<!--   kableExtra::kable() %>% -->
-<!--   kableExtra::scroll_box(width = "100%", height = "300px") -->
-<!-- ``` -->
-<!-- + Compare with previous table -->
-<!-- + Some 1s have become 0s. -->
-<!-- + This table $y$ is what we observe in real life. -->
-<!-- + To make the connection between the observations, the y, and the true states, the z -->
-<!-- + We need to describe how observations are made from the states -->
-<!-- ## Observation matrix -->
-<!-- + The observation probabilities can be packed in an observation matrix $\mathbf{\Omega}$. -->
-<!-- + In rows: the states alive $z = 1$ and dead $z = 2$. -->
-<!-- + In columns: the observations non-detected $y = 1$ and detected $y = 2$ (previously coded 0 and 1 respectively). -->
-<!-- \begin{align*} -->
-<!-- \mathbf{\Omega} = -->
-<!-- \left(\begin{array}{cc} -->
-<!-- \omega_{1,1} & \omega_{1,2}\\ -->
-<!-- \omega_{2,1} & \omega_{2,2} -->
-<!-- \end{array}\right) = -->
-<!-- \left(\begin{array}{cc} -->
-<!-- 1 - p & p\\ -->
-<!-- 1 & 0 -->
-<!-- \end{array}\right) -->
-<!-- \end{align*} -->
-<!-- Observation matrix: -->
-<!-- $$ -->
-<!-- \begin{matrix} -->
-<!-- & \\ -->
-<!-- \mathbf{\Omega} = -->
-<!--     \left ( \vphantom{ \begin{matrix} 12 \\ 12 \end{matrix} } \right . -->
-<!-- \end{matrix} -->
-<!-- \hspace{-1.2em} -->
-<!-- \begin{matrix} -->
-<!--     y_t=1 & y_t=2 \\ \hdashline -->
-<!-- 1 - p & p\\ -->
-<!-- 1 & 0\\ -->
-<!-- \end{matrix} -->
-<!-- \hspace{-0.2em} -->
-<!-- \begin{matrix} -->
-<!-- & \\ -->
-<!-- \left . \vphantom{ \begin{matrix} 12 \\ 12 \end{matrix} } \right ) -->
-<!--     \begin{matrix} -->
-<!--     z_{t}=A \\ z_{t}=D -->
-<!--     \end{matrix} -->
-<!-- \end{matrix} -->
-<!-- $$ -->
-<!-- ## Markov model -->
-<!-- ```{r, engine = 'tikz', echo = FALSE} -->
-<!-- \usetikzlibrary{arrows, fit, positioning, automata} -->
-<!-- \begin{tikzpicture}[node distance = 2cm] -->
-<!-- \tikzset{state/.style = {circle, draw, minimum size = 30pt, scale = 3, line width=1pt}} -->
-<!-- \node [state,fill=lightgray!75] (6) [] {$z_{t}$}; -->
-<!-- \node [state,fill=lightgray!75] (5) [left = 20mm of 6] {$z_{t-1}$}; -->
-<!-- \node [state,fill=lightgray!75] (4) [left = 20mm of 5] {$z_{t-2}$}; -->
-<!-- \node [state,fill=lightgray!75] (3) [left = 20mm of 4] {$\cdots$}; -->
-<!-- \node [state,fill=lightgray!75] (7) [right = 20mm of 6] {$z_{t+1}$}; -->
-<!-- \node [state,fill=lightgray!75] (8) [right = 20mm of 7] {$z_{t+2}$}; -->
-<!-- \node [state,fill=lightgray!75] (9) [right = 20mm of 8] {$\cdots$}; -->
-<!-- \draw[->,black, line width=0.25mm,-latex] (3) to (4); -->
-<!-- \draw[->,black, line width=0.25mm,-latex] (4) to (5); -->
-<!-- \draw[->,black, line width=0.25mm,-latex] (5) to (6); -->
-<!-- \draw[->,black, line width=0.25mm,-latex] (6) to (7); -->
-<!-- \draw[->,black, line width=0.25mm,-latex] (7) to (8); -->
-<!-- \draw[->,black, line width=0.25mm,-latex] (8) to (9); -->
-<!-- \end{tikzpicture} -->
-<!-- ``` -->
-<!-- + States $z$ are in gray. -->
-<!-- + Remember the graphical repres of a Markov model. -->
-<!-- ## Hidden Markov model -->
-<!-- ```{r, engine = 'tikz', echo = FALSE} -->
-<!-- \usetikzlibrary{arrows, fit, positioning, automata} -->
-<!-- \begin{tikzpicture}[node distance = 2cm] -->
-<!-- \tikzset{state/.style = {circle, draw, minimum size = 30pt, scale = 3, line width=1pt}} -->
-<!-- \node [state,fill=lightgray!75] (6) [] {$z_{t}$}; -->
-<!-- \node [state,fill=lightgray!75] (5) [left = 20mm of 6] {$z_{t-1}$}; -->
-<!-- \node [state,fill=lightgray!75] (4) [left = 20mm of 5] {$z_{t-2}$}; -->
-<!-- \node [state,fill=lightgray!75] (3) [left = 20mm of 4] {$\cdots$}; -->
-<!-- \node [state,fill=lightgray!75] (7) [right = 20mm of 6] {$z_{t+1}$}; -->
-<!-- \node [state,fill=lightgray!75] (8) [right = 20mm of 7] {$z_{t+2}$}; -->
-<!-- \node [state,fill=lightgray!75] (9) [right = 20mm of 8] {$\cdots$}; -->
-<!-- \node [state,fill=white] (16) [above = 20mm of 6] {$y_{t}$}; -->
-<!-- \node [state,fill=white] (15) [above = 20mm of 5] {$y_{t-1}$}; -->
-<!-- \node [state,fill=white] (14) [above = 20mm of 4] {$y_{t-2}$}; -->
-<!-- \node [state,fill=white] (17) [above = 20mm of 7] {$y_{t+1}$}; -->
-<!-- \node [state,fill=white] (18) [above = 20mm of 8] {$y_{t+2}$}; -->
-<!-- \draw[->,black, line width=0.25mm,-latex] (3) to (4); -->
-<!-- \draw[->,black, line width=0.25mm,-latex] (4) to (5); -->
-<!-- \draw[->,black, line width=0.25mm,-latex] (5) to (6); -->
-<!-- \draw[->,black, line width=0.25mm,-latex] (6) to (7); -->
-<!-- \draw[->,black, line width=0.25mm,-latex] (7) to (8); -->
-<!-- \draw[->,black, line width=0.25mm,-latex] (8) to (9); -->
-<!-- \draw[->,black, line width=0.25mm,-latex] (4) to (14); -->
-<!-- \draw[->,black, line width=0.25mm,-latex] (5) to (15); -->
-<!-- \draw[->,black, line width=0.25mm,-latex] (6) to (16); -->
-<!-- \draw[->,black, line width=0.25mm,-latex] (7) to (17); -->
-<!-- \draw[->,black, line width=0.25mm,-latex] (8) to (18); -->
-<!-- \end{tikzpicture} -->
-<!-- ``` -->
-<!-- + States $z$ are in gray. -->
-<!-- + Observations $y$ are in white. -->
-<!-- + A hidden Markov model is just two time series. -->
-<!-- + One for the states with a Markovian property. -->
-<!-- + The other of observations generated from the states. -->
-<!-- + Run in parallel. -->
-<!-- ## Hidden Markov model for survival -->
-<!-- ```{r, engine = 'tikz', echo = FALSE} -->
-<!-- \usetikzlibrary{arrows, fit, positioning, automata} -->
-<!-- \begin{tikzpicture}[node distance = 2cm] -->
-<!-- \tikzset{state/.style = {circle, draw, minimum size = 30pt, scale = 3, line width=1pt}} -->
-<!-- \node [state,fill=lightgray!75] (6) [] {$1$}; -->
-<!-- \node [state,fill=lightgray!75] (5) [left = 20mm of 6] {$1$}; -->
-<!-- \node [state,fill=lightgray!75] (4) [left = 20mm of 5] {$1$}; -->
-<!-- \node [state,fill=lightgray!75] (3) [left = 20mm of 4] {$1$}; -->
-<!-- \node [state,fill=lightgray!75] (7) [right = 20mm of 6] {$2$}; -->
-<!-- \node [state,fill=lightgray!75] (8) [right = 20mm of 7] {$2$}; -->
-<!-- \node [state,fill=lightgray!75] (9) [right = 20mm of 8] {$\cdots$}; -->
-<!-- \node [state,fill=white] (16) [above = 20mm of 6] {$1$}; -->
-<!-- \node [state,fill=white] (15) [above = 20mm of 5] {$2$}; -->
-<!-- \node [state,fill=white] (14) [above = 20mm of 4] {$1$}; -->
-<!-- \node [state,fill=white] (17) [above = 20mm of 7] {$1$}; -->
-<!-- \node [state,fill=white] (18) [above = 20mm of 8] {$1$}; -->
-<!-- \draw[->,black, line width=0.25mm,-latex] (3) -- node[above=3mm, align=center] {\huge $\varphi$} (4); -->
-<!-- \draw[->,black, line width=0.25mm,-latex] (4) -- node[above=3mm, align=center] {\huge $\varphi$} (5); -->
-<!-- \draw[->,black, line width=0.25mm,-latex] (5) -- node[above=3mm, align=center] {\huge $\varphi$} (6); -->
-<!-- \draw[->,black, line width=0.25mm,-latex] (6) -- node[above=3mm, align=center] {\huge $1 - \varphi$} (7); -->
-<!-- \draw[->,black, line width=0.25mm,-latex] (7) -- node[above=3mm, align=center] {\huge $1$} (8); -->
-<!-- \draw[->,black, line width=0.25mm,-latex] (8) -- node[above=3mm, align=center] {\huge $1$} (9); -->
-<!-- \draw[->,black, line width=0.25mm,-latex] (4) -- node[left=3mm, align=center] {\huge $1 - p$} (14); -->
-<!-- \draw[->,black, line width=0.25mm,-latex] (5) -- node[left=3mm, align=center] {\huge $p$} (15); -->
-<!-- \draw[->,black, line width=0.25mm,-latex] (6) -- node[left=3mm, align=center] {\huge $1 - p$} (16); -->
-<!-- \draw[->,black, line width=0.25mm,-latex] (7) -- node[left=3mm, align=center] {\huge $1$} (17); -->
-<!-- \draw[->,black, line width=0.25mm,-latex] (8) -- node[left=3mm, align=center] {\huge $1$} (18); -->
-<!-- \end{tikzpicture} -->
-<!-- ``` -->
-<!-- + For states (in gray), $z = 1$ is alive, $z = 2$ is dead. -->
-<!-- + For observations (in white), $y = 1$ is non-detected, $y = 2$ is detected -->
-<!-- + Now add the states alive and dead, 1 and 2s. -->
-<!-- + The observations, non-detected and detected, 1 and 2s. -->
-<!-- + And the parameters, phi for transition from 1 to 1. -->
-<!-- + And p for prob of y being 2 detected given z is 1 alive. -->
-<!-- ## HMM likelihood -->
-<!-- + Using the formula of total probability, then the likelihood of a Markov chain: -->
-<!-- \begin{align*} -->
-<!-- \Pr(\mathbf{y}) &= \Pr(y_1, y_{2}, \ldots, y_T)\\ -->
-<!--                 &= \sum_{z_1} \cdots \sum_{z_T} \Pr(y_1, y_{2}, \ldots, y_T | z_1, z_{2}, \ldots, z_T) \Pr(z_1, z_{2}, \ldots, z_T)\\ -->
-<!--                 &= \sum_{z_1} \cdots \sum_{z_T} \left(\prod_{t=1}^T{\omega_{z_{t}, y_t}}\right) \left(\Pr(z_{1}) \prod_{t=2}^T{\gamma_{z_{t-1},z_{t}}}\right)\\ -->
-<!-- \end{align*} -->
-<!-- + What is the likelihood of a HMM. -->
-<!-- + The thing here is that we don't know the states. -->
-<!-- + So we have to go through all possibilities, and sum over the possible states. -->
-<!-- + Hence these sums here. -->
-<!-- + Then this term is the likelihood of a Markov chain, we saw that before. -->
-<!-- + And this component are the elements of the observation matrix. -->
-<!-- + The likelihood has a matrix formulation that can be useful. -->
-<!-- + It is delta, initial states, then observation, then transitions, and so on. There is a vector of ones at the end to get the sum all the terms. -->
-<!-- + It has a matrix formulation: -->
+<p><strong>Note also that dcat everywhere could be replaced by dbern. Different sampler? Dcat cool because allows more than two outcomes, forward reference to next chapters.</strong></p>
+</div>
+<div id="hidden-markov-models" class="section level2" number="3.6">
+<h2>
+<span class="header-section-number">3.6</span> Hidden Markov models<a class="anchor" aria-label="anchor" href="#hidden-markov-models"><i class="fas fa-link"></i></a>
+</h2>
+<div id="capture-recapture-data" class="section level3" number="3.6.1">
+<h3>
+<span class="header-section-number">3.6.1</span> Capture-recapture data<a class="anchor" aria-label="anchor" href="#capture-recapture-data"><i class="fas fa-link"></i></a>
+</h3>
+<p>Unfortunately, this is the data we wish we had. In real life, animals cannot be monitored exhaustively, like humans in a medical trial. Animals are captured, marked or identified then released alive. Then, these animals may be detected again, or go undetected <span>—</span> <strong>capture-recapture</strong>. Whenever animals go undetected, it might be that they were alive but missed, or because they were dead and therefore could not be detected <span>—</span> <strong>imperfect detection</strong><a class="footnote-ref" tabindex="0" data-toggle="popover" data-content='&lt;p&gt;Nice video here on the basics principles of capture-recapture experiments &lt;a href="https://www.youtube.com/embed/tyX79mPm2xY" class="uri"&gt;https://www.youtube.com/embed/tyX79mPm2xY&lt;/a&gt;&lt;/p&gt;'><sup>23</sup></a>. Whenever animals go undetected, it might be that they were alive but missed, or because they were dead and therefore could not be detected <span>—</span> <strong>imperfect detection</strong>. The Markov process for survival is only partially observed <span>—</span> <strong>hidden Markov models</strong>.</p>
+<p>The truth is in <span class="math inline">\(z\)</span>:</p>
+<div style="border: 1px solid #ddd; padding: 0px; overflow-y: scroll; height:300px; overflow-x: scroll; width:100%; ">
+<div class="inline-table"><table class="table table-sm">
+<thead><tr>
+<th style="text-align:right;position: sticky; top:0; background-color: #FFFFFF;">
+id
+</th>
+<th style="text-align:right;position: sticky; top:0; background-color: #FFFFFF;">
+winter 1
+</th>
+<th style="text-align:right;position: sticky; top:0; background-color: #FFFFFF;">
+winter 2
+</th>
+<th style="text-align:right;position: sticky; top:0; background-color: #FFFFFF;">
+winter 3
+</th>
+<th style="text-align:right;position: sticky; top:0; background-color: #FFFFFF;">
+winter 4
+</th>
+<th style="text-align:right;position: sticky; top:0; background-color: #FFFFFF;">
+winter 5
+</th>
+</tr></thead>
+<tbody>
+<tr>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+2
+</td>
+<td style="text-align:right;">
+2
+</td>
+<td style="text-align:right;">
+2
+</td>
+<td style="text-align:right;">
+2
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+3
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+4
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+5
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+6
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+2
+</td>
+<td style="text-align:right;">
+2
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+7
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+2
+</td>
+<td style="text-align:right;">
+2
+</td>
+<td style="text-align:right;">
+2
+</td>
+<td style="text-align:right;">
+2
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+8
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+9
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+2
+</td>
+<td style="text-align:right;">
+2
+</td>
+<td style="text-align:right;">
+2
+</td>
+<td style="text-align:right;">
+2
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+10
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+2
+</td>
+<td style="text-align:right;">
+2
+</td>
+<td style="text-align:right;">
+2
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+11
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+12
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+13
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+2
+</td>
+<td style="text-align:right;">
+2
+</td>
+<td style="text-align:right;">
+2
+</td>
+<td style="text-align:right;">
+2
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+14
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+2
+</td>
+<td style="text-align:right;">
+2
+</td>
+<td style="text-align:right;">
+2
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+15
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+16
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+2
+</td>
+<td style="text-align:right;">
+2
+</td>
+<td style="text-align:right;">
+2
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+17
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+2
+</td>
+<td style="text-align:right;">
+2
+</td>
+<td style="text-align:right;">
+2
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+18
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+2
+</td>
+<td style="text-align:right;">
+2
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+19
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+20
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+21
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+22
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+2
+</td>
+<td style="text-align:right;">
+2
+</td>
+<td style="text-align:right;">
+2
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+23
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+2
+</td>
+<td style="text-align:right;">
+2
+</td>
+<td style="text-align:right;">
+2
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+24
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+25
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+2
+</td>
+<td style="text-align:right;">
+2
+</td>
+<td style="text-align:right;">
+2
+</td>
+<td style="text-align:right;">
+2
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+26
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+2
+</td>
+<td style="text-align:right;">
+2
+</td>
+<td style="text-align:right;">
+2
+</td>
+<td style="text-align:right;">
+2
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+27
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+2
+</td>
+<td style="text-align:right;">
+2
+</td>
+<td style="text-align:right;">
+2
+</td>
+<td style="text-align:right;">
+2
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+28
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+29
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+30
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+31
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+32
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+2
+</td>
+<td style="text-align:right;">
+2
+</td>
+<td style="text-align:right;">
+2
+</td>
+<td style="text-align:right;">
+2
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+33
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+34
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+2
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+35
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+2
+</td>
+<td style="text-align:right;">
+2
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+36
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+2
+</td>
+<td style="text-align:right;">
+2
+</td>
+<td style="text-align:right;">
+2
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+37
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+2
+</td>
+<td style="text-align:right;">
+2
+</td>
+<td style="text-align:right;">
+2
+</td>
+<td style="text-align:right;">
+2
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+38
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+2
+</td>
+<td style="text-align:right;">
+2
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+39
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+2
+</td>
+<td style="text-align:right;">
+2
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+40
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+41
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+2
+</td>
+<td style="text-align:right;">
+2
+</td>
+<td style="text-align:right;">
+2
+</td>
+<td style="text-align:right;">
+2
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+42
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+43
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+2
+</td>
+<td style="text-align:right;">
+2
+</td>
+<td style="text-align:right;">
+2
+</td>
+<td style="text-align:right;">
+2
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+44
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+45
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+2
+</td>
+<td style="text-align:right;">
+2
+</td>
+<td style="text-align:right;">
+2
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+46
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+2
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+47
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+48
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+2
+</td>
+<td style="text-align:right;">
+2
+</td>
+<td style="text-align:right;">
+2
+</td>
+<td style="text-align:right;">
+2
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+49
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+2
+</td>
+<td style="text-align:right;">
+2
+</td>
+<td style="text-align:right;">
+2
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+50
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+2
+</td>
+<td style="text-align:right;">
+2
+</td>
+<td style="text-align:right;">
+2
+</td>
+<td style="text-align:right;">
+2
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+51
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+2
+</td>
+<td style="text-align:right;">
+2
+</td>
+<td style="text-align:right;">
+2
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+52
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+2
+</td>
+<td style="text-align:right;">
+2
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+53
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+54
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+2
+</td>
+<td style="text-align:right;">
+2
+</td>
+<td style="text-align:right;">
+2
+</td>
+<td style="text-align:right;">
+2
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+55
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+2
+</td>
+<td style="text-align:right;">
+2
+</td>
+<td style="text-align:right;">
+2
+</td>
+<td style="text-align:right;">
+2
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+56
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+2
+</td>
+<td style="text-align:right;">
+2
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+57
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+2
+</td>
+<td style="text-align:right;">
+2
+</td>
+<td style="text-align:right;">
+2
+</td>
+<td style="text-align:right;">
+2
+</td>
+</tr>
+</tbody>
+</table></div>
+</div>
+<p>Unfortunately, we have only partial access to <span class="math inline">\(z\)</span>. We do observe <span class="math inline">\(y\)</span> the detections and non-detections. How are <span class="math inline">\(z\)</span> and <span class="math inline">\(y\)</span> connected?</p>
+<p>Dead animals go undetected. When an animal is dead i.e. <span class="math inline">\(z = 2\)</span>, it cannot be detected, therefore <span class="math inline">\(y = 0\)</span>.</p>
+<div style="border: 1px solid #ddd; padding: 0px; overflow-y: scroll; height:300px; overflow-x: scroll; width:100%; ">
+<div class="inline-table"><table class="table table-sm">
+<thead><tr>
+<th style="text-align:right;position: sticky; top:0; background-color: #FFFFFF;">
+id
+</th>
+<th style="text-align:right;position: sticky; top:0; background-color: #FFFFFF;">
+winter 1
+</th>
+<th style="text-align:right;position: sticky; top:0; background-color: #FFFFFF;">
+winter 2
+</th>
+<th style="text-align:right;position: sticky; top:0; background-color: #FFFFFF;">
+winter 3
+</th>
+<th style="text-align:right;position: sticky; top:0; background-color: #FFFFFF;">
+winter 4
+</th>
+<th style="text-align:right;position: sticky; top:0; background-color: #FFFFFF;">
+winter 5
+</th>
+</tr></thead>
+<tbody>
+<tr>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+3
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+4
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+5
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+6
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+7
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+8
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+9
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+10
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+11
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+12
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+13
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+14
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+15
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+16
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+17
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+18
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+19
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+20
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+21
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+22
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+23
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+24
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+25
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+26
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+27
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+28
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+29
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+30
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+31
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+32
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+33
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+34
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+0
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+35
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+36
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+37
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+38
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+39
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+40
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+41
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+42
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+43
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+44
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+45
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+46
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+0
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+47
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+48
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+49
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+50
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+51
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+52
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+53
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+54
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+55
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+56
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+57
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0
+</td>
+</tr>
+</tbody>
+</table></div>
+</div>
+<p>Alive animals may be detected or not. If animal is alive <span class="math inline">\(z = 1\)</span>, it is detected <span class="math inline">\(y = 1\)</span> w/ prob <span class="math inline">\(p\)</span> or not <span class="math inline">\(y = 0\)</span> w/ prob <span class="math inline">\(1-p\)</span>. Before <strong>first</strong> detection, we know nothing, and we proceed conditional on it.</p>
+<div style="border: 1px solid #ddd; padding: 0px; overflow-y: scroll; height:300px; overflow-x: scroll; width:100%; ">
+<div class="inline-table"><table class="table table-sm">
+<thead><tr>
+<th style="text-align:right;position: sticky; top:0; background-color: #FFFFFF;">
+id
+</th>
+<th style="text-align:right;position: sticky; top:0; background-color: #FFFFFF;">
+winter 1
+</th>
+<th style="text-align:right;position: sticky; top:0; background-color: #FFFFFF;">
+winter 2
+</th>
+<th style="text-align:right;position: sticky; top:0; background-color: #FFFFFF;">
+winter 3
+</th>
+<th style="text-align:right;position: sticky; top:0; background-color: #FFFFFF;">
+winter 4
+</th>
+<th style="text-align:right;position: sticky; top:0; background-color: #FFFFFF;">
+winter 5
+</th>
+</tr></thead>
+<tbody>
+<tr>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+NA
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+2
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+0
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+3
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+0
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+4
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+0
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+5
+</td>
+<td style="text-align:right;">
+NA
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+6
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+7
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+8
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+9
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+10
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+0
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+11
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+12
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+13
+</td>
+<td style="text-align:right;">
+NA
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+1
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+14
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+15
+</td>
+<td style="text-align:right;">
+NA
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+16
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+17
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+18
+</td>
+<td style="text-align:right;">
+NA
+</td>
+<td style="text-align:right;">
+NA
+</td>
+<td style="text-align:right;">
+NA
+</td>
+<td style="text-align:right;">
+NA
+</td>
+<td style="text-align:right;">
+1
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+19
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+20
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+21
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+0
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+22
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+23
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+24
+</td>
+<td style="text-align:right;">
+NA
+</td>
+<td style="text-align:right;">
+NA
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+25
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+1
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+26
+</td>
+<td style="text-align:right;">
+NA
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+0
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+27
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+1
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+28
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+1
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+29
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+0
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+30
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+31
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+32
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+33
+</td>
+<td style="text-align:right;">
+NA
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+34
+</td>
+<td style="text-align:right;">
+NA
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+35
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+1
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+36
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+0
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+37
+</td>
+<td style="text-align:right;">
+NA
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+38
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+0
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+39
+</td>
+<td style="text-align:right;">
+NA
+</td>
+<td style="text-align:right;">
+NA
+</td>
+<td style="text-align:right;">
+NA
+</td>
+<td style="text-align:right;">
+NA
+</td>
+<td style="text-align:right;">
+1
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+40
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+41
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+42
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+43
+</td>
+<td style="text-align:right;">
+NA
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+44
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+45
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+46
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0
+</td>
+</tr>
+</tbody>
+</table></div>
+</div>
+<p>Compare with previous table. Some 1s have become 0s. This table <span class="math inline">\(y\)</span> is what we observe in real life. To make the connection between the observations, the <span class="math inline">\(y\)</span>, and the true states, the <span class="math inline">\(z\)</span>. We need to describe how observations are made from the states</p>
+</div>
+<div id="observation-matrix" class="section level3" number="3.6.2">
+<h3>
+<span class="header-section-number">3.6.2</span> Observation matrix<a class="anchor" aria-label="anchor" href="#observation-matrix"><i class="fas fa-link"></i></a>
+</h3>
+<p>The observation probabilities can be packed in an observation matrix <span class="math inline">\(\mathbf{\Omega}\)</span>. In rows: the states alive <span class="math inline">\(z = 1\)</span> and dead <span class="math inline">\(z = 2\)</span>. In columns: the observations non-detected <span class="math inline">\(y = 1\)</span> and detected <span class="math inline">\(y = 2\)</span> (previously coded 0 and 1 respectively).</p>
+<p><span class="math display">\[\begin{align*}
+\mathbf{\Omega} =
+\left(\begin{array}{cc}
+\omega_{1,1} &amp; \omega_{1,2}\\
+\omega_{2,1} &amp; \omega_{2,2}
+\end{array}\right) =
+\left(\begin{array}{cc}
+1 - p &amp; p\\
+1 &amp; 0
+\end{array}\right)
+\end{align*}\]</span></p>
+<p>Observation matrix:</p>
+<p><span class="math display">\[
+\begin{matrix}
+&amp; \\
+\mathbf{\Omega} =
+    \left ( \vphantom{ \begin{matrix} 12 \\ 12 \end{matrix} } \right .
+\end{matrix}
+\hspace{-1.2em}
+\begin{matrix}
+    y_t=1 &amp; y_t=2 \\ \hdashline
+1 - p &amp; p\\
+1 &amp; 0\\
+\end{matrix}
+\hspace{-0.2em}
+\begin{matrix}
+&amp; \\
+\left . \vphantom{ \begin{matrix} 12 \\ 12 \end{matrix} } \right )
+    \begin{matrix}
+    z_{t}=A \\ z_{t}=D
+    \end{matrix}
+\end{matrix}
+\]</span></p>
+</div>
+<div id="hidden-markov-model" class="section level3" number="3.6.3">
+<h3>
+<span class="header-section-number">3.6.3</span> Hidden Markov model<a class="anchor" aria-label="anchor" href="#hidden-markov-model"><i class="fas fa-link"></i></a>
+</h3>
+<p>Markov model:</p>
+<div class="inline-figure"><img src="banana-book_files/figure-html/unnamed-chunk-123-1.png" width="672"></div>
+<p>States <span class="math inline">\(z\)</span> are in gray. Remember the graphical representation of a Markov model. Hidden Markov model:</p>
+<div class="inline-figure"><img src="banana-book_files/figure-html/unnamed-chunk-124-1.png" width="672"></div>
+<p>States <span class="math inline">\(z\)</span> are in gray. Observations <span class="math inline">\(y\)</span> are in white. A hidden Markov model is just two time series. One for the states with a Markovian property. The other of observations generated from the states. Run in parallel.</p>
+<div class="inline-figure"><img src="banana-book_files/figure-html/unnamed-chunk-125-1.png" width="672"></div>
+<p>For states (in gray), <span class="math inline">\(z = 1\)</span> is alive, <span class="math inline">\(z = 2\)</span> is dead. For observations (in white), <span class="math inline">\(y = 1\)</span> is non-detected, <span class="math inline">\(y = 2\)</span> is detected. Now add the states alive and dead, 1 and 2s. The observations, non-detected and detected, 1 and 2s. And the parameters, <span class="math inline">\(\phi\)</span> for transition from 1 to 1. And <span class="math inline">\(p\)</span> for probability of <span class="math inline">\(y\)</span> being 2 detected given <span class="math inline">\(z\)</span> is 1 alive.</p>
+</div>
+<div id="likelihood-1" class="section level3" number="3.6.4">
+<h3>
+<span class="header-section-number">3.6.4</span> Likelihood<a class="anchor" aria-label="anchor" href="#likelihood-1"><i class="fas fa-link"></i></a>
+</h3>
+<p>In the likelihood, we have observed <span class="math inline">\(y\)</span>. Parameters are <span class="math inline">\(\phi\)</span>, <span class="math inline">\(p\)</span> and unobserved or partially observed <span class="math inline">\(z\)</span>. Shall we estimate the latent states <span class="math inline">\(z\)</span> or not? Treat them as parameters?</p>
+<p>We can get rid of the states, so that likelihood is a function of <span class="math inline">\(\phi\)</span> and <span class="math inline">\(p\)</span> only. This is the function we would maximize in a Frequentist approach. Reference forward to section below (forward algorithm).</p>
+<p>The Bayesian approach with MCMC methods allows treating the latent states as if they were parameters, and to be estimated as such.</p>
+<p>Infering the latent states <span class="math inline">\(z\)</span> can be useful to estimate prevalence, e.g. in animal epidemiology with <a href="https://veterinaryresearch.biomedcentral.com/articles/10.1186/1297-9716-45-39">prevalence of a disease</a>, in evolutionary ecology with <a href="https://onlinelibrary.wiley.com/doi/abs/10.1002/cjs.5550360105">sex ratio</a> or in conservation biology with <a href="https://onlinelibrary.wiley.com/doi/full/10.1002/ece3.4819?af=R">prevalence of hybrids</a>.</p>
+<p>Estimating the latent states is costly though, and if not required, marginalisation may speed up computations. Actually, you can estimate the states afterwards (Viterbi).</p>
+<p>More about so-called marginalisation in <a href="https://esajournals.onlinelibrary.wiley.com/doi/abs/10.1002/eap.2112">Yackulic et al. (2020)</a>. And reference forward to section below.</p>
+<p>The neat thing with Nimble is that it provides marginalised models through nimbleEcology, we’ll get back to it in section blabla.</p>
+</div>
+</div>
+<div id="fitting-hmm-with-nimble" class="section level2" number="3.7">
+<h2>
+<span class="header-section-number">3.7</span> Fitting HMM with NIMBLE<a class="anchor" aria-label="anchor" href="#fitting-hmm-with-nimble"><i class="fas fa-link"></i></a>
+</h2>
+<p>Our model so far:</p>
+<p><span class="math display">\[\begin{align*}
+   z_{\text{first}} &amp;\sim \text{Categorical}(1, \delta) &amp;\text{[likelihood]}\\
+   z_t | z_{t-1} &amp;\sim \text{Categorical}(1, \gamma_{z_{t-1},z_{t}}) &amp;\text{[likelihood]}\\
+   y_t | z_{t} &amp;\sim \text{Categorical}(1, \omega_{z_{t}}) &amp;\text{[likelihood]}\\
+  \phi &amp;\sim \text{Beta}(1, 1) &amp;\text{[prior for }\phi \text{]} \\
+  p &amp;\sim \text{Beta}(1, 1) &amp;\text{[prior for }p \text{]} \\
+\end{align*}\]</span></p>
+<p>Now our model has an observation layer for the <span class="math inline">\(y\)</span>’s, conditional on the <span class="math inline">\(z\)</span>. And we need a prior for the detection probability.</p>
+<p>How to implement this model in Nimble?</p>
+<p>Start with the priors:</p>
+<div class="sourceCode" id="cb101"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb101-1"><a href="hmmcapturerecapture.html#cb101-1" aria-hidden="true" tabindex="-1"></a>hmm.survival <span class="ot">&lt;-</span> <span class="fu">nimbleCode</span>({</span>
+<span id="cb101-2"><a href="hmmcapturerecapture.html#cb101-2" aria-hidden="true" tabindex="-1"></a>  phi <span class="sc">~</span> <span class="fu">dunif</span>(<span class="dv">0</span>, <span class="dv">1</span>) <span class="co"># prior survival</span></span>
+<span id="cb101-3"><a href="hmmcapturerecapture.html#cb101-3" aria-hidden="true" tabindex="-1"></a>  p <span class="sc">~</span> <span class="fu">dunif</span>(<span class="dv">0</span>, <span class="dv">1</span>) <span class="co"># prior detection</span></span>
+<span id="cb101-4"><a href="hmmcapturerecapture.html#cb101-4" aria-hidden="true" tabindex="-1"></a>...</span></code></pre></div>
+<p>Then define initial states, transition and observation matrices:</p>
+<div class="sourceCode" id="cb102"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="va">...</span>
+  <span class="co"># parameters</span>
+  <span class="va">gamma</span><span class="op">[</span><span class="fl">1</span>,<span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="va">phi</span>      <span class="co"># Pr(alive t -&gt; alive t+1)</span>
+  <span class="va">gamma</span><span class="op">[</span><span class="fl">1</span>,<span class="fl">2</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span> <span class="op">-</span> <span class="va">phi</span>  <span class="co"># Pr(alive t -&gt; dead t+1)</span>
+  <span class="va">gamma</span><span class="op">[</span><span class="fl">2</span>,<span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0</span>        <span class="co"># Pr(dead t -&gt; alive t+1)</span>
+  <span class="va">gamma</span><span class="op">[</span><span class="fl">2</span>,<span class="fl">2</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span>        <span class="co"># Pr(dead t -&gt; dead t+1)</span>
+  <span class="va">delta</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span>          <span class="co"># Pr(alive t = 1) = 1</span>
+  <span class="va">delta</span><span class="op">[</span><span class="fl">2</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0</span>          <span class="co"># Pr(dead t = 1) = 0</span>
+  <span class="va">omega</span><span class="op">[</span><span class="fl">1</span>,<span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span> <span class="op">-</span> <span class="va">p</span>    <span class="co"># Pr(alive t -&gt; non-detected t)</span>
+  <span class="va">omega</span><span class="op">[</span><span class="fl">1</span>,<span class="fl">2</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="va">p</span>        <span class="co"># Pr(alive t -&gt; detected t)</span>
+  <span class="va">omega</span><span class="op">[</span><span class="fl">2</span>,<span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span>        <span class="co"># Pr(dead t -&gt; non-detected t)</span>
+  <span class="va">omega</span><span class="op">[</span><span class="fl">2</span>,<span class="fl">2</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0</span>        <span class="co"># Pr(dead t -&gt; detected t)</span>
+<span class="va">...</span></code></pre></div>
+<p>Then the likelihood:</p>
+<div class="sourceCode" id="cb103"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb103-1"><a href="hmmcapturerecapture.html#cb103-1" aria-hidden="true" tabindex="-1"></a>...</span>
+<span id="cb103-2"><a href="hmmcapturerecapture.html#cb103-2" aria-hidden="true" tabindex="-1"></a>    <span class="co"># likelihood</span></span>
+<span id="cb103-3"><a href="hmmcapturerecapture.html#cb103-3" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> (i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>N){</span>
+<span id="cb103-4"><a href="hmmcapturerecapture.html#cb103-4" aria-hidden="true" tabindex="-1"></a>    z[i,first[i]] <span class="sc">~</span> <span class="fu">dcat</span>(delta[<span class="dv">1</span><span class="sc">:</span><span class="dv">2</span>])</span>
+<span id="cb103-5"><a href="hmmcapturerecapture.html#cb103-5" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> (j <span class="cf">in</span> (first[i]<span class="sc">+</span><span class="dv">1</span>)<span class="sc">:</span>T){</span>
+<span id="cb103-6"><a href="hmmcapturerecapture.html#cb103-6" aria-hidden="true" tabindex="-1"></a>      z[i,j] <span class="sc">~</span> <span class="fu">dcat</span>(gamma[z[i,j<span class="dv">-1</span>], <span class="dv">1</span><span class="sc">:</span><span class="dv">2</span>])</span>
+<span id="cb103-7"><a href="hmmcapturerecapture.html#cb103-7" aria-hidden="true" tabindex="-1"></a>      y[i,j] <span class="sc">~</span> <span class="fu">dcat</span>(omega[z[i,j], <span class="dv">1</span><span class="sc">:</span><span class="dv">2</span>])</span>
+<span id="cb103-8"><a href="hmmcapturerecapture.html#cb103-8" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb103-9"><a href="hmmcapturerecapture.html#cb103-9" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb103-10"><a href="hmmcapturerecapture.html#cb103-10" aria-hidden="true" tabindex="-1"></a><span class="er">})</span></span></code></pre></div>
+<p>Overall, the code looks like:</p>
+<div class="sourceCode" id="cb104"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="va">hmm.survival</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimbleCode.html">nimbleCode</a></span><span class="op">(</span><span class="op">{</span>
+  <span class="va">phi</span> <span class="op">~</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html">dunif</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1</span><span class="op">)</span> <span class="co"># prior survival</span>
+  <span class="va">p</span> <span class="op">~</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html">dunif</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1</span><span class="op">)</span> <span class="co"># prior detection</span>
+  <span class="co"># likelihood</span>
+  <span class="va">gamma</span><span class="op">[</span><span class="fl">1</span>,<span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="va">phi</span>      <span class="co"># Pr(alive t -&gt; alive t+1)</span>
+  <span class="va">gamma</span><span class="op">[</span><span class="fl">1</span>,<span class="fl">2</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span> <span class="op">-</span> <span class="va">phi</span>  <span class="co"># Pr(alive t -&gt; dead t+1)</span>
+  <span class="va">gamma</span><span class="op">[</span><span class="fl">2</span>,<span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0</span>        <span class="co"># Pr(dead t -&gt; alive t+1)</span>
+  <span class="va">gamma</span><span class="op">[</span><span class="fl">2</span>,<span class="fl">2</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span>        <span class="co"># Pr(dead t -&gt; dead t+1)</span>
+  <span class="va">delta</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span>          <span class="co"># Pr(alive t = 1) = 1</span>
+  <span class="va">delta</span><span class="op">[</span><span class="fl">2</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0</span>          <span class="co"># Pr(dead t = 1) = 0</span>
+  <span class="va">omega</span><span class="op">[</span><span class="fl">1</span>,<span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span> <span class="op">-</span> <span class="va">p</span>    <span class="co"># Pr(alive t -&gt; non-detected t)</span>
+  <span class="va">omega</span><span class="op">[</span><span class="fl">1</span>,<span class="fl">2</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="va">p</span>        <span class="co"># Pr(alive t -&gt; detected t)</span>
+  <span class="va">omega</span><span class="op">[</span><span class="fl">2</span>,<span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span>        <span class="co"># Pr(dead t -&gt; non-detected t)</span>
+  <span class="va">omega</span><span class="op">[</span><span class="fl">2</span>,<span class="fl">2</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0</span>        <span class="co"># Pr(dead t -&gt; detected t)</span>
+  <span class="kw">for</span> <span class="op">(</span><span class="va">i</span> <span class="kw">in</span> <span class="fl">1</span><span class="op">:</span><span class="va">N</span><span class="op">)</span><span class="op">{</span>
+    <span class="va">z</span><span class="op">[</span><span class="va">i</span>,<span class="va">first</span><span class="op">[</span><span class="va">i</span><span class="op">]</span><span class="op">]</span> <span class="op">~</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/Categorical.html">dcat</a></span><span class="op">(</span><span class="va">delta</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">2</span><span class="op">]</span><span class="op">)</span>
+    <span class="kw">for</span> <span class="op">(</span><span class="va">j</span> <span class="kw">in</span> <span class="op">(</span><span class="va">first</span><span class="op">[</span><span class="va">i</span><span class="op">]</span><span class="op">+</span><span class="fl">1</span><span class="op">)</span><span class="op">:</span><span class="cn">T</span><span class="op">)</span><span class="op">{</span>
+      <span class="va">z</span><span class="op">[</span><span class="va">i</span>,<span class="va">j</span><span class="op">]</span> <span class="op">~</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/Categorical.html">dcat</a></span><span class="op">(</span><span class="va">gamma</span><span class="op">[</span><span class="va">z</span><span class="op">[</span><span class="va">i</span>,<span class="va">j</span><span class="op">-</span><span class="fl">1</span><span class="op">]</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">2</span><span class="op">]</span><span class="op">)</span>
+      <span class="va">y</span><span class="op">[</span><span class="va">i</span>,<span class="va">j</span><span class="op">]</span> <span class="op">~</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/Categorical.html">dcat</a></span><span class="op">(</span><span class="va">omega</span><span class="op">[</span><span class="va">z</span><span class="op">[</span><span class="va">i</span>,<span class="va">j</span><span class="op">]</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">2</span><span class="op">]</span><span class="op">)</span>
+    <span class="op">}</span>
+  <span class="op">}</span>
+<span class="op">}</span><span class="op">)</span></code></pre></div>
+<p>Now constants:</p>
+<div class="sourceCode" id="cb105"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="va">first</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/apply.html">apply</a></span><span class="op">(</span><span class="va">y</span>, <span class="fl">1</span>, <span class="kw">function</span><span class="op">(</span><span class="va">x</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/Extremes.html">min</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimble-R-functions.html">which</a></span><span class="op">(</span><span class="va">x</span> <span class="op">!=</span><span class="fl">0</span><span class="op">)</span><span class="op">)</span><span class="op">)</span>
+<span class="va">my.constants</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>N <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html">nrow</a></span><span class="op">(</span><span class="va">y</span><span class="op">)</span>, T <span class="op">=</span> <span class="fl">5</span>, first <span class="op">=</span> <span class="va">first</span><span class="op">)</span>
+<span class="va">my.constants</span>
+<span class="co">## $N</span>
+<span class="co">## [1] 46</span>
+<span class="co">## </span>
+<span class="co">## $T</span>
+<span class="co">## [1] 5</span>
+<span class="co">## </span>
+<span class="co">## $first</span>
+<span class="co">##  [1] 2 1 1 1 2 1 1 1 1 1 1 1 2 1 2 1 1 5 1 1 1 1 1 3 1 2 1 1</span>
+<span class="co">## [29] 1 1 1 1 2 2 1 1 2 1 5 1 1 1 2 1 1 1</span></code></pre></div>
+<p>The data are made of 0s for non-detections and 1s for detections. To use the categorical distribution, we need to code 1, 2, etc. Value 0 is not accepted. Add 1 to get the correct format <span class="math inline">\(y=1\)</span> for non-detection and <span class="math inline">\(y = 2\)</span> for detection:</p>
+<div class="sourceCode" id="cb106"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="va">my.data</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>y <span class="op">=</span> <span class="va">y</span> <span class="op">+</span> <span class="fl">1</span><span class="op">)</span></code></pre></div>
+<p>Initial values:</p>
+<div class="sourceCode" id="cb107"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="va">zinits</span> <span class="op">&lt;-</span> <span class="va">y</span> <span class="op">+</span> <span class="fl">1</span> <span class="co"># non-detection -&gt; alive</span>
+<span class="va">zinits</span><span class="op">[</span><span class="va">zinits</span> <span class="op">==</span> <span class="fl">2</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span> <span class="co"># dead -&gt; alive</span>
+<span class="va">initial.values</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>phi <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html">runif</a></span><span class="op">(</span><span class="fl">1</span>,<span class="fl">0</span>,<span class="fl">1</span><span class="op">)</span>,
+                                  p <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html">runif</a></span><span class="op">(</span><span class="fl">1</span>,<span class="fl">0</span>,<span class="fl">1</span><span class="op">)</span>,
+                                  z <span class="op">=</span> <span class="va">zinits</span><span class="op">)</span></code></pre></div>
+<p>Parameters to monitor:</p>
+<div class="sourceCode" id="cb108"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="va">parameters.to.save</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimble-R-functions.html">c</a></span><span class="op">(</span><span class="st">"phi"</span>, <span class="st">"p"</span><span class="op">)</span>
+<span class="va">parameters.to.save</span>
+<span class="co">## [1] "phi" "p"</span></code></pre></div>
+<p>MCMC details:</p>
+<div class="sourceCode" id="cb109"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="va">n.iter</span> <span class="op">&lt;-</span> <span class="fl">5000</span>
+<span class="va">n.burnin</span> <span class="op">&lt;-</span> <span class="fl">1000</span>
+<span class="va">n.chains</span> <span class="op">&lt;-</span> <span class="fl">2</span></code></pre></div>
+<p>Run Nimble:</p>
+<div class="sourceCode" id="cb110"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="va">mcmc.output</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimbleMCMC.html">nimbleMCMC</a></span><span class="op">(</span>code <span class="op">=</span> <span class="va">hmm.survival</span>,
+                          constants <span class="op">=</span> <span class="va">my.constants</span>,
+                          data <span class="op">=</span> <span class="va">my.data</span>,
+                          inits <span class="op">=</span> <span class="va">initial.values</span>,
+                          monitors <span class="op">=</span> <span class="va">parameters.to.save</span>,
+                          niter <span class="op">=</span> <span class="va">n.iter</span>,
+                          nburnin <span class="op">=</span> <span class="va">n.burnin</span>,
+                          nchains <span class="op">=</span> <span class="va">n.chains</span><span class="op">)</span></code></pre></div>
+<p>Posterior distribution of survival:</p>
+<div class="sourceCode" id="cb111"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/pkg/MCMCvis/man/MCMCsummary.html">MCMCsummary</a></span><span class="op">(</span><span class="va">mcmc.output</span>, round <span class="op">=</span> <span class="fl">2</span><span class="op">)</span>
+<span class="co">##     mean   sd 2.5%  50% 97.5% Rhat n.eff</span>
+<span class="co">## p   0.55 0.07 0.40 0.56  0.69 1.02   369</span>
+<span class="co">## phi 0.76 0.06 0.65 0.76  0.88 1.02   431</span></code></pre></div>
+<p>The data is simulated, with true survival <span class="math inline">\(\phi = 0.8\)</span> and detection <span class="math inline">\(p = 0.6\)</span>.</p>
+<p><strong>Show simulation code. In all simulations, replace dbinom by dcat for coherence.</strong></p>
+</div>
+<div id="marginalization" class="section level2" number="3.8">
+<h2>
+<span class="header-section-number">3.8</span> Marginalization<a class="anchor" aria-label="anchor" href="#marginalization"><i class="fas fa-link"></i></a>
+</h2>
+<p><strong>Faire lien avec forward algorithm. Reprendre dHMM en la simplifiant au max et en faisant le lien avec l’algo. Match notation.</strong></p>
+<div id="theory" class="section level3" number="3.8.1">
+<h3>
+<span class="header-section-number">3.8.1</span> Theory<a class="anchor" aria-label="anchor" href="#theory"><i class="fas fa-link"></i></a>
+</h3>
+<p>Using the formula of total probability, then the likelihood of a Markov chain:</p>
+<p><span class="math display">\[\begin{align*}
+\Pr(\mathbf{y}) &amp;= \Pr(y_1, y_{2}, \ldots, y_T)\\
+                &amp;= \sum_{z_1} \cdots \sum_{z_T} \Pr(y_1, y_{2}, \ldots, y_T | z_1, z_{2}, \ldots, z_T) \Pr(z_1, z_{2}, \ldots, z_T)\\
+                &amp;= \sum_{z_1} \cdots \sum_{z_T} \left(\prod_{t=1}^T{\omega_{z_{t}, y_t}}\right) \left(\Pr(z_{1}) \prod_{t=2}^T{\gamma_{z_{t-1},z_{t}}}\right)\\
+\end{align*}\]</span></p>
+<p>What is the likelihood of a HMM. The thing here is that we don’t know the states. So we have to go through all possibilities, and sum over the possible states. Hence these sums here. Then this term is the likelihood of a Markov chain, we saw that before. And this component are the elements of the observation matrix. The likelihood has a matrix formulation that can be useful. It is delta, initial states, then observation, then transitions, and so on. There is a vector of ones at the end to get the sum all the terms.</p>
+<!-- It has a matrix formulation: -->
 <!-- \begin{align*} -->
 <!-- \Pr(\mathbf{y}) &= \mathbf{\delta} \; \mathbf{\Omega} \; \mathbf{\Gamma} \cdots \mathbf{\Omega} \; \mathbf{\Gamma} \; \mathbf{\Omega} \; \mathbb{1} -->
 <!-- \end{align*} -->
-<!-- ## Example -->
-<!-- + Let assume an animal is detected, then missed. -->
-<!-- + We have $\mathbf{y} = (2, 1)$. What is the contribution of this animal to the likelihood? -->
-<!-- \begin{align*} -->
-<!-- \Pr(\mathbf{y} = (2, 1)) &= \sum_{z_1 = 1}^2 \; \sum_{z_2 = 1}^2 w_{z_1, y_1 = 2} w_{z_2, y_2 = 1} \Pr(z_1) \gamma_{z_1, z_2} \color{white}{\Pr(z_{T-1}, z_{T-2},\ldots, z_1, z_1, z_1, z_1)}\\ -->
-<!-- \end{align*} -->
-<!-- ## Example -->
-<!-- + Let assume an animal is detected, then missed. -->
-<!-- + We have $\mathbf{y} = (2, 1)$. What is the contribution of this animal to the likelihood? -->
-<!-- \begin{align*} -->
-<!-- \Pr(\mathbf{y} = (2, 1)) &= \sum_{z_1 = 1}^2 \; \sum_{z_2 = 1}^2 w_{z_1, y_1 = 2} w_{z_2, y_2 = 1} \Pr(z_1) \gamma_{z_1, z_2} \color{white}{\Pr(z_{T-1}, z_{T-2},\ldots, z_1, z_1, z_1, z_1)}\\ -->
-<!-- &= \sum_{z_1 = 1}^2 \left( w_{z_1, y_1 = 2} w_{z_2 = 1, y_2 = 1} \Pr(z_1) \gamma_{z_1, z_2 = 1} + w_{z_1, y_1 = 2} w_{z_2 = 2, y_2 = 1} \Pr(z_1) \gamma_{z_1, z_2 = 2} \right) \\ -->
-<!-- \end{align*} -->
-<!-- + Let assume an animal is detected, then missed. -->
-<!-- + We have $\mathbf{y} = (2, 1)$. What is the contribution of this animal to the likelihood? -->
-<!-- \begin{align*} -->
-<!-- \Pr(\mathbf{y} = (2, 1)) &= \sum_{z_1 = 1}^2 \; \sum_{z_2 = 1}^2 w_{z_1, y_1 = 2} w_{z_2, y_2 = 1} \Pr(z_1) \gamma_{z_1, z_2} \color{white}{\Pr(z_{T-1}, z_{T-2},\ldots, z_1, z_1, z_1, z_1)}\\ -->
-<!-- &= \sum_{z_1 = 1}^2 \left( w_{z_1, y_1 = 2} w_{z_2 = 1, y_2 = 1} \Pr(z_1) \gamma_{z_1, z_2 = 1} + w_{z_1, y_1 = 2} w_{z_2 = 2, y_2 = 1} \Pr(z_1) \gamma_{z_1, z_2 = 2} \right) \\ -->
-<!-- &= w_{z_1 = 1, y_1 = 2} w_{z_2 = 1, y_2 = 1}\delta_1 \gamma_{z_1 = 1, z_2 = 1} + w_{z_1 = 1, y_1 = 2} w_{z_2 = 2, y_2 = 1} \delta_1 \gamma_{z_1 = 1, z_2 = 2} -->
-<!-- \end{align*} -->
-<!-- Note: $\Pr(z_1 = 1) = \delta_1 = 1$ and $\Pr(z_1 = 2) = 0$. -->
-<!-- + Let assume an animal is detected, then missed. -->
-<!-- + We have $\mathbf{y} = (2, 1)$. What is the contribution of this animal to the likelihood? -->
-<!-- \begin{align*} -->
-<!-- \Pr(\mathbf{y} = (2, 1)) &= \sum_{z_1 = 1}^2 \; \sum_{z_2 = 1}^2 w_{z_1, y_1 = 2} w_{z_2, y_2 = 1} \Pr(z_1) \gamma_{z_1, z_2} \color{white}{\Pr(z_{T-1}, z_{T-2},\ldots, z_1, z_1, z_1, z_1)}\\ -->
-<!-- &= \sum_{z_1 = 1}^2 \left( w_{z_1, y_1 = 2} w_{z_2 = 1, y_2 = 1} \Pr(z_1) \gamma_{z_1, z_2 = 1} + w_{z_1, y_1 = 2} w_{z_2 = 2, y_2 = 1} \Pr(z_1) \gamma_{z_1, z_2 = 2} \right) \\ -->
-<!-- &= w_{z_1 = 1, y_1 = 2} w_{z_2 = 1, y_2 = 1} \delta_1 \gamma_{z_1 = 1, z_2 = 1} + w_{z_1 = 1, y_1 = 2} w_{z_2 = 2, y_2 = 1} \delta_1 \gamma_{z_1 = 1, z_2 = 2}\\ -->
-<!-- &= (1 - p) \phi + (1-\phi) -->
-<!-- \end{align*} -->
-<!-- Note: $w_{z_1 = 1, y_1 = 2} = \Pr(y_1 = 2 | z_1 = 1) = 1$ because we condition on first capture. -->
-<!-- ## Estimating the latent states $z$ or not? -->
-<!-- + Next question is, shall we estimate the latent states or not? -->
-<!-- + In previous example, we got rid of the states, so that likelihood was a function of $\phi$ and $p$ only. This is the function we would maximize in a Frequentist approach. -->
-<!-- + The Bayesian approach with MCMC methods allows treating the latent states as if they were parameters, and to be estimated as such. -->
-<!-- + Infering the latent states $z$ can be useful to estimate prevalence, e.g. in animal epidemiology with [prevalence of a disease](https://veterinaryresearch.biomedcentral.com/articles/10.1186/1297-9716-45-39), in evolutionary ecology with [sex ratio](https://onlinelibrary.wiley.com/doi/abs/10.1002/cjs.5550360105) or in conservation biology with [prevalence of hybrids](https://onlinelibrary.wiley.com/doi/full/10.1002/ece3.4819?af=R). -->
-<!-- + Estimating the latent states is costly though, and if not required, marginalisation may speed up computations. Actually, you can estimate the states afterwards (Viterbi). -->
-<!-- + More about so-called marginalisation in [Yackulic et al. (2020)](https://esajournals.onlinelibrary.wiley.com/doi/abs/10.1002/eap.2112). -->
-<!-- + The neat thing with Nimble is that it provides marginalised models through nimbleEcology, we'll get back to it in Class 8. -->
-<!-- ## Our model -->
-<!-- \begin{align*} -->
-<!--    z_{\text{first}} &\sim \text{Multinomial}(1, \delta) &\text{[likelihood]}\\ -->
-<!--    z_t | z_{t-1} &\sim \text{Multinomial}(1, \gamma_{z_{t-1},z_{t}}) &\text{[likelihood]}\\ -->
-<!--    y_t | z_{t} &\sim \text{Multinomial}(1, \omega_{z_{t}}) &\text{[likelihood]}\\ -->
-<!--   \phi &\sim \text{Beta}(1, 1) &\text{[prior for }\phi \text{]} \\ -->
-<!--   p &\sim \text{Beta}(1, 1) &\text{[prior for }p \text{]} \\ -->
-<!-- \end{align*} -->
-<!-- + Now our model has an observation layer for the ys, conditional on the z. -->
-<!-- + And we need a prior for the detection probability. -->
-<!-- ## Nimble implementation -->
-<!-- + How to implement this model in Nimble? -->
-<!-- ## Priors -->
-<!-- ```{r, echo=FALSE} -->
-<!-- hmm.survival <- nimbleCode({ -->
-<!--   phi ~ dunif(0, 1) # prior survival -->
-<!--   p ~ dunif(0, 1) # prior detection -->
-<!--   # likelihood -->
-<!--   gamma[1,1] <- phi      # Pr(alive t -> alive t+1) -->
-<!--   gamma[1,2] <- 1 - phi  # Pr(alive t -> dead t+1) -->
-<!--   gamma[2,1] <- 0        # Pr(dead t -> alive t+1) -->
-<!--   gamma[2,2] <- 1        # Pr(dead t -> dead t+1) -->
-<!--   delta[1] <- 1          # Pr(alive t = 1) = 1 -->
-<!--   delta[2] <- 0          # Pr(dead t = 1) = 0 -->
-<!--   omega[1,1] <- 1 - p    # Pr(alive t -> non-detected t) -->
-<!--   omega[1,2] <- p        # Pr(alive t -> detected t) -->
-<!--   omega[2,1] <- 1        # Pr(dead t -> non-detected t) -->
-<!--   omega[2,2] <- 0        # Pr(dead t -> detected t) -->
-<!--   for (i in 1:N){ -->
-<!--     z[i,first[i]] ~ dcat(delta[1:2]) -->
-<!--     for (j in (first[i]+1):T){ -->
-<!--       z[i,j] ~ dcat(gamma[z[i,j-1], 1:2]) -->
-<!--       y[i,j] ~ dcat(omega[z[i,j], 1:2]) -->
-<!--     } -->
-<!--   } -->
-<!-- }) -->
-<!-- ``` -->
-<!-- ```{r eval=FALSE} -->
-<!-- hmm.survival <- nimbleCode({ -->
-<!--   phi ~ dunif(0, 1) # prior survival -->
-<!--   p ~ dunif(0, 1) # prior detection -->
-<!-- ... -->
-<!-- ``` -->
-<!-- ## HMM ingredients -->
-<!-- ```{r eval=FALSE} -->
-<!-- ... -->
-<!--   # parameters -->
-<!--   gamma[1,1] <- phi      # Pr(alive t -> alive t+1) -->
-<!--   gamma[1,2] <- 1 - phi  # Pr(alive t -> dead t+1) -->
-<!--   gamma[2,1] <- 0        # Pr(dead t -> alive t+1) -->
-<!--   gamma[2,2] <- 1        # Pr(dead t -> dead t+1) -->
-<!--   delta[1] <- 1          # Pr(alive t = 1) = 1 -->
-<!--   delta[2] <- 0          # Pr(dead t = 1) = 0 -->
-<!--   omega[1,1] <- 1 - p    # Pr(alive t -> non-detected t) -->
-<!--   omega[1,2] <- p        # Pr(alive t -> detected t) -->
-<!--   omega[2,1] <- 1        # Pr(dead t -> non-detected t) -->
-<!--   omega[2,2] <- 0        # Pr(dead t -> detected t) -->
-<!-- ... -->
-<!-- ``` -->
-<!-- ## Likelihood -->
-<!-- ```{r eval=FALSE} -->
-<!-- ... -->
-<!--     # likelihood -->
-<!--     for (i in 1:N){ -->
-<!--     z[i,first[i]] ~ dcat(delta[1:2]) -->
-<!--     for (j in (first[i]+1):T){ -->
-<!--       z[i,j] ~ dcat(gamma[z[i,j-1], 1:2]) -->
-<!--       y[i,j] ~ dcat(omega[z[i,j], 1:2]) -->
-<!--     } -->
-<!--   } -->
-<!-- }) -->
-<!-- ``` -->
-<!-- ## Constants -->
-<!-- ```{r} -->
-<!-- first <- apply(y, 1, function(x) min(which(x !=0))) -->
-<!-- my.constants <- list(N = nrow(y), T = 5, first = first) -->
-<!-- my.constants -->
-<!-- ``` -->
-<!-- ## Data -->
-<!-- + The data are made of 0s for non-detections and 1s for detections. -->
-<!-- + To use the categorical distribution, we need to code 1, 2, etc. Value 0 is not accepted. -->
-<!-- + Add 1 to get the correct format $y=1$ for non-detection and $y = 2$ for detection. -->
-<!-- ```{r} -->
-<!-- my.data <- list(y = y + 1) -->
-<!-- ``` -->
-<!-- ## Initial values -->
-<!-- ```{r} -->
-<!-- zinits <- y + 1 # non-detection -> alive -->
-<!-- zinits[zinits == 2] <- 1 # dead -> alive -->
-<!-- initial.values <- function() list(phi = runif(1,0,1), -->
-<!--                                   p = runif(1,0,1), -->
-<!--                                   z = zinits) -->
-<!-- ``` -->
-<!-- ## Parameters to monitor -->
-<!-- ```{r} -->
-<!-- parameters.to.save <- c("phi", "p") -->
-<!-- parameters.to.save -->
-<!-- ``` -->
-<!-- ## MCMC details -->
-<!-- ```{r} -->
-<!-- n.iter <- 5000 -->
-<!-- n.burnin <- 1000 -->
-<!-- n.chains <- 2 -->
-<!-- ``` -->
-<!-- ## Run Nimble -->
-<!-- ```{r, message=FALSE} -->
-<!-- mcmc.output <- nimbleMCMC(code = hmm.survival, -->
-<!--                           constants = my.constants, -->
-<!--                           data = my.data, -->
-<!--                           inits = initial.values, -->
-<!--                           monitors = parameters.to.save, -->
-<!--                           niter = n.iter, -->
-<!--                           nburnin = n.burnin, -->
-<!--                           nchains = n.chains) -->
-<!-- ``` -->
-<!-- ```{r, message=FALSE, cache = TRUE} -->
-<!-- mcmc.output <- nimbleMCMC(code = hmm.survival, -->
-<!--                           constants = my.constants, -->
-<!--                           data = my.data, -->
-<!--                           inits = initial.values, -->
-<!--                           monitors = parameters.to.save, -->
-<!--                           niter = n.iter, -->
-<!--                           nburnin = n.burnin, -->
-<!--                           nchains = n.chains, -->
-<!--                           progressBar = FALSE) -->
-<!-- ``` -->
-<!-- ## Posterior distribution of survival -->
-<!-- ```{r} -->
-<!-- library(MCMCvis) -->
-<!-- MCMCsummary(mcmc.output, round = 2) -->
-<!-- ``` -->
-<!-- The data is simulated, with true survival $\phi = 0.8$ and detection $p = 0.6$. -->
-<!-- <!-- heller_novel_2021 -->
-<p>–&gt;</p>
-<!-- ## Summary -->
-<!-- + Blabla. -->
-<!-- + Blabla.  -->
-<!-- ## Suggested reading -->
-<!-- + Zucchini, MacDonald and Langrock (2016) [Hidden Markov Models for Time Series: An Introduction Using R (2nd ed)](https://www.routledge.com/Hidden-Markov-Models-for-Time-Series-An-Introduction-Using-R-Second-Edition/Zucchini-MacDonald-Langrock/p/book/9781482253832). Chapman and Hall/CRC. -->
-<!-- + McClintock, B.T., Langrock, R., Gimenez, O., Cam, E., Borchers, D.L., Glennie, R. and Patterson, T.A. (2020), [Uncovering ecological state dynamics with hidden Markov models](https://onlinelibrary.wiley.com/doi/full/10.1111/ele.13610). Ecology Letters, 23: 1878-1903. -->
-<!-- +  Yackulic, C. B. Dodrill, M., Dzul, M., Sanderlin, J. S., and Reid, J. A.. (2020). [A need for speed in Bayesian population models: a practical guide to marginalizing and recovering discrete latent states](https://esajournals.onlinelibrary.wiley.com/doi/abs/10.1002/eap.2112). Ecological Applications 30:e02112. -->
-<!-- + L. R. Rabiner (1989). [A tutorial on hidden Markov models and selected applications in speech recognition](https://web.ece.ucsb.edu/Faculty/Rabiner/ece259/Reprints/tutorial%20on%20hmm%20and%20applications.pdf). Proceedings of the IEEE, 77:257-286. -->
+</div>
+<div id="example-1" class="section level3" number="3.8.2">
+<h3>
+<span class="header-section-number">3.8.2</span> Example<a class="anchor" aria-label="anchor" href="#example-1"><i class="fas fa-link"></i></a>
+</h3>
+<p>Let assume an animal is detected, then missed. We have <span class="math inline">\(\mathbf{y} = (2, 1)\)</span>. What is the contribution of this animal to the likelihood?</p>
+<p><span class="math display">\[\begin{align*}
+\Pr(\mathbf{y} = (2, 1)) &amp;= \sum_{z_1 = 1}^2 \; \sum_{z_2 = 1}^2 w_{z_1, y_1 = 2} w_{z_2, y_2 = 1} \Pr(z_1) \gamma_{z_1, z_2} \color{white}{\Pr(z_{T-1}, z_{T-2},\ldots, z_1, z_1, z_1, z_1)}\\
+\end{align*}\]</span></p>
+<p>Let assume an animal is detected, then missed. We have <span class="math inline">\(\mathbf{y} = (2, 1)\)</span>. What is the contribution of this animal to the likelihood?</p>
+<p><span class="math display">\[\begin{align*}
+\Pr(\mathbf{y} = (2, 1)) &amp;= \sum_{z_1 = 1}^2 \; \sum_{z_2 = 1}^2 w_{z_1, y_1 = 2} w_{z_2, y_2 = 1} \Pr(z_1) \gamma_{z_1, z_2} \color{white}{\Pr(z_{T-1}, z_{T-2},\ldots, z_1, z_1, z_1, z_1)}\\
+&amp;= \sum_{z_1 = 1}^2 \left( w_{z_1, y_1 = 2} w_{z_2 = 1, y_2 = 1} \Pr(z_1) \gamma_{z_1, z_2 = 1} + w_{z_1, y_1 = 2} w_{z_2 = 2, y_2 = 1} \Pr(z_1) \gamma_{z_1, z_2 = 2} \right) \\
+\end{align*}\]</span></p>
+<p>Let assume an animal is detected, then missed. We have <span class="math inline">\(\mathbf{y} = (2, 1)\)</span>. What is the contribution of this animal to the likelihood?</p>
+<p><span class="math display">\[\begin{align*}
+\Pr(\mathbf{y} = (2, 1)) &amp;= \sum_{z_1 = 1}^2 \; \sum_{z_2 = 1}^2 w_{z_1, y_1 = 2} w_{z_2, y_2 = 1} \Pr(z_1) \gamma_{z_1, z_2} \color{white}{\Pr(z_{T-1}, z_{T-2},\ldots, z_1, z_1, z_1, z_1)}\\
+&amp;= \sum_{z_1 = 1}^2 \left( w_{z_1, y_1 = 2} w_{z_2 = 1, y_2 = 1} \Pr(z_1) \gamma_{z_1, z_2 = 1} + w_{z_1, y_1 = 2} w_{z_2 = 2, y_2 = 1} \Pr(z_1) \gamma_{z_1, z_2 = 2} \right) \\
+&amp;= w_{z_1 = 1, y_1 = 2} w_{z_2 = 1, y_2 = 1}\delta_1 \gamma_{z_1 = 1, z_2 = 1} + w_{z_1 = 1, y_1 = 2} w_{z_2 = 2, y_2 = 1} \delta_1 \gamma_{z_1 = 1, z_2 = 2}
+\end{align*}\]</span></p>
+<p>Note: <span class="math inline">\(\Pr(z_1 = 1) = \delta_1 = 1\)</span> and <span class="math inline">\(\Pr(z_1 = 2) = 0\)</span>.</p>
+<p>Let assume an animal is detected, then missed. We have <span class="math inline">\(\mathbf{y} = (2, 1)\)</span>. What is the contribution of this animal to the likelihood?</p>
+<p><span class="math display">\[\begin{align*}
+\Pr(\mathbf{y} = (2, 1)) &amp;= \sum_{z_1 = 1}^2 \; \sum_{z_2 = 1}^2 w_{z_1, y_1 = 2} w_{z_2, y_2 = 1} \Pr(z_1) \gamma_{z_1, z_2} \color{white}{\Pr(z_{T-1}, z_{T-2},\ldots, z_1, z_1, z_1, z_1)}\\
+&amp;= \sum_{z_1 = 1}^2 \left( w_{z_1, y_1 = 2} w_{z_2 = 1, y_2 = 1} \Pr(z_1) \gamma_{z_1, z_2 = 1} + w_{z_1, y_1 = 2} w_{z_2 = 2, y_2 = 1} \Pr(z_1) \gamma_{z_1, z_2 = 2} \right) \\
+&amp;= w_{z_1 = 1, y_1 = 2} w_{z_2 = 1, y_2 = 1} \delta_1 \gamma_{z_1 = 1, z_2 = 1} + w_{z_1 = 1, y_1 = 2} w_{z_2 = 2, y_2 = 1} \delta_1 \gamma_{z_1 = 1, z_2 = 2}\\
+&amp;= (1 - p) \phi + (1-\phi)
+\end{align*}\]</span></p>
+<p>Note: <span class="math inline">\(w_{z_1 = 1, y_1 = 2} = \Pr(y_1 = 2 | z_1 = 1) = 1\)</span> because we condition on first capture.</p>
+</div>
+<div id="implementation-in-nimble" class="section level3" number="3.8.3">
+<h3>
+<span class="header-section-number">3.8.3</span> Implementation in NIMBLE<a class="anchor" aria-label="anchor" href="#implementation-in-nimble"><i class="fas fa-link"></i></a>
+</h3>
+<p>Introduce NimbleEcology.</p>
+<div class="sourceCode" id="cb112"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/nimble-dev/nimbleEcology">nimbleEcology</a></span><span class="op">)</span></code></pre></div>
+<p>Get the occasion of first capture for each individual:</p>
+<div class="sourceCode" id="cb113"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="va">first</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/apply.html">apply</a></span><span class="op">(</span><span class="va">y</span>, <span class="fl">1</span>, <span class="kw">function</span><span class="op">(</span><span class="va">x</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/Extremes.html">min</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimble-R-functions.html">which</a></span><span class="op">(</span><span class="va">x</span> <span class="op">!=</span><span class="fl">0</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></code></pre></div>
+<p>We filter out individuals that are first captured at last occasion. These individuals do not contribute to parameter estimation, and also they cause problems with nimbleEcology.</p>
+<div class="sourceCode" id="cb114"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="va">mask</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimble-R-functions.html">which</a></span><span class="op">(</span><span class="va">first</span><span class="op">!=</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html">ncol</a></span><span class="op">(</span><span class="va">y</span><span class="op">)</span><span class="op">)</span> <span class="co"># individuals that are not first encountered at last occasion</span>
+<span class="va">y</span> <span class="op">&lt;-</span> <span class="va">y</span><span class="op">[</span><span class="va">mask</span>, <span class="op">]</span>                <span class="co"># keep only these</span>
+<span class="va">first</span> <span class="op">&lt;-</span> <span class="va">first</span><span class="op">[</span><span class="va">mask</span><span class="op">]</span></code></pre></div>
+<p>Model code:</p>
+<div class="sourceCode" id="cb115"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="va">hmm.survival.new</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimbleCode.html">nimbleCode</a></span><span class="op">(</span><span class="op">{</span>
+  <span class="va">phi</span> <span class="op">~</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html">dunif</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1</span><span class="op">)</span> <span class="co"># prior survival</span>
+  <span class="va">p</span> <span class="op">~</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html">dunif</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1</span><span class="op">)</span> <span class="co"># prior detection</span>
+  <span class="co"># likelihood</span>
+  <span class="va">gamma</span><span class="op">[</span><span class="fl">1</span>,<span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="va">phi</span>      <span class="co"># Pr(alive t -&gt; alive t+1)</span>
+  <span class="va">gamma</span><span class="op">[</span><span class="fl">1</span>,<span class="fl">2</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span> <span class="op">-</span> <span class="va">phi</span>  <span class="co"># Pr(alive t -&gt; dead t+1)</span>
+  <span class="va">gamma</span><span class="op">[</span><span class="fl">2</span>,<span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0</span>        <span class="co"># Pr(dead t -&gt; alive t+1)</span>
+  <span class="va">gamma</span><span class="op">[</span><span class="fl">2</span>,<span class="fl">2</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span>        <span class="co"># Pr(dead t -&gt; dead t+1)</span>
+  <span class="va">delta</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span>          <span class="co"># Pr(alive t = 1) = 1</span>
+  <span class="va">delta</span><span class="op">[</span><span class="fl">2</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0</span>          <span class="co"># Pr(dead t = 1) = 0</span>
+  <span class="va">omega</span><span class="op">[</span><span class="fl">1</span>,<span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span> <span class="op">-</span> <span class="va">p</span>    <span class="co"># Pr(alive t -&gt; non-detected t)</span>
+  <span class="va">omega</span><span class="op">[</span><span class="fl">1</span>,<span class="fl">2</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="va">p</span>        <span class="co"># Pr(alive t -&gt; detected t)</span>
+  <span class="va">omega</span><span class="op">[</span><span class="fl">2</span>,<span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span>        <span class="co"># Pr(dead t -&gt; non-detected t)</span>
+  <span class="va">omega</span><span class="op">[</span><span class="fl">2</span>,<span class="fl">2</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0</span>        <span class="co"># Pr(dead t -&gt; detected t)</span>
+  <span class="kw">for</span><span class="op">(</span><span class="va">i</span> <span class="kw">in</span> <span class="fl">1</span><span class="op">:</span><span class="va">N</span><span class="op">)</span> <span class="op">{</span>
+    <span class="va">init</span><span class="op">[</span><span class="va">i</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">2</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="va">gamma</span><span class="op">[</span><span class="va">y</span><span class="op">[</span><span class="va">i</span>, <span class="va">first</span><span class="op">[</span><span class="va">i</span><span class="op">]</span> <span class="op">]</span> <span class="op">-</span> <span class="fl">1</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">2</span><span class="op">]</span> <span class="co"># First state propagation</span>
+  <span class="op">}</span>
+  <span class="kw">for</span> <span class="op">(</span><span class="va">i</span> <span class="kw">in</span> <span class="fl">1</span><span class="op">:</span><span class="va">N</span><span class="op">)</span><span class="op">{</span>
+    <span class="va">y</span><span class="op">[</span><span class="va">i</span>,<span class="op">(</span><span class="va">first</span><span class="op">[</span><span class="va">i</span><span class="op">]</span><span class="op">+</span><span class="fl">1</span><span class="op">)</span><span class="op">:</span><span class="cn">T</span><span class="op">]</span> <span class="op">~</span> <span class="fu"><a href="https://rdrr.io/pkg/nimbleEcology/man/dHMM.html">dHMM</a></span><span class="op">(</span>init <span class="op">=</span> <span class="va">init</span><span class="op">[</span><span class="va">i</span>,<span class="fl">1</span><span class="op">:</span><span class="fl">2</span><span class="op">]</span>, 
+                               probObs <span class="op">=</span> <span class="va">omega</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">2</span>,<span class="fl">1</span><span class="op">:</span><span class="fl">2</span><span class="op">]</span>, <span class="co"># observation matrix</span>
+                               probTrans <span class="op">=</span> <span class="va">gamma</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">2</span>,<span class="fl">1</span><span class="op">:</span><span class="fl">2</span><span class="op">]</span>, <span class="co"># transition matrix</span>
+                               len <span class="op">=</span> <span class="cn">T</span> <span class="op">-</span> <span class="va">first</span><span class="op">[</span><span class="va">i</span><span class="op">]</span>, <span class="co"># nb of sampling occasions</span>
+                               checkRowSums <span class="op">=</span> <span class="fl">1</span><span class="op">)</span> <span class="co"># do not check whether elements in a row sum to 1</span>
+  <span class="op">}</span>
+<span class="op">}</span><span class="op">)</span></code></pre></div>
+<p>Rest is the same:</p>
+<div class="sourceCode" id="cb116"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="co"># Data and constants:</span>
+<span class="va">my.data</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>y <span class="op">=</span> <span class="va">y</span> <span class="op">+</span> <span class="fl">1</span><span class="op">)</span>
+<span class="va">my.constants</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>N <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html">nrow</a></span><span class="op">(</span><span class="va">y</span><span class="op">)</span>, T <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html">ncol</a></span><span class="op">(</span><span class="va">y</span><span class="op">)</span>, first <span class="op">=</span> <span class="va">first</span><span class="op">)</span>
 
+<span class="co"># Initial values:</span>
+<span class="va">zinits</span> <span class="op">&lt;-</span> <span class="va">y</span> <span class="op">+</span> <span class="fl">1</span> <span class="co"># non-detection -&gt; alive</span>
+<span class="va">zinits</span><span class="op">[</span><span class="va">zinits</span> <span class="op">==</span> <span class="fl">2</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span> <span class="co"># dead -&gt; alive</span>
+<span class="va">initial.values</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>phi <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html">runif</a></span><span class="op">(</span><span class="fl">1</span>,<span class="fl">0</span>,<span class="fl">1</span><span class="op">)</span>,
+                                  p <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html">runif</a></span><span class="op">(</span><span class="fl">1</span>,<span class="fl">0</span>,<span class="fl">1</span><span class="op">)</span><span class="op">)</span>
+
+<span class="co"># Parameters to monitor:</span>
+<span class="va">parameters.to.save</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimble-R-functions.html">c</a></span><span class="op">(</span><span class="st">"phi"</span>, <span class="st">"p"</span><span class="op">)</span>
+<span class="va">parameters.to.save</span>
+<span class="co">## [1] "phi" "p"</span>
+
+<span class="co"># MCMC details:</span>
+<span class="va">n.iter</span> <span class="op">&lt;-</span> <span class="fl">5000</span>
+<span class="va">n.burnin</span> <span class="op">&lt;-</span> <span class="fl">1000</span>
+<span class="va">n.chains</span> <span class="op">&lt;-</span> <span class="fl">2</span>
+
+<span class="co"># Run NIMBLE:</span>
+<span class="va">mcmc.output</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimbleMCMC.html">nimbleMCMC</a></span><span class="op">(</span>code <span class="op">=</span> <span class="va">hmm.survival.new</span>,
+                          constants <span class="op">=</span> <span class="va">my.constants</span>,
+                          data <span class="op">=</span> <span class="va">my.data</span>,
+                          inits <span class="op">=</span> <span class="va">initial.values</span>,
+                          monitors <span class="op">=</span> <span class="va">parameters.to.save</span>,
+                          niter <span class="op">=</span> <span class="va">n.iter</span>,
+                          nburnin <span class="op">=</span> <span class="va">n.burnin</span>,
+                          nchains <span class="op">=</span> <span class="va">n.chains</span><span class="op">)</span>
+<span class="co">## |-------------|-------------|-------------|-------------|</span>
+<span class="co">## |-------------------------------------------------------|</span>
+<span class="co">## |-------------|-------------|-------------|-------------|</span>
+<span class="co">## |-------------------------------------------------------|</span>
+
+<span class="co"># Numerical summaries:</span>
+<span class="fu"><a href="https://rdrr.io/pkg/MCMCvis/man/MCMCsummary.html">MCMCsummary</a></span><span class="op">(</span><span class="va">mcmc.output</span>, round <span class="op">=</span> <span class="fl">2</span><span class="op">)</span>
+<span class="co">##     mean   sd 2.5%  50% 97.5% Rhat n.eff</span>
+<span class="co">## p   0.55 0.07 0.40 0.55  0.69    1  1016</span>
+<span class="co">## phi 0.76 0.06 0.65 0.76  0.87    1   984</span></code></pre></div>
+<p><strong>Computer number of nodes. Show that the z are no longer in there.</strong></p>
 </div>
 </div>
+<div id="pooled-encounter-histories" class="section level2" number="3.9">
+<h2>
+<span class="header-section-number">3.9</span> Pooled encounter histories<a class="anchor" aria-label="anchor" href="#pooled-encounter-histories"><i class="fas fa-link"></i></a>
+</h2>
+<p>In this section, we’re gonna use NIMBLE functions to express the likelihood using pooled encounter histories. We use a vector mult that contains the number of individuals with a particular encounter history. We hacked the dHMM nimbleEcology function below. Courtesy of Chloé Nater. Implement of Turek et al. </p>
+<div class="sourceCode" id="cb117"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="va">dHMMweighted</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimbleFunction.html">nimbleFunction</a></span><span class="op">(</span>
+  run <span class="op">=</span> <span class="kw">function</span> <span class="op">(</span><span class="va">x</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/double.html">double</a></span><span class="op">(</span><span class="fl">1</span><span class="op">)</span>, 
+                  <span class="va">init</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/double.html">double</a></span><span class="op">(</span><span class="fl">1</span><span class="op">)</span>, 
+                  <span class="va">probObs</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/double.html">double</a></span><span class="op">(</span><span class="fl">2</span><span class="op">)</span>,
+                  <span class="va">probTrans</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/double.html">double</a></span><span class="op">(</span><span class="fl">2</span><span class="op">)</span>, 
+                  <span class="va">len</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/double.html">double</a></span><span class="op">(</span><span class="fl">0</span><span class="op">)</span>,
+                  <span class="va">mult</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/double.html">double</a></span><span class="op">(</span><span class="fl">0</span><span class="op">)</span>, <span class="co"># NEWLY ADDED: argument stating number of occurrences </span>
+                                    <span class="co"># of same encounter history in entire dataset </span>
+                  <span class="va">checkRowSums</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimNumeric.html">integer</a></span><span class="op">(</span><span class="fl">0</span>, default <span class="op">=</span> <span class="fl">0</span><span class="op">)</span>,  
+                  <span class="va">log</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimNumeric.html">integer</a></span><span class="op">(</span><span class="fl">0</span>, default <span class="op">=</span> <span class="fl">0</span><span class="op">)</span><span class="op">)</span> 
+  <span class="op">{</span>
+    <span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimble-R-functions.html">length</a></span><span class="op">(</span><span class="va">x</span><span class="op">)</span> <span class="op">!=</span> <span class="va">len</span><span class="op">)</span> 
+      <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimStop.html">nimStop</a></span><span class="op">(</span><span class="st">"In dHMM: Argument len must be length of x or 0."</span><span class="op">)</span>
+    <span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimDim.html">nimDim</a></span><span class="op">(</span><span class="va">probObs</span><span class="op">)</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span> <span class="op">!=</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimDim.html">nimDim</a></span><span class="op">(</span><span class="va">probTrans</span><span class="op">)</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span><span class="op">)</span> 
+      <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimStop.html">nimStop</a></span><span class="op">(</span><span class="st">"In dHMM: Length of dimension 1 in probObs must equal length of dimension 1 in probTrans."</span><span class="op">)</span>
+    <span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimDim.html">nimDim</a></span><span class="op">(</span><span class="va">probTrans</span><span class="op">)</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span> <span class="op">!=</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimDim.html">nimDim</a></span><span class="op">(</span><span class="va">probTrans</span><span class="op">)</span><span class="op">[</span><span class="fl">2</span><span class="op">]</span><span class="op">)</span> 
+      <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimStop.html">nimStop</a></span><span class="op">(</span><span class="st">"In dHMM: probTrans must be a square matrix."</span><span class="op">)</span>
+    <span class="co">## There was a strict test for sum(init) == 1.  This could be true in R and false in C++!</span>
+    <span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/MathFun.html">abs</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/sum.html">sum</a></span><span class="op">(</span><span class="va">init</span><span class="op">)</span> <span class="op">-</span> <span class="fl">1</span><span class="op">)</span> <span class="op">&gt;</span> <span class="fl">1e-06</span><span class="op">)</span> 
+      <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimStop.html">nimStop</a></span><span class="op">(</span><span class="st">"In dHMM: Initial probabilities must sum to 1."</span><span class="op">)</span>
+    <span class="kw">if</span> <span class="op">(</span><span class="va">checkRowSums</span><span class="op">)</span> <span class="op">{</span>
+      <span class="va">transCheckPasses</span> <span class="op">&lt;-</span> <span class="cn">TRUE</span>
+      <span class="kw">for</span> <span class="op">(</span><span class="va">i</span> <span class="kw">in</span> <span class="fl">1</span><span class="op">:</span><span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimDim.html">nimDim</a></span><span class="op">(</span><span class="va">probTrans</span><span class="op">)</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span><span class="op">)</span> <span class="op">{</span>
+        <span class="va">thisCheckSum</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/sum.html">sum</a></span><span class="op">(</span><span class="va">probTrans</span><span class="op">[</span><span class="va">i</span>, <span class="op">]</span><span class="op">)</span>
+        <span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/MathFun.html">abs</a></span><span class="op">(</span><span class="va">thisCheckSum</span> <span class="op">-</span> <span class="fl">1</span><span class="op">)</span> <span class="op">&gt;</span> <span class="fl">1e-06</span><span class="op">)</span> <span class="op">{</span>
+          <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimPrint.html">nimPrint</a></span><span class="op">(</span><span class="st">"In dHMM: Problem with sum(probTrans[i,]) with i = "</span>, 
+                   <span class="va">i</span>, <span class="st">". The sum should be 1 but is "</span>, <span class="va">thisCheckSum</span><span class="op">)</span>
+          <span class="va">transCheckPasses</span> <span class="op">&lt;-</span> <span class="cn">FALSE</span>
+        <span class="op">}</span>
+      <span class="op">}</span>
+      <span class="va">obsCheckPasses</span> <span class="op">&lt;-</span> <span class="cn">TRUE</span>
+      <span class="kw">for</span> <span class="op">(</span><span class="va">i</span> <span class="kw">in</span> <span class="fl">1</span><span class="op">:</span><span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimDim.html">nimDim</a></span><span class="op">(</span><span class="va">probObs</span><span class="op">)</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span><span class="op">)</span> <span class="op">{</span>
+        <span class="va">thisCheckSum</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/sum.html">sum</a></span><span class="op">(</span><span class="va">probObs</span><span class="op">[</span><span class="va">i</span>, <span class="op">]</span><span class="op">)</span>
+        <span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/MathFun.html">abs</a></span><span class="op">(</span><span class="va">thisCheckSum</span> <span class="op">-</span> <span class="fl">1</span><span class="op">)</span> <span class="op">&gt;</span> <span class="fl">1e-06</span><span class="op">)</span> <span class="op">{</span>
+          <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimPrint.html">nimPrint</a></span><span class="op">(</span><span class="st">"In dHMM: Problem with sum(probObs[i,]) with i = "</span>, 
+                   <span class="va">i</span>, <span class="st">". The sum should be 1 but is "</span>, <span class="va">thisCheckSum</span><span class="op">)</span>
+          <span class="va">obsCheckPasses</span> <span class="op">&lt;-</span> <span class="cn">FALSE</span>
+        <span class="op">}</span>
+      <span class="op">}</span>
+      <span class="kw">if</span> <span class="op">(</span><span class="op">!</span><span class="op">(</span><span class="va">transCheckPasses</span> <span class="op">|</span> <span class="va">obsCheckPasses</span><span class="op">)</span><span class="op">)</span> 
+        <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimStop.html">nimStop</a></span><span class="op">(</span><span class="st">"In dHMM: probTrans and probObs were not specified correctly.  Probabilities in each row (second dimension) must sum to 1."</span><span class="op">)</span>
+      <span class="kw">if</span> <span class="op">(</span><span class="op">!</span><span class="va">transCheckPasses</span><span class="op">)</span> 
+        <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimStop.html">nimStop</a></span><span class="op">(</span><span class="st">"In dHMM: probTrans was not specified correctly.  Probabilities in each row (second dimension) must sum to 1."</span><span class="op">)</span>
+      <span class="kw">if</span> <span class="op">(</span><span class="op">!</span><span class="va">obsCheckPasses</span><span class="op">)</span> 
+        <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimStop.html">nimStop</a></span><span class="op">(</span><span class="st">"In dHMM: probObs was not specified correctly. Probabilities in each row must sum to 1."</span><span class="op">)</span>
+    <span class="op">}</span>
+    <span class="va">pi</span> <span class="op">&lt;-</span> <span class="va">init</span>
+    <span class="va">logL</span> <span class="op">&lt;-</span> <span class="fl">0</span>
+    <span class="va">nObsClasses</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimDim.html">nimDim</a></span><span class="op">(</span><span class="va">probObs</span><span class="op">)</span><span class="op">[</span><span class="fl">2</span><span class="op">]</span>
+    <span class="kw">for</span> <span class="op">(</span><span class="va">t</span> <span class="kw">in</span> <span class="fl">1</span><span class="op">:</span><span class="va">len</span><span class="op">)</span> <span class="op">{</span>
+      <span class="kw">if</span> <span class="op">(</span><span class="va">x</span><span class="op">[</span><span class="va">t</span><span class="op">]</span> <span class="op">&gt;</span> <span class="va">nObsClasses</span> <span class="op">|</span> <span class="va">x</span><span class="op">[</span><span class="va">t</span><span class="op">]</span> <span class="op">&lt;</span> <span class="fl">1</span><span class="op">)</span> 
+        <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimStop.html">nimStop</a></span><span class="op">(</span><span class="st">"In dHMM: Invalid value of x[t]."</span><span class="op">)</span>
+      <span class="va">Zpi</span> <span class="op">&lt;-</span> <span class="va">probObs</span><span class="op">[</span>, <span class="va">x</span><span class="op">[</span><span class="va">t</span><span class="op">]</span><span class="op">]</span> <span class="op">*</span> <span class="va">pi</span>
+      <span class="va">sumZpi</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/sum.html">sum</a></span><span class="op">(</span><span class="va">Zpi</span><span class="op">)</span>
+      <span class="va">logL</span> <span class="op">&lt;-</span> <span class="va">logL</span> <span class="op">+</span> <span class="fu"><a href="https://rdrr.io/r/base/Log.html">log</a></span><span class="op">(</span><span class="va">sumZpi</span><span class="op">)</span> <span class="op">*</span> <span class="va">mult</span> <span class="co"># NEWLY ADDED</span>
+      <span class="kw">if</span> <span class="op">(</span><span class="va">t</span> <span class="op">!=</span> <span class="va">len</span><span class="op">)</span> 
+        <span class="va">pi</span> <span class="op">&lt;-</span> <span class="op">(</span><span class="op">(</span><span class="va">Zpi</span> <span class="op">%*%</span> <span class="va">probTrans</span><span class="op">)</span><span class="op">/</span><span class="va">sumZpi</span><span class="op">)</span><span class="op">[</span><span class="fl">1</span>, <span class="op">]</span>
+    <span class="op">}</span>
+    <span class="kw">if</span> <span class="op">(</span><span class="va">log</span><span class="op">)</span> 
+      <span class="kw"><a href="https://rdrr.io/r/base/function.html">return</a></span><span class="op">(</span><span class="va">logL</span><span class="op">)</span>
+    <span class="kw"><a href="https://rdrr.io/r/base/function.html">return</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/Log.html">exp</a></span><span class="op">(</span><span class="va">logL</span><span class="op">)</span><span class="op">)</span>
+    <span class="fu">returnType</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/double.html">double</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span>
+  <span class="op">}</span><span class="op">)</span></code></pre></div>
+<p>Model code:</p>
+<div class="sourceCode" id="cb118"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="va">hmm.survival.weighted</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimbleCode.html">nimbleCode</a></span><span class="op">(</span><span class="op">{</span>
+  <span class="va">phi</span> <span class="op">~</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html">dunif</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1</span><span class="op">)</span> <span class="co"># prior survival</span>
+  <span class="va">p</span> <span class="op">~</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html">dunif</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1</span><span class="op">)</span> <span class="co"># prior detection</span>
+  <span class="co"># likelihood</span>
+  <span class="va">gamma</span><span class="op">[</span><span class="fl">1</span>,<span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="va">phi</span>      <span class="co"># Pr(alive t -&gt; alive t+1)</span>
+  <span class="va">gamma</span><span class="op">[</span><span class="fl">1</span>,<span class="fl">2</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span> <span class="op">-</span> <span class="va">phi</span>  <span class="co"># Pr(alive t -&gt; dead t+1)</span>
+  <span class="va">gamma</span><span class="op">[</span><span class="fl">2</span>,<span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0</span>        <span class="co"># Pr(dead t -&gt; alive t+1)</span>
+  <span class="va">gamma</span><span class="op">[</span><span class="fl">2</span>,<span class="fl">2</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span>        <span class="co"># Pr(dead t -&gt; dead t+1)</span>
+  <span class="va">delta</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span>          <span class="co"># Pr(alive t = 1) = 1</span>
+  <span class="va">delta</span><span class="op">[</span><span class="fl">2</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0</span>          <span class="co"># Pr(dead t = 1) = 0</span>
+  <span class="va">omega</span><span class="op">[</span><span class="fl">1</span>,<span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span> <span class="op">-</span> <span class="va">p</span>    <span class="co"># Pr(alive t -&gt; non-detected t)</span>
+  <span class="va">omega</span><span class="op">[</span><span class="fl">1</span>,<span class="fl">2</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="va">p</span>        <span class="co"># Pr(alive t -&gt; detected t)</span>
+  <span class="va">omega</span><span class="op">[</span><span class="fl">2</span>,<span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span>        <span class="co"># Pr(dead t -&gt; non-detected t)</span>
+  <span class="va">omega</span><span class="op">[</span><span class="fl">2</span>,<span class="fl">2</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0</span>        <span class="co"># Pr(dead t -&gt; detected t)</span>
+  <span class="kw">for</span><span class="op">(</span><span class="va">i</span> <span class="kw">in</span> <span class="fl">1</span><span class="op">:</span><span class="va">N</span><span class="op">)</span> <span class="op">{</span>
+    <span class="va">init</span><span class="op">[</span><span class="va">i</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">2</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="va">gamma</span><span class="op">[</span><span class="va">y</span><span class="op">[</span><span class="va">i</span>, <span class="va">first</span><span class="op">[</span><span class="va">i</span><span class="op">]</span> <span class="op">]</span> <span class="op">-</span> <span class="fl">1</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">2</span><span class="op">]</span> <span class="co"># First state propagation</span>
+  <span class="op">}</span>
+  <span class="kw">for</span> <span class="op">(</span><span class="va">i</span> <span class="kw">in</span> <span class="fl">1</span><span class="op">:</span><span class="va">N</span><span class="op">)</span><span class="op">{</span>
+    <span class="va">y</span><span class="op">[</span><span class="va">i</span>,<span class="op">(</span><span class="va">first</span><span class="op">[</span><span class="va">i</span><span class="op">]</span><span class="op">+</span><span class="fl">1</span><span class="op">)</span><span class="op">:</span><span class="cn">T</span><span class="op">]</span> <span class="op">~</span> <span class="fu">dHMMweighted</span><span class="op">(</span>init <span class="op">=</span> <span class="va">init</span><span class="op">[</span><span class="va">i</span>,<span class="fl">1</span><span class="op">:</span><span class="fl">2</span><span class="op">]</span>, 
+                                       mult <span class="op">=</span> <span class="va">mult</span><span class="op">[</span><span class="va">i</span><span class="op">]</span>,
+                                       probObs <span class="op">=</span> <span class="va">omega</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">2</span>,<span class="fl">1</span><span class="op">:</span><span class="fl">2</span><span class="op">]</span>, <span class="co"># observation matrix</span>
+                                       probTrans <span class="op">=</span> <span class="va">gamma</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">2</span>,<span class="fl">1</span><span class="op">:</span><span class="fl">2</span><span class="op">]</span>, <span class="co"># transition matrix</span>
+                                       len <span class="op">=</span> <span class="cn">T</span> <span class="op">-</span> <span class="va">first</span><span class="op">[</span><span class="va">i</span><span class="op">]</span>, <span class="co"># nb of sampling occasions</span>
+                                       checkRowSums <span class="op">=</span> <span class="fl">1</span><span class="op">)</span> <span class="co"># do not check whether elements in a row sum to 1</span>
+  <span class="op">}</span>
+<span class="op">}</span><span class="op">)</span></code></pre></div>
+<div class="sourceCode" id="cb119"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/r/base/Random.html">set.seed</a></span><span class="op">(</span><span class="fl">2022</span><span class="op">)</span>
+<span class="va">p</span> <span class="op">&lt;-</span> <span class="fl">0.6</span>
+<span class="va">y</span> <span class="op">&lt;-</span> <span class="va">z</span>
+<span class="va">y</span><span class="op">[</span><span class="va">z</span><span class="op">==</span><span class="fl">2</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0</span>
+<span class="va">y</span><span class="op">[</span><span class="va">y</span><span class="op">==</span><span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/Binomial.html">rbinom</a></span><span class="op">(</span>n <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/sum.html">sum</a></span><span class="op">(</span><span class="va">y</span><span class="op">==</span><span class="fl">1</span><span class="op">)</span>, <span class="fl">1</span>, <span class="va">p</span><span class="op">)</span>
+<span class="va">nobs</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/sum.html">sum</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/apply.html">apply</a></span><span class="op">(</span><span class="va">y</span>,<span class="fl">1</span>,<span class="va">sum</span><span class="op">)</span> <span class="op">!=</span> <span class="fl">0</span><span class="op">)</span>
+<span class="va">y</span> <span class="op">&lt;-</span> <span class="va">y</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/apply.html">apply</a></span><span class="op">(</span><span class="va">y</span>,<span class="fl">1</span>,<span class="va">sum</span><span class="op">)</span> <span class="op">!=</span><span class="fl">0</span>, <span class="op">]</span>
+<span class="va">first</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/apply.html">apply</a></span><span class="op">(</span><span class="va">y</span>, <span class="fl">1</span>, <span class="kw">function</span><span class="op">(</span><span class="va">x</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/Extremes.html">min</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimble-R-functions.html">which</a></span><span class="op">(</span><span class="va">x</span> <span class="op">!=</span><span class="fl">0</span><span class="op">)</span><span class="op">)</span><span class="op">)</span>
+<span class="kw">for</span> <span class="op">(</span><span class="va">i</span> <span class="kw">in</span> <span class="fl">1</span><span class="op">:</span><span class="va">nobs</span><span class="op">)</span><span class="op">{</span>
+  <span class="kw">if</span><span class="op">(</span><span class="va">first</span><span class="op">[</span><span class="va">i</span><span class="op">]</span> <span class="op">&gt;</span> <span class="fl">1</span><span class="op">)</span> <span class="va">y</span><span class="op">[</span><span class="va">i</span>, <span class="fl">1</span><span class="op">:</span><span class="op">(</span><span class="va">first</span><span class="op">[</span><span class="va">i</span><span class="op">]</span><span class="op">-</span><span class="fl">1</span><span class="op">)</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="cn">NA</span>
+<span class="op">}</span>
+<span class="va">y_weighted</span> <span class="op">&lt;-</span> <span class="va">y</span> <span class="op">%&gt;%</span> 
+  <span class="fu">as_tibble</span><span class="op">(</span><span class="op">)</span> <span class="op">%&gt;%</span> 
+  <span class="fu">group_by_all</span><span class="op">(</span><span class="op">)</span> <span class="op">%&gt;%</span> 
+  <span class="fu">summarise</span><span class="op">(</span>mult <span class="op">=</span> <span class="fu">n</span><span class="op">(</span><span class="op">)</span><span class="op">)</span> <span class="op">%&gt;%</span> 
+  <span class="fu">relocate</span><span class="op">(</span><span class="va">mult</span><span class="op">)</span> <span class="op">%&gt;%</span> 
+  <span class="fu"><a href="https://rdrr.io/r/base/matrix.html">as.matrix</a></span><span class="op">(</span><span class="op">)</span>
+<span class="fu"><a href="https://rdrr.io/r/utils/head.html">head</a></span><span class="op">(</span><span class="va">y_weighted</span><span class="op">)</span>
+<span class="co">##      mult winter 1 winter 2 winter 3 winter 4 winter 5</span>
+<span class="co">## [1,]    9        1        0        0        0        0</span>
+<span class="co">## [2,]    1        1        0        0        1        0</span>
+<span class="co">## [3,]    1        1        0        0        1        1</span>
+<span class="co">## [4,]    2        1        0        1        0        0</span>
+<span class="co">## [5,]    2        1        0        1        1        0</span>
+<span class="co">## [6,]    8        1        1        0        0        0</span></code></pre></div>
+<div class="sourceCode" id="cb120"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="va">mult</span> <span class="op">&lt;-</span> <span class="va">y_weighted</span><span class="op">[</span>,<span class="fl">1</span><span class="op">]</span> <span class="co"># nb of individuals w/ a particular encounter history</span>
+<span class="va">y</span> <span class="op">&lt;-</span> <span class="va">y_weighted</span><span class="op">[</span>,<span class="op">-</span><span class="fl">1</span><span class="op">]</span> <span class="co"># pooled data</span></code></pre></div>
+<p>There are XX individuals that were detected only once, XX individuals that were detected only once…</p>
+<p>Get the occasion of first capture for each history:</p>
+<div class="sourceCode" id="cb121"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="va">get.first</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">x</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/Extremes.html">min</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimble-R-functions.html">which</a></span><span class="op">(</span><span class="va">x</span> <span class="op">!=</span> <span class="fl">0</span><span class="op">)</span><span class="op">)</span>
+<span class="va">first</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/apply.html">apply</a></span><span class="op">(</span><span class="va">y</span>, <span class="fl">1</span>, <span class="va">get.first</span><span class="op">)</span></code></pre></div>
+<p>Filter out individuals that are first captured at last occasion.</p>
+<div class="sourceCode" id="cb122"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="va">mask</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimble-R-functions.html">which</a></span><span class="op">(</span><span class="va">first</span><span class="op">!=</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html">ncol</a></span><span class="op">(</span><span class="va">y</span><span class="op">)</span><span class="op">)</span>
+<span class="va">y</span> <span class="op">&lt;-</span> <span class="va">y</span><span class="op">[</span><span class="va">mask</span>, <span class="op">]</span></code></pre></div>
+<p>Apply filter on occasion of first capture and sample size.</p>
+<div class="sourceCode" id="cb123"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="va">first</span> <span class="op">&lt;-</span> <span class="va">first</span><span class="op">[</span><span class="va">mask</span><span class="op">]</span>
+<span class="va">mult</span> <span class="op">&lt;-</span> <span class="va">mult</span><span class="op">[</span><span class="va">mask</span><span class="op">]</span></code></pre></div>
+<p>Rest is the same:</p>
+<div class="sourceCode" id="cb124"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="co"># Data and constants:</span>
+<span class="va">my.data</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>y <span class="op">=</span> <span class="va">y</span> <span class="op">+</span> <span class="fl">1</span><span class="op">)</span>
+<span class="va">my.constants</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>N <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html">nrow</a></span><span class="op">(</span><span class="va">y</span><span class="op">)</span>, T <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html">ncol</a></span><span class="op">(</span><span class="va">y</span><span class="op">)</span>, first <span class="op">=</span> <span class="va">first</span>, mult <span class="op">=</span> <span class="va">mult</span><span class="op">)</span>
+
+<span class="co"># Initial values:</span>
+<span class="va">zinits</span> <span class="op">&lt;-</span> <span class="va">y</span> <span class="op">+</span> <span class="fl">1</span> <span class="co"># non-detection -&gt; alive</span>
+<span class="va">zinits</span><span class="op">[</span><span class="va">zinits</span> <span class="op">==</span> <span class="fl">2</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span> <span class="co"># dead -&gt; alive</span>
+<span class="va">initial.values</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>phi <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html">runif</a></span><span class="op">(</span><span class="fl">1</span>,<span class="fl">0</span>,<span class="fl">1</span><span class="op">)</span>,
+                                  p <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html">runif</a></span><span class="op">(</span><span class="fl">1</span>,<span class="fl">0</span>,<span class="fl">1</span><span class="op">)</span><span class="op">)</span>
+
+<span class="co"># Parameters to monitor:</span>
+<span class="va">parameters.to.save</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimble-R-functions.html">c</a></span><span class="op">(</span><span class="st">"phi"</span>, <span class="st">"p"</span><span class="op">)</span>
+<span class="va">parameters.to.save</span>
+<span class="co">## [1] "phi" "p"</span>
+
+<span class="co"># MCMC details:</span>
+<span class="va">n.iter</span> <span class="op">&lt;-</span> <span class="fl">5000</span>
+<span class="va">n.burnin</span> <span class="op">&lt;-</span> <span class="fl">1000</span>
+<span class="va">n.chains</span> <span class="op">&lt;-</span> <span class="fl">2</span></code></pre></div>
+<p>This won’t work. You need a rHMMweighted.</p>
+<div class="sourceCode" id="cb125"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="co"># Run NIMBLE:</span>
+<span class="va">mcmc.output</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimbleMCMC.html">nimbleMCMC</a></span><span class="op">(</span>code <span class="op">=</span> <span class="va">hmm.survival.weighted</span>,
+                          constants <span class="op">=</span> <span class="va">my.constants</span>,
+                          data <span class="op">=</span> <span class="va">my.data</span>,
+                          inits <span class="op">=</span> <span class="va">initial.values</span>,
+                          monitors <span class="op">=</span> <span class="va">parameters.to.save</span>,
+                          niter <span class="op">=</span> <span class="va">n.iter</span>,
+                          nburnin <span class="op">=</span> <span class="va">n.burnin</span>,
+                          nchains <span class="op">=</span> <span class="va">n.chains</span><span class="op">)</span></code></pre></div>
+<p>We need a <code>rHMMweighted</code> as well.</p>
+<div class="sourceCode" id="cb126"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="va">rHMMweighted</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimbleFunction.html">nimbleFunction</a></span><span class="op">(</span>
+  run <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">n</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimNumeric.html">integer</a></span><span class="op">(</span><span class="op">)</span>,    <span class="co">## Observed capture (state) history</span>
+                 <span class="va">init</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/double.html">double</a></span><span class="op">(</span><span class="fl">1</span><span class="op">)</span>,
+                 <span class="va">probObs</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/double.html">double</a></span><span class="op">(</span><span class="fl">2</span><span class="op">)</span>,
+                 <span class="va">probTrans</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/double.html">double</a></span><span class="op">(</span><span class="fl">2</span><span class="op">)</span>,
+                 <span class="va">len</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/double.html">double</a></span><span class="op">(</span><span class="fl">0</span><span class="op">)</span>,
+                 <span class="va">mult</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/double.html">double</a></span><span class="op">(</span><span class="fl">0</span><span class="op">)</span>,
+                 <span class="va">checkRowSums</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/double.html">double</a></span><span class="op">(</span><span class="fl">0</span>, default <span class="op">=</span> <span class="fl">1</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span>
+    <span class="fu">returnType</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/double.html">double</a></span><span class="op">(</span><span class="fl">1</span><span class="op">)</span><span class="op">)</span>
+    <span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimDim.html">dim</a></span><span class="op">(</span><span class="va">probObs</span><span class="op">)</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span> <span class="op">!=</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimDim.html">dim</a></span><span class="op">(</span><span class="va">probTrans</span><span class="op">)</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span><span class="op">)</span> <span class="kw"><a href="https://rdrr.io/pkg/nimble/man/nimStop.html">stop</a></span><span class="op">(</span><span class="st">"In rHMM: Number of cols in probObs must equal number of cols in probTrans."</span><span class="op">)</span>
+    <span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimDim.html">dim</a></span><span class="op">(</span><span class="va">probTrans</span><span class="op">)</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span> <span class="op">!=</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimDim.html">dim</a></span><span class="op">(</span><span class="va">probTrans</span><span class="op">)</span><span class="op">[</span><span class="fl">2</span><span class="op">]</span><span class="op">)</span> <span class="kw"><a href="https://rdrr.io/pkg/nimble/man/nimStop.html">stop</a></span><span class="op">(</span><span class="st">"In rHMM: probTrans must be a square matrix."</span><span class="op">)</span>
+    <span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/MathFun.html">abs</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/sum.html">sum</a></span><span class="op">(</span><span class="va">init</span><span class="op">)</span> <span class="op">-</span> <span class="fl">1</span><span class="op">)</span> <span class="op">&gt;</span> <span class="fl">1e-06</span><span class="op">)</span> <span class="kw"><a href="https://rdrr.io/pkg/nimble/man/nimStop.html">stop</a></span><span class="op">(</span><span class="st">"In rHMM: Initial probabilities must sum to 1."</span><span class="op">)</span>
+    <span class="kw">if</span> <span class="op">(</span><span class="va">checkRowSums</span><span class="op">)</span> <span class="op">{</span>
+      <span class="va">transCheckPasses</span> <span class="op">&lt;-</span> <span class="cn">TRUE</span>
+      <span class="kw">for</span> <span class="op">(</span><span class="va">i</span> <span class="kw">in</span> <span class="fl">1</span><span class="op">:</span><span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimDim.html">dim</a></span><span class="op">(</span><span class="va">probTrans</span><span class="op">)</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span><span class="op">)</span> <span class="op">{</span>
+        <span class="va">thisCheckSum</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/sum.html">sum</a></span><span class="op">(</span><span class="va">probTrans</span><span class="op">[</span><span class="va">i</span>,<span class="op">]</span><span class="op">)</span>
+        <span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/MathFun.html">abs</a></span><span class="op">(</span><span class="va">thisCheckSum</span> <span class="op">-</span> <span class="fl">1</span><span class="op">)</span> <span class="op">&gt;</span> <span class="fl">1e-6</span><span class="op">)</span> <span class="op">{</span>
+          <span class="co">## Compilation doesn't support more than a simple string for stop()</span>
+          <span class="co">## so we provide more detail using a print().</span>
+          <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimPrint.html">print</a></span><span class="op">(</span><span class="st">"In rHMM: Problem with sum(probTrans[i,]) with i = "</span>, <span class="va">i</span>, <span class="st">". The sum should be 1 but is "</span>, <span class="va">thisCheckSum</span><span class="op">)</span>
+          <span class="va">transCheckPasses</span> <span class="op">&lt;-</span> <span class="cn">FALSE</span>
+        <span class="op">}</span>
+      <span class="op">}</span>
+      <span class="va">obsCheckPasses</span> <span class="op">&lt;-</span> <span class="cn">TRUE</span>
+      <span class="kw">for</span> <span class="op">(</span><span class="va">i</span> <span class="kw">in</span> <span class="fl">1</span><span class="op">:</span><span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimDim.html">dim</a></span><span class="op">(</span><span class="va">probObs</span><span class="op">)</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span><span class="op">)</span> <span class="op">{</span>
+        <span class="va">thisCheckSum</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/sum.html">sum</a></span><span class="op">(</span><span class="va">probObs</span><span class="op">[</span><span class="va">i</span>,<span class="op">]</span><span class="op">)</span>
+        <span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/MathFun.html">abs</a></span><span class="op">(</span><span class="va">thisCheckSum</span> <span class="op">-</span> <span class="fl">1</span><span class="op">)</span> <span class="op">&gt;</span> <span class="fl">1e-6</span><span class="op">)</span> <span class="op">{</span>
+          <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimPrint.html">print</a></span><span class="op">(</span><span class="st">"In rHMM: Problem with sum(probObs[i,]) with i = "</span>, <span class="va">i</span>, <span class="st">". The sum should be 1 but is "</span>, <span class="va">thisCheckSum</span><span class="op">)</span>
+          <span class="va">obsCheckPasses</span> <span class="op">&lt;-</span> <span class="cn">FALSE</span>
+        <span class="op">}</span>
+      <span class="op">}</span>
+      <span class="kw">if</span><span class="op">(</span><span class="op">!</span><span class="op">(</span><span class="va">transCheckPasses</span> <span class="op">|</span> <span class="va">obsCheckPasses</span><span class="op">)</span><span class="op">)</span>
+        <span class="kw"><a href="https://rdrr.io/pkg/nimble/man/nimStop.html">stop</a></span><span class="op">(</span><span class="st">"In rHMM: probTrans and probObs were not specified correctly.  Probabilities in each row (second dimension) must sum to 1."</span><span class="op">)</span>
+      <span class="kw">if</span><span class="op">(</span><span class="op">!</span><span class="va">transCheckPasses</span><span class="op">)</span>
+        <span class="kw"><a href="https://rdrr.io/pkg/nimble/man/nimStop.html">stop</a></span><span class="op">(</span><span class="st">"In rHMM: probTrans was not specified correctly.  Probabilities in each row (second dimension) must sum to 1."</span><span class="op">)</span>
+      <span class="kw">if</span><span class="op">(</span><span class="op">!</span><span class="va">obsCheckPasses</span><span class="op">)</span>
+        <span class="kw"><a href="https://rdrr.io/pkg/nimble/man/nimStop.html">stop</a></span><span class="op">(</span><span class="st">"In rHMM: probObs was not specified correctly. Probabilities in each row must sum to 1."</span><span class="op">)</span>
+    <span class="op">}</span>
+    <span class="va">ans</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimNumeric.html">numeric</a></span><span class="op">(</span><span class="va">len</span><span class="op">)</span>
+    <span class="va">probInit</span> <span class="op">&lt;-</span> <span class="va">init</span>
+    <span class="va">trueInit</span> <span class="op">&lt;-</span> <span class="fl">0</span>
+    <span class="va">r</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html">runif</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">0</span>, <span class="fl">1</span><span class="op">)</span>
+    <span class="va">j</span> <span class="op">&lt;-</span> <span class="fl">1</span>
+    <span class="kw">while</span> <span class="op">(</span><span class="va">r</span> <span class="op">&gt;</span> <span class="fu"><a href="https://rdrr.io/r/base/sum.html">sum</a></span><span class="op">(</span><span class="va">probInit</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="va">j</span><span class="op">]</span><span class="op">)</span><span class="op">)</span> <span class="va">j</span> <span class="op">&lt;-</span> <span class="va">j</span> <span class="op">+</span> <span class="fl">1</span>
+    <span class="va">trueInit</span> <span class="op">&lt;-</span> <span class="va">j</span>
+    <span class="va">trueState</span> <span class="op">&lt;-</span> <span class="va">trueInit</span>
+    <span class="kw">for</span> <span class="op">(</span><span class="va">i</span> <span class="kw">in</span> <span class="fl">1</span><span class="op">:</span><span class="va">len</span><span class="op">)</span> <span class="op">{</span>
+      <span class="co"># Transition to a new true state</span>
+      <span class="va">r</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html">runif</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">0</span>, <span class="fl">1</span><span class="op">)</span>
+      <span class="va">j</span> <span class="op">&lt;-</span> <span class="fl">1</span>
+      <span class="kw">while</span> <span class="op">(</span><span class="va">r</span> <span class="op">&gt;</span> <span class="fu"><a href="https://rdrr.io/r/base/sum.html">sum</a></span><span class="op">(</span><span class="va">probTrans</span><span class="op">[</span><span class="va">trueState</span>, <span class="fl">1</span><span class="op">:</span><span class="va">j</span><span class="op">]</span><span class="op">)</span><span class="op">)</span> <span class="va">j</span> <span class="op">&lt;-</span> <span class="va">j</span> <span class="op">+</span> <span class="fl">1</span>
+      <span class="va">trueState</span> <span class="op">&lt;-</span> <span class="va">j</span>
+      <span class="co"># Detect based on the true state</span>
+      <span class="va">r</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html">runif</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">0</span>, <span class="fl">1</span><span class="op">)</span>
+      <span class="va">j</span> <span class="op">&lt;-</span> <span class="fl">1</span>
+      <span class="kw">while</span> <span class="op">(</span><span class="va">r</span> <span class="op">&gt;</span> <span class="fu"><a href="https://rdrr.io/r/base/sum.html">sum</a></span><span class="op">(</span><span class="va">probObs</span><span class="op">[</span><span class="va">trueState</span>, <span class="fl">1</span><span class="op">:</span><span class="va">j</span><span class="op">]</span><span class="op">)</span><span class="op">)</span> <span class="va">j</span> <span class="op">&lt;-</span> <span class="va">j</span> <span class="op">+</span> <span class="fl">1</span>
+      <span class="va">ans</span><span class="op">[</span><span class="va">i</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="va">j</span>
+    <span class="op">}</span>
+    <span class="kw"><a href="https://rdrr.io/r/base/function.html">return</a></span><span class="op">(</span><span class="va">ans</span><span class="op">)</span>
+  <span class="op">}</span><span class="op">)</span></code></pre></div>
+<div class="sourceCode" id="cb127"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="co"># Run NIMBLE:</span>
+<span class="va">mcmc.output</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimbleMCMC.html">nimbleMCMC</a></span><span class="op">(</span>code <span class="op">=</span> <span class="va">hmm.survival.weighted</span>,
+                          constants <span class="op">=</span> <span class="va">my.constants</span>,
+                          data <span class="op">=</span> <span class="va">my.data</span>,
+                          inits <span class="op">=</span> <span class="va">initial.values</span>,
+                          monitors <span class="op">=</span> <span class="va">parameters.to.save</span>,
+                          niter <span class="op">=</span> <span class="va">n.iter</span>,
+                          nburnin <span class="op">=</span> <span class="va">n.burnin</span>,
+                          nchains <span class="op">=</span> <span class="va">n.chains</span><span class="op">)</span>
+
+<span class="co"># Numerical summaries:</span>
+<span class="fu"><a href="https://rdrr.io/pkg/MCMCvis/man/MCMCsummary.html">MCMCsummary</a></span><span class="op">(</span><span class="va">mcmc.output</span>, round <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></code></pre></div>
+<p><strong>Something doesn’t work. I found a fix during the workshop, but can’t make it work here. Try and simplify the fn first, and make sense of rHMM. Then resume.</strong></p>
+</div>
+<div id="summary-2" class="section level2" number="3.10">
+<h2>
+<span class="header-section-number">3.10</span> Summary<a class="anchor" aria-label="anchor" href="#summary-2"><i class="fas fa-link"></i></a>
+</h2>
+<ul>
+<li><p>Blabla.</p></li>
+<li><p>Blabla.</p></li>
+<li><p>Recall 3 problems of HMM?</p></li>
+</ul>
+</div>
+<div id="suggested-reading-2" class="section level2" number="3.11">
+<h2>
+<span class="header-section-number">3.11</span> Suggested reading<a class="anchor" aria-label="anchor" href="#suggested-reading-2"><i class="fas fa-link"></i></a>
+</h2>
+<ul>
+<li><p>Zucchini, MacDonald and Langrock (2016) <a href="https://www.routledge.com/Hidden-Markov-Models-for-Time-Series-An-Introduction-Using-R-Second-Edition/Zucchini-MacDonald-Langrock/p/book/9781482253832">Hidden Markov Models for Time Series: An Introduction Using R (2nd ed)</a>. Chapman and Hall/CRC.</p></li>
+<li><p>McClintock, B.T., Langrock, R., Gimenez, O., Cam, E., Borchers, D.L., Glennie, R. and Patterson, T.A. (2020), <a href="https://onlinelibrary.wiley.com/doi/full/10.1111/ele.13610">Uncovering ecological state dynamics with hidden Markov models</a>. Ecology Letters, 23: 1878-1903.</p></li>
+<li><p>Yackulic, C. B. Dodrill, M., Dzul, M., Sanderlin, J. S., and Reid, J. A.. (2020). <a href="https://esajournals.onlinelibrary.wiley.com/doi/abs/10.1002/eap.2112">A need for speed in Bayesian population models: a practical guide to marginalizing and recovering discrete latent states</a>. Ecological Applications 30:e02112.</p></li>
+<li><p>L. R. Rabiner (1989). <a href="https://web.ece.ucsb.edu/Faculty/Rabiner/ece259/Reprints/tutorial%20on%20hmm%20and%20applications.pdf">A tutorial on hidden Markov models and selected applications in speech recognition</a>. Proceedings of the IEEE, 77:257-286.</p></li>
+</ul>
+<!-- heller_novel_2021 --><!-- Gimenez et al. 2007, Royle 2008. Recall difference between SSM and HMM? -->
+</div>
+</div>
+
 
 
 
@@ -1975,14 +5482,34 @@ winter 5
 <li><a class="nav-link" href="#longitudinal-data"><span class="header-section-number">3.2</span> Longitudinal data</a></li>
 <li>
 <a class="nav-link" href="#a-model-for-longitudinal-data"><span class="header-section-number">3.3</span> A model for longitudinal data</a><ul class="nav navbar-nav">
-<li><a class="nav-link" href="#transition-matrix"><span class="header-section-number">3.3.1</span> Transition matrix</a></li>
-<li><a class="nav-link" href="#initial-states"><span class="header-section-number">3.3.2</span> Initial states</a></li>
-<li><a class="nav-link" href="#likelihood"><span class="header-section-number">3.3.3</span> Likelihood</a></li>
-<li><a class="nav-link" href="#example"><span class="header-section-number">3.3.4</span> Example</a></li>
+<li><a class="nav-link" href="#assumptions"><span class="header-section-number">3.3.1</span> Assumptions</a></li>
+<li><a class="nav-link" href="#transition-matrix"><span class="header-section-number">3.3.2</span> Transition matrix</a></li>
+<li><a class="nav-link" href="#initial-states"><span class="header-section-number">3.3.3</span> Initial states</a></li>
+<li><a class="nav-link" href="#likelihood"><span class="header-section-number">3.3.4</span> Likelihood</a></li>
+<li><a class="nav-link" href="#example"><span class="header-section-number">3.3.5</span> Example</a></li>
 </ul>
 </li>
 <li><a class="nav-link" href="#bayesian-formulation"><span class="header-section-number">3.4</span> Bayesian formulation</a></li>
 <li><a class="nav-link" href="#nimble-implementation"><span class="header-section-number">3.5</span> Nimble implementation</a></li>
+<li>
+<a class="nav-link" href="#hidden-markov-models"><span class="header-section-number">3.6</span> Hidden Markov models</a><ul class="nav navbar-nav">
+<li><a class="nav-link" href="#capture-recapture-data"><span class="header-section-number">3.6.1</span> Capture-recapture data</a></li>
+<li><a class="nav-link" href="#observation-matrix"><span class="header-section-number">3.6.2</span> Observation matrix</a></li>
+<li><a class="nav-link" href="#hidden-markov-model"><span class="header-section-number">3.6.3</span> Hidden Markov model</a></li>
+<li><a class="nav-link" href="#likelihood-1"><span class="header-section-number">3.6.4</span> Likelihood</a></li>
+</ul>
+</li>
+<li><a class="nav-link" href="#fitting-hmm-with-nimble"><span class="header-section-number">3.7</span> Fitting HMM with NIMBLE</a></li>
+<li>
+<a class="nav-link" href="#marginalization"><span class="header-section-number">3.8</span> Marginalization</a><ul class="nav navbar-nav">
+<li><a class="nav-link" href="#theory"><span class="header-section-number">3.8.1</span> Theory</a></li>
+<li><a class="nav-link" href="#example-1"><span class="header-section-number">3.8.2</span> Example</a></li>
+<li><a class="nav-link" href="#implementation-in-nimble"><span class="header-section-number">3.8.3</span> Implementation in NIMBLE</a></li>
+</ul>
+</li>
+<li><a class="nav-link" href="#pooled-encounter-histories"><span class="header-section-number">3.9</span> Pooled encounter histories</a></li>
+<li><a class="nav-link" href="#summary-2"><span class="header-section-number">3.10</span> Summary</a></li>
+<li><a class="nav-link" href="#suggested-reading-2"><span class="header-section-number">3.11</span> Suggested reading</a></li>
 </ul>
 
       <div class="book-extra">
@@ -2000,7 +5527,7 @@ winter 5
 <footer class="bg-primary text-light mt-5"><div class="container"><div class="row">
 
   <div class="col-12 col-md-6 mt-3">
-    <p>"<strong>Bayesian Analysis of Capture-Recapture Data with Hidden Markov Models</strong>: Theory and Case Studies in R" was written by Olivier Gimenez. It was last built on 2022-02-10.</p>
+    <p>"<strong>Bayesian Analysis of Capture-Recapture Data with Hidden Markov Models</strong>: Theory and Case Studies in R" was written by Olivier Gimenez. It was last built on 2022-02-12.</p>
   </div>
 
   <div class="col-12 col-md-6 mt-3">
