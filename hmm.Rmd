@@ -2,11 +2,11 @@
 
 ## Introduction
 
-In this third chapter, you will learn the basics on Markov models and how to fit them to longitudinal data using NIMBLE. Because in real life, individuals may go undetected and their status be unknow, you will also learn how to manipulate the extension of Markov models to hidden states, so-called hidden Markov models. **Mention marginalization and pooling. **
+In this third chapter, you will learn the basics on Markov models and how to fit them to longitudinal data using NIMBLE. In real life however, individuals may go undetected and their status be unknown. You will also learn how to manipulate the extension of Markov models to hidden states, so-called hidden Markov models. 
 
 ## Longitudinal data
 
-Let's get back to our survival example, and denote $z_i$ the state of individual $i$ with $z_i = 1$ if alive and $z_i = 0$ if dead. We have a total of $z = \displaystyle{\sum_{i=1}^{n}{z_i}}$ survivors out of $n$ released animals with winter survival probability $\phi$. Our model so far is a combination of a binomial likelihood and a Beta prior with parameters 1 and 1, which is also a uniform distribution between 0 and 1. It can be written as:
+Let's get back to our survival example, and denote $z_i$ the state of individual $i$ with $z_i = 1$ if alive and $z_i = 0$ if dead. We have a total of $z = \displaystyle{\sum_{i=1}^{n}{z_i}}$ survivors out of $n$ released animals with winter survival probability $\phi$. Our model so far is a combination of a binomial likelihood and a Beta prior with parameters 1 and 1, which is also a uniform distribution between 0 and 1. It can be written as^[I write models the way Richard McElreath does it in his book and video lectures [Statistical Rethinking](https://xcelab.net/rm/statistical-rethinking/).]:
 
 \begin{align*}
    z &\sim \text{Binomial}(n, \phi) &\text{[likelihood]}
@@ -24,25 +24,29 @@ Because the binomial distribution is just a sum of independent Bernoulli outcome
 
 It is like flipping a coin for each individual and get a survivor with probability $\phi$.
 
-In this set up, we consider a single winter. But for many species, we'll need to collect data on the long term to get a representative estimate of survival. Therefore what if we had say big $T$ five winters?
+In this set up, we consider a single winter. But for many species, we need to collect data on the long term to get a representative estimate of survival. Therefore what if we had say $T = 5$ winters?
 
 Let us denote $z_{i,t} = 1$ if individual $i$ alive at winter $t$, and $z_{i,t} = 2$ if dead. Then longitudinal data look like in the table below. Each row is an individual $i$, and columns are for winters $t$, or sampling occasions. Variable $z$ is indexed by both $i$ and $t$, and takes value 1 if individual $i$ is alive in winter $t$, and 2 otherwise.
 
-
 ```{r echo = FALSE}
+# 1 = alive, 2 = dead
 nind <- 57
 nocc <- 5
-first <- rep(1, nind) # single cohort
+phi <- 0.8 # survival probability
+delta <- c(1,0) # (Pr(alive at t = 1), Pr(dead at t = 1))
+Gamma <- matrix(NA, 2, 2) # transition matrix
+Gamma[1,1] <- phi      # Pr(alive t -> alive t+1)
+Gamma[1,2] <- 1 - phi  # Pr(alive t -> dead t+1)
+Gamma[2,1] <- 0        # Pr(dead t -> alive t+1)
+Gamma[2,2] <- 1        # Pr(dead t -> dead t+1)
 z <- matrix(NA, nrow = nind, ncol = nocc)
-phi <- 0.8
 set.seed(2022)
 for (i in 1:nind){
-  z[i,first[i]] <- 1
-  for (t in (first[i]+1):nocc){
-    z[i,t] <- rbinom(1, 1, phi * z[i,t-1]) # once you're dead z = 0, you remain dead
+  z[i,1] <- nimble::rcat(n = 1, prob = delta) # 1 for sure
+  for (t in 2:nocc){
+    z[i,t] <- nimble::rcat(n = 1, prob = Gamma[z[i,t-1],1:2]) 
   }
 }
-z[z==0] <- 2 # 2 = dead, 1 = alive
 colnames(z) <- paste0("winter ", 1:nocc)
 z %>%
   as_tibble() %>%
@@ -53,11 +57,9 @@ z %>%
 #                            latex_options = "scale_down")
 ```
 
-## A model for longitudinal data
+## A Markov model for longitudinal data
 
-Let's think of a model for these data. The objective remains the same, estimating survival. To build this model, we'll make assumptions, go through its components and write down its likelihood.
-
-**On a déjà vu chaîne Markov chapitre MCMC**
+Let's think of a model for these data. The objective remains the same, estimating survival. To build this model, we'll make assumptions, go through its components and write down its likelihood. Note that we already encountered Markov models in Section \@ref(markovmodelmcmc).
 
 ### Assumptions
 
@@ -67,7 +69,7 @@ Second, if an animal is alive in a given winter, the probability it survives to 
 
 Third, if an animal is dead a winter, it remains dead, unless you believe in zombies.
 
-A Markov process can be represented this way:
+Our Markov process can be represented this way:
 
 ```{r, engine = 'tikz', echo = FALSE}
 \usetikzlibrary{arrows, fit, positioning, automata}
@@ -89,7 +91,7 @@ A Markov process can be represented this way:
 \end{tikzpicture}
 ```
 
-A realization of this Markov process is, for example:
+An example of this Markov process is, for example:
 
 ```{r, engine = 'tikz', echo = FALSE}
 \usetikzlibrary{arrows, fit, positioning, automata}
@@ -111,11 +113,11 @@ A realization of this Markov process is, for example:
 \end{tikzpicture}
 ```
 
-Going from a winter to the next is driven by survival and mortality processes. The probability of going from alive or 1 to alive or 1 is $\phi$. Then from alive 1 to dead 2 is $1 - \phi$. And the probability to remain dead is 1, that is to go from state 2 dead to state 2 for dead.
+Here the animal remains alive over the three first time intervals $(z_{i,1} = z_{i,2} = z_{i,3} = 1)$ with probability $\phi$ until it dies over the fourth time interval $(z_{i,4} = 2)$ with probability $1-\phi$ then remains dead from then onwards $(z_{i,t \geq 5} = 2)$ with probability 1. 
 
 ### Transition matrix
 
-You might have figured it out already, the core of a Markov process is made of transition probabilities between states alive and dead. 
+You might have figured it out already, the core of our Markov process is made of transition probabilities between states alive and dead. 
 
 For example, the probability of transitioning from state alive at $t-1$ to state alive at $t$ is $\Pr(z_{i,t} = 1 | z_{i,t-1} = 1) = \gamma_{1,1}$. It is the survival probability $\phi$.
 
@@ -169,7 +171,7 @@ A Markov process has to start somewhere. We need the probabilities of initial st
 
 We will gather the probability of being in each state (alive or 1 and dead or 2) in the first winter in a vector. We will use $\mathbf{\delta} = \left(\Pr(z_{i,1} = 1), \Pr(z_{i,1} = 2)\right)$.  
 
-All individuals are marked and released in the first winter, hence alive when first captured, which means that they are all in state alive or 1 for sure. Therefore we have $\mathbf{\delta} = \left(1, 0\right)$.
+For simplicity, we will assume that all individuals are marked and released in the first winter, hence alive when first captured, which means that they are all in state alive or 1 for sure. Therefore we have $\mathbf{\delta} = \left(1, 0\right)$.
 
 ### Likelihood
 
@@ -265,44 +267,32 @@ The probability of having the sequence alive, alive and dead is the probability 
 
 Now that we have the likelihood of a Markov model, we can complement it with a prior for survival to apply the Bayes theorem. 
 
-Before implementing this model in NIMBLE, we note that the likelihood is a product of conditional probabilities of binary events (alive or dead) that are drawn in Bernoulli distributions, or for more generality, their extension categorical distributions. **SMOOTH AND EXPLAIN CATEGORICAL DISTRIBUTIONS. MENTION ITS MULTINOMIAL WITH ONE TRIAL**.
-
-The categorical distribution is a multinomial distribution with a single draw.
-
-https://en.wikipedia.org/wiki/Categorical_distribution
-
-The categorical distribution is the generalization of the Bernoulli distribution for a categorical random variable, i.e. for a discrete variable with more than two possible outcomes, such as the roll of a dice. On the other hand, the categorical distribution is a special case of the multinomial distribution, in that it gives the probabilities of potential outcomes of a single drawing rather than multiple drawings.
-
+Before implementing this model in NIMBLE, we note that the likelihood is a product of conditional probabilities of binary events (alive or dead). Usually binary events are associated with the Bernoulli distribution. Here however,  we will use its extension to several outcomes (from a coin to a dice) known as the categorical distribution^[The categorical distribution is a multinomial distribution with a single draw.]. To get a better idea of how the categorical distribution works, let's simulate from it. Consider for example a random value drawn from a categorical distribution with probability 0.1, 0.3 and 0.6. Think of a dice with three faces, face 1 has probability 0.1 of occurring, face 2 probability 0.3 and face 3 has probability 0.6, the sum of these probabilities being 1. We expect to get a 3 more often than a 2 and rarely a 1: 
 ```{r}
-nimble::rcat(n = 20, prob = c(0.1, 0.3, 0.6))
+nimble::rcat(n = 1, prob = c(0.1, 0.3, 0.6))
 ```
 
+Here is another example in which we sample 20 times in a categorical distribution with probabilities 0.1, 0.1, 0.4, 0.2 and 0.2, hence a dice with 5 faces:
 ```{r}
 nimble::rcat(n = 20, prob = c(0.1, 0.1, 0.4, 0.2, 0.2))
 ```
 
-Initial state is categorical with probability $\delta$. That is you have a dice with two faces, a coin, and you have some probability to be alive, and one minus that probability to be dead. Of course, it you want your Markov chain to start, you'd better say it's alive so that delta is just $(1,0)$:
+In this chapter, you will familiarise yourself with the categorical distribution in binary situations, which should make the transition to more states than just alive and dead smoother in the next chapters. 
+
+Initial state is a categorical random variable with probability $\delta$. That is you have a dice with two faces, or a coin, and you have some probability to be alive, and one minus that probability to be dead. Of course, it you want your Markov chain to start, you'd better say it's alive so that $\delta$ is just $(1,0)$:
 
 \begin{align*}
    z_1 &\sim \text{Categorical}(\delta) &\text{[likelihood, }t = 1 \text{]}\\
 \end{align*}
 
-Now the main part is the dynamic of the states. Our state at $t$ depends only on your state at $t-1$, and it is a categorical random variable. And the probabilities are given by the rows of the transition matrix:
-
-\begin{align*}
-   z_1 &\sim \text{Categorical}(\delta) &\text{[likelihood, }t = 1 \text{]}\\
-   z_t | z_{t-1} &\sim \text{Categorical}(\gamma_{z_{t-1},z_{t}}) &\text{[likelihood, }t > 1 \text{]}\\
-\end{align*}
-
-We also need a prior on survival. As usual we take a uniform distribution between 0 and 1, or a Beta distribution with parameters 1 and 1. Overall our model is: 
+Now the main part is the dynamic of the states. The state $z_t$ at $t$ depends only on the known state $z_{t-1}$ at $t-1$, and is a categorical random variable which probabilities are given by row $z_{t-1}$ of the transition matrix $\mathbf{\Gamma} = \gamma_{z_{t-1},z_{t}}$:
 
 \begin{align*}
    z_1 &\sim \text{Categorical}(\delta) &\text{[likelihood, }t = 1 \text{]}\\
    z_t | z_{t-1} &\sim \text{Categorical}(\gamma_{z_{t-1},z_{t}}) &\text{[likelihood, }t > 1 \text{]}\\
-  \phi &\sim \text{Beta}(1, 1) &\text{[prior for }\phi \text{]} \\
 \end{align*}
 
-If $z$ at $t-1$ is alive, it is the first row in $\mathbf{\Gamma}$, 
+For example, if individual $i$ is alive over $(t-1,t)$ i.e. $z_{t-1} = 1$, we need the first row in $\mathbf{\Gamma}$, 
 
 \begin{align*}
 \mathbf{\Gamma} =
@@ -312,9 +302,9 @@ If $z$ at $t-1$ is alive, it is the first row in $\mathbf{\Gamma}$,
 \end{array}\right)
 \end{align*}
 
-that is $\color{blue}{\gamma_{z_{t-1} = 1,z_{t}} = (\phi, 1-\phi)}$.
+that is $\color{blue}{\gamma_{z_{t-1} = 1,z_{t}} = (\phi, 1-\phi)}$ and $z_t | z_{t-1} = 1 \sim \text{Categorical}((\phi, 1-\phi))$. 
 
-Otherwise, if $z$ at $t-1$ is dead that is 2, then it is the second row in $\mathbf{\Gamma}$:
+Otherwise, if individual $i$ dies over $(t-1,t)$ i.e. $z_{t-1} = 2$, we need the second row in $\mathbf{\Gamma}$:
 
 \begin{align*}
 \mathbf{\Gamma} =
@@ -324,22 +314,94 @@ Otherwise, if $z$ at $t-1$ is dead that is 2, then it is the second row in $\mat
 \end{array}\right)
 \end{align*}
 
-If dead you remain dead with probability equals to 1, $\color{blue}{\gamma_{z_{t-1} = 2,z_{t}} = (0, 1)}$.
+that is $\color{blue}{\gamma_{z_{t-1} = 2,z_{t}} = (0, 1)}$ and $z_t | z_{t-1} = 2 \sim \text{Categorical}((0, 1))$ (if the individual is dead, it remains dead with probability 1). 
 
-## Nimble implementation
+We also need a prior on survival. Without surprise, we use a uniform distribution between 0 and 1, or a Beta distribution with parameters 1 and 1. Overall our model is: 
 
-**Introduce loops. First time we see them in the book. Maybe for a single individual first, then embed time loop in individual loop. **
+\begin{align*}
+   z_1 &\sim \text{Categorical}(\delta) &\text{[likelihood, }t = 1 \text{]}\\
+   z_t | z_{t-1} &\sim \text{Categorical}(\gamma_{z_{t-1},z_{t}}) &\text{[likelihood, }t > 1 \text{]}\\
+  \phi &\sim \text{Beta}(1, 1) &\text{[prior for }\phi \text{]} \\
+\end{align*}
 
-In Nimble, we will use the categorical distribution `dcat()`. Nimble code:
-```{r}
+
+## NIMBLE implementation
+
+How to implement the Markov model we just built in NIMBLE? First things first, we need some bricks that are relatively easy to put in place. Let's start with the prior on survival, the vector of initial state probabilities and the transition matrix:
+```{r eval = FALSE}
 markov.survival <- nimbleCode({
   phi ~ dunif(0, 1) # prior
+  delta[1] <- 1          # Pr(alive t = 1) = 1
+  delta[2] <- 0          # Pr(dead t = 1) = 0
   gamma[1,1] <- phi      # Pr(alive t -> alive t+1)
   gamma[1,2] <- 1 - phi  # Pr(alive t -> dead t+1)
   gamma[2,1] <- 0        # Pr(dead t -> alive t+1)
   gamma[2,2] <- 1        # Pr(dead t -> dead t+1)
+...
+```
+
+Alternatively, you can define vectors and matrices in NIMBLE like you would do it in R. You can write:
+```{r eval = FALSE}
+markov.survival <- nimbleCode({
+  phi ~ dunif(0, 1) # prior
+  delta[1:2] <- c(1, 0) # vector of initial state probabilities
+  gamma[1:2,1:2] <- matrix( c(phi, 0, 1 - phi, 1), nrow = 2) # transition matrix
+...
+```
+
+Now there are two important dimensions to our model, along which we need to repeat tasks, namely individual and time. As for time, we describe the successive events of survival, say for individual $i$:
+```{r eval = FALSE}
+z[i,1] ~ dcat(delta[1:2])           # t = 1
+z[i,2] ~ dcat(gamma[z[i,1], 1:2])   # t = 2
+z[i,3] ~ dcat(gamma[z[i,2], 1:2])   # t = 3
+...
+z[i,T] ~ dcat(gamma[z[i,T-1], 1:2]) # t = T
+```
+
+There is a more efficient way to write this piece of code by using a for loop, that is a sequence of instructions that we repeat. Here, we condense the previous code into:
+```{r eval = FALSE}
+z[i,1] ~ dcat(delta[1:2])             # t = 1
+for (t in 2:T){ # loop over time t
+  z[i,t] ~ dcat(gamma[z[i,t-1], 1:2]) # t = 2,...,T
+}
+```
+
+Now we just need to do the same for all individuals. We use another loop:
+```{r eval = FALSE}
+for (i in 1:N){ # loop over individual i
+  z[i,1] ~ dcat(delta[1:2]) # t = 1
+  for (j in 2:T){ # loop over time t
+    z[i,j] ~ dcat(gamma[z[i,j-1], 1:2]) # t = 2,...,T
+  } # t
+} # i
+```
+
+**Do I need to say anything here about `dcat()`?**
+
+Puting everything together, the NIMBLE code for our Markov model is:
+```{r}
+markov.survival <- nimbleCode({
+  phi ~ dunif(0, 1) # prior
   delta[1] <- 1          # Pr(alive t = 1) = 1
   delta[2] <- 0          # Pr(dead t = 1) = 0
+  gamma[1,1] <- phi      # Pr(alive t -> alive t+1)
+  gamma[1,2] <- 1 - phi  # Pr(alive t -> dead t+1)
+  gamma[2,1] <- 0        # Pr(dead t -> alive t+1)
+  gamma[2,2] <- 1        # Pr(dead t -> dead t+1)
+  # likelihood
+  for (i in 1:N){ # loop over individual i
+    z[i,1] ~ dcat(delta[1:2]) # t = 1
+    for (j in 2:T){ # loop over time t
+      z[i,j] ~ dcat(gamma[z[i,j-1], 1:2]) # t = 2,...,T
+    } # t
+  } # i
+})
+```
+
+**Do I need to say that vector $\delta$ is used as a placeholder for more complex models to come? Here, you could write `z[i,1] <- 1` (show some code?).**
+
+```{r, eval = FALSE}
+markov.survival <- nimbleCode({
   # likelihood
   for (i in 1:N){
     z[i,1] ~ dcat(delta[1:2])
@@ -349,59 +411,33 @@ markov.survival <- nimbleCode({
   }})
 ```
 
-Vector $\delta$ is used as a placeholder for more complex models to come. Here, you could write `z[i,1] <- 1`.
-
-**SHOW SOME CODE**
-
-<!-- ## Nimble awesomness -->
-
-<!-- You should be able to define vectors and matrices like you do in `R`. -->
-
-<!-- ```{r, eval = FALSE} -->
-<!-- markov.survival <- nimbleCode({ -->
-<!--   phi ~ dunif(0, 1) # prior -->
-<!--   gamma[1:2,1:2] <- matrix( c(phi, 0, 1 - phi, 1), nrow = 2) #<< -->
-<!--   delta[1:2] <- c(1, 0) #<< -->
-<!--   # likelihood -->
-<!--   for (i in 1:N){ -->
-<!--     z[i,1] ~ dcat(delta[1:2]) -->
-<!--     for (j in 2:T){ -->
-<!--       z[i,j] ~ dcat(gamma[z[i,j-1], 1:2]) -->
-<!--     } -->
-<!--   }}) -->
-<!-- ``` -->
-
-Constants and data:
+Now we're ready to resume our standard NIMBLE workflow. First we read in data. Because we have loops and indices that do not change, we use constants as explained in Section \@ref{gettingstartedinnimble}:
 ```{r}
 my.constants <- list(N = 57, T = 5)
-my.constants
-
 my.data <- list(z = z)
 ```
 
-**Need to comment on constants, and backward reference to NIMBLE chapter and relevant section. **
-
-Initial values:
+We also specify initial values for survival with a function:
 ```{r}
 initial.values <- function() list(phi = runif(1,0,1))
 initial.values()
 ```
 
-Parameters to monitor:
+There is a single parameter to monitor:
 ```{r}
 parameters.to.save <- c("phi")
 parameters.to.save
 ```
 
-MCMC details:
+We run 2 chains with 5000 iterations including 1000 iterations as burnin:
 ```{r}
 n.iter <- 5000
 n.burnin <- 1000
 n.chains <- 2
 ```
 
-Run Nimble:
-```{r, message=FALSE, cache = TRUE}
+Let's run NIMBLE:
+```{r, eval=FALSE}
 mcmc.output <- nimbleMCMC(code = markov.survival,
                           constants = my.constants,
                           data = my.data,
@@ -424,33 +460,35 @@ mcmc.output <- nimbleMCMC(code = markov.survival,
                           progressBar = FALSE)
 ```
 
-Posterior distribution of survival:
+Let's calculate the usual posterior numerical summaries for survival:
 ```{r}
 MCMCsummary(mcmc.output, round = 2)
 ```
 
-Posterior mean and median are close to $0.8$. Cool! The data was simulated, with (true) survival $\phi = 0.8$.
-
-RELEASE SIMULATION CODE. 
-
+Posterior mean and median are close to $0.8$. This is fortunate since the data was simulated with (actual) survival $\phi = 0.8$. The code I used was:
 ```{r echo = TRUE, eval = TRUE}
+# 1 = alive, 2 = dead
 nind <- 57
 nocc <- 5
-first <- rep(1, nind) # single cohort
+phi <- 0.8 # survival probability
+delta <- c(1,0) # (Pr(alive at t = 1), Pr(dead at t = 1))
+Gamma <- matrix(NA, 2, 2) # transition matrix
+Gamma[1,1] <- phi      # Pr(alive t -> alive t+1)
+Gamma[1,2] <- 1 - phi  # Pr(alive t -> dead t+1)
+Gamma[2,1] <- 0        # Pr(dead t -> alive t+1)
+Gamma[2,2] <- 1        # Pr(dead t -> dead t+1)
 z <- matrix(NA, nrow = nind, ncol = nocc)
-phi <- 0.8 # survival
-set.seed(2022) # set seed for reproducibility
-for (i in 1:nind){ # loop over individual i
-  z[i,first[i]] <- 1 # alive at first capture
-  for (t in (first[i]+1):nocc){ # loop over time t
-    z[i,t] <- rbinom(1, 1, phi * z[i,t-1]) # Bernoulli draw
-  } # t
-} # i
-z[z==0] <- 2 # 2 = dead, 1 = alive
+set.seed(2022)
+for (i in 1:nind){
+  z[i,1] <- nimble::rcat(n = 1, prob = delta) # 1 for sure
+  for (t in 2:nocc){
+    z[i,t] <- nimble::rcat(n = 1, prob = Gamma[z[i,t-1],1:2]) 
+  }
+}
 head(z) 
 ```
 
-**Note also that dcat everywhere could be replaced by dbern. Different sampler? Dcat cool because allows more than two outcomes, forward reference to next chapters.**
+**Note also that dcat() everywhere could be replaced by dbern(). Does it make any difference? I think dcat() uses less efficient samplers than dbern(). To be checked. But dcat() convenient in terms of model building because allows more than two outcomes - forward reference to next chapters.**
 
 ## Hidden Markov models
 
@@ -639,6 +677,10 @@ For states (in gray), $z = 1$ is alive, $z = 2$ is dead. For observations (in wh
 ### Likelihood
 
 In the likelihood, we have observed $y$. Parameters are $\phi$, $p$ and unobserved or partially observed $z$. Shall we estimate the latent states $z$ or not? Treat them as parameters? 
+
+Complexity high, but ok. Comment les z sont-ils estimés puisqu'on somme dessus? See comments in paper by Daniel Turek sur number of nodes. Et pb convergence. OK forward algorithm for marginalization. 
+
+**Regarder dans la thèse de Lauriane aussi.** 
 
 We can get rid of the states, so that likelihood is a function of $\phi$ and $p$ only. This is the function we would maximize in a Frequentist approach. Reference forward to section below (forward algorithm). 
 
@@ -830,6 +872,12 @@ The data is simulated, with true survival $\phi = 0.8$ and detection $p = 0.6$.
 
 **Faire lien avec forward algorithm. Reprendre dHMM en la simplifiant au max et en faisant le lien avec l'algo. Match notation.**
 
+**Faire une seule cohorte dans les simulations, tout le monde part de occasion 1, comme ça on ne gère pas la matrice d'observation at first encounter, ni le vecteur des first.**
+
+**Il faut quand même ré-écrire dHMM et rHMM plus simplement, en enlevant tous les tests, et en reprenant le forward algorithm correctement, comme dans la vraisemblance que j'utilise en freq pour les HMM.**
+
+**Ensuite, dans le chapitre sur la survie, les transitions et le multievent, on rentrera les first,  et obs matrix at first encounter.** 
+
 ### Theory
 
 Using the formula of total probability, then the likelihood of a Markov chain:
@@ -982,50 +1030,11 @@ dHMMweighted <- nimbleFunction(
                   len = double(0),
                   mult = double(0), # NEWLY ADDED: argument stating number of occurrences 
                                     # of same encounter history in entire dataset 
-                  checkRowSums = integer(0, default = 0),  
                   log = integer(0, default = 0)) 
   {
-    if (length(x) != len) 
-      nimStop("In dHMM: Argument len must be length of x or 0.")
-    if (nimDim(probObs)[1] != nimDim(probTrans)[1]) 
-      nimStop("In dHMM: Length of dimension 1 in probObs must equal length of dimension 1 in probTrans.")
-    if (nimDim(probTrans)[1] != nimDim(probTrans)[2]) 
-      nimStop("In dHMM: probTrans must be a square matrix.")
-    ## There was a strict test for sum(init) == 1.  This could be true in R and false in C++!
-    if (abs(sum(init) - 1) > 1e-06) 
-      nimStop("In dHMM: Initial probabilities must sum to 1.")
-    if (checkRowSums) {
-      transCheckPasses <- TRUE
-      for (i in 1:nimDim(probTrans)[1]) {
-        thisCheckSum <- sum(probTrans[i, ])
-        if (abs(thisCheckSum - 1) > 1e-06) {
-          nimPrint("In dHMM: Problem with sum(probTrans[i,]) with i = ", 
-                   i, ". The sum should be 1 but is ", thisCheckSum)
-          transCheckPasses <- FALSE
-        }
-      }
-      obsCheckPasses <- TRUE
-      for (i in 1:nimDim(probObs)[1]) {
-        thisCheckSum <- sum(probObs[i, ])
-        if (abs(thisCheckSum - 1) > 1e-06) {
-          nimPrint("In dHMM: Problem with sum(probObs[i,]) with i = ", 
-                   i, ". The sum should be 1 but is ", thisCheckSum)
-          obsCheckPasses <- FALSE
-        }
-      }
-      if (!(transCheckPasses | obsCheckPasses)) 
-        nimStop("In dHMM: probTrans and probObs were not specified correctly.  Probabilities in each row (second dimension) must sum to 1.")
-      if (!transCheckPasses) 
-        nimStop("In dHMM: probTrans was not specified correctly.  Probabilities in each row (second dimension) must sum to 1.")
-      if (!obsCheckPasses) 
-        nimStop("In dHMM: probObs was not specified correctly. Probabilities in each row must sum to 1.")
-    }
     pi <- init
     logL <- 0
-    nObsClasses <- nimDim(probObs)[2]
     for (t in 1:len) {
-      if (x[t] > nObsClasses | x[t] < 1) 
-        nimStop("In dHMM: Invalid value of x[t].")
       Zpi <- probObs[, x[t]] * pi
       sumZpi <- sum(Zpi)
       logL <- logL + log(sumZpi) * mult # NEWLY ADDED
@@ -1232,6 +1241,12 @@ MCMCsummary(mcmc.output, round = 2)
 ```
 
 **Something doesn't work. I found a fix during the workshop, but can't make it work here. Try and simplify the fn first, and make sense of rHMM. Then resume.**
+
+## Decoding after marginalization
+
+https://discourse.mc-stan.org/t/how-to-get-the-best-state-sequence-using-viterbi-algorithm/18969
+
+https://rdrr.io/bioc/STAN/man/getViterbi.html
 
 ## Summary
 
