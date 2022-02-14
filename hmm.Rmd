@@ -496,6 +496,8 @@ head(z)
 
 Unfortunately, this is the data we wish we had. In real life, animals cannot be monitored exhaustively, like humans in a medical trial. Animals are captured, marked or identified then released alive. Then, these animals may be detected again, or go undetected <span>&#8212;</span> **capture-recapture**. Whenever animals go undetected, it might be that they were alive but missed, or because they were dead and therefore could not be detected <span>&#8212;</span> **imperfect detection**^[Nice video here on the basics principles of capture-recapture experiments <https://www.youtube.com/embed/tyX79mPm2xY>]. Whenever animals go undetected, it might be that they were alive but missed, or because they were dead and therefore could not be detected <span>&#8212;</span> **imperfect detection**. The Markov process for survival is only partially observed <span>&#8212;</span> **hidden Markov models**.
 
+**Est-ce que je me passer d'introduire la matrice des observations at first encounter? Be dans les notations de Roger? On ne peut pas se passer d'expliquer que puisqu'on a une étape de marquage, il y a un conditionnement à cette première capture, à laquelle on sait que z = 1 et y = 1. Du coup pourquoi introduire delta si en fait on n'introduit pas Be?**
+
 The truth is in $z$:
 
 ```{r echo = FALSE}
@@ -525,16 +527,33 @@ Alive animals may be detected or not. If animal is alive $z = 1$, it is detected
 
 ```{r echo = FALSE}
 set.seed(2022)
+nocc <- 5
 p <- 0.6
+phi <- 0.8
+delta <- c(1,0)
+Gamma <- matrix(NA, 2, 2)
+Omega <- matrix(NA, 2, 2)
+Gamma[1,1] <- phi      # Pr(alive t -> alive t+1)
+Gamma[1,2] <- 1 - phi  # Pr(alive t -> dead t+1)
+Gamma[2,1] <- 0        # Pr(dead t -> alive t+1)
+Gamma[2,2] <- 1        # Pr(dead t -> dead t+1)
+Omega[1,1] <- 1 - p      # Pr(alive t -> non-detected t)
+Omega[1,2] <- p          # Pr(alive t -> detected t)
+Omega[2,1] <- 1          # Pr(dead t -> non-detected t)
+Omega[2,2] <- 0          # Pr(dead t -> detected t)
+z <- matrix(NA, nrow = nind, ncol = nocc)
 y <- z
-y[z==2] <- 0
-y[y==1] <- rbinom(n = sum(y==1), 1, p)
+y[,1] <- 1
+for (i in 1:nind){
+  z[i,1] <- nimble::rcat(n = 1, prob = delta) # 1 for sure
+  for (t in 2:nocc){
+    z[i,t] <- nimble::rcat(n = 1, prob = Gamma[z[i,t-1],1:2]) 
+    y[i,t] <- nimble::rcat(n = 1, prob = Omega[z[i,t],1:2]) 
+  }
+}
+colnames(y) <- paste0("winter ", 1:nocc)
 nobs <- sum(apply(y,1,sum) != 0)
 y <- y[apply(y,1,sum) !=0, ]
-first <- apply(y, 1, function(x) min(which(x !=0)))
-for (i in 1:nobs){
-  if(first[i] > 1) y[i, 1:(first[i]-1)] <- NA
-}
 y %>%
   as_tibble() %>%
   add_column(id = 1:nobs, .before = "winter 1") %>%
@@ -693,6 +712,57 @@ Estimating the latent states is costly though, and if not required, marginalisat
 More about so-called marginalisation in [Yackulic et al. (2020)](https://esajournals.onlinelibrary.wiley.com/doi/abs/10.1002/eap.2112). And reference forward to section below. 
 
 The neat thing with Nimble is that it provides marginalised models through nimbleEcology, we'll get back to it in section blabla.
+
+Using the formula of total probability, then the likelihood of a Markov chain:
+
+\begin{align*}
+\Pr(\mathbf{y}) &= \Pr(y_1, y_{2}, \ldots, y_T)\\
+                &= \sum_{z_1} \cdots \sum_{z_T} \Pr(y_1, y_{2}, \ldots, y_T | z_1, z_{2}, \ldots, z_T) \Pr(z_1, z_{2}, \ldots, z_T)\\
+                &= \sum_{z_1} \cdots \sum_{z_T} \left(\prod_{t=1}^T{\omega_{z_{t}, y_t}}\right) \left(\Pr(z_{1}) \prod_{t=2}^T{\gamma_{z_{t-1},z_{t}}}\right)\\
+\end{align*}
+
+What is the likelihood of a HMM. The thing here is that we don't know the states. So we have to go through all possibilities, and sum over the possible states. Hence these sums here. Then this term is the likelihood of a Markov chain, we saw that before. And this component are the elements of the observation matrix. The likelihood has a matrix formulation that can be useful. It is delta, initial states, then observation, then transitions, and so on. There is a vector of ones at the end to get the sum all the terms.
+
+<!-- It has a matrix formulation: -->
+<!-- \begin{align*} -->
+<!-- \Pr(\mathbf{y}) &= \mathbf{\delta} \; \mathbf{\Omega} \; \mathbf{\Gamma} \cdots \mathbf{\Omega} \; \mathbf{\Gamma} \; \mathbf{\Omega} \; \mathbb{1} -->
+<!-- \end{align*} -->
+
+### Example
+
+Let assume an animal is detected, then missed. We have $\mathbf{y} = (2, 1)$. What is the contribution of this animal to the likelihood?
+
+\begin{align*}
+\Pr(\mathbf{y} = (2, 1)) &= \sum_{z_1 = 1}^2 \; \sum_{z_2 = 1}^2 w_{z_1, y_1 = 2} w_{z_2, y_2 = 1} \Pr(z_1) \gamma_{z_1, z_2} \color{white}{\Pr(z_{T-1}, z_{T-2},\ldots, z_1, z_1, z_1, z_1)}\\
+\end{align*}
+
+Let assume an animal is detected, then missed. We have $\mathbf{y} = (2, 1)$. What is the contribution of this animal to the likelihood?
+
+\begin{align*}
+\Pr(\mathbf{y} = (2, 1)) &= \sum_{z_1 = 1}^2 \; \sum_{z_2 = 1}^2 w_{z_1, y_1 = 2} w_{z_2, y_2 = 1} \Pr(z_1) \gamma_{z_1, z_2} \color{white}{\Pr(z_{T-1}, z_{T-2},\ldots, z_1, z_1, z_1, z_1)}\\
+&= \sum_{z_1 = 1}^2 \left( w_{z_1, y_1 = 2} w_{z_2 = 1, y_2 = 1} \Pr(z_1) \gamma_{z_1, z_2 = 1} + w_{z_1, y_1 = 2} w_{z_2 = 2, y_2 = 1} \Pr(z_1) \gamma_{z_1, z_2 = 2} \right) \\
+\end{align*}
+
+Let assume an animal is detected, then missed. We have $\mathbf{y} = (2, 1)$. What is the contribution of this animal to the likelihood?
+
+\begin{align*}
+\Pr(\mathbf{y} = (2, 1)) &= \sum_{z_1 = 1}^2 \; \sum_{z_2 = 1}^2 w_{z_1, y_1 = 2} w_{z_2, y_2 = 1} \Pr(z_1) \gamma_{z_1, z_2} \color{white}{\Pr(z_{T-1}, z_{T-2},\ldots, z_1, z_1, z_1, z_1)}\\
+&= \sum_{z_1 = 1}^2 \left( w_{z_1, y_1 = 2} w_{z_2 = 1, y_2 = 1} \Pr(z_1) \gamma_{z_1, z_2 = 1} + w_{z_1, y_1 = 2} w_{z_2 = 2, y_2 = 1} \Pr(z_1) \gamma_{z_1, z_2 = 2} \right) \\
+&= w_{z_1 = 1, y_1 = 2} w_{z_2 = 1, y_2 = 1}\delta_1 \gamma_{z_1 = 1, z_2 = 1} + w_{z_1 = 1, y_1 = 2} w_{z_2 = 2, y_2 = 1} \delta_1 \gamma_{z_1 = 1, z_2 = 2}
+\end{align*}
+
+Note: $\Pr(z_1 = 1) = \delta_1 = 1$ and $\Pr(z_1 = 2) = 0$.
+
+Let assume an animal is detected, then missed. We have $\mathbf{y} = (2, 1)$. What is the contribution of this animal to the likelihood?
+
+\begin{align*}
+\Pr(\mathbf{y} = (2, 1)) &= \sum_{z_1 = 1}^2 \; \sum_{z_2 = 1}^2 w_{z_1, y_1 = 2} w_{z_2, y_2 = 1} \Pr(z_1) \gamma_{z_1, z_2} \color{white}{\Pr(z_{T-1}, z_{T-2},\ldots, z_1, z_1, z_1, z_1)}\\
+&= \sum_{z_1 = 1}^2 \left( w_{z_1, y_1 = 2} w_{z_2 = 1, y_2 = 1} \Pr(z_1) \gamma_{z_1, z_2 = 1} + w_{z_1, y_1 = 2} w_{z_2 = 2, y_2 = 1} \Pr(z_1) \gamma_{z_1, z_2 = 2} \right) \\
+&= w_{z_1 = 1, y_1 = 2} w_{z_2 = 1, y_2 = 1} \delta_1 \gamma_{z_1 = 1, z_2 = 1} + w_{z_1 = 1, y_1 = 2} w_{z_2 = 2, y_2 = 1} \delta_1 \gamma_{z_1 = 1, z_2 = 2}\\
+&= (1 - p) \phi + (1-\phi)
+\end{align*}
+
+Note: $w_{z_1 = 1, y_1 = 2} = \Pr(y_1 = 2 | z_1 = 1) = 1$ because we condition on first capture.
 
 ## Fitting HMM with NIMBLE
 
@@ -879,57 +949,6 @@ The data is simulated, with true survival $\phi = 0.8$ and detection $p = 0.6$.
 **Ensuite, dans le chapitre sur la survie, les transitions et le multievent, on rentrera les first,  et obs matrix at first encounter.** 
 
 ### Theory
-
-Using the formula of total probability, then the likelihood of a Markov chain:
-
-\begin{align*}
-\Pr(\mathbf{y}) &= \Pr(y_1, y_{2}, \ldots, y_T)\\
-                &= \sum_{z_1} \cdots \sum_{z_T} \Pr(y_1, y_{2}, \ldots, y_T | z_1, z_{2}, \ldots, z_T) \Pr(z_1, z_{2}, \ldots, z_T)\\
-                &= \sum_{z_1} \cdots \sum_{z_T} \left(\prod_{t=1}^T{\omega_{z_{t}, y_t}}\right) \left(\Pr(z_{1}) \prod_{t=2}^T{\gamma_{z_{t-1},z_{t}}}\right)\\
-\end{align*}
-
-What is the likelihood of a HMM. The thing here is that we don't know the states. So we have to go through all possibilities, and sum over the possible states. Hence these sums here. Then this term is the likelihood of a Markov chain, we saw that before. And this component are the elements of the observation matrix. The likelihood has a matrix formulation that can be useful. It is delta, initial states, then observation, then transitions, and so on. There is a vector of ones at the end to get the sum all the terms.
-
-<!-- It has a matrix formulation: -->
-<!-- \begin{align*} -->
-<!-- \Pr(\mathbf{y}) &= \mathbf{\delta} \; \mathbf{\Omega} \; \mathbf{\Gamma} \cdots \mathbf{\Omega} \; \mathbf{\Gamma} \; \mathbf{\Omega} \; \mathbb{1} -->
-<!-- \end{align*} -->
-
-### Example
-
-Let assume an animal is detected, then missed. We have $\mathbf{y} = (2, 1)$. What is the contribution of this animal to the likelihood?
-
-\begin{align*}
-\Pr(\mathbf{y} = (2, 1)) &= \sum_{z_1 = 1}^2 \; \sum_{z_2 = 1}^2 w_{z_1, y_1 = 2} w_{z_2, y_2 = 1} \Pr(z_1) \gamma_{z_1, z_2} \color{white}{\Pr(z_{T-1}, z_{T-2},\ldots, z_1, z_1, z_1, z_1)}\\
-\end{align*}
-
-Let assume an animal is detected, then missed. We have $\mathbf{y} = (2, 1)$. What is the contribution of this animal to the likelihood?
-
-\begin{align*}
-\Pr(\mathbf{y} = (2, 1)) &= \sum_{z_1 = 1}^2 \; \sum_{z_2 = 1}^2 w_{z_1, y_1 = 2} w_{z_2, y_2 = 1} \Pr(z_1) \gamma_{z_1, z_2} \color{white}{\Pr(z_{T-1}, z_{T-2},\ldots, z_1, z_1, z_1, z_1)}\\
-&= \sum_{z_1 = 1}^2 \left( w_{z_1, y_1 = 2} w_{z_2 = 1, y_2 = 1} \Pr(z_1) \gamma_{z_1, z_2 = 1} + w_{z_1, y_1 = 2} w_{z_2 = 2, y_2 = 1} \Pr(z_1) \gamma_{z_1, z_2 = 2} \right) \\
-\end{align*}
-
-Let assume an animal is detected, then missed. We have $\mathbf{y} = (2, 1)$. What is the contribution of this animal to the likelihood?
-
-\begin{align*}
-\Pr(\mathbf{y} = (2, 1)) &= \sum_{z_1 = 1}^2 \; \sum_{z_2 = 1}^2 w_{z_1, y_1 = 2} w_{z_2, y_2 = 1} \Pr(z_1) \gamma_{z_1, z_2} \color{white}{\Pr(z_{T-1}, z_{T-2},\ldots, z_1, z_1, z_1, z_1)}\\
-&= \sum_{z_1 = 1}^2 \left( w_{z_1, y_1 = 2} w_{z_2 = 1, y_2 = 1} \Pr(z_1) \gamma_{z_1, z_2 = 1} + w_{z_1, y_1 = 2} w_{z_2 = 2, y_2 = 1} \Pr(z_1) \gamma_{z_1, z_2 = 2} \right) \\
-&= w_{z_1 = 1, y_1 = 2} w_{z_2 = 1, y_2 = 1}\delta_1 \gamma_{z_1 = 1, z_2 = 1} + w_{z_1 = 1, y_1 = 2} w_{z_2 = 2, y_2 = 1} \delta_1 \gamma_{z_1 = 1, z_2 = 2}
-\end{align*}
-
-Note: $\Pr(z_1 = 1) = \delta_1 = 1$ and $\Pr(z_1 = 2) = 0$.
-
-Let assume an animal is detected, then missed. We have $\mathbf{y} = (2, 1)$. What is the contribution of this animal to the likelihood?
-
-\begin{align*}
-\Pr(\mathbf{y} = (2, 1)) &= \sum_{z_1 = 1}^2 \; \sum_{z_2 = 1}^2 w_{z_1, y_1 = 2} w_{z_2, y_2 = 1} \Pr(z_1) \gamma_{z_1, z_2} \color{white}{\Pr(z_{T-1}, z_{T-2},\ldots, z_1, z_1, z_1, z_1)}\\
-&= \sum_{z_1 = 1}^2 \left( w_{z_1, y_1 = 2} w_{z_2 = 1, y_2 = 1} \Pr(z_1) \gamma_{z_1, z_2 = 1} + w_{z_1, y_1 = 2} w_{z_2 = 2, y_2 = 1} \Pr(z_1) \gamma_{z_1, z_2 = 2} \right) \\
-&= w_{z_1 = 1, y_1 = 2} w_{z_2 = 1, y_2 = 1} \delta_1 \gamma_{z_1 = 1, z_2 = 1} + w_{z_1 = 1, y_1 = 2} w_{z_2 = 2, y_2 = 1} \delta_1 \gamma_{z_1 = 1, z_2 = 2}\\
-&= (1 - p) \phi + (1-\phi)
-\end{align*}
-
-Note: $w_{z_1 = 1, y_1 = 2} = \Pr(y_1 = 2 | z_1 = 1) = 1$ because we condition on first capture.
 
 ### Implementation in NIMBLE
 
