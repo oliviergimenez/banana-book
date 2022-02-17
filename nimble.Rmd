@@ -278,7 +278,50 @@ lifespan %>%
   labs(x = "lifespan")
 ```
 
-Now you're good to go. The NIMBLE workflow provided with `nimbleMCMC()` allows you to build models and make inference. This is what you can achieve with other software like WinBUGS or JAGS. 
+Now you're good to go. For convenience I have summarized the steps above in the box below. The NIMBLE workflow provided with `nimbleMCMC()` allows you to build models and make inference. This is what you can achieve with other software like WinBUGS or JAGS. 
+
+::: {.rmdnote}
+**NIMBLE workflow:**
+```{r, eval = FALSE}
+# model building
+model <- nimbleCode({
+  # likelihood
+  survived ~ dbinom(theta, released)
+  # prior
+  theta ~ dunif(0, 1)
+  # derived quantity
+  lifespan <- -1/log(theta)
+})
+# read in data
+my.data <- list(released = 57, survived = 19)
+# specify parameters to monitor
+parameters.to.save <- c("theta", "lifespan")
+# pick initial values
+initial.values <- function() list(theta = runif(1,0,1))
+# specify MCMC details
+n.iter <- 5000
+n.burnin <- 1000
+n.chains <- 3
+# run NIMBLE
+mcmc.output <- nimbleMCMC(code = model,
+                          data = my.data,
+                          inits = initial.values,
+                          monitors = parameters.to.save,
+                          niter = n.iter,
+                          nburnin = n.burnin,
+                          nchains = n.chains)
+# calculate numerical summaries
+MCMCsummary(object = mcmc.output, round = 2)
+# visualize parameter posterior distribution
+MCMCplot(object = mcmc.output, 
+         params = 'theta')
+# check convergence
+MCMCtrace(object = mcmc.output,
+          pdf = FALSE, # no export to PDF
+          ind = TRUE, # separate density lines per chain
+          params = "theta")
+```
+:::
 
 But NIMBLE is more than just another MCMC engine. It provides a programming environment so that you have full control when building models and estimating parameters. NIMBLE allows you to write your own functions and distributions to build models, and to choose alternative MCMC samplers or code new ones. This flexibility often comes with faster convergence. 
 
@@ -576,6 +619,60 @@ From here, you can obtain numerical summaries with `samplesSummary()`:
 ```{r}
 samplesSummary(samples)
 ```
+
+I have summarized the steps above in the box below. 
+
+::: {.rmdnote}
+**Detailed NIMBLE workflow:**
+```{r, eval = FALSE}
+# model building
+model <- nimbleCode({
+  # likelihood
+  survived ~ dbinom(theta, released)
+  # prior
+  theta ~ dunif(0, 1)
+  # derived quantity
+  lifespan <- -1/log(theta)
+})
+# read in data
+my.data <- list(released = 57, survived = 19)
+# pick initial values
+initial.values <- function() list(theta = runif(1,0,1))
+# create model as an R object (uncompiled model)
+survival <- nimbleModel(code = model,
+                        data = my.data,
+                        inits = initial.values())
+# compile model
+Csurvival <- compileNimble(survival)
+# create a MCMC configuration
+survivalConf <- configureMCMC(survival)
+# add lifespan to list of parameters to monitor
+survivalConf$addMonitors(c("lifespan"))
+# create a MCMC function and compile it
+survivalMCMC <- buildMCMC(survivalConf)
+CsurvivalMCMC <- compileNimble(survivalMCMC, project = survival)
+# specify MCMC details
+n.iter <- 5000
+n.burnin <- 1000
+n.chains <- 2
+# run NIMBLE
+samples <- runMCMC(mcmc = CsurvivalMCMC, 
+                   niter = n.iter,
+                   nburnin = n.burnin,
+                   nchain = n.chains)
+# calculate numerical summaries
+MCMCsummary(object = samples, round = 2)
+# visualize parameter posterior distribution
+MCMCplot(object = samples, 
+         params = 'theta')
+# check convergence
+MCMCtrace(object = samples,
+          pdf = FALSE, # no export to PDF
+          ind = TRUE, # separate density lines per chain
+          params = "theta")
+```
+:::
+
 
 At first glance, using several steps instead of doing all these at once with `nimbleMCMC()` seems odds. Why is it useful? Mastering the whole sequence of steps allows you to play around with samplers, by changing the samplers NIMBLE picks by default, or even writing your own samplers.
 
