@@ -5371,81 +5371,116 @@ winter 5
 <h2>
 <span class="header-section-number">3.8</span> Marginalization<a class="anchor" aria-label="anchor" href="#marginalization"><i class="fas fa-link"></i></a>
 </h2>
-<p><strong>Faire lien avec forward algorithm. Reprendre dHMM en la simplifiant au max et en faisant le lien avec l’algo. Match notation.</strong></p>
-<p><strong>Faire une seule cohorte dans les simulations, tout le monde part de occasion 1, comme ça on ne gère pas la matrice d’observation at first encounter, ni le vecteur des first.</strong></p>
-<p><strong>Il faut quand même ré-écrire dHMM et rHMM plus simplement, en enlevant tous les tests, et en reprenant le forward algorithm correctement, comme dans la vraisemblance que j’utilise en freq pour les HMM.</strong></p>
+<p>Short intro.</p>
 <p><strong>Ensuite, dans le chapitre sur la survie, les transitions et le multievent, on rentrera les first, et obs matrix at first encounter.</strong></p>
 <div id="theory" class="section level3" number="3.8.1">
 <h3>
 <span class="header-section-number">3.8.1</span> Theory<a class="anchor" aria-label="anchor" href="#theory"><i class="fas fa-link"></i></a>
 </h3>
+<p><strong>Forward algorithm.</strong></p>
 </div>
 <div id="implementation-in-nimble" class="section level3" number="3.8.2">
 <h3>
 <span class="header-section-number">3.8.2</span> Implementation in NIMBLE<a class="anchor" aria-label="anchor" href="#implementation-in-nimble"><i class="fas fa-link"></i></a>
 </h3>
-<p>Introduce NimbleEcology.</p>
 <div class="sourceCode" id="cb121"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/nimble-dev/nimbleEcology">nimbleEcology</a></span><span class="op">)</span></code></pre></div>
-<p>Get the occasion of first capture for each individual:</p>
+<code class="sourceCode R"><span class="va">dHMM</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimbleFunction.html">nimbleFunction</a></span><span class="op">(</span>
+  run <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">x</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/double.html">double</a></span><span class="op">(</span><span class="fl">1</span><span class="op">)</span>, 
+                 <span class="va">probInit</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/double.html">double</a></span><span class="op">(</span><span class="fl">1</span><span class="op">)</span>,
+                 <span class="va">probObs</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/double.html">double</a></span><span class="op">(</span><span class="fl">2</span><span class="op">)</span>,
+                 <span class="va">probTrans</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/double.html">double</a></span><span class="op">(</span><span class="fl">2</span><span class="op">)</span>,
+                 <span class="va">len</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/double.html">double</a></span><span class="op">(</span><span class="fl">0</span>, default <span class="op">=</span> <span class="fl">0</span><span class="op">)</span>,
+                 <span class="va">log</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimNumeric.html">integer</a></span><span class="op">(</span><span class="fl">0</span>, default <span class="op">=</span> <span class="fl">0</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span>
+    <span class="va">alpha</span> <span class="op">&lt;-</span> <span class="va">probInit</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">2</span><span class="op">]</span>
+    <span class="kw">for</span> <span class="op">(</span><span class="va">t</span> <span class="kw">in</span> <span class="fl">2</span><span class="op">:</span><span class="va">len</span><span class="op">)</span> <span class="op">{</span>
+      <span class="va">alpha</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">2</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="op">(</span><span class="va">alpha</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">2</span><span class="op">]</span> <span class="op">%*%</span> <span class="va">probTrans</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">2</span>,<span class="fl">1</span><span class="op">:</span><span class="fl">2</span><span class="op">]</span><span class="op">)</span> <span class="op">*</span> <span class="va">probObs</span><span class="op">[</span><span class="va">x</span><span class="op">[</span><span class="va">t</span><span class="op">]</span>,<span class="fl">1</span><span class="op">:</span><span class="fl">2</span><span class="op">]</span>
+    <span class="op">}</span>
+    <span class="va">logL</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Log.html">log</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/sum.html">sum</a></span><span class="op">(</span><span class="va">alpha</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">2</span><span class="op">]</span><span class="op">)</span><span class="op">)</span>
+    <span class="fu">returnType</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/double.html">double</a></span><span class="op">(</span><span class="fl">0</span><span class="op">)</span><span class="op">)</span>
+    <span class="kw">if</span> <span class="op">(</span><span class="va">log</span><span class="op">)</span> <span class="kw"><a href="https://rdrr.io/r/base/function.html">return</a></span><span class="op">(</span><span class="va">logL</span><span class="op">)</span>
+    <span class="kw"><a href="https://rdrr.io/r/base/function.html">return</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/Log.html">exp</a></span><span class="op">(</span><span class="va">logL</span><span class="op">)</span><span class="op">)</span>
+  <span class="op">}</span>
+<span class="op">)</span></code></pre></div>
 <div class="sourceCode" id="cb122"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="va">first</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/apply.html">apply</a></span><span class="op">(</span><span class="va">y</span>, <span class="fl">1</span>, <span class="kw">function</span><span class="op">(</span><span class="va">x</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/Extremes.html">min</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimble-R-functions.html">which</a></span><span class="op">(</span><span class="va">x</span> <span class="op">!=</span><span class="fl">0</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></code></pre></div>
-<p>We filter out individuals that are first captured at last occasion. These individuals do not contribute to parameter estimation, and also they cause problems with nimbleEcology.</p>
+<code class="sourceCode R"><span class="va">rHMM</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimbleFunction.html">nimbleFunction</a></span><span class="op">(</span>
+  run <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">n</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimNumeric.html">integer</a></span><span class="op">(</span><span class="op">)</span>,
+                 <span class="va">probInit</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/double.html">double</a></span><span class="op">(</span><span class="fl">1</span><span class="op">)</span>,
+                 <span class="va">probObs</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/double.html">double</a></span><span class="op">(</span><span class="fl">2</span><span class="op">)</span>,
+                 <span class="va">probTrans</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/double.html">double</a></span><span class="op">(</span><span class="fl">2</span><span class="op">)</span>,
+                 <span class="va">len</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/double.html">double</a></span><span class="op">(</span><span class="fl">0</span>, default <span class="op">=</span> <span class="fl">0</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span>
+    <span class="fu">returnType</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/double.html">double</a></span><span class="op">(</span><span class="fl">1</span><span class="op">)</span><span class="op">)</span>
+    <span class="va">z</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimNumeric.html">numeric</a></span><span class="op">(</span><span class="va">len</span><span class="op">)</span>
+    <span class="va">z</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/Categorical.html">rcat</a></span><span class="op">(</span>n <span class="op">=</span> <span class="fl">1</span>, prob <span class="op">=</span> <span class="va">probInit</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">2</span><span class="op">]</span><span class="op">)</span> <span class="co"># all individuals alive at t = 0</span>
+    <span class="va">y</span> <span class="op">&lt;-</span> <span class="va">z</span>
+    <span class="va">y</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">2</span> <span class="co"># all individuals are detected at t = 0</span>
+    <span class="kw">for</span> <span class="op">(</span><span class="va">t</span> <span class="kw">in</span> <span class="fl">2</span><span class="op">:</span><span class="va">len</span><span class="op">)</span><span class="op">{</span>
+      <span class="co"># state at t given state at t-1</span>
+      <span class="va">z</span><span class="op">[</span><span class="va">t</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/Categorical.html">rcat</a></span><span class="op">(</span>n <span class="op">=</span> <span class="fl">1</span>, prob <span class="op">=</span> <span class="va">probTrans</span><span class="op">[</span><span class="va">z</span><span class="op">[</span><span class="va">t</span><span class="op">-</span><span class="fl">1</span><span class="op">]</span>,<span class="fl">1</span><span class="op">:</span><span class="fl">2</span><span class="op">]</span><span class="op">)</span> 
+      <span class="co"># observation at t given state at t</span>
+      <span class="va">y</span><span class="op">[</span><span class="va">t</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/Categorical.html">rcat</a></span><span class="op">(</span>n <span class="op">=</span> <span class="fl">1</span>, prob <span class="op">=</span> <span class="va">probObs</span><span class="op">[</span><span class="va">z</span><span class="op">[</span><span class="va">t</span><span class="op">]</span>,<span class="fl">1</span><span class="op">:</span><span class="fl">2</span><span class="op">]</span><span class="op">)</span> 
+    <span class="op">}</span>
+    <span class="kw"><a href="https://rdrr.io/r/base/function.html">return</a></span><span class="op">(</span><span class="va">y</span><span class="op">)</span>
+  <span class="op">}</span><span class="op">)</span></code></pre></div>
 <div class="sourceCode" id="cb123"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="va">mask</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimble-R-functions.html">which</a></span><span class="op">(</span><span class="va">first</span><span class="op">!=</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html">ncol</a></span><span class="op">(</span><span class="va">y</span><span class="op">)</span><span class="op">)</span> <span class="co"># individuals that are not first encountered at last occasion</span>
-<span class="va">y</span> <span class="op">&lt;-</span> <span class="va">y</span><span class="op">[</span><span class="va">mask</span>, <span class="op">]</span>                <span class="co"># keep only these</span>
-<span class="va">first</span> <span class="op">&lt;-</span> <span class="va">first</span><span class="op">[</span><span class="va">mask</span><span class="op">]</span></code></pre></div>
-<p>Model code:</p>
+<code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/r/base/assign.html">assign</a></span><span class="op">(</span><span class="st">'dHMM'</span>, <span class="va">dHMM</span>, <span class="va">.GlobalEnv</span><span class="op">)</span>
+<span class="fu"><a href="https://rdrr.io/r/base/assign.html">assign</a></span><span class="op">(</span><span class="st">'rHMM'</span>, <span class="va">rHMM</span>, <span class="va">.GlobalEnv</span><span class="op">)</span></code></pre></div>
 <div class="sourceCode" id="cb124"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="va">hmm.survival.new</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimbleCode.html">nimbleCode</a></span><span class="op">(</span><span class="op">{</span>
+<code class="sourceCode R"><span class="fu">dHMM</span><span class="op">(</span>x <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimble-R-functions.html">c</a></span><span class="op">(</span><span class="fl">2</span>,<span class="fl">2</span>,<span class="fl">1</span>,<span class="fl">1</span>,<span class="fl">1</span><span class="op">)</span>,
+     probInit <span class="op">=</span> <span class="va">delta</span>,
+     probObs <span class="op">=</span> <span class="va">Gamma</span>,
+     probTrans <span class="op">=</span> <span class="va">Omega</span>,
+     len <span class="op">=</span> <span class="fl">5</span><span class="op">)</span>
+<span class="co">## [1] 0.1137</span></code></pre></div>
+<div class="sourceCode" id="cb125"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="fu">rHMM</span><span class="op">(</span>probInit <span class="op">=</span> <span class="va">delta</span>,
+     probObs <span class="op">=</span> <span class="va">Gamma</span>,
+     probTrans <span class="op">=</span> <span class="va">Omega</span>,
+     len <span class="op">=</span> <span class="fl">5</span><span class="op">)</span>
+<span class="co">## [1] 2 2 2 1 2</span></code></pre></div>
+<div class="sourceCode" id="cb126"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="va">hmm.survival</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimbleCode.html">nimbleCode</a></span><span class="op">(</span><span class="op">{</span>
   <span class="va">phi</span> <span class="op">~</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html">dunif</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1</span><span class="op">)</span> <span class="co"># prior survival</span>
   <span class="va">p</span> <span class="op">~</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html">dunif</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1</span><span class="op">)</span> <span class="co"># prior detection</span>
   <span class="co"># likelihood</span>
+  <span class="va">delta</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span>          <span class="co"># Pr(alive t = 1) = 1</span>
+  <span class="va">delta</span><span class="op">[</span><span class="fl">2</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0</span>          <span class="co"># Pr(dead t = 1) = 0</span>
   <span class="va">gamma</span><span class="op">[</span><span class="fl">1</span>,<span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="va">phi</span>      <span class="co"># Pr(alive t -&gt; alive t+1)</span>
   <span class="va">gamma</span><span class="op">[</span><span class="fl">1</span>,<span class="fl">2</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span> <span class="op">-</span> <span class="va">phi</span>  <span class="co"># Pr(alive t -&gt; dead t+1)</span>
   <span class="va">gamma</span><span class="op">[</span><span class="fl">2</span>,<span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0</span>        <span class="co"># Pr(dead t -&gt; alive t+1)</span>
   <span class="va">gamma</span><span class="op">[</span><span class="fl">2</span>,<span class="fl">2</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span>        <span class="co"># Pr(dead t -&gt; dead t+1)</span>
-  <span class="va">delta</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span>          <span class="co"># Pr(alive t = 1) = 1</span>
-  <span class="va">delta</span><span class="op">[</span><span class="fl">2</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0</span>          <span class="co"># Pr(dead t = 1) = 0</span>
   <span class="va">omega</span><span class="op">[</span><span class="fl">1</span>,<span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span> <span class="op">-</span> <span class="va">p</span>    <span class="co"># Pr(alive t -&gt; non-detected t)</span>
   <span class="va">omega</span><span class="op">[</span><span class="fl">1</span>,<span class="fl">2</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="va">p</span>        <span class="co"># Pr(alive t -&gt; detected t)</span>
   <span class="va">omega</span><span class="op">[</span><span class="fl">2</span>,<span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span>        <span class="co"># Pr(dead t -&gt; non-detected t)</span>
   <span class="va">omega</span><span class="op">[</span><span class="fl">2</span>,<span class="fl">2</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0</span>        <span class="co"># Pr(dead t -&gt; detected t)</span>
-  <span class="kw">for</span><span class="op">(</span><span class="va">i</span> <span class="kw">in</span> <span class="fl">1</span><span class="op">:</span><span class="va">N</span><span class="op">)</span> <span class="op">{</span>
-    <span class="va">init</span><span class="op">[</span><span class="va">i</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">2</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="va">gamma</span><span class="op">[</span><span class="va">y</span><span class="op">[</span><span class="va">i</span>, <span class="va">first</span><span class="op">[</span><span class="va">i</span><span class="op">]</span> <span class="op">]</span> <span class="op">-</span> <span class="fl">1</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">2</span><span class="op">]</span> <span class="co"># First state propagation</span>
-  <span class="op">}</span>
+  <span class="va">omegat</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">2</span>,<span class="fl">1</span><span class="op">:</span><span class="fl">2</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/t.html">t</a></span><span class="op">(</span><span class="va">omega</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">2</span>,<span class="fl">1</span><span class="op">:</span><span class="fl">2</span><span class="op">]</span><span class="op">)</span>
   <span class="kw">for</span> <span class="op">(</span><span class="va">i</span> <span class="kw">in</span> <span class="fl">1</span><span class="op">:</span><span class="va">N</span><span class="op">)</span><span class="op">{</span>
-    <span class="va">y</span><span class="op">[</span><span class="va">i</span>,<span class="op">(</span><span class="va">first</span><span class="op">[</span><span class="va">i</span><span class="op">]</span><span class="op">+</span><span class="fl">1</span><span class="op">)</span><span class="op">:</span><span class="cn">T</span><span class="op">]</span> <span class="op">~</span> <span class="fu"><a href="https://rdrr.io/pkg/nimbleEcology/man/dHMM.html">dHMM</a></span><span class="op">(</span>init <span class="op">=</span> <span class="va">init</span><span class="op">[</span><span class="va">i</span>,<span class="fl">1</span><span class="op">:</span><span class="fl">2</span><span class="op">]</span>, 
-                               probObs <span class="op">=</span> <span class="va">omega</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">2</span>,<span class="fl">1</span><span class="op">:</span><span class="fl">2</span><span class="op">]</span>, <span class="co"># observation matrix</span>
-                               probTrans <span class="op">=</span> <span class="va">gamma</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">2</span>,<span class="fl">1</span><span class="op">:</span><span class="fl">2</span><span class="op">]</span>, <span class="co"># transition matrix</span>
-                               len <span class="op">=</span> <span class="cn">T</span> <span class="op">-</span> <span class="va">first</span><span class="op">[</span><span class="va">i</span><span class="op">]</span>, <span class="co"># nb of sampling occasions</span>
-                               checkRowSums <span class="op">=</span> <span class="fl">1</span><span class="op">)</span> <span class="co"># do not check whether elements in a row sum to 1</span>
+    <span class="va">y</span><span class="op">[</span><span class="va">i</span>,<span class="fl">1</span><span class="op">:</span><span class="cn">T</span><span class="op">]</span> <span class="op">~</span> <span class="fu">dHMM</span><span class="op">(</span>probInit <span class="op">=</span> <span class="va">delta</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">2</span><span class="op">]</span>, 
+                    probObs <span class="op">=</span> <span class="va">omegat</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">2</span>,<span class="fl">1</span><span class="op">:</span><span class="fl">2</span><span class="op">]</span>, <span class="co"># observation matrix</span>
+                    probTrans <span class="op">=</span> <span class="va">gamma</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">2</span>,<span class="fl">1</span><span class="op">:</span><span class="fl">2</span><span class="op">]</span>, <span class="co"># transition matrix</span>
+                    len <span class="op">=</span> <span class="cn">T</span><span class="op">)</span> <span class="co"># nb of sampling occasions</span>
   <span class="op">}</span>
 <span class="op">}</span><span class="op">)</span></code></pre></div>
-<p>Rest is the same:</p>
-<div class="sourceCode" id="cb125"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="co"># Data and constants:</span>
-<span class="va">my.data</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>y <span class="op">=</span> <span class="va">y</span> <span class="op">+</span> <span class="fl">1</span><span class="op">)</span>
-<span class="va">my.constants</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>N <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html">nrow</a></span><span class="op">(</span><span class="va">y</span><span class="op">)</span>, T <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html">ncol</a></span><span class="op">(</span><span class="va">y</span><span class="op">)</span>, first <span class="op">=</span> <span class="va">first</span><span class="op">)</span>
+<div class="sourceCode" id="cb127"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="va">my.constants</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>N <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html">nrow</a></span><span class="op">(</span><span class="va">y</span><span class="op">)</span>, T <span class="op">=</span> <span class="fl">5</span><span class="op">)</span>
+<span class="va">my.constants</span>
+<span class="co">## $N</span>
+<span class="co">## [1] 57</span>
+<span class="co">## </span>
+<span class="co">## $T</span>
+<span class="co">## [1] 5</span>
 
-<span class="co"># Initial values:</span>
-<span class="va">zinits</span> <span class="op">&lt;-</span> <span class="va">y</span> <span class="op">+</span> <span class="fl">1</span> <span class="co"># non-detection -&gt; alive</span>
-<span class="va">zinits</span><span class="op">[</span><span class="va">zinits</span> <span class="op">==</span> <span class="fl">2</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span> <span class="co"># dead -&gt; alive</span>
+<span class="va">my.data</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>y <span class="op">=</span> <span class="va">y</span> <span class="op">+</span> <span class="fl">1</span><span class="op">)</span>
+
 <span class="va">initial.values</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>phi <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html">runif</a></span><span class="op">(</span><span class="fl">1</span>,<span class="fl">0</span>,<span class="fl">1</span><span class="op">)</span>,
                                   p <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html">runif</a></span><span class="op">(</span><span class="fl">1</span>,<span class="fl">0</span>,<span class="fl">1</span><span class="op">)</span><span class="op">)</span>
 
-<span class="co"># Parameters to monitor:</span>
 <span class="va">parameters.to.save</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimble-R-functions.html">c</a></span><span class="op">(</span><span class="st">"phi"</span>, <span class="st">"p"</span><span class="op">)</span>
-<span class="va">parameters.to.save</span>
-<span class="co">## [1] "phi" "p"</span>
 
-<span class="co"># MCMC details:</span>
 <span class="va">n.iter</span> <span class="op">&lt;-</span> <span class="fl">5000</span>
 <span class="va">n.burnin</span> <span class="op">&lt;-</span> <span class="fl">1000</span>
-<span class="va">n.chains</span> <span class="op">&lt;-</span> <span class="fl">2</span>
-
-<span class="co"># Run NIMBLE:</span>
-<span class="va">mcmc.output</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimbleMCMC.html">nimbleMCMC</a></span><span class="op">(</span>code <span class="op">=</span> <span class="va">hmm.survival.new</span>,
+<span class="va">n.chains</span> <span class="op">&lt;-</span> <span class="fl">2</span></code></pre></div>
+<div class="sourceCode" id="cb128"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="va">mcmc.output</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimbleMCMC.html">nimbleMCMC</a></span><span class="op">(</span>code <span class="op">=</span> <span class="va">hmm.survival</span>,
                           constants <span class="op">=</span> <span class="va">my.constants</span>,
                           data <span class="op">=</span> <span class="va">my.data</span>,
                           inits <span class="op">=</span> <span class="va">initial.values</span>,
@@ -5453,216 +5488,155 @@ winter 5
                           niter <span class="op">=</span> <span class="va">n.iter</span>,
                           nburnin <span class="op">=</span> <span class="va">n.burnin</span>,
                           nchains <span class="op">=</span> <span class="va">n.chains</span><span class="op">)</span>
+<span class="co">## Registering the following user-provided distributions: dHMM</span>
+<span class="co">## NIMBLE has registered dHMM as a distribution based on its use in BUGS code. Note that if you make changes to the nimbleFunctions for the distribution, you must call 'deregisterDistributions' before using the distribution in BUGS code for those changes to take effect.</span>
 <span class="co">## |-------------|-------------|-------------|-------------|</span>
 <span class="co">## |-------------------------------------------------------|</span>
 <span class="co">## |-------------|-------------|-------------|-------------|</span>
-<span class="co">## |-------------------------------------------------------|</span>
-
-<span class="co"># Numerical summaries:</span>
-<span class="fu"><a href="https://rdrr.io/pkg/MCMCvis/man/MCMCsummary.html">MCMCsummary</a></span><span class="op">(</span><span class="va">mcmc.output</span>, round <span class="op">=</span> <span class="fl">2</span><span class="op">)</span>
+<span class="co">## |-------------------------------------------------------|</span></code></pre></div>
+<div class="sourceCode" id="cb129"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/pkg/MCMCvis/man/MCMCsummary.html">MCMCsummary</a></span><span class="op">(</span><span class="va">mcmc.output</span>, round <span class="op">=</span> <span class="fl">2</span><span class="op">)</span>
 <span class="co">##     mean   sd 2.5%  50% 97.5% Rhat n.eff</span>
-<span class="co">## p   0.61 0.06 0.49 0.61  0.72    1  1211</span>
-<span class="co">## phi 0.76 0.04 0.67 0.76  0.84    1  1483</span></code></pre></div>
-<p><strong>Computer number of nodes. Show that the z are no longer in there.</strong></p>
+<span class="co">## p   0.61 0.06 0.49 0.61  0.73 1.00  1396</span>
+<span class="co">## phi 0.76 0.04 0.67 0.76  0.84 1.01  1435</span></code></pre></div>
+<p>Mention NimbleEcology.</p>
+<p><strong>Compute number of nodes. Show that the z are no longer in there.</strong></p>
 </div>
 </div>
 <div id="pooled-encounter-histories" class="section level2" number="3.9">
 <h2>
 <span class="header-section-number">3.9</span> Pooled encounter histories<a class="anchor" aria-label="anchor" href="#pooled-encounter-histories"><i class="fas fa-link"></i></a>
 </h2>
-<p>In this section, we’re gonna use NIMBLE functions to express the likelihood using pooled encounter histories. We use a vector mult that contains the number of individuals with a particular encounter history. We hacked the dHMM nimbleEcology function below. Courtesy of Chloé Nater. Implement of Turek et al. </p>
-<div class="sourceCode" id="cb126"><pre class="downlit sourceCode r">
+<p>In this section, we’re gonna use NIMBLE functions to express the likelihood using pooled encounter histories. We use a vector <code>size</code> that contains the number of individuals with a particular encounter history. Courtesy of Chloé Nater. Implement of Turek et al. </p>
+<div class="sourceCode" id="cb130"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">dHMMweighted</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimbleFunction.html">nimbleFunction</a></span><span class="op">(</span>
-  run <span class="op">=</span> <span class="kw">function</span> <span class="op">(</span><span class="va">x</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/double.html">double</a></span><span class="op">(</span><span class="fl">1</span><span class="op">)</span>, 
-                  <span class="va">init</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/double.html">double</a></span><span class="op">(</span><span class="fl">1</span><span class="op">)</span>, 
-                  <span class="va">probObs</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/double.html">double</a></span><span class="op">(</span><span class="fl">2</span><span class="op">)</span>,
-                  <span class="va">probTrans</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/double.html">double</a></span><span class="op">(</span><span class="fl">2</span><span class="op">)</span>, 
-                  <span class="va">len</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/double.html">double</a></span><span class="op">(</span><span class="fl">0</span><span class="op">)</span>,
-                  <span class="va">mult</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/double.html">double</a></span><span class="op">(</span><span class="fl">0</span><span class="op">)</span>, <span class="co"># NEWLY ADDED: argument stating number of occurrences </span>
-                                    <span class="co"># of same encounter history in entire dataset </span>
-                  <span class="va">log</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimNumeric.html">integer</a></span><span class="op">(</span><span class="fl">0</span>, default <span class="op">=</span> <span class="fl">0</span><span class="op">)</span><span class="op">)</span> 
-  <span class="op">{</span>
-    <span class="va">pi</span> <span class="op">&lt;-</span> <span class="va">init</span>
-    <span class="va">logL</span> <span class="op">&lt;-</span> <span class="fl">0</span>
-    <span class="kw">for</span> <span class="op">(</span><span class="va">t</span> <span class="kw">in</span> <span class="fl">1</span><span class="op">:</span><span class="va">len</span><span class="op">)</span> <span class="op">{</span>
-      <span class="va">Zpi</span> <span class="op">&lt;-</span> <span class="va">probObs</span><span class="op">[</span>, <span class="va">x</span><span class="op">[</span><span class="va">t</span><span class="op">]</span><span class="op">]</span> <span class="op">*</span> <span class="va">pi</span>
-      <span class="va">sumZpi</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/sum.html">sum</a></span><span class="op">(</span><span class="va">Zpi</span><span class="op">)</span>
-      <span class="va">logL</span> <span class="op">&lt;-</span> <span class="va">logL</span> <span class="op">+</span> <span class="fu"><a href="https://rdrr.io/r/base/Log.html">log</a></span><span class="op">(</span><span class="va">sumZpi</span><span class="op">)</span> <span class="op">*</span> <span class="va">mult</span> <span class="co"># NEWLY ADDED</span>
-      <span class="kw">if</span> <span class="op">(</span><span class="va">t</span> <span class="op">!=</span> <span class="va">len</span><span class="op">)</span> 
-        <span class="va">pi</span> <span class="op">&lt;-</span> <span class="op">(</span><span class="op">(</span><span class="va">Zpi</span> <span class="op">%*%</span> <span class="va">probTrans</span><span class="op">)</span><span class="op">/</span><span class="va">sumZpi</span><span class="op">)</span><span class="op">[</span><span class="fl">1</span>, <span class="op">]</span>
+  run <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">x</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/double.html">double</a></span><span class="op">(</span><span class="fl">1</span><span class="op">)</span>, 
+                 <span class="va">probInit</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/double.html">double</a></span><span class="op">(</span><span class="fl">1</span><span class="op">)</span>,
+                 <span class="va">probObs</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/double.html">double</a></span><span class="op">(</span><span class="fl">2</span><span class="op">)</span>,
+                 <span class="va">probTrans</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/double.html">double</a></span><span class="op">(</span><span class="fl">2</span><span class="op">)</span>,
+                 <span class="va">len</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/double.html">double</a></span><span class="op">(</span><span class="fl">0</span><span class="op">)</span>,
+                 <span class="va">size</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/double.html">double</a></span><span class="op">(</span><span class="fl">0</span><span class="op">)</span>,
+                 <span class="va">log</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimNumeric.html">integer</a></span><span class="op">(</span><span class="fl">0</span>, default <span class="op">=</span> <span class="fl">0</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span>
+    <span class="va">alpha</span> <span class="op">&lt;-</span> <span class="va">probInit</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">2</span><span class="op">]</span>
+    <span class="kw">for</span> <span class="op">(</span><span class="va">t</span> <span class="kw">in</span> <span class="fl">2</span><span class="op">:</span><span class="va">len</span><span class="op">)</span> <span class="op">{</span>
+      <span class="va">alpha</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">2</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="op">(</span><span class="va">alpha</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">2</span><span class="op">]</span> <span class="op">%*%</span> <span class="va">probTrans</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">2</span>,<span class="fl">1</span><span class="op">:</span><span class="fl">2</span><span class="op">]</span><span class="op">)</span> <span class="op">*</span> <span class="va">probObs</span><span class="op">[</span><span class="va">x</span><span class="op">[</span><span class="va">t</span><span class="op">]</span>,<span class="fl">1</span><span class="op">:</span><span class="fl">2</span><span class="op">]</span>
     <span class="op">}</span>
-    <span class="kw">if</span> <span class="op">(</span><span class="va">log</span><span class="op">)</span> 
-      <span class="kw"><a href="https://rdrr.io/r/base/function.html">return</a></span><span class="op">(</span><span class="va">logL</span><span class="op">)</span>
+    <span class="va">logL</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Log.html">log</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/sum.html">sum</a></span><span class="op">(</span><span class="va">alpha</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">2</span><span class="op">]</span><span class="op">)</span><span class="op">)</span> <span class="op">*</span> <span class="va">size</span>
+    <span class="fu">returnType</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/double.html">double</a></span><span class="op">(</span><span class="fl">0</span><span class="op">)</span><span class="op">)</span>
+    <span class="kw">if</span> <span class="op">(</span><span class="va">log</span><span class="op">)</span> <span class="kw"><a href="https://rdrr.io/r/base/function.html">return</a></span><span class="op">(</span><span class="va">logL</span><span class="op">)</span>
     <span class="kw"><a href="https://rdrr.io/r/base/function.html">return</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/Log.html">exp</a></span><span class="op">(</span><span class="va">logL</span><span class="op">)</span><span class="op">)</span>
-    <span class="fu">returnType</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/double.html">double</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span>
+  <span class="op">}</span>
+<span class="op">)</span></code></pre></div>
+<div class="sourceCode" id="cb131"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="va">rHMMweighted</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimbleFunction.html">nimbleFunction</a></span><span class="op">(</span>
+  run <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">n</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimNumeric.html">integer</a></span><span class="op">(</span><span class="op">)</span>,
+                 <span class="va">probInit</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/double.html">double</a></span><span class="op">(</span><span class="fl">1</span><span class="op">)</span>,
+                 <span class="va">probObs</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/double.html">double</a></span><span class="op">(</span><span class="fl">2</span><span class="op">)</span>,
+                 <span class="va">probTrans</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/double.html">double</a></span><span class="op">(</span><span class="fl">2</span><span class="op">)</span>,
+                 <span class="va">len</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/double.html">double</a></span><span class="op">(</span><span class="fl">0</span><span class="op">)</span>,
+                 <span class="va">size</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/double.html">double</a></span><span class="op">(</span><span class="fl">0</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span>
+    <span class="fu">returnType</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/double.html">double</a></span><span class="op">(</span><span class="fl">1</span><span class="op">)</span><span class="op">)</span>
+    <span class="va">z</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimNumeric.html">numeric</a></span><span class="op">(</span><span class="va">len</span><span class="op">)</span>
+    <span class="va">z</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/Categorical.html">rcat</a></span><span class="op">(</span>n <span class="op">=</span> <span class="fl">1</span>, prob <span class="op">=</span> <span class="va">probInit</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">2</span><span class="op">]</span><span class="op">)</span> <span class="co"># all individuals alive at t = 0</span>
+    <span class="va">y</span> <span class="op">&lt;-</span> <span class="va">z</span>
+    <span class="va">y</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">2</span> <span class="co"># all individuals are detected at t = 0</span>
+    <span class="kw">for</span> <span class="op">(</span><span class="va">t</span> <span class="kw">in</span> <span class="fl">2</span><span class="op">:</span><span class="va">len</span><span class="op">)</span><span class="op">{</span>
+      <span class="co"># state at t given state at t-1</span>
+      <span class="va">z</span><span class="op">[</span><span class="va">t</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/Categorical.html">rcat</a></span><span class="op">(</span>n <span class="op">=</span> <span class="fl">1</span>, prob <span class="op">=</span> <span class="va">probTrans</span><span class="op">[</span><span class="va">z</span><span class="op">[</span><span class="va">t</span><span class="op">-</span><span class="fl">1</span><span class="op">]</span>,<span class="fl">1</span><span class="op">:</span><span class="fl">2</span><span class="op">]</span><span class="op">)</span> 
+      <span class="co"># observation at t given state at t</span>
+      <span class="va">y</span><span class="op">[</span><span class="va">t</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/Categorical.html">rcat</a></span><span class="op">(</span>n <span class="op">=</span> <span class="fl">1</span>, prob <span class="op">=</span> <span class="va">probObs</span><span class="op">[</span><span class="va">z</span><span class="op">[</span><span class="va">t</span><span class="op">]</span>,<span class="fl">1</span><span class="op">:</span><span class="fl">2</span><span class="op">]</span><span class="op">)</span> 
+    <span class="op">}</span>
+    <span class="kw"><a href="https://rdrr.io/r/base/function.html">return</a></span><span class="op">(</span><span class="va">y</span><span class="op">)</span>
   <span class="op">}</span><span class="op">)</span></code></pre></div>
-<p>Model code:</p>
-<div class="sourceCode" id="cb127"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="va">hmm.survival.weighted</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimbleCode.html">nimbleCode</a></span><span class="op">(</span><span class="op">{</span>
+<div class="sourceCode" id="cb132"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/r/base/assign.html">assign</a></span><span class="op">(</span><span class="st">'dHMMweighted'</span>, <span class="va">dHMMweighted</span>, <span class="va">.GlobalEnv</span><span class="op">)</span>
+<span class="fu"><a href="https://rdrr.io/r/base/assign.html">assign</a></span><span class="op">(</span><span class="st">'rHMMweighted'</span>, <span class="va">rHMMweighted</span>, <span class="va">.GlobalEnv</span><span class="op">)</span></code></pre></div>
+<div class="sourceCode" id="cb133"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="fu">dHMMweighted</span><span class="op">(</span>x <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimble-R-functions.html">c</a></span><span class="op">(</span><span class="fl">2</span>,<span class="fl">2</span>,<span class="fl">1</span>,<span class="fl">1</span>,<span class="fl">1</span><span class="op">)</span>,
+             probInit <span class="op">=</span> <span class="va">delta</span>,
+             probObs <span class="op">=</span> <span class="va">Gamma</span>,
+             probTrans <span class="op">=</span> <span class="va">Omega</span>,
+             len <span class="op">=</span> <span class="fl">5</span>,
+             size <span class="op">=</span> <span class="fl">5</span><span class="op">)</span>
+<span class="co">## [1] 1.897e-05</span></code></pre></div>
+<div class="sourceCode" id="cb134"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="fu">rHMMweighted</span><span class="op">(</span>probInit <span class="op">=</span> <span class="va">delta</span>,
+             probObs <span class="op">=</span> <span class="va">Gamma</span>,
+             probTrans <span class="op">=</span> <span class="va">Omega</span>,
+             len <span class="op">=</span> <span class="fl">5</span>,
+             size <span class="op">=</span> <span class="fl">5</span><span class="op">)</span>
+<span class="co">## [1] 2 2 1 2 1</span></code></pre></div>
+<div class="sourceCode" id="cb135"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="va">hmm.survival</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimbleCode.html">nimbleCode</a></span><span class="op">(</span><span class="op">{</span>
   <span class="va">phi</span> <span class="op">~</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html">dunif</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1</span><span class="op">)</span> <span class="co"># prior survival</span>
   <span class="va">p</span> <span class="op">~</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html">dunif</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1</span><span class="op">)</span> <span class="co"># prior detection</span>
   <span class="co"># likelihood</span>
+  <span class="va">delta</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span>          <span class="co"># Pr(alive t = 1) = 1</span>
+  <span class="va">delta</span><span class="op">[</span><span class="fl">2</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0</span>          <span class="co"># Pr(dead t = 1) = 0</span>
   <span class="va">gamma</span><span class="op">[</span><span class="fl">1</span>,<span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="va">phi</span>      <span class="co"># Pr(alive t -&gt; alive t+1)</span>
   <span class="va">gamma</span><span class="op">[</span><span class="fl">1</span>,<span class="fl">2</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span> <span class="op">-</span> <span class="va">phi</span>  <span class="co"># Pr(alive t -&gt; dead t+1)</span>
   <span class="va">gamma</span><span class="op">[</span><span class="fl">2</span>,<span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0</span>        <span class="co"># Pr(dead t -&gt; alive t+1)</span>
   <span class="va">gamma</span><span class="op">[</span><span class="fl">2</span>,<span class="fl">2</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span>        <span class="co"># Pr(dead t -&gt; dead t+1)</span>
-  <span class="va">delta</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span>          <span class="co"># Pr(alive t = 1) = 1</span>
-  <span class="va">delta</span><span class="op">[</span><span class="fl">2</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0</span>          <span class="co"># Pr(dead t = 1) = 0</span>
   <span class="va">omega</span><span class="op">[</span><span class="fl">1</span>,<span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span> <span class="op">-</span> <span class="va">p</span>    <span class="co"># Pr(alive t -&gt; non-detected t)</span>
   <span class="va">omega</span><span class="op">[</span><span class="fl">1</span>,<span class="fl">2</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="va">p</span>        <span class="co"># Pr(alive t -&gt; detected t)</span>
   <span class="va">omega</span><span class="op">[</span><span class="fl">2</span>,<span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span>        <span class="co"># Pr(dead t -&gt; non-detected t)</span>
   <span class="va">omega</span><span class="op">[</span><span class="fl">2</span>,<span class="fl">2</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0</span>        <span class="co"># Pr(dead t -&gt; detected t)</span>
-  <span class="kw">for</span><span class="op">(</span><span class="va">i</span> <span class="kw">in</span> <span class="fl">1</span><span class="op">:</span><span class="va">N</span><span class="op">)</span> <span class="op">{</span>
-    <span class="va">init</span><span class="op">[</span><span class="va">i</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">2</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="va">gamma</span><span class="op">[</span><span class="va">y</span><span class="op">[</span><span class="va">i</span>, <span class="va">first</span><span class="op">[</span><span class="va">i</span><span class="op">]</span> <span class="op">]</span> <span class="op">-</span> <span class="fl">1</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">2</span><span class="op">]</span> <span class="co"># First state propagation</span>
-  <span class="op">}</span>
+  <span class="va">omegat</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">2</span>,<span class="fl">1</span><span class="op">:</span><span class="fl">2</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/t.html">t</a></span><span class="op">(</span><span class="va">omega</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">2</span>,<span class="fl">1</span><span class="op">:</span><span class="fl">2</span><span class="op">]</span><span class="op">)</span>
   <span class="kw">for</span> <span class="op">(</span><span class="va">i</span> <span class="kw">in</span> <span class="fl">1</span><span class="op">:</span><span class="va">N</span><span class="op">)</span><span class="op">{</span>
-    <span class="va">y</span><span class="op">[</span><span class="va">i</span>,<span class="op">(</span><span class="va">first</span><span class="op">[</span><span class="va">i</span><span class="op">]</span><span class="op">+</span><span class="fl">1</span><span class="op">)</span><span class="op">:</span><span class="cn">T</span><span class="op">]</span> <span class="op">~</span> <span class="fu">dHMMweighted</span><span class="op">(</span>init <span class="op">=</span> <span class="va">init</span><span class="op">[</span><span class="va">i</span>,<span class="fl">1</span><span class="op">:</span><span class="fl">2</span><span class="op">]</span>, 
-                                       mult <span class="op">=</span> <span class="va">mult</span><span class="op">[</span><span class="va">i</span><span class="op">]</span>,
-                                       probObs <span class="op">=</span> <span class="va">omega</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">2</span>,<span class="fl">1</span><span class="op">:</span><span class="fl">2</span><span class="op">]</span>, <span class="co"># observation matrix</span>
-                                       probTrans <span class="op">=</span> <span class="va">gamma</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">2</span>,<span class="fl">1</span><span class="op">:</span><span class="fl">2</span><span class="op">]</span>, <span class="co"># transition matrix</span>
-                                       len <span class="op">=</span> <span class="cn">T</span> <span class="op">-</span> <span class="va">first</span><span class="op">[</span><span class="va">i</span><span class="op">]</span>, <span class="co"># nb of sampling occasions</span>
-                                       checkRowSums <span class="op">=</span> <span class="fl">1</span><span class="op">)</span> <span class="co"># do not check whether elements in a row sum to 1</span>
+    <span class="va">y</span><span class="op">[</span><span class="va">i</span>,<span class="fl">1</span><span class="op">:</span><span class="cn">T</span><span class="op">]</span> <span class="op">~</span> <span class="fu">dHMMweighted</span><span class="op">(</span>probInit <span class="op">=</span> <span class="va">delta</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">2</span><span class="op">]</span>, 
+                    probObs <span class="op">=</span> <span class="va">omegat</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">2</span>,<span class="fl">1</span><span class="op">:</span><span class="fl">2</span><span class="op">]</span>, <span class="co"># observation matrix</span>
+                    probTrans <span class="op">=</span> <span class="va">gamma</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">2</span>,<span class="fl">1</span><span class="op">:</span><span class="fl">2</span><span class="op">]</span>, <span class="co"># transition matrix</span>
+                    len <span class="op">=</span> <span class="cn">T</span>,
+                    size <span class="op">=</span> <span class="va">S</span><span class="op">[</span><span class="va">i</span><span class="op">]</span><span class="op">)</span> <span class="co"># nb of sampling occasions</span>
   <span class="op">}</span>
 <span class="op">}</span><span class="op">)</span></code></pre></div>
-<div class="sourceCode" id="cb128"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/r/base/Random.html">set.seed</a></span><span class="op">(</span><span class="fl">2022</span><span class="op">)</span>
-<span class="va">p</span> <span class="op">&lt;-</span> <span class="fl">0.6</span>
-<span class="va">y</span> <span class="op">&lt;-</span> <span class="va">z</span>
-<span class="va">y</span><span class="op">[</span><span class="va">z</span><span class="op">==</span><span class="fl">2</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0</span>
-<span class="va">y</span><span class="op">[</span><span class="va">y</span><span class="op">==</span><span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/Binomial.html">rbinom</a></span><span class="op">(</span>n <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/sum.html">sum</a></span><span class="op">(</span><span class="va">y</span><span class="op">==</span><span class="fl">1</span><span class="op">)</span>, <span class="fl">1</span>, <span class="va">p</span><span class="op">)</span>
-<span class="va">nobs</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/sum.html">sum</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/apply.html">apply</a></span><span class="op">(</span><span class="va">y</span>,<span class="fl">1</span>,<span class="va">sum</span><span class="op">)</span> <span class="op">!=</span> <span class="fl">0</span><span class="op">)</span>
-<span class="va">y</span> <span class="op">&lt;-</span> <span class="va">y</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/apply.html">apply</a></span><span class="op">(</span><span class="va">y</span>,<span class="fl">1</span>,<span class="va">sum</span><span class="op">)</span> <span class="op">!=</span><span class="fl">0</span>, <span class="op">]</span>
-<span class="va">first</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/apply.html">apply</a></span><span class="op">(</span><span class="va">y</span>, <span class="fl">1</span>, <span class="kw">function</span><span class="op">(</span><span class="va">x</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/Extremes.html">min</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimble-R-functions.html">which</a></span><span class="op">(</span><span class="va">x</span> <span class="op">!=</span><span class="fl">0</span><span class="op">)</span><span class="op">)</span><span class="op">)</span>
-<span class="kw">for</span> <span class="op">(</span><span class="va">i</span> <span class="kw">in</span> <span class="fl">1</span><span class="op">:</span><span class="va">nobs</span><span class="op">)</span><span class="op">{</span>
-  <span class="kw">if</span><span class="op">(</span><span class="va">first</span><span class="op">[</span><span class="va">i</span><span class="op">]</span> <span class="op">&gt;</span> <span class="fl">1</span><span class="op">)</span> <span class="va">y</span><span class="op">[</span><span class="va">i</span>, <span class="fl">1</span><span class="op">:</span><span class="op">(</span><span class="va">first</span><span class="op">[</span><span class="va">i</span><span class="op">]</span><span class="op">-</span><span class="fl">1</span><span class="op">)</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="cn">NA</span>
-<span class="op">}</span>
-<span class="va">y_weighted</span> <span class="op">&lt;-</span> <span class="va">y</span> <span class="op">%&gt;%</span> 
+<div class="sourceCode" id="cb136"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="va">y_weighted</span> <span class="op">&lt;-</span> <span class="va">y</span> <span class="op">%&gt;%</span> 
   <span class="fu">as_tibble</span><span class="op">(</span><span class="op">)</span> <span class="op">%&gt;%</span> 
   <span class="fu">group_by_all</span><span class="op">(</span><span class="op">)</span> <span class="op">%&gt;%</span> 
-  <span class="fu">summarise</span><span class="op">(</span>mult <span class="op">=</span> <span class="fu">n</span><span class="op">(</span><span class="op">)</span><span class="op">)</span> <span class="op">%&gt;%</span> 
-  <span class="fu">relocate</span><span class="op">(</span><span class="va">mult</span><span class="op">)</span> <span class="op">%&gt;%</span> 
+  <span class="fu">summarise</span><span class="op">(</span>S <span class="op">=</span> <span class="fu">n</span><span class="op">(</span><span class="op">)</span><span class="op">)</span> <span class="op">%&gt;%</span> 
+  <span class="fu">relocate</span><span class="op">(</span><span class="va">S</span><span class="op">)</span> <span class="op">%&gt;%</span> 
   <span class="fu"><a href="https://rdrr.io/r/base/matrix.html">as.matrix</a></span><span class="op">(</span><span class="op">)</span>
-<span class="fu"><a href="https://rdrr.io/r/utils/head.html">head</a></span><span class="op">(</span><span class="va">y_weighted</span><span class="op">)</span>
-<span class="co">##      mult V1 V2 V3 V4 V5</span>
-<span class="co">## [1,]   12  1  0  0  0  0</span>
-<span class="co">## [2,]    2  1  0  0  0  1</span>
-<span class="co">## [3,]    3  1  0  1  0  0</span>
-<span class="co">## [4,]    1  1  0  1  0  1</span>
-<span class="co">## [5,]    3  1  0  1  1  0</span>
-<span class="co">## [6,]    1  1  0  1  1  1</span></code></pre></div>
-<div class="sourceCode" id="cb129"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="va">mult</span> <span class="op">&lt;-</span> <span class="va">y_weighted</span><span class="op">[</span>,<span class="fl">1</span><span class="op">]</span> <span class="co"># nb of individuals w/ a particular encounter history</span>
-<span class="va">y</span> <span class="op">&lt;-</span> <span class="va">y_weighted</span><span class="op">[</span>,<span class="op">-</span><span class="fl">1</span><span class="op">]</span> <span class="co"># pooled data</span></code></pre></div>
-<p>There are XX individuals that were detected only once, XX individuals that were detected only once…</p>
-<p>Get the occasion of first capture for each history:</p>
-<div class="sourceCode" id="cb130"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="va">get.first</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">x</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/Extremes.html">min</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimble-R-functions.html">which</a></span><span class="op">(</span><span class="va">x</span> <span class="op">!=</span> <span class="fl">0</span><span class="op">)</span><span class="op">)</span>
-<span class="va">first</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/apply.html">apply</a></span><span class="op">(</span><span class="va">y</span>, <span class="fl">1</span>, <span class="va">get.first</span><span class="op">)</span></code></pre></div>
-<p>Filter out individuals that are first captured at last occasion.</p>
-<div class="sourceCode" id="cb131"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="va">mask</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimble-R-functions.html">which</a></span><span class="op">(</span><span class="va">first</span><span class="op">!=</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html">ncol</a></span><span class="op">(</span><span class="va">y</span><span class="op">)</span><span class="op">)</span>
-<span class="va">y</span> <span class="op">&lt;-</span> <span class="va">y</span><span class="op">[</span><span class="va">mask</span>, <span class="op">]</span></code></pre></div>
-<p>Apply filter on occasion of first capture and sample size.</p>
-<div class="sourceCode" id="cb132"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="va">first</span> <span class="op">&lt;-</span> <span class="va">first</span><span class="op">[</span><span class="va">mask</span><span class="op">]</span>
-<span class="va">mult</span> <span class="op">&lt;-</span> <span class="va">mult</span><span class="op">[</span><span class="va">mask</span><span class="op">]</span></code></pre></div>
-<p>Rest is the same:</p>
-<div class="sourceCode" id="cb133"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="co"># Data and constants:</span>
-<span class="va">my.data</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>y <span class="op">=</span> <span class="va">y</span> <span class="op">+</span> <span class="fl">1</span><span class="op">)</span>
-<span class="va">my.constants</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>N <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html">nrow</a></span><span class="op">(</span><span class="va">y</span><span class="op">)</span>, T <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html">ncol</a></span><span class="op">(</span><span class="va">y</span><span class="op">)</span>, first <span class="op">=</span> <span class="va">first</span>, mult <span class="op">=</span> <span class="va">mult</span><span class="op">)</span>
+<span class="va">y_weighted</span>
+<span class="co">##        S winter 1 winter 2 winter 3 winter 4 winter 5</span>
+<span class="co">##  [1,] 21        1        0        0        0        0</span>
+<span class="co">##  [2,]  2        1        0        0        1        0</span>
+<span class="co">##  [3,]  1        1        0        1        0        0</span>
+<span class="co">##  [4,]  1        1        0        1        0        1</span>
+<span class="co">##  [5,]  2        1        0        1        1        0</span>
+<span class="co">##  [6,]  1        1        0        1        1        1</span>
+<span class="co">##  [7,]  8        1        1        0        0        0</span>
+<span class="co">##  [8,]  4        1        1        0        0        1</span>
+<span class="co">##  [9,]  2        1        1        0        1        0</span>
+<span class="co">## [10,]  1        1        1        0        1        1</span>
+<span class="co">## [11,]  4        1        1        1        0        0</span>
+<span class="co">## [12,]  1        1        1        1        0        1</span>
+<span class="co">## [13,]  8        1        1        1        1        0</span>
+<span class="co">## [14,]  1        1        1        1        1        1</span></code></pre></div>
+<div class="sourceCode" id="cb137"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="va">my.constants</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>N <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html">nrow</a></span><span class="op">(</span><span class="va">y_weighted</span><span class="op">)</span>, T <span class="op">=</span> <span class="fl">5</span>, S <span class="op">=</span> <span class="va">y_weighted</span><span class="op">[</span>,<span class="st">'S'</span><span class="op">]</span><span class="op">)</span>
+<span class="va">my.constants</span>
+<span class="co">## $N</span>
+<span class="co">## [1] 14</span>
+<span class="co">## </span>
+<span class="co">## $T</span>
+<span class="co">## [1] 5</span>
+<span class="co">## </span>
+<span class="co">## $S</span>
+<span class="co">##  [1] 21  2  1  1  2  1  8  4  2  1  4  1  8  1</span>
 
-<span class="co"># Initial values:</span>
-<span class="va">zinits</span> <span class="op">&lt;-</span> <span class="va">y</span> <span class="op">+</span> <span class="fl">1</span> <span class="co"># non-detection -&gt; alive</span>
-<span class="va">zinits</span><span class="op">[</span><span class="va">zinits</span> <span class="op">==</span> <span class="fl">2</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span> <span class="co"># dead -&gt; alive</span>
+<span class="va">my.data</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>y <span class="op">=</span> <span class="va">y_weighted</span><span class="op">[</span>,<span class="op">-</span><span class="fl">1</span><span class="op">]</span> <span class="op">+</span> <span class="fl">1</span><span class="op">)</span>
+
 <span class="va">initial.values</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>phi <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html">runif</a></span><span class="op">(</span><span class="fl">1</span>,<span class="fl">0</span>,<span class="fl">1</span><span class="op">)</span>,
                                   p <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html">runif</a></span><span class="op">(</span><span class="fl">1</span>,<span class="fl">0</span>,<span class="fl">1</span><span class="op">)</span><span class="op">)</span>
 
-<span class="co"># Parameters to monitor:</span>
 <span class="va">parameters.to.save</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimble-R-functions.html">c</a></span><span class="op">(</span><span class="st">"phi"</span>, <span class="st">"p"</span><span class="op">)</span>
-<span class="va">parameters.to.save</span>
-<span class="co">## [1] "phi" "p"</span>
 
-<span class="co"># MCMC details:</span>
 <span class="va">n.iter</span> <span class="op">&lt;-</span> <span class="fl">5000</span>
 <span class="va">n.burnin</span> <span class="op">&lt;-</span> <span class="fl">1000</span>
 <span class="va">n.chains</span> <span class="op">&lt;-</span> <span class="fl">2</span></code></pre></div>
-<p>This won’t work. You need a rHMMweighted.</p>
-<div class="sourceCode" id="cb134"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="co"># Run NIMBLE:</span>
-<span class="va">mcmc.output</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimbleMCMC.html">nimbleMCMC</a></span><span class="op">(</span>code <span class="op">=</span> <span class="va">hmm.survival.weighted</span>,
-                          constants <span class="op">=</span> <span class="va">my.constants</span>,
-                          data <span class="op">=</span> <span class="va">my.data</span>,
-                          inits <span class="op">=</span> <span class="va">initial.values</span>,
-                          monitors <span class="op">=</span> <span class="va">parameters.to.save</span>,
-                          niter <span class="op">=</span> <span class="va">n.iter</span>,
-                          nburnin <span class="op">=</span> <span class="va">n.burnin</span>,
-                          nchains <span class="op">=</span> <span class="va">n.chains</span><span class="op">)</span></code></pre></div>
-<p>We need a <code>rHMMweighted</code> as well.</p>
-<div class="sourceCode" id="cb135"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="va">rHMMweighted</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimbleFunction.html">nimbleFunction</a></span><span class="op">(</span>
-  run <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">n</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimNumeric.html">integer</a></span><span class="op">(</span><span class="op">)</span>,    <span class="co">## Observed capture (state) history</span>
-                 <span class="va">init</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/double.html">double</a></span><span class="op">(</span><span class="fl">1</span><span class="op">)</span>,
-                 <span class="va">probObs</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/double.html">double</a></span><span class="op">(</span><span class="fl">2</span><span class="op">)</span>,
-                 <span class="va">probTrans</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/double.html">double</a></span><span class="op">(</span><span class="fl">2</span><span class="op">)</span>,
-                 <span class="va">len</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/double.html">double</a></span><span class="op">(</span><span class="fl">0</span><span class="op">)</span>,
-                 <span class="va">mult</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/double.html">double</a></span><span class="op">(</span><span class="fl">0</span><span class="op">)</span>,
-                 <span class="va">checkRowSums</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/double.html">double</a></span><span class="op">(</span><span class="fl">0</span>, default <span class="op">=</span> <span class="fl">1</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span>
-    <span class="fu">returnType</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/double.html">double</a></span><span class="op">(</span><span class="fl">1</span><span class="op">)</span><span class="op">)</span>
-    <span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimDim.html">dim</a></span><span class="op">(</span><span class="va">probObs</span><span class="op">)</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span> <span class="op">!=</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimDim.html">dim</a></span><span class="op">(</span><span class="va">probTrans</span><span class="op">)</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span><span class="op">)</span> <span class="kw"><a href="https://rdrr.io/pkg/nimble/man/nimStop.html">stop</a></span><span class="op">(</span><span class="st">"In rHMM: Number of cols in probObs must equal number of cols in probTrans."</span><span class="op">)</span>
-    <span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimDim.html">dim</a></span><span class="op">(</span><span class="va">probTrans</span><span class="op">)</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span> <span class="op">!=</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimDim.html">dim</a></span><span class="op">(</span><span class="va">probTrans</span><span class="op">)</span><span class="op">[</span><span class="fl">2</span><span class="op">]</span><span class="op">)</span> <span class="kw"><a href="https://rdrr.io/pkg/nimble/man/nimStop.html">stop</a></span><span class="op">(</span><span class="st">"In rHMM: probTrans must be a square matrix."</span><span class="op">)</span>
-    <span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/MathFun.html">abs</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/sum.html">sum</a></span><span class="op">(</span><span class="va">init</span><span class="op">)</span> <span class="op">-</span> <span class="fl">1</span><span class="op">)</span> <span class="op">&gt;</span> <span class="fl">1e-06</span><span class="op">)</span> <span class="kw"><a href="https://rdrr.io/pkg/nimble/man/nimStop.html">stop</a></span><span class="op">(</span><span class="st">"In rHMM: Initial probabilities must sum to 1."</span><span class="op">)</span>
-    <span class="kw">if</span> <span class="op">(</span><span class="va">checkRowSums</span><span class="op">)</span> <span class="op">{</span>
-      <span class="va">transCheckPasses</span> <span class="op">&lt;-</span> <span class="cn">TRUE</span>
-      <span class="kw">for</span> <span class="op">(</span><span class="va">i</span> <span class="kw">in</span> <span class="fl">1</span><span class="op">:</span><span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimDim.html">dim</a></span><span class="op">(</span><span class="va">probTrans</span><span class="op">)</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span><span class="op">)</span> <span class="op">{</span>
-        <span class="va">thisCheckSum</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/sum.html">sum</a></span><span class="op">(</span><span class="va">probTrans</span><span class="op">[</span><span class="va">i</span>,<span class="op">]</span><span class="op">)</span>
-        <span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/MathFun.html">abs</a></span><span class="op">(</span><span class="va">thisCheckSum</span> <span class="op">-</span> <span class="fl">1</span><span class="op">)</span> <span class="op">&gt;</span> <span class="fl">1e-6</span><span class="op">)</span> <span class="op">{</span>
-          <span class="co">## Compilation doesn't support more than a simple string for stop()</span>
-          <span class="co">## so we provide more detail using a print().</span>
-          <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimPrint.html">print</a></span><span class="op">(</span><span class="st">"In rHMM: Problem with sum(probTrans[i,]) with i = "</span>, <span class="va">i</span>, <span class="st">". The sum should be 1 but is "</span>, <span class="va">thisCheckSum</span><span class="op">)</span>
-          <span class="va">transCheckPasses</span> <span class="op">&lt;-</span> <span class="cn">FALSE</span>
-        <span class="op">}</span>
-      <span class="op">}</span>
-      <span class="va">obsCheckPasses</span> <span class="op">&lt;-</span> <span class="cn">TRUE</span>
-      <span class="kw">for</span> <span class="op">(</span><span class="va">i</span> <span class="kw">in</span> <span class="fl">1</span><span class="op">:</span><span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimDim.html">dim</a></span><span class="op">(</span><span class="va">probObs</span><span class="op">)</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span><span class="op">)</span> <span class="op">{</span>
-        <span class="va">thisCheckSum</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/sum.html">sum</a></span><span class="op">(</span><span class="va">probObs</span><span class="op">[</span><span class="va">i</span>,<span class="op">]</span><span class="op">)</span>
-        <span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/MathFun.html">abs</a></span><span class="op">(</span><span class="va">thisCheckSum</span> <span class="op">-</span> <span class="fl">1</span><span class="op">)</span> <span class="op">&gt;</span> <span class="fl">1e-6</span><span class="op">)</span> <span class="op">{</span>
-          <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimPrint.html">print</a></span><span class="op">(</span><span class="st">"In rHMM: Problem with sum(probObs[i,]) with i = "</span>, <span class="va">i</span>, <span class="st">". The sum should be 1 but is "</span>, <span class="va">thisCheckSum</span><span class="op">)</span>
-          <span class="va">obsCheckPasses</span> <span class="op">&lt;-</span> <span class="cn">FALSE</span>
-        <span class="op">}</span>
-      <span class="op">}</span>
-      <span class="kw">if</span><span class="op">(</span><span class="op">!</span><span class="op">(</span><span class="va">transCheckPasses</span> <span class="op">|</span> <span class="va">obsCheckPasses</span><span class="op">)</span><span class="op">)</span>
-        <span class="kw"><a href="https://rdrr.io/pkg/nimble/man/nimStop.html">stop</a></span><span class="op">(</span><span class="st">"In rHMM: probTrans and probObs were not specified correctly.  Probabilities in each row (second dimension) must sum to 1."</span><span class="op">)</span>
-      <span class="kw">if</span><span class="op">(</span><span class="op">!</span><span class="va">transCheckPasses</span><span class="op">)</span>
-        <span class="kw"><a href="https://rdrr.io/pkg/nimble/man/nimStop.html">stop</a></span><span class="op">(</span><span class="st">"In rHMM: probTrans was not specified correctly.  Probabilities in each row (second dimension) must sum to 1."</span><span class="op">)</span>
-      <span class="kw">if</span><span class="op">(</span><span class="op">!</span><span class="va">obsCheckPasses</span><span class="op">)</span>
-        <span class="kw"><a href="https://rdrr.io/pkg/nimble/man/nimStop.html">stop</a></span><span class="op">(</span><span class="st">"In rHMM: probObs was not specified correctly. Probabilities in each row must sum to 1."</span><span class="op">)</span>
-    <span class="op">}</span>
-    <span class="va">ans</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimNumeric.html">numeric</a></span><span class="op">(</span><span class="va">len</span><span class="op">)</span>
-    <span class="va">probInit</span> <span class="op">&lt;-</span> <span class="va">init</span>
-    <span class="va">trueInit</span> <span class="op">&lt;-</span> <span class="fl">0</span>
-    <span class="va">r</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html">runif</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">0</span>, <span class="fl">1</span><span class="op">)</span>
-    <span class="va">j</span> <span class="op">&lt;-</span> <span class="fl">1</span>
-    <span class="kw">while</span> <span class="op">(</span><span class="va">r</span> <span class="op">&gt;</span> <span class="fu"><a href="https://rdrr.io/r/base/sum.html">sum</a></span><span class="op">(</span><span class="va">probInit</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="va">j</span><span class="op">]</span><span class="op">)</span><span class="op">)</span> <span class="va">j</span> <span class="op">&lt;-</span> <span class="va">j</span> <span class="op">+</span> <span class="fl">1</span>
-    <span class="va">trueInit</span> <span class="op">&lt;-</span> <span class="va">j</span>
-    <span class="va">trueState</span> <span class="op">&lt;-</span> <span class="va">trueInit</span>
-    <span class="kw">for</span> <span class="op">(</span><span class="va">i</span> <span class="kw">in</span> <span class="fl">1</span><span class="op">:</span><span class="va">len</span><span class="op">)</span> <span class="op">{</span>
-      <span class="co"># Transition to a new true state</span>
-      <span class="va">r</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html">runif</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">0</span>, <span class="fl">1</span><span class="op">)</span>
-      <span class="va">j</span> <span class="op">&lt;-</span> <span class="fl">1</span>
-      <span class="kw">while</span> <span class="op">(</span><span class="va">r</span> <span class="op">&gt;</span> <span class="fu"><a href="https://rdrr.io/r/base/sum.html">sum</a></span><span class="op">(</span><span class="va">probTrans</span><span class="op">[</span><span class="va">trueState</span>, <span class="fl">1</span><span class="op">:</span><span class="va">j</span><span class="op">]</span><span class="op">)</span><span class="op">)</span> <span class="va">j</span> <span class="op">&lt;-</span> <span class="va">j</span> <span class="op">+</span> <span class="fl">1</span>
-      <span class="va">trueState</span> <span class="op">&lt;-</span> <span class="va">j</span>
-      <span class="co"># Detect based on the true state</span>
-      <span class="va">r</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html">runif</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">0</span>, <span class="fl">1</span><span class="op">)</span>
-      <span class="va">j</span> <span class="op">&lt;-</span> <span class="fl">1</span>
-      <span class="kw">while</span> <span class="op">(</span><span class="va">r</span> <span class="op">&gt;</span> <span class="fu"><a href="https://rdrr.io/r/base/sum.html">sum</a></span><span class="op">(</span><span class="va">probObs</span><span class="op">[</span><span class="va">trueState</span>, <span class="fl">1</span><span class="op">:</span><span class="va">j</span><span class="op">]</span><span class="op">)</span><span class="op">)</span> <span class="va">j</span> <span class="op">&lt;-</span> <span class="va">j</span> <span class="op">+</span> <span class="fl">1</span>
-      <span class="va">ans</span><span class="op">[</span><span class="va">i</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="va">j</span>
-    <span class="op">}</span>
-    <span class="kw"><a href="https://rdrr.io/r/base/function.html">return</a></span><span class="op">(</span><span class="va">ans</span><span class="op">)</span>
-  <span class="op">}</span><span class="op">)</span></code></pre></div>
-<div class="sourceCode" id="cb136"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="co"># Run NIMBLE:</span>
-<span class="va">mcmc.output</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimbleMCMC.html">nimbleMCMC</a></span><span class="op">(</span>code <span class="op">=</span> <span class="va">hmm.survival.weighted</span>,
+<div class="sourceCode" id="cb138"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="va">mcmc.output</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimbleMCMC.html">nimbleMCMC</a></span><span class="op">(</span>code <span class="op">=</span> <span class="va">hmm.survival</span>,
                           constants <span class="op">=</span> <span class="va">my.constants</span>,
                           data <span class="op">=</span> <span class="va">my.data</span>,
                           inits <span class="op">=</span> <span class="va">initial.values</span>,
@@ -5670,10 +5644,31 @@ winter 5
                           niter <span class="op">=</span> <span class="va">n.iter</span>,
                           nburnin <span class="op">=</span> <span class="va">n.burnin</span>,
                           nchains <span class="op">=</span> <span class="va">n.chains</span><span class="op">)</span>
-
-<span class="co"># Numerical summaries:</span>
-<span class="fu"><a href="https://rdrr.io/pkg/MCMCvis/man/MCMCsummary.html">MCMCsummary</a></span><span class="op">(</span><span class="va">mcmc.output</span>, round <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></code></pre></div>
-<p><strong>Something doesn’t work. I found a fix during the workshop, but can’t make it work here. Try and simplify the fn first, and make sense of rHMM. Then resume.</strong></p>
+<span class="co">## Registering the following user-provided distributions: dHMMweighted</span>
+<span class="co">## NIMBLE has registered dHMMweighted as a distribution based on its use in BUGS code. Note that if you make changes to the nimbleFunctions for the distribution, you must call 'deregisterDistributions' before using the distribution in BUGS code for those changes to take effect.</span>
+<span class="co">## |-------------|-------------|-------------|-------------|</span>
+<span class="co">## |-------------------------------------------------------|</span>
+<span class="co">## |-------------|-------------|-------------|-------------|</span>
+<span class="co">## |-------------------------------------------------------|</span></code></pre></div>
+<div class="sourceCode" id="cb139"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/pkg/MCMCvis/man/MCMCsummary.html">MCMCsummary</a></span><span class="op">(</span><span class="va">mcmc.output</span>, round <span class="op">=</span> <span class="fl">2</span><span class="op">)</span>
+<span class="co">##     mean   sd 2.5%  50% 97.5% Rhat n.eff</span>
+<span class="co">## p   0.61 0.06 0.49 0.61  0.72    1  1365</span>
+<span class="co">## phi 0.76 0.04 0.67 0.76  0.84    1  1388</span></code></pre></div>
+<p>Works preeeeeety well ;-) two small issues though:</p>
+<ol style="list-style-type: decimal">
+<li><p>I get this warning:
+Message d’avis :
+Dans model$checkBasics() :
+Possible size/dimension mismatch amongst vectors and matrices
+in BUGS expression: y[i, 1:5] ~ dHMM(probInit = delta[1:2],
+probObs = omegat[1:2, 1:2], probTrans = gamma[1:2, 1:2],
+len = 5, lower_ = -Inf, upper_ = Inf). Ignore this warning
+if the user-provided distribution has multivariate parameters
+with distinct sizes or if size of variable differs from sizes of parameters.</p></li>
+<li><p>Also, I need to transpose the observation matrix.
+This needs to be said when explaining the forward algorithm.</p></li>
+</ol>
 </div>
 <div id="decoding-after-marginalization" class="section level2" number="3.10">
 <h2>
@@ -5765,7 +5760,7 @@ winter 5
 <footer class="bg-primary text-light mt-5"><div class="container"><div class="row">
 
   <div class="col-12 col-md-6 mt-3">
-    <p>"<strong>Bayesian Analysis of Capture-Recapture Data with Hidden Markov Models</strong>: Theory and Case Studies in R" was written by Olivier Gimenez. It was last built on 2022-02-17.</p>
+    <p>"<strong>Bayesian Analysis of Capture-Recapture Data with Hidden Markov Models</strong>: Theory and Case Studies in R" was written by Olivier Gimenez. It was last built on 2022-02-18.</p>
   </div>
 
   <div class="col-12 col-md-6 mt-3">
