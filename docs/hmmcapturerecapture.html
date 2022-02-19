@@ -1286,9 +1286,9 @@ winter 5
 <p>Second, if an animal is alive in a given winter, the probability it survives to the next winter is <span class="math inline">\(\phi\)</span>. The probability it dies is <span class="math inline">\(1 - \phi\)</span>.</p>
 <p>Third, if an animal is dead a winter, it remains dead, unless you believe in zombies.</p>
 <p>Our Markov process can be represented this way:</p>
-<div class="inline-figure"><img src="banana-book_files/figure-html/unnamed-chunk-109-1.png" width="672"></div>
-<p>An example of this Markov process is, for example:</p>
 <div class="inline-figure"><img src="banana-book_files/figure-html/unnamed-chunk-110-1.png" width="672"></div>
+<p>An example of this Markov process is, for example:</p>
+<div class="inline-figure"><img src="banana-book_files/figure-html/unnamed-chunk-111-1.png" width="672"></div>
 <p>Here the animal remains alive over the three first time intervals <span class="math inline">\((z_{i,1} = z_{i,2} = z_{i,3} = 1)\)</span> with probability <span class="math inline">\(\phi\)</span> until it dies over the fourth time interval <span class="math inline">\((z_{i,4} = 2)\)</span> with probability <span class="math inline">\(1-\phi\)</span> then remains dead from then onwards <span class="math inline">\((z_{i,t \geq 5} = 2)\)</span> with probability 1.</p>
 </div>
 <div id="transition-matrix" class="section level3" number="3.3.2">
@@ -1425,11 +1425,11 @@ winter 5
 </h2>
 <p>Now that we have the likelihood of a Markov model, we can complement it with a prior for survival to apply the Bayes theorem.</p>
 <p>Before implementing this model in NIMBLE, we note that the likelihood is a product of conditional probabilities of binary events (alive or dead). Usually binary events are associated with the Bernoulli distribution. Here however, we will use its extension to several outcomes (from a coin to a dice) known as the categorical distribution<a class="footnote-ref" tabindex="0" data-toggle="popover" data-content="&lt;p&gt;The categorical distribution is a multinomial distribution with a single draw.&lt;/p&gt;"><sup>24</sup></a>. To get a better idea of how the categorical distribution works, let’s simulate from it. Consider for example a random value drawn from a categorical distribution with probability 0.1, 0.3 and 0.6. Think of a dice with three faces, face 1 has probability 0.1 of occurring, face 2 probability 0.3 and face 3 has probability 0.6, the sum of these probabilities being 1. We expect to get a 3 more often than a 2 and rarely a 1:</p>
-<div class="sourceCode" id="cb93"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb94"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="fu">nimble</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/nimble/man/Categorical.html">rcat</a></span><span class="op">(</span>n <span class="op">=</span> <span class="fl">1</span>, prob <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimble-R-functions.html">c</a></span><span class="op">(</span><span class="fl">0.1</span>, <span class="fl">0.3</span>, <span class="fl">0.6</span><span class="op">)</span><span class="op">)</span>
 <span class="co">## [1] 3</span></code></pre></div>
 <p>Here is another example in which we sample 20 times in a categorical distribution with probabilities 0.1, 0.1, 0.4, 0.2 and 0.2, hence a dice with 5 faces:</p>
-<div class="sourceCode" id="cb94"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb95"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="fu">nimble</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/nimble/man/Categorical.html">rcat</a></span><span class="op">(</span>n <span class="op">=</span> <span class="fl">20</span>, prob <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimble-R-functions.html">c</a></span><span class="op">(</span><span class="fl">0.1</span>, <span class="fl">0.1</span>, <span class="fl">0.4</span>, <span class="fl">0.2</span>, <span class="fl">0.2</span><span class="op">)</span><span class="op">)</span>
 <span class="co">##  [1] 5 3 4 5 4 3 4 2 2 3 1 3 5 5 3 4 2 3 2 3</span></code></pre></div>
 <p>In this chapter, you will familiarise yourself with the categorical distribution in binary situations, which should make the transition to more states than just alive and dead smoother in the next chapters.</p>
@@ -1472,36 +1472,36 @@ winter 5
 <span class="header-section-number">3.5</span> NIMBLE implementation<a class="anchor" aria-label="anchor" href="#nimble-implementation"><i class="fas fa-link"></i></a>
 </h2>
 <p>How to implement the Markov model we just built in NIMBLE? First things first, we need some bricks that are relatively easy to put in place. Let’s start with the prior on survival, the vector of initial state probabilities and the transition matrix:</p>
-<div class="sourceCode" id="cb95"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb95-1"><a href="hmmcapturerecapture.html#cb95-1" aria-hidden="true" tabindex="-1"></a>markov.survival <span class="ot">&lt;-</span> <span class="fu">nimbleCode</span>({</span>
-<span id="cb95-2"><a href="hmmcapturerecapture.html#cb95-2" aria-hidden="true" tabindex="-1"></a>  phi <span class="sc">~</span> <span class="fu">dunif</span>(<span class="dv">0</span>, <span class="dv">1</span>) <span class="co"># prior</span></span>
-<span id="cb95-3"><a href="hmmcapturerecapture.html#cb95-3" aria-hidden="true" tabindex="-1"></a>  delta[<span class="dv">1</span>] <span class="ot">&lt;-</span> <span class="dv">1</span>          <span class="co"># Pr(alive t = 1) = 1</span></span>
-<span id="cb95-4"><a href="hmmcapturerecapture.html#cb95-4" aria-hidden="true" tabindex="-1"></a>  delta[<span class="dv">2</span>] <span class="ot">&lt;-</span> <span class="dv">0</span>          <span class="co"># Pr(dead t = 1) = 0</span></span>
-<span id="cb95-5"><a href="hmmcapturerecapture.html#cb95-5" aria-hidden="true" tabindex="-1"></a>  gamma[<span class="dv">1</span>,<span class="dv">1</span>] <span class="ot">&lt;-</span> phi      <span class="co"># Pr(alive t -&gt; alive t+1)</span></span>
-<span id="cb95-6"><a href="hmmcapturerecapture.html#cb95-6" aria-hidden="true" tabindex="-1"></a>  gamma[<span class="dv">1</span>,<span class="dv">2</span>] <span class="ot">&lt;-</span> <span class="dv">1</span> <span class="sc">-</span> phi  <span class="co"># Pr(alive t -&gt; dead t+1)</span></span>
-<span id="cb95-7"><a href="hmmcapturerecapture.html#cb95-7" aria-hidden="true" tabindex="-1"></a>  gamma[<span class="dv">2</span>,<span class="dv">1</span>] <span class="ot">&lt;-</span> <span class="dv">0</span>        <span class="co"># Pr(dead t -&gt; alive t+1)</span></span>
-<span id="cb95-8"><a href="hmmcapturerecapture.html#cb95-8" aria-hidden="true" tabindex="-1"></a>  gamma[<span class="dv">2</span>,<span class="dv">2</span>] <span class="ot">&lt;-</span> <span class="dv">1</span>        <span class="co"># Pr(dead t -&gt; dead t+1)</span></span>
-<span id="cb95-9"><a href="hmmcapturerecapture.html#cb95-9" aria-hidden="true" tabindex="-1"></a>...</span></code></pre></div>
-<p>Alternatively, you can define vectors and matrices in NIMBLE like you would do it in R. You can write:</p>
 <div class="sourceCode" id="cb96"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb96-1"><a href="hmmcapturerecapture.html#cb96-1" aria-hidden="true" tabindex="-1"></a>markov.survival <span class="ot">&lt;-</span> <span class="fu">nimbleCode</span>({</span>
 <span id="cb96-2"><a href="hmmcapturerecapture.html#cb96-2" aria-hidden="true" tabindex="-1"></a>  phi <span class="sc">~</span> <span class="fu">dunif</span>(<span class="dv">0</span>, <span class="dv">1</span>) <span class="co"># prior</span></span>
-<span id="cb96-3"><a href="hmmcapturerecapture.html#cb96-3" aria-hidden="true" tabindex="-1"></a>  delta[<span class="dv">1</span><span class="sc">:</span><span class="dv">2</span>] <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">0</span>) <span class="co"># vector of initial state probabilities</span></span>
-<span id="cb96-4"><a href="hmmcapturerecapture.html#cb96-4" aria-hidden="true" tabindex="-1"></a>  gamma[<span class="dv">1</span><span class="sc">:</span><span class="dv">2</span>,<span class="dv">1</span><span class="sc">:</span><span class="dv">2</span>] <span class="ot">&lt;-</span> <span class="fu">matrix</span>( <span class="fu">c</span>(phi, <span class="dv">0</span>, <span class="dv">1</span> <span class="sc">-</span> phi, <span class="dv">1</span>), <span class="at">nrow =</span> <span class="dv">2</span>) <span class="co"># transition matrix</span></span>
-<span id="cb96-5"><a href="hmmcapturerecapture.html#cb96-5" aria-hidden="true" tabindex="-1"></a>...</span></code></pre></div>
+<span id="cb96-3"><a href="hmmcapturerecapture.html#cb96-3" aria-hidden="true" tabindex="-1"></a>  delta[<span class="dv">1</span>] <span class="ot">&lt;-</span> <span class="dv">1</span>          <span class="co"># Pr(alive t = 1) = 1</span></span>
+<span id="cb96-4"><a href="hmmcapturerecapture.html#cb96-4" aria-hidden="true" tabindex="-1"></a>  delta[<span class="dv">2</span>] <span class="ot">&lt;-</span> <span class="dv">0</span>          <span class="co"># Pr(dead t = 1) = 0</span></span>
+<span id="cb96-5"><a href="hmmcapturerecapture.html#cb96-5" aria-hidden="true" tabindex="-1"></a>  gamma[<span class="dv">1</span>,<span class="dv">1</span>] <span class="ot">&lt;-</span> phi      <span class="co"># Pr(alive t -&gt; alive t+1)</span></span>
+<span id="cb96-6"><a href="hmmcapturerecapture.html#cb96-6" aria-hidden="true" tabindex="-1"></a>  gamma[<span class="dv">1</span>,<span class="dv">2</span>] <span class="ot">&lt;-</span> <span class="dv">1</span> <span class="sc">-</span> phi  <span class="co"># Pr(alive t -&gt; dead t+1)</span></span>
+<span id="cb96-7"><a href="hmmcapturerecapture.html#cb96-7" aria-hidden="true" tabindex="-1"></a>  gamma[<span class="dv">2</span>,<span class="dv">1</span>] <span class="ot">&lt;-</span> <span class="dv">0</span>        <span class="co"># Pr(dead t -&gt; alive t+1)</span></span>
+<span id="cb96-8"><a href="hmmcapturerecapture.html#cb96-8" aria-hidden="true" tabindex="-1"></a>  gamma[<span class="dv">2</span>,<span class="dv">2</span>] <span class="ot">&lt;-</span> <span class="dv">1</span>        <span class="co"># Pr(dead t -&gt; dead t+1)</span></span>
+<span id="cb96-9"><a href="hmmcapturerecapture.html#cb96-9" aria-hidden="true" tabindex="-1"></a>...</span></code></pre></div>
+<p>Alternatively, you can define vectors and matrices in NIMBLE like you would do it in R. You can write:</p>
+<div class="sourceCode" id="cb97"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb97-1"><a href="hmmcapturerecapture.html#cb97-1" aria-hidden="true" tabindex="-1"></a>markov.survival <span class="ot">&lt;-</span> <span class="fu">nimbleCode</span>({</span>
+<span id="cb97-2"><a href="hmmcapturerecapture.html#cb97-2" aria-hidden="true" tabindex="-1"></a>  phi <span class="sc">~</span> <span class="fu">dunif</span>(<span class="dv">0</span>, <span class="dv">1</span>) <span class="co"># prior</span></span>
+<span id="cb97-3"><a href="hmmcapturerecapture.html#cb97-3" aria-hidden="true" tabindex="-1"></a>  delta[<span class="dv">1</span><span class="sc">:</span><span class="dv">2</span>] <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">0</span>) <span class="co"># vector of initial state probabilities</span></span>
+<span id="cb97-4"><a href="hmmcapturerecapture.html#cb97-4" aria-hidden="true" tabindex="-1"></a>  gamma[<span class="dv">1</span><span class="sc">:</span><span class="dv">2</span>,<span class="dv">1</span><span class="sc">:</span><span class="dv">2</span>] <span class="ot">&lt;-</span> <span class="fu">matrix</span>( <span class="fu">c</span>(phi, <span class="dv">0</span>, <span class="dv">1</span> <span class="sc">-</span> phi, <span class="dv">1</span>), <span class="at">nrow =</span> <span class="dv">2</span>) <span class="co"># transition matrix</span></span>
+<span id="cb97-5"><a href="hmmcapturerecapture.html#cb97-5" aria-hidden="true" tabindex="-1"></a>...</span></code></pre></div>
 <p>Now there are two important dimensions to our model, along which we need to repeat tasks, namely individual and time. As for time, we describe the successive events of survival, say for individual <span class="math inline">\(i\)</span>:</p>
-<div class="sourceCode" id="cb97"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb98"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">z</span><span class="op">[</span><span class="va">i</span>,<span class="fl">1</span><span class="op">]</span> <span class="op">~</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/Categorical.html">dcat</a></span><span class="op">(</span><span class="va">delta</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">2</span><span class="op">]</span><span class="op">)</span>           <span class="co"># t = 1</span>
 <span class="va">z</span><span class="op">[</span><span class="va">i</span>,<span class="fl">2</span><span class="op">]</span> <span class="op">~</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/Categorical.html">dcat</a></span><span class="op">(</span><span class="va">gamma</span><span class="op">[</span><span class="va">z</span><span class="op">[</span><span class="va">i</span>,<span class="fl">1</span><span class="op">]</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">2</span><span class="op">]</span><span class="op">)</span>   <span class="co"># t = 2</span>
 <span class="va">z</span><span class="op">[</span><span class="va">i</span>,<span class="fl">3</span><span class="op">]</span> <span class="op">~</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/Categorical.html">dcat</a></span><span class="op">(</span><span class="va">gamma</span><span class="op">[</span><span class="va">z</span><span class="op">[</span><span class="va">i</span>,<span class="fl">2</span><span class="op">]</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">2</span><span class="op">]</span><span class="op">)</span>   <span class="co"># t = 3</span>
 <span class="va">...</span>
 <span class="va">z</span><span class="op">[</span><span class="va">i</span>,<span class="cn">T</span><span class="op">]</span> <span class="op">~</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/Categorical.html">dcat</a></span><span class="op">(</span><span class="va">gamma</span><span class="op">[</span><span class="va">z</span><span class="op">[</span><span class="va">i</span>,<span class="cn">T</span><span class="op">-</span><span class="fl">1</span><span class="op">]</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">2</span><span class="op">]</span><span class="op">)</span> <span class="co"># t = T</span></code></pre></div>
 <p>There is a more efficient way to write this piece of code by using a for loop, that is a sequence of instructions that we repeat. Here, we condense the previous code into:</p>
-<div class="sourceCode" id="cb98"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb99"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">z</span><span class="op">[</span><span class="va">i</span>,<span class="fl">1</span><span class="op">]</span> <span class="op">~</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/Categorical.html">dcat</a></span><span class="op">(</span><span class="va">delta</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">2</span><span class="op">]</span><span class="op">)</span>             <span class="co"># t = 1</span>
 <span class="kw">for</span> <span class="op">(</span><span class="va">t</span> <span class="kw">in</span> <span class="fl">2</span><span class="op">:</span><span class="cn">T</span><span class="op">)</span><span class="op">{</span> <span class="co"># loop over time t</span>
   <span class="va">z</span><span class="op">[</span><span class="va">i</span>,<span class="va">t</span><span class="op">]</span> <span class="op">~</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/Categorical.html">dcat</a></span><span class="op">(</span><span class="va">gamma</span><span class="op">[</span><span class="va">z</span><span class="op">[</span><span class="va">i</span>,<span class="va">t</span><span class="op">-</span><span class="fl">1</span><span class="op">]</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">2</span><span class="op">]</span><span class="op">)</span> <span class="co"># t = 2,...,T</span>
 <span class="op">}</span></code></pre></div>
 <p>Now we just need to do the same for all individuals. We use another loop:</p>
-<div class="sourceCode" id="cb99"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb100"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="kw">for</span> <span class="op">(</span><span class="va">i</span> <span class="kw">in</span> <span class="fl">1</span><span class="op">:</span><span class="va">N</span><span class="op">)</span><span class="op">{</span> <span class="co"># loop over individual i</span>
   <span class="va">z</span><span class="op">[</span><span class="va">i</span>,<span class="fl">1</span><span class="op">]</span> <span class="op">~</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/Categorical.html">dcat</a></span><span class="op">(</span><span class="va">delta</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">2</span><span class="op">]</span><span class="op">)</span> <span class="co"># t = 1</span>
   <span class="kw">for</span> <span class="op">(</span><span class="va">j</span> <span class="kw">in</span> <span class="fl">2</span><span class="op">:</span><span class="cn">T</span><span class="op">)</span><span class="op">{</span> <span class="co"># loop over time t</span>
@@ -1510,7 +1510,7 @@ winter 5
 <span class="op">}</span> <span class="co"># i</span></code></pre></div>
 <p><strong>Do I need to say anything here about dcat(), or does the introduction of rcat() above is enough?</strong></p>
 <p>Puting everything together, the NIMBLE code for our Markov model is:</p>
-<div class="sourceCode" id="cb100"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb101"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">markov.survival</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimbleCode.html">nimbleCode</a></span><span class="op">(</span><span class="op">{</span>
   <span class="va">phi</span> <span class="op">~</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html">dunif</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1</span><span class="op">)</span> <span class="co"># prior</span>
   <span class="va">delta</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span>          <span class="co"># Pr(alive t = 1) = 1</span>
@@ -1528,7 +1528,7 @@ winter 5
   <span class="op">}</span> <span class="co"># i</span>
 <span class="op">}</span><span class="op">)</span></code></pre></div>
 <p><strong>Do I need to say that vector <span class="math inline">\(\delta\)</span> is used as a placeholder for more complex models to come? Here, you could write <code>z[i,1] &lt;- 1</code> (show some code?).</strong></p>
-<div class="sourceCode" id="cb101"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb102"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">markov.survival</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimbleCode.html">nimbleCode</a></span><span class="op">(</span><span class="op">{</span>
   <span class="co"># likelihood</span>
   <span class="kw">for</span> <span class="op">(</span><span class="va">i</span> <span class="kw">in</span> <span class="fl">1</span><span class="op">:</span><span class="va">N</span><span class="op">)</span><span class="op">{</span>
@@ -1538,27 +1538,27 @@ winter 5
     <span class="op">}</span>
   <span class="op">}</span><span class="op">}</span><span class="op">)</span></code></pre></div>
 <p>Now we’re ready to resume our standard NIMBLE workflow. First we read in data. Because we have loops and indices that do not change, we use constants as explained in Section @ref{gettingstartedinnimble}:</p>
-<div class="sourceCode" id="cb102"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb103"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">my.constants</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>N <span class="op">=</span> <span class="fl">57</span>, T <span class="op">=</span> <span class="fl">5</span><span class="op">)</span>
 <span class="va">my.data</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>z <span class="op">=</span> <span class="va">z</span><span class="op">)</span></code></pre></div>
 <p>We also specify initial values for survival with a function:</p>
-<div class="sourceCode" id="cb103"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb104"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">initial.values</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>phi <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html">runif</a></span><span class="op">(</span><span class="fl">1</span>,<span class="fl">0</span>,<span class="fl">1</span><span class="op">)</span><span class="op">)</span>
 <span class="fu">initial.values</span><span class="op">(</span><span class="op">)</span>
 <span class="co">## $phi</span>
 <span class="co">## [1] 0.1265</span></code></pre></div>
 <p>There is a single parameter to monitor:</p>
-<div class="sourceCode" id="cb104"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb105"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">parameters.to.save</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimble-R-functions.html">c</a></span><span class="op">(</span><span class="st">"phi"</span><span class="op">)</span>
 <span class="va">parameters.to.save</span>
 <span class="co">## [1] "phi"</span></code></pre></div>
 <p>We run 2 chains with 5000 iterations including 1000 iterations as burnin:</p>
-<div class="sourceCode" id="cb105"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb106"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">n.iter</span> <span class="op">&lt;-</span> <span class="fl">5000</span>
 <span class="va">n.burnin</span> <span class="op">&lt;-</span> <span class="fl">1000</span>
 <span class="va">n.chains</span> <span class="op">&lt;-</span> <span class="fl">2</span></code></pre></div>
 <p>Let’s run NIMBLE:</p>
-<div class="sourceCode" id="cb106"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb107"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">mcmc.output</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimbleMCMC.html">nimbleMCMC</a></span><span class="op">(</span>code <span class="op">=</span> <span class="va">markov.survival</span>,
                           constants <span class="op">=</span> <span class="va">my.constants</span>,
                           data <span class="op">=</span> <span class="va">my.data</span>,
@@ -1568,12 +1568,12 @@ winter 5
                           nburnin <span class="op">=</span> <span class="va">n.burnin</span>,
                           nchains <span class="op">=</span> <span class="va">n.chains</span><span class="op">)</span></code></pre></div>
 <p>Let’s calculate the usual posterior numerical summaries for survival:</p>
-<div class="sourceCode" id="cb107"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb108"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/pkg/MCMCvis/man/MCMCsummary.html">MCMCsummary</a></span><span class="op">(</span><span class="va">mcmc.output</span>, round <span class="op">=</span> <span class="fl">2</span><span class="op">)</span>
 <span class="co">##     mean   sd 2.5%  50% 97.5% Rhat n.eff</span>
 <span class="co">## phi 0.79 0.03 0.73 0.79  0.85    1  1755</span></code></pre></div>
 <p>Posterior mean and median are close to <span class="math inline">\(0.8\)</span>. This is fortunate since the data was simulated with (actual) survival <span class="math inline">\(\phi = 0.8\)</span>. The code I used was:</p>
-<div class="sourceCode" id="cb108"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb109"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="co"># 1 = alive, 2 = dead</span>
 <span class="va">nind</span> <span class="op">&lt;-</span> <span class="fl">57</span>
 <span class="va">nocc</span> <span class="op">&lt;-</span> <span class="fl">5</span>
@@ -5160,11 +5160,11 @@ winter 5
 <span class="header-section-number">3.6.3</span> Hidden Markov model<a class="anchor" aria-label="anchor" href="#hidden-markov-model"><i class="fas fa-link"></i></a>
 </h3>
 <p>Our hidden Markov model can be represented this way:</p>
-<div class="inline-figure"><img src="banana-book_files/figure-html/unnamed-chunk-131-1.png" width="672"></div>
+<div class="inline-figure"><img src="banana-book_files/figure-html/unnamed-chunk-132-1.png" width="672"></div>
 <p>States <span class="math inline">\(z\)</span> are in gray. Observations <span class="math inline">\(y\)</span> are in white. A hidden Markov model is just two time series running in parallel. One for the states with the Markovian property, and the other of for the observations generated from the states.</p>
 <p><strong>Refaire l’exemple ci-dessous pour 5 occasions. Bien expliquer first capture, detection is one.</strong></p>
 <p>An example is as follows, in which an individual is detected at first sampling occasion, missed … For states (in gray), <span class="math inline">\(z = 1\)</span> is alive, <span class="math inline">\(z = 2\)</span> is dead. For observations (in white), <span class="math inline">\(y = 1\)</span> is non-detected, <span class="math inline">\(y = 2\)</span> is detected. Now add the states alive and dead, 1 and 2s. The observations, non-detected and detected, 1 and 2s. And the parameters, <span class="math inline">\(\phi\)</span> for transition from 1 to 1. And <span class="math inline">\(p\)</span> for probability of <span class="math inline">\(y\)</span> being 2 detected given <span class="math inline">\(z\)</span> is 1 alive.</p>
-<div class="inline-figure"><img src="banana-book_files/figure-html/unnamed-chunk-132-1.png" width="672"></div>
+<div class="inline-figure"><img src="banana-book_files/figure-html/unnamed-chunk-133-1.png" width="672"></div>
 </div>
 <div id="likelihood-1" class="section level3" number="3.6.4">
 <h3>
@@ -5232,12 +5232,12 @@ winter 5
 <p>Now our model has an observation layer for the <span class="math inline">\(y\)</span>’s, conditional on the <span class="math inline">\(z\)</span>. We also added a uniform prior for the detection probability.</p>
 <p>How to implement this model in Nimble?</p>
 <p>We start with priors for survival and detection probabilities:</p>
-<div class="sourceCode" id="cb109"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb109-1"><a href="hmmcapturerecapture.html#cb109-1" aria-hidden="true" tabindex="-1"></a>hmm.survival <span class="ot">&lt;-</span> <span class="fu">nimbleCode</span>({</span>
-<span id="cb109-2"><a href="hmmcapturerecapture.html#cb109-2" aria-hidden="true" tabindex="-1"></a>  phi <span class="sc">~</span> <span class="fu">dunif</span>(<span class="dv">0</span>, <span class="dv">1</span>) <span class="co"># prior survival</span></span>
-<span id="cb109-3"><a href="hmmcapturerecapture.html#cb109-3" aria-hidden="true" tabindex="-1"></a>  p <span class="sc">~</span> <span class="fu">dunif</span>(<span class="dv">0</span>, <span class="dv">1</span>) <span class="co"># prior detection</span></span>
-<span id="cb109-4"><a href="hmmcapturerecapture.html#cb109-4" aria-hidden="true" tabindex="-1"></a>...</span></code></pre></div>
+<div class="sourceCode" id="cb110"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb110-1"><a href="hmmcapturerecapture.html#cb110-1" aria-hidden="true" tabindex="-1"></a>hmm.survival <span class="ot">&lt;-</span> <span class="fu">nimbleCode</span>({</span>
+<span id="cb110-2"><a href="hmmcapturerecapture.html#cb110-2" aria-hidden="true" tabindex="-1"></a>  phi <span class="sc">~</span> <span class="fu">dunif</span>(<span class="dv">0</span>, <span class="dv">1</span>) <span class="co"># prior survival</span></span>
+<span id="cb110-3"><a href="hmmcapturerecapture.html#cb110-3" aria-hidden="true" tabindex="-1"></a>  p <span class="sc">~</span> <span class="fu">dunif</span>(<span class="dv">0</span>, <span class="dv">1</span>) <span class="co"># prior detection</span></span>
+<span id="cb110-4"><a href="hmmcapturerecapture.html#cb110-4" aria-hidden="true" tabindex="-1"></a>...</span></code></pre></div>
 <p>Then we define initial states, transition and observation matrices:</p>
-<div class="sourceCode" id="cb110"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb111"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">...</span>
   <span class="co"># parameters</span>
   <span class="va">delta</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span>          <span class="co"># Pr(alive t = 1) = 1</span>
@@ -5252,18 +5252,18 @@ winter 5
   <span class="va">omega</span><span class="op">[</span><span class="fl">2</span>,<span class="fl">2</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0</span>        <span class="co"># Pr(dead t -&gt; detected t)</span>
 <span class="va">...</span></code></pre></div>
 <p>Then the likelihood:</p>
-<div class="sourceCode" id="cb111"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb111-1"><a href="hmmcapturerecapture.html#cb111-1" aria-hidden="true" tabindex="-1"></a>...</span>
-<span id="cb111-2"><a href="hmmcapturerecapture.html#cb111-2" aria-hidden="true" tabindex="-1"></a>    <span class="co"># likelihood</span></span>
-<span id="cb111-3"><a href="hmmcapturerecapture.html#cb111-3" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> (i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>N){</span>
-<span id="cb111-4"><a href="hmmcapturerecapture.html#cb111-4" aria-hidden="true" tabindex="-1"></a>    z[i,<span class="dv">1</span>] <span class="sc">~</span> <span class="fu">dcat</span>(delta[<span class="dv">1</span><span class="sc">:</span><span class="dv">2</span>])</span>
-<span id="cb111-5"><a href="hmmcapturerecapture.html#cb111-5" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> (j <span class="cf">in</span> <span class="dv">2</span><span class="sc">:</span>T){</span>
-<span id="cb111-6"><a href="hmmcapturerecapture.html#cb111-6" aria-hidden="true" tabindex="-1"></a>      z[i,j] <span class="sc">~</span> <span class="fu">dcat</span>(gamma[z[i,j<span class="dv">-1</span>], <span class="dv">1</span><span class="sc">:</span><span class="dv">2</span>])</span>
-<span id="cb111-7"><a href="hmmcapturerecapture.html#cb111-7" aria-hidden="true" tabindex="-1"></a>      y[i,j] <span class="sc">~</span> <span class="fu">dcat</span>(omega[z[i,j], <span class="dv">1</span><span class="sc">:</span><span class="dv">2</span>])</span>
-<span id="cb111-8"><a href="hmmcapturerecapture.html#cb111-8" aria-hidden="true" tabindex="-1"></a>    }</span>
-<span id="cb111-9"><a href="hmmcapturerecapture.html#cb111-9" aria-hidden="true" tabindex="-1"></a>  }</span>
-<span id="cb111-10"><a href="hmmcapturerecapture.html#cb111-10" aria-hidden="true" tabindex="-1"></a><span class="er">})</span></span></code></pre></div>
+<div class="sourceCode" id="cb112"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb112-1"><a href="hmmcapturerecapture.html#cb112-1" aria-hidden="true" tabindex="-1"></a>...</span>
+<span id="cb112-2"><a href="hmmcapturerecapture.html#cb112-2" aria-hidden="true" tabindex="-1"></a>    <span class="co"># likelihood</span></span>
+<span id="cb112-3"><a href="hmmcapturerecapture.html#cb112-3" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> (i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>N){</span>
+<span id="cb112-4"><a href="hmmcapturerecapture.html#cb112-4" aria-hidden="true" tabindex="-1"></a>    z[i,<span class="dv">1</span>] <span class="sc">~</span> <span class="fu">dcat</span>(delta[<span class="dv">1</span><span class="sc">:</span><span class="dv">2</span>])</span>
+<span id="cb112-5"><a href="hmmcapturerecapture.html#cb112-5" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> (j <span class="cf">in</span> <span class="dv">2</span><span class="sc">:</span>T){</span>
+<span id="cb112-6"><a href="hmmcapturerecapture.html#cb112-6" aria-hidden="true" tabindex="-1"></a>      z[i,j] <span class="sc">~</span> <span class="fu">dcat</span>(gamma[z[i,j<span class="dv">-1</span>], <span class="dv">1</span><span class="sc">:</span><span class="dv">2</span>])</span>
+<span id="cb112-7"><a href="hmmcapturerecapture.html#cb112-7" aria-hidden="true" tabindex="-1"></a>      y[i,j] <span class="sc">~</span> <span class="fu">dcat</span>(omega[z[i,j], <span class="dv">1</span><span class="sc">:</span><span class="dv">2</span>])</span>
+<span id="cb112-8"><a href="hmmcapturerecapture.html#cb112-8" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb112-9"><a href="hmmcapturerecapture.html#cb112-9" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb112-10"><a href="hmmcapturerecapture.html#cb112-10" aria-hidden="true" tabindex="-1"></a><span class="er">})</span></span></code></pre></div>
 <p>Overall, the code looks like:</p>
-<div class="sourceCode" id="cb112"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb113"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">hmm.survival</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimbleCode.html">nimbleCode</a></span><span class="op">(</span><span class="op">{</span>
   <span class="va">phi</span> <span class="op">~</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html">dunif</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1</span><span class="op">)</span> <span class="co"># prior survival</span>
   <span class="va">p</span> <span class="op">~</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html">dunif</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1</span><span class="op">)</span> <span class="co"># prior detection</span>
@@ -5287,7 +5287,7 @@ winter 5
   <span class="op">}</span>
 <span class="op">}</span><span class="op">)</span></code></pre></div>
 <p>Now specify constants:</p>
-<div class="sourceCode" id="cb113"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb114"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">my.constants</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>N <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html">nrow</a></span><span class="op">(</span><span class="va">y</span><span class="op">)</span>, T <span class="op">=</span> <span class="fl">5</span><span class="op">)</span>
 <span class="va">my.constants</span>
 <span class="co">## $N</span>
@@ -5296,27 +5296,27 @@ winter 5
 <span class="co">## $T</span>
 <span class="co">## [1] 5</span></code></pre></div>
 <p>The data are made of 0’s for non-detections and 1’s for detections. To use the categorical distribution, we need to code 1’s and 2’s. We simply add 1 to get the correct format <span class="math inline">\(y = 1\)</span> for non-detection and <span class="math inline">\(y = 2\)</span> for detection:</p>
-<div class="sourceCode" id="cb114"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb115"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">my.data</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>y <span class="op">=</span> <span class="va">y</span> <span class="op">+</span> <span class="fl">1</span><span class="op">)</span></code></pre></div>
 <p>Now let’s write a function for the initial values:</p>
-<div class="sourceCode" id="cb115"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb116"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">zinits</span> <span class="op">&lt;-</span> <span class="va">y</span> <span class="op">+</span> <span class="fl">1</span> <span class="co"># non-detection -&gt; alive</span>
 <span class="va">zinits</span><span class="op">[</span><span class="va">zinits</span> <span class="op">==</span> <span class="fl">2</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span> <span class="co"># dead -&gt; alive</span>
 <span class="va">initial.values</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>phi <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html">runif</a></span><span class="op">(</span><span class="fl">1</span>,<span class="fl">0</span>,<span class="fl">1</span><span class="op">)</span>,
                                   p <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html">runif</a></span><span class="op">(</span><span class="fl">1</span>,<span class="fl">0</span>,<span class="fl">1</span><span class="op">)</span>,
                                   z <span class="op">=</span> <span class="va">zinits</span><span class="op">)</span></code></pre></div>
 <p>We tell NIMBLE which parameters we’d like to monitor:</p>
-<div class="sourceCode" id="cb116"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb117"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">parameters.to.save</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimble-R-functions.html">c</a></span><span class="op">(</span><span class="st">"phi"</span>, <span class="st">"p"</span><span class="op">)</span>
 <span class="va">parameters.to.save</span>
 <span class="co">## [1] "phi" "p"</span></code></pre></div>
 <p>We provide MCMC details:</p>
-<div class="sourceCode" id="cb117"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb118"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">n.iter</span> <span class="op">&lt;-</span> <span class="fl">5000</span>
 <span class="va">n.burnin</span> <span class="op">&lt;-</span> <span class="fl">1000</span>
 <span class="va">n.chains</span> <span class="op">&lt;-</span> <span class="fl">2</span></code></pre></div>
 <p>Finally, we’re ready to run Nimble:</p>
-<div class="sourceCode" id="cb118"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb119"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">mcmc.output</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimbleMCMC.html">nimbleMCMC</a></span><span class="op">(</span>code <span class="op">=</span> <span class="va">hmm.survival</span>,
                           constants <span class="op">=</span> <span class="va">my.constants</span>,
                           data <span class="op">=</span> <span class="va">my.data</span>,
@@ -5326,13 +5326,13 @@ winter 5
                           nburnin <span class="op">=</span> <span class="va">n.burnin</span>,
                           nchains <span class="op">=</span> <span class="va">n.chains</span><span class="op">)</span></code></pre></div>
 <p>We can have a look to numerical summaries:</p>
-<div class="sourceCode" id="cb119"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb120"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/pkg/MCMCvis/man/MCMCsummary.html">MCMCsummary</a></span><span class="op">(</span><span class="va">mcmc.output</span>, round <span class="op">=</span> <span class="fl">2</span><span class="op">)</span>
 <span class="co">##     mean   sd 2.5%  50% 97.5% Rhat n.eff</span>
 <span class="co">## p   0.61 0.06 0.50 0.61  0.72    1   740</span>
 <span class="co">## phi 0.75 0.04 0.67 0.75  0.83    1   805</span></code></pre></div>
 <p>The estimates for survival and detection are close to true survival <span class="math inline">\(\phi = 0.8\)</span> and detection <span class="math inline">\(p = 0.6\)</span> with which we simulated the data. The code I used is:</p>
-<div class="sourceCode" id="cb120"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb121"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/r/base/Random.html">set.seed</a></span><span class="op">(</span><span class="fl">2022</span><span class="op">)</span> <span class="co"># for reproducibility</span>
 <span class="va">nocc</span> <span class="op">&lt;-</span> <span class="fl">5</span> <span class="co"># nb of winters or sampling occasions</span>
 <span class="va">p</span> <span class="op">&lt;-</span> <span class="fl">0.6</span> <span class="co"># detection prob</span>
@@ -5377,13 +5377,13 @@ winter 5
 <h3>
 <span class="header-section-number">3.8.1</span> Theory<a class="anchor" aria-label="anchor" href="#theory"><i class="fas fa-link"></i></a>
 </h3>
-<p><strong>Forward algorithm.</strong></p>
+<p><strong>Forward algorithm. I need to transpose the observation matrix in the NIMBLE code, this needs to be said when explaining the forward algorithm.</strong></p>
 </div>
 <div id="implementation-in-nimble" class="section level3" number="3.8.2">
 <h3>
 <span class="header-section-number">3.8.2</span> Implementation in NIMBLE<a class="anchor" aria-label="anchor" href="#implementation-in-nimble"><i class="fas fa-link"></i></a>
 </h3>
-<div class="sourceCode" id="cb121"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb122"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">dHMM</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimbleFunction.html">nimbleFunction</a></span><span class="op">(</span>
   run <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">x</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/double.html">double</a></span><span class="op">(</span><span class="fl">1</span><span class="op">)</span>, 
                  <span class="va">probInit</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/double.html">double</a></span><span class="op">(</span><span class="fl">1</span><span class="op">)</span>,
@@ -5401,7 +5401,7 @@ winter 5
     <span class="kw"><a href="https://rdrr.io/r/base/function.html">return</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/Log.html">exp</a></span><span class="op">(</span><span class="va">logL</span><span class="op">)</span><span class="op">)</span>
   <span class="op">}</span>
 <span class="op">)</span></code></pre></div>
-<div class="sourceCode" id="cb122"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb123"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">rHMM</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimbleFunction.html">nimbleFunction</a></span><span class="op">(</span>
   run <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">n</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimNumeric.html">integer</a></span><span class="op">(</span><span class="op">)</span>,
                  <span class="va">probInit</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/double.html">double</a></span><span class="op">(</span><span class="fl">1</span><span class="op">)</span>,
@@ -5421,23 +5421,23 @@ winter 5
     <span class="op">}</span>
     <span class="kw"><a href="https://rdrr.io/r/base/function.html">return</a></span><span class="op">(</span><span class="va">y</span><span class="op">)</span>
   <span class="op">}</span><span class="op">)</span></code></pre></div>
-<div class="sourceCode" id="cb123"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb124"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/r/base/assign.html">assign</a></span><span class="op">(</span><span class="st">'dHMM'</span>, <span class="va">dHMM</span>, <span class="va">.GlobalEnv</span><span class="op">)</span>
 <span class="fu"><a href="https://rdrr.io/r/base/assign.html">assign</a></span><span class="op">(</span><span class="st">'rHMM'</span>, <span class="va">rHMM</span>, <span class="va">.GlobalEnv</span><span class="op">)</span></code></pre></div>
-<div class="sourceCode" id="cb124"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb125"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="fu">dHMM</span><span class="op">(</span>x <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimble-R-functions.html">c</a></span><span class="op">(</span><span class="fl">2</span>,<span class="fl">2</span>,<span class="fl">1</span>,<span class="fl">1</span>,<span class="fl">1</span><span class="op">)</span>,
      probInit <span class="op">=</span> <span class="va">delta</span>,
      probObs <span class="op">=</span> <span class="va">Gamma</span>,
      probTrans <span class="op">=</span> <span class="va">Omega</span>,
      len <span class="op">=</span> <span class="fl">5</span><span class="op">)</span>
 <span class="co">## [1] 0.1137</span></code></pre></div>
-<div class="sourceCode" id="cb125"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb126"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="fu">rHMM</span><span class="op">(</span>probInit <span class="op">=</span> <span class="va">delta</span>,
      probObs <span class="op">=</span> <span class="va">Gamma</span>,
      probTrans <span class="op">=</span> <span class="va">Omega</span>,
      len <span class="op">=</span> <span class="fl">5</span><span class="op">)</span>
 <span class="co">## [1] 2 2 2 1 2</span></code></pre></div>
-<div class="sourceCode" id="cb126"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb127"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">hmm.survival</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimbleCode.html">nimbleCode</a></span><span class="op">(</span><span class="op">{</span>
   <span class="va">phi</span> <span class="op">~</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html">dunif</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1</span><span class="op">)</span> <span class="co"># prior survival</span>
   <span class="va">p</span> <span class="op">~</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html">dunif</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1</span><span class="op">)</span> <span class="co"># prior detection</span>
@@ -5460,7 +5460,7 @@ winter 5
                     len <span class="op">=</span> <span class="cn">T</span><span class="op">)</span> <span class="co"># nb of sampling occasions</span>
   <span class="op">}</span>
 <span class="op">}</span><span class="op">)</span></code></pre></div>
-<div class="sourceCode" id="cb127"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb128"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">my.constants</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>N <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html">nrow</a></span><span class="op">(</span><span class="va">y</span><span class="op">)</span>, T <span class="op">=</span> <span class="fl">5</span><span class="op">)</span>
 <span class="va">my.constants</span>
 <span class="co">## $N</span>
@@ -5479,7 +5479,7 @@ winter 5
 <span class="va">n.iter</span> <span class="op">&lt;-</span> <span class="fl">5000</span>
 <span class="va">n.burnin</span> <span class="op">&lt;-</span> <span class="fl">1000</span>
 <span class="va">n.chains</span> <span class="op">&lt;-</span> <span class="fl">2</span></code></pre></div>
-<div class="sourceCode" id="cb128"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb129"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">mcmc.output</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimbleMCMC.html">nimbleMCMC</a></span><span class="op">(</span>code <span class="op">=</span> <span class="va">hmm.survival</span>,
                           constants <span class="op">=</span> <span class="va">my.constants</span>,
                           data <span class="op">=</span> <span class="va">my.data</span>,
@@ -5494,7 +5494,7 @@ winter 5
 <span class="co">## |-------------------------------------------------------|</span>
 <span class="co">## |-------------|-------------|-------------|-------------|</span>
 <span class="co">## |-------------------------------------------------------|</span></code></pre></div>
-<div class="sourceCode" id="cb129"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb130"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/pkg/MCMCvis/man/MCMCsummary.html">MCMCsummary</a></span><span class="op">(</span><span class="va">mcmc.output</span>, round <span class="op">=</span> <span class="fl">2</span><span class="op">)</span>
 <span class="co">##     mean   sd 2.5%  50% 97.5% Rhat n.eff</span>
 <span class="co">## p   0.61 0.06 0.49 0.61  0.73 1.00  1396</span>
@@ -5508,7 +5508,7 @@ winter 5
 <span class="header-section-number">3.9</span> Pooled encounter histories<a class="anchor" aria-label="anchor" href="#pooled-encounter-histories"><i class="fas fa-link"></i></a>
 </h2>
 <p>In this section, we’re gonna use NIMBLE functions to express the likelihood using pooled encounter histories. We use a vector <code>size</code> that contains the number of individuals with a particular encounter history. Courtesy of Chloé Nater. Implement of Turek et al. </p>
-<div class="sourceCode" id="cb130"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb131"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">dHMMweighted</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimbleFunction.html">nimbleFunction</a></span><span class="op">(</span>
   run <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">x</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/double.html">double</a></span><span class="op">(</span><span class="fl">1</span><span class="op">)</span>, 
                  <span class="va">probInit</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/double.html">double</a></span><span class="op">(</span><span class="fl">1</span><span class="op">)</span>,
@@ -5527,7 +5527,7 @@ winter 5
     <span class="kw"><a href="https://rdrr.io/r/base/function.html">return</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/Log.html">exp</a></span><span class="op">(</span><span class="va">logL</span><span class="op">)</span><span class="op">)</span>
   <span class="op">}</span>
 <span class="op">)</span></code></pre></div>
-<div class="sourceCode" id="cb131"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb132"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">rHMMweighted</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimbleFunction.html">nimbleFunction</a></span><span class="op">(</span>
   run <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">n</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimNumeric.html">integer</a></span><span class="op">(</span><span class="op">)</span>,
                  <span class="va">probInit</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/double.html">double</a></span><span class="op">(</span><span class="fl">1</span><span class="op">)</span>,
@@ -5548,10 +5548,10 @@ winter 5
     <span class="op">}</span>
     <span class="kw"><a href="https://rdrr.io/r/base/function.html">return</a></span><span class="op">(</span><span class="va">y</span><span class="op">)</span>
   <span class="op">}</span><span class="op">)</span></code></pre></div>
-<div class="sourceCode" id="cb132"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb133"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/r/base/assign.html">assign</a></span><span class="op">(</span><span class="st">'dHMMweighted'</span>, <span class="va">dHMMweighted</span>, <span class="va">.GlobalEnv</span><span class="op">)</span>
 <span class="fu"><a href="https://rdrr.io/r/base/assign.html">assign</a></span><span class="op">(</span><span class="st">'rHMMweighted'</span>, <span class="va">rHMMweighted</span>, <span class="va">.GlobalEnv</span><span class="op">)</span></code></pre></div>
-<div class="sourceCode" id="cb133"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb134"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="fu">dHMMweighted</span><span class="op">(</span>x <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimble-R-functions.html">c</a></span><span class="op">(</span><span class="fl">2</span>,<span class="fl">2</span>,<span class="fl">1</span>,<span class="fl">1</span>,<span class="fl">1</span><span class="op">)</span>,
              probInit <span class="op">=</span> <span class="va">delta</span>,
              probObs <span class="op">=</span> <span class="va">Gamma</span>,
@@ -5559,14 +5559,14 @@ winter 5
              len <span class="op">=</span> <span class="fl">5</span>,
              size <span class="op">=</span> <span class="fl">5</span><span class="op">)</span>
 <span class="co">## [1] 1.897e-05</span></code></pre></div>
-<div class="sourceCode" id="cb134"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb135"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="fu">rHMMweighted</span><span class="op">(</span>probInit <span class="op">=</span> <span class="va">delta</span>,
              probObs <span class="op">=</span> <span class="va">Gamma</span>,
              probTrans <span class="op">=</span> <span class="va">Omega</span>,
              len <span class="op">=</span> <span class="fl">5</span>,
              size <span class="op">=</span> <span class="fl">5</span><span class="op">)</span>
 <span class="co">## [1] 2 2 1 2 1</span></code></pre></div>
-<div class="sourceCode" id="cb135"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb136"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">hmm.survival</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimbleCode.html">nimbleCode</a></span><span class="op">(</span><span class="op">{</span>
   <span class="va">phi</span> <span class="op">~</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html">dunif</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1</span><span class="op">)</span> <span class="co"># prior survival</span>
   <span class="va">p</span> <span class="op">~</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html">dunif</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1</span><span class="op">)</span> <span class="co"># prior detection</span>
@@ -5590,7 +5590,7 @@ winter 5
                     size <span class="op">=</span> <span class="va">S</span><span class="op">[</span><span class="va">i</span><span class="op">]</span><span class="op">)</span> <span class="co"># nb of sampling occasions</span>
   <span class="op">}</span>
 <span class="op">}</span><span class="op">)</span></code></pre></div>
-<div class="sourceCode" id="cb136"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb137"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">y_weighted</span> <span class="op">&lt;-</span> <span class="va">y</span> <span class="op">%&gt;%</span> 
   <span class="fu">as_tibble</span><span class="op">(</span><span class="op">)</span> <span class="op">%&gt;%</span> 
   <span class="fu">group_by_all</span><span class="op">(</span><span class="op">)</span> <span class="op">%&gt;%</span> 
@@ -5613,7 +5613,7 @@ winter 5
 <span class="co">## [12,]  1        1        1        1        0        1</span>
 <span class="co">## [13,]  8        1        1        1        1        0</span>
 <span class="co">## [14,]  1        1        1        1        1        1</span></code></pre></div>
-<div class="sourceCode" id="cb137"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb138"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">my.constants</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>N <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html">nrow</a></span><span class="op">(</span><span class="va">y_weighted</span><span class="op">)</span>, T <span class="op">=</span> <span class="fl">5</span>, S <span class="op">=</span> <span class="va">y_weighted</span><span class="op">[</span>,<span class="st">'S'</span><span class="op">]</span><span class="op">)</span>
 <span class="va">my.constants</span>
 <span class="co">## $N</span>
@@ -5635,7 +5635,7 @@ winter 5
 <span class="va">n.iter</span> <span class="op">&lt;-</span> <span class="fl">5000</span>
 <span class="va">n.burnin</span> <span class="op">&lt;-</span> <span class="fl">1000</span>
 <span class="va">n.chains</span> <span class="op">&lt;-</span> <span class="fl">2</span></code></pre></div>
-<div class="sourceCode" id="cb138"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb139"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">mcmc.output</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimbleMCMC.html">nimbleMCMC</a></span><span class="op">(</span>code <span class="op">=</span> <span class="va">hmm.survival</span>,
                           constants <span class="op">=</span> <span class="va">my.constants</span>,
                           data <span class="op">=</span> <span class="va">my.data</span>,
@@ -5650,32 +5650,31 @@ winter 5
 <span class="co">## |-------------------------------------------------------|</span>
 <span class="co">## |-------------|-------------|-------------|-------------|</span>
 <span class="co">## |-------------------------------------------------------|</span></code></pre></div>
-<div class="sourceCode" id="cb139"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb140"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/pkg/MCMCvis/man/MCMCsummary.html">MCMCsummary</a></span><span class="op">(</span><span class="va">mcmc.output</span>, round <span class="op">=</span> <span class="fl">2</span><span class="op">)</span>
 <span class="co">##     mean   sd 2.5%  50% 97.5% Rhat n.eff</span>
 <span class="co">## p   0.61 0.06 0.49 0.61  0.72    1  1365</span>
 <span class="co">## phi 0.76 0.04 0.67 0.76  0.84    1  1388</span></code></pre></div>
-<p>Works preeeeeety well ;-) two small issues though:</p>
-<ol style="list-style-type: decimal">
-<li><p>I get this warning:
-Message d’avis :
-Dans model$checkBasics() :
-Possible size/dimension mismatch amongst vectors and matrices
-in BUGS expression: y[i, 1:5] ~ dHMM(probInit = delta[1:2],
-probObs = omegat[1:2, 1:2], probTrans = gamma[1:2, 1:2],
-len = 5, lower_ = -Inf, upper_ = Inf). Ignore this warning
-if the user-provided distribution has multivariate parameters
-with distinct sizes or if size of variable differs from sizes of parameters.</p></li>
-<li><p>Also, I need to transpose the observation matrix.
-This needs to be said when explaining the forward algorithm.</p></li>
-</ol>
+<!-- Works preeeeeety well ;-) two small issues though: -->
+<!-- 1. I get this warning:  -->
+<!-- Message d'avis : -->
+<!-- Dans model$checkBasics() : -->
+<!--   Possible size/dimension mismatch amongst vectors and matrices  -->
+<!--    in BUGS expression: y[i, 1:5] ~ dHMM(probInit = delta[1:2],  -->
+<!--    probObs = omegat[1:2,     1:2], probTrans = gamma[1:2, 1:2],  -->
+<!--    len = 5, lower_ = -Inf,     upper_ = Inf). Ignore this warning  -->
+<!--    if the user-provided distribution has multivariate parameters  -->
+<!--    with distinct sizes or if size of variable differs from sizes of parameters. -->
 </div>
 <div id="decoding-after-marginalization" class="section level2" number="3.10">
 <h2>
 <span class="header-section-number">3.10</span> Decoding after marginalization<a class="anchor" aria-label="anchor" href="#decoding-after-marginalization"><i class="fas fa-link"></i></a>
 </h2>
-<p><a href="https://discourse.mc-stan.org/t/how-to-get-the-best-state-sequence-using-viterbi-algorithm/18969" class="uri">https://discourse.mc-stan.org/t/how-to-get-the-best-state-sequence-using-viterbi-algorithm/18969</a></p>
-<p><a href="https://rdrr.io/bioc/STAN/man/getViterbi.html" class="uri">https://rdrr.io/bioc/STAN/man/getViterbi.html</a></p>
+<ul>
+<li><p><a href="https://discourse.mc-stan.org/t/how-to-get-the-best-state-sequence-using-viterbi-algorithm/18969" class="uri">https://discourse.mc-stan.org/t/how-to-get-the-best-state-sequence-using-viterbi-algorithm/18969</a></p></li>
+<li><p><a href="https://rdrr.io/bioc/STAN/man/getViterbi.html" class="uri">https://rdrr.io/bioc/STAN/man/getViterbi.html</a></p></li>
+<li><p>Ask Perry what he had in mind.</p></li>
+</ul>
 </div>
 <div id="summary-2" class="section level2" number="3.11">
 <h2>
@@ -5760,7 +5759,7 @@ This needs to be said when explaining the forward algorithm.</p></li>
 <footer class="bg-primary text-light mt-5"><div class="container"><div class="row">
 
   <div class="col-12 col-md-6 mt-3">
-    <p>"<strong>Bayesian Analysis of Capture-Recapture Data with Hidden Markov Models</strong>: Theory and Case Studies in R" was written by Olivier Gimenez. It was last built on 2022-02-18.</p>
+    <p>"<strong>Bayesian Analysis of Capture-Recapture Data with Hidden Markov Models</strong>: Theory and Case Studies in R" was written by Olivier Gimenez. It was last built on 2022-02-19.</p>
   </div>
 
   <div class="col-12 col-md-6 mt-3">

@@ -459,13 +459,22 @@ dmybinom <- nimbleFunction(
     if(log) return(logProb)
     else return(exp(logProb)) 
   })
-# simulation
+# simulation using the coin flip method (p. 524 in Devroye 1986)
 rmybinom <- nimbleFunction(
   run = function(n = integer(0, default = 1),
                  size = double(0),
                  prob = double(0)) {
     returnType(double(0))
-    return(rbinom(n = 1, size = size, prob = prob))    
+    x <- 0
+    y <- runif(n = size, min = 0, max = 1)
+    for (j in 1:size){
+      if (y[j] < prob){
+        x <- x + 1
+      }else{
+        x <- x
+      }
+    }
+    return(x)    
   })
 ```
 
@@ -473,6 +482,11 @@ You need to define the `nimbleFunctions` in R's global environment for them to b
 ```{r}
 assign('dmybinom', dmybinom, .GlobalEnv)
 assign('rmybinom', rmybinom, .GlobalEnv)
+```
+
+You can try out your function and simulate a random value from a binomial distribution with size 5 and probability 0.1: 
+```{r}
+rmybinom(n = 1, size = 5, prob = 0.1)
 ```
 
 All set. You can run your workflow:
