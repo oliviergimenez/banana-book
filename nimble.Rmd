@@ -16,7 +16,7 @@ knitr::include_graphics("images/nimble-icon.png")
 
 <!-- Why NIMBLE over Stan? i) The BUGS language is cool, ii) discrete latent states easier to deal with NIMBLE, no need to marginalise like with Stan (ref forward to relevant section of the book for marginalization in NIMBLE), iii) also HMC is on its way in NIMBLE, so NIMBLE includes STAN and has so much more to offer the users.  -->
 
-## Getting started {#gettingstartedinnimble}
+## Getting started {#start-nimble}
 
 ```{block2 nimble_workflow, type='rmdnote', eval = FALSE}
 To run NIMBLE, you will need to:  
@@ -166,7 +166,7 @@ n.chains <- 3
 ```
 
 We now have all the ingredients to run model, that is to sample in the posterior distribution of model parameters using MCMC simulations. This is accomplished using function `nimbleMCMC()`: 
-```{r, cache = TRUE}
+```{r, cache = F}
 mcmc.output <- nimbleMCMC(code = model,
                           data = my.data,
                           inits = initial.values,
@@ -614,7 +614,7 @@ CsurvivalMCMC <- compileNimble(survivalMCMC, project = survival)
 Note that models and `nimbleFunctions` need to be compiled before they can be used to specify a project.
 
 Fourth, we run NIMBLE with `runMCMC()`:
-```{r}
+```{r cache = F}
 n.iter <- 5000
 n.burnin <- 1000
 samples <- runMCMC(mcmc = CsurvivalMCMC, 
@@ -714,7 +714,7 @@ survivalConf$printSamplers()
 ```
 
 Now you can resume the workflow:
-```{r}
+```{r cache = F}
 # create a new MCMC function and compile it:
 survivalMCMC2 <- buildMCMC(survivalConf)
 CsurvivalMCMC2 <- compileNimble(survivalMCMC2, 
@@ -808,7 +808,7 @@ survivalConf$printSamplers()
 ```
 
 The rest of the workflow is unchanged:
-```{r}
+```{r cache = F}
 survivalMCMC <- buildMCMC(survivalConf)
 CsurvivalMCMC <- compileNimble(survivalMCMC, 
                                project = survival)
@@ -884,7 +884,7 @@ NIMBLE does not guess the dimensions of objects. In other software like JAGS you
 ### Faster compilation
 
 You might have noticed that compilation in NIMBLE takes time. When you have large models (with lots of nodes), compilation can take forever. You can set `calculate = FALSE` in `nimbleModel()` to disable the calculation of all deterministic nodes and log-likelihood. You can also use `useConjugacy = FALSE` in `configureMCMC()` to disable the search for conjugate samplers. With the animal survival example, you would do:
-```{r}
+```{r cache = F}
 model <- nimbleCode({
   # likelihood
   survived ~ dbinom(theta, released)
@@ -940,7 +940,7 @@ initial.values <- list(list(theta = 0.1),
 ```
 
 If you want your results to be reproducible, you can control the state of R the random number generator with the `setSeed` argument in functions `nimbleMCMC()` and `runMCMC()`. Going back to the animal survival example, you can check that two calls to `nimbleMCMC()` give the same results when `setSeed` is set to the same value:
-```{r}
+```{r cache = F}
 # first call to nimbleMCMC()
 mcmc.output1 <- nimbleMCMC(code = model,
                            data = my.data,
@@ -1056,7 +1056,7 @@ survival$initializeInfo()
 ```
 
 Now that we know `theta` was not initialized, we can fix the issue and resume our workflow:
-```{r}
+```{r cache = F}
 survival$theta <- 0.5 # assign initial value to theta
 survival$calculate() 
 
