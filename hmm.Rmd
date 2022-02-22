@@ -1214,21 +1214,148 @@ MCMCsummary(mcmc.output, round = 2)
 
 ## Decoding after marginalization {#decoding}
 
-+ https://discourse.mc-stan.org/t/how-to-get-the-best-state-sequence-using-viterbi-algorithm/18969
+### Theory
 
-+ https://rdrr.io/bioc/STAN/man/getViterbi.html
+On peut estimer, ou bien décoder avec Viterbi, voir la différence dans https://luisdamiano.github.io/BayesHMM/articles/introduction.html. Voir aussi la page wikipedia pour les formules . 
 
-+ Ask Perry what he had in mind.
+In some situations, you might want to compute the sequence of states alive and dead that is most likely to have generated the observed sequence of detections and non-detections. To do so, you can use the Viterbi algorithm. Briefly speaking, this algorithm does this and that. Use colors to explain, as for the forward algorithm. See also <https://en.wikipedia.org/wiki/Forward_algorithm>.
 
-On peut estimer, ou bien décoder avec Viterbi, voir la différence dans https://luisdamiano.github.io/BayesHMM/articles/introduction.html. Le plus simple, après avoir expliqué Viterbi, serait d'utiliser une fonction déjà existante, celle-ci https://rdrr.io/bioc/STAN/man/getViterbi.html ou celle-là https://github.com/oliviergimenez/code_livre_variables_cachees/blob/master/code/viterbi_phispdelta.R du package HMM. Seul problème est de gérer première occasion capture où détection certaine et individu en vie. Le plus malin est peut-être de recode https://mc-stan.org/docs/2_24/stan-users-guide/hmms-section.html à la toute fin, dernière section. Reste alors à décider si on calcule viterbi à chaque itération, puis on faire la moyenne/médiane, ou bien si on prend les moyennes/médianes a posterior des paramètres et qu'on fait Viterbi https://discourse.mc-stan.org/t/how-to-get-the-best-state-sequence-using-viterbi-algorithm/18969. 
+Let's write a function that computes the most likely sequence of states given transition and observation matrices, a vector of initial state probabilities and an observed sequence of detections and non-detections for which you aim to compute the sequence of states from which it was most likely generated:
+```{r}
+# from https://github.com/vbehnam/viterbi
+getViterbi <- function(Omega, Gamma, delta, y) {
+
+# get number of states and sampling occasions
+K <- nrow(Gamma)
+T <- length(y)
+  
+# stateSeq contains the most likely states up until this point
+# probSeq is the corresponding likelihood
+probSeq <- matrix(0, nrow = K, ncol = T)
+stateSeq <- matrix(0, nrow = K, ncol = T)
+firstObs <- y[1]
+  
+# fill in first columns of both matrices
+#probSeq[,1] <- initial * emission[,firstObs]
+#stateSeq[,1] <- 0
+probSeq[,1] <- c(1,0) # initial = (1, 0) * emission[,firstObs] = (1, 0)
+stateSeq[,1] <- 1 # alive at first occasion
+
+for (i in 2:T) {
+    for (j in 1:K) {
+      obs <- y[i]
+      # initialize this value to -1. This will be overwritten immediately by the for loop since all possible values are >= 0
+      probSeq[j,i] <- -1
+      # the point of this for loop is to find the max and argmax for k
+      for (k in 1:K) {
+        value <- probSeq[k, i-1] * Gamma[k,j] * Omega[j,obs]
+        if (value > probSeq[j,i]) {
+          # maximizing for k
+          probSeq[j,i] <- value
+          # argmaximizing for k
+          stateSeq[j,i] <- k
+        }
+      }
+    }
+  }
+  # MLP = most likely path
+  MLP <- numeric(T)
+  # argmax for the stateSeq[,T]
+  am <- which.max(probSeq[,T])
+  MLP[T] <- stateSeq[am,T]
+  
+  # we backtrace using backpointers
+  for (i in T:2) {
+    zm <- which.max(probSeq[,i])
+    MLP[i-1] <- stateSeq[zm,i]
+  }
+  return(MLP)
+}
+```
+
+Instead of writing your own function, you could use an already existing function to implement the Viterbi algorithm. For example, viterbi in package HMM. Then call it from NIMBLE as we have seen in Section \@ref{callrfninnimble}. However, difficulty of dealing with states at initial encounter. 
+
+Reste alors à décider si on calcule viterbi à chaque itération, puis on faire la moyenne/médiane, ou bien si on prend les moyennes/médianes a posterior des paramètres et qu'on fait Viterbi https://discourse.mc-stan.org/t/how-to-get-the-best-state-sequence-using-viterbi-algorithm/18969. What is the better option? 
+
+### Compute first, average after
+
+From there, we first get values from the posterior distribution of survival and detection:
+```{r}
+phi <- c(mcmc.output$chain1[,'phi'], mcmc.output$chain2[,'phi'])
+p <- c(mcmc.output$chain1[,'p'], mcmc.output$chain2[,'p'])
+```
+
+First option is to apply Viterbi to each MCMC sample, then to compute median of the MCMC Viterbi paths for each observed sequence:
+```{r}
+niter <- length(p)
+res <- matrix(NA, nrow = nrow(y), ncol = length(y[1,]))
+for (i in 1:nrow(y)){
+  res_mcmc <- matrix(NA, nrow = niter, ncol = length(y[1,]))
+  for (j in 1:niter){
+    # Initial states
+    delta <- c(1, 0)
+    # Transition matrix
+    transition <- matrix(NA, 2, 2)
+    transition[1,1] <- phi[j]      # Pr(alive t -> alive t+1)
+    transition[1,2] <- 1 - phi[j]  # Pr(alive t -> dead t+1)
+    transition[2,1] <- 0        # Pr(dead t -> alive t+1)
+    transition[2,2] <- 1        # Pr(dead t -> dead t+1)
+    # Observation matrix 
+    emission <- matrix(NA, 2, 2)
+    emission[1,1] <- 1 - p[j]      # Pr(alive t -> non-detected t)
+    emission[1,2] <- p[j]          # Pr(alive t -> detected t)
+    emission[2,1] <- 1          # Pr(dead t -> non-detected t)
+    emission[2,2] <- 0          # Pr(dead t -> detected t)
+    res_mcmc[j,1:length(y[1,])] <- getViterbi(emission, transition, delta, y[i,] + 1)
+  }
+  res[i, 1:length(y[1,])] <- apply(res_mcmc, 2, median)
+}
+```
+
+Compare to $z$:
+```{r}
+data.frame(z = z, viterbi = res)
+```
+
+Here we compute the Viterbi paths after we run NIMBLE. Alternatively, you can define a NIMBLE function to compute the Viterbi path first, then plug it in your code to apply Viterbi. This does not make any difference apart from increasing the computational cost. 
+
+### Average first, compute after
+
+Second option is to compute posterior mean of the observation and transition matrices, then to apply Viterbi:
+  
+```{r}
+# Initial states
+delta <- c(1, 0)
+# Transition matrix
+transition <- matrix(NA, 2, 2)
+transition[1,1] <- mean(phi)      # Pr(alive t -> alive t+1)
+transition[1,2] <- 1 - mean(phi)  # Pr(alive t -> dead t+1)
+transition[2,1] <- 0        # Pr(dead t -> alive t+1)
+transition[2,2] <- 1        # Pr(dead t -> dead t+1)
+# Observation matrix 
+emission <- matrix(NA, 2, 2)
+emission[1,1] <- 1 - mean(p)      # Pr(alive t -> non-detected t)
+emission[1,2] <- mean(p)          # Pr(alive t -> detected t)
+emission[2,1] <- 1          # Pr(dead t -> non-detected t)
+emission[2,2] <- 0          # Pr(dead t -> detected t)
+
+
+res <- matrix(NA, nrow = nrow(y), ncol = length(y[1,]))
+for (i in 1:nrow(y)){
+  res[i, 1:length(y[1,]) ] <- getViterbi(emission, transition, delta, y[i,] + 1)
+}
+```
+
+Compare to $z$:
+```{r}
+data.frame(z = z, viterbi = res)
+```
 
 ## Summary
 
 + Blabla.
 
 + Blabla.
-
-+ Recall 3 problems of HMM?
 
 ## Suggested reading
 
