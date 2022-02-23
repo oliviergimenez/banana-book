@@ -5354,19 +5354,19 @@ A hidden Markov model is just two time series running in parallel. One for the s
 <h2>
 <span class="header-section-number">3.8</span> Marginalization<a class="anchor" aria-label="anchor" href="#marginalization"><i class="fas fa-link"></i></a>
 </h2>
-<p>Shall we estimate the latent states <span class="math inline">\(z_{i,t}\)</span> or not? We can get rid of the states, so that likelihood is a function of <span class="math inline">\(\phi\)</span> and <span class="math inline">\(p\)</span> only. This is the function we would maximize in a Frequentist approach.</p>
-<p>The neat thing with Nimble is that it provides marginalised models through nimbleEcology, we’ll get back to it in Reference forward to section below (forward algorithm). Using the formula of total probability:</p>
+<p>In some situations, you will not be interested in inferring the hidden states <span class="math inline">\(z_{i,t}\)</span>, so why bother estimating them? The good news is that you can get rid of the states, so that the likelihood is a function of survival and detection probabilities <span class="math inline">\(\phi\)</span> and <span class="math inline">\(p\)</span> only. By the way, this is the function you would maximize in a Frequentist approach.</p>
+<p>Using the formula of total probability, we get by summing over all possible states:</p>
 <p><span class="math display">\[\begin{align*}
 \Pr(\mathbf{y}_i) &amp;= \Pr(y_{i,1}, y_{i,2}, \ldots, y_{i,T})\\
                 &amp;= \sum_{z_{i,1}} \cdots \sum_{z_{i,T}} \Pr(y_{i,1}, y_{i,2}, \ldots, y_{i,T} | z_{i,1}, z_{i,2}, \ldots, z_{i,T}) \Pr(z_{i,1}, z_{i,2}, \ldots, z_{i,T})\\
                 &amp;= \sum_{z_{i,1}} \cdots \sum_{z_{i,T}} \left(\prod_{t=1}^T{\omega_{z_{i,t}, y_{i,t}}}\right) \left(\Pr(z_{i,1}) \prod_{t=2}^T{\gamma_{z_{i,t-1},z_{i,t}}}\right)\\
 \end{align*}\]</span></p>
-<p>Very inefficient.</p>
-<div id="theory" class="section level3" number="3.8.1">
+<p>This function is complex to evaluate because it involves many operations (<span class="math inline">\(TN^T\)</span> operations to be precise, where <span class="math inline">\(T\)</span> is the length of encounter histories and <span class="math inline">\(N\)</span> is the number of hidden states), which number increases exponentially as the number of states increases. This complexity precludes using this method to get rid of the states. Fortunately, we have another algorithm in the HMM toolbox that is useful.</p>
+<div id="forward-algorithm" class="section level3" number="3.8.1">
 <h3>
-<span class="header-section-number">3.8.1</span> Theory<a class="anchor" aria-label="anchor" href="#theory"><i class="fas fa-link"></i></a>
+<span class="header-section-number">3.8.1</span> Forward algorithm<a class="anchor" aria-label="anchor" href="#forward-algorithm"><i class="fas fa-link"></i></a>
 </h3>
-<p><strong>Forward algorithm. I need to transpose the observation matrix in the NIMBLE code, this needs to be said when explaining the forward algorithm.</strong></p>
+<p>Several products that are computed several times. What if we could store the results and use them later. Recurrence. Dynamic programming. Order of complexity <span class="math inline">\(TN^2\)</span>. Give examples, and compare with expression above. Explain forward algo with colors. Mention that: The neat thing with NIMBLE is that it provides marginalised models through nimbleEcology, we’ll get back to it in Reference forward to section below (forward algorithm).</p>
 </div>
 <div id="implementation-in-nimble" class="section level3" number="3.8.2">
 <h3>
@@ -5487,7 +5487,6 @@ A hidden Markov model is just two time series running in parallel. One for the s
 <span class="co">##     mean   sd 2.5%  50% 97.5% Rhat n.eff</span>
 <span class="co">## p   0.61 0.06 0.49 0.61  0.73 1.00  1396</span>
 <span class="co">## phi 0.76 0.04 0.67 0.76  0.84 1.01  1435</span></code></pre></div>
-<p>Mention NimbleEcology.</p>
 <p><strong>Compute number of nodes. Show that the z are no longer in there.</strong></p>
 </div>
 </div>
@@ -5497,7 +5496,7 @@ A hidden Markov model is just two time series running in parallel. One for the s
 </h2>
 <p>In this section, we’re gonna use NIMBLE functions to express the likelihood using pooled encounter histories. We use a vector <code>size</code> that contains the number of individuals with a particular encounter history. Courtesy of Chloé Nater. Implement of Turek et al. </p>
 <div class="sourceCode" id="cb130"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="va">dHMMweighted</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimbleFunction.html">nimbleFunction</a></span><span class="op">(</span>
+<code class="sourceCode R"><span class="va">dHMMpooled</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimbleFunction.html">nimbleFunction</a></span><span class="op">(</span>
   run <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">x</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/double.html">double</a></span><span class="op">(</span><span class="fl">1</span><span class="op">)</span>, 
                  <span class="va">probInit</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/double.html">double</a></span><span class="op">(</span><span class="fl">1</span><span class="op">)</span>,
                  <span class="va">probObs</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/double.html">double</a></span><span class="op">(</span><span class="fl">2</span><span class="op">)</span>,
@@ -5516,7 +5515,7 @@ A hidden Markov model is just two time series running in parallel. One for the s
   <span class="op">}</span>
 <span class="op">)</span></code></pre></div>
 <div class="sourceCode" id="cb131"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="va">rHMMweighted</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimbleFunction.html">nimbleFunction</a></span><span class="op">(</span>
+<code class="sourceCode R"><span class="va">rHMMpooled</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimbleFunction.html">nimbleFunction</a></span><span class="op">(</span>
   run <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">n</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimNumeric.html">integer</a></span><span class="op">(</span><span class="op">)</span>,
                  <span class="va">probInit</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/double.html">double</a></span><span class="op">(</span><span class="fl">1</span><span class="op">)</span>,
                  <span class="va">probObs</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/double.html">double</a></span><span class="op">(</span><span class="fl">2</span><span class="op">)</span>,
@@ -5537,10 +5536,10 @@ A hidden Markov model is just two time series running in parallel. One for the s
     <span class="kw"><a href="https://rdrr.io/r/base/function.html">return</a></span><span class="op">(</span><span class="va">y</span><span class="op">)</span>
   <span class="op">}</span><span class="op">)</span></code></pre></div>
 <div class="sourceCode" id="cb132"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/r/base/assign.html">assign</a></span><span class="op">(</span><span class="st">'dHMMweighted'</span>, <span class="va">dHMMweighted</span>, <span class="va">.GlobalEnv</span><span class="op">)</span>
-<span class="fu"><a href="https://rdrr.io/r/base/assign.html">assign</a></span><span class="op">(</span><span class="st">'rHMMweighted'</span>, <span class="va">rHMMweighted</span>, <span class="va">.GlobalEnv</span><span class="op">)</span></code></pre></div>
+<code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/r/base/assign.html">assign</a></span><span class="op">(</span><span class="st">'dHMMpooled'</span>, <span class="va">dHMMpooled</span>, <span class="va">.GlobalEnv</span><span class="op">)</span>
+<span class="fu"><a href="https://rdrr.io/r/base/assign.html">assign</a></span><span class="op">(</span><span class="st">'rHMMpooled'</span>, <span class="va">rHMMpooled</span>, <span class="va">.GlobalEnv</span><span class="op">)</span></code></pre></div>
 <div class="sourceCode" id="cb133"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="fu">dHMMweighted</span><span class="op">(</span>x <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimble-R-functions.html">c</a></span><span class="op">(</span><span class="fl">2</span>,<span class="fl">2</span>,<span class="fl">1</span>,<span class="fl">1</span>,<span class="fl">1</span><span class="op">)</span>,
+<code class="sourceCode R"><span class="fu">dHMMpooled</span><span class="op">(</span>x <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimble-R-functions.html">c</a></span><span class="op">(</span><span class="fl">2</span>,<span class="fl">2</span>,<span class="fl">1</span>,<span class="fl">1</span>,<span class="fl">1</span><span class="op">)</span>,
              probInit <span class="op">=</span> <span class="va">delta</span>,
              probObs <span class="op">=</span> <span class="va">Gamma</span>,
              probTrans <span class="op">=</span> <span class="va">Omega</span>,
@@ -5548,7 +5547,7 @@ A hidden Markov model is just two time series running in parallel. One for the s
              size <span class="op">=</span> <span class="fl">5</span><span class="op">)</span>
 <span class="co">## [1] 3.72e-07</span></code></pre></div>
 <div class="sourceCode" id="cb134"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="fu">rHMMweighted</span><span class="op">(</span>probInit <span class="op">=</span> <span class="va">delta</span>,
+<code class="sourceCode R"><span class="fu">rHMMpooled</span><span class="op">(</span>probInit <span class="op">=</span> <span class="va">delta</span>,
              probObs <span class="op">=</span> <span class="va">Gamma</span>,
              probTrans <span class="op">=</span> <span class="va">Omega</span>,
              len <span class="op">=</span> <span class="fl">5</span>,
@@ -5570,7 +5569,7 @@ A hidden Markov model is just two time series running in parallel. One for the s
   <span class="va">omega</span><span class="op">[</span><span class="fl">2</span>,<span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span>        <span class="co"># Pr(dead t -&gt; non-detected t)</span>
   <span class="va">omega</span><span class="op">[</span><span class="fl">2</span>,<span class="fl">2</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0</span>        <span class="co"># Pr(dead t -&gt; detected t)</span>
   <span class="kw">for</span> <span class="op">(</span><span class="va">i</span> <span class="kw">in</span> <span class="fl">1</span><span class="op">:</span><span class="va">N</span><span class="op">)</span><span class="op">{</span>
-    <span class="va">y</span><span class="op">[</span><span class="va">i</span>,<span class="fl">1</span><span class="op">:</span><span class="cn">T</span><span class="op">]</span> <span class="op">~</span> <span class="fu">dHMMweighted</span><span class="op">(</span>probInit <span class="op">=</span> <span class="va">delta</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">2</span><span class="op">]</span>, 
+    <span class="va">y</span><span class="op">[</span><span class="va">i</span>,<span class="fl">1</span><span class="op">:</span><span class="cn">T</span><span class="op">]</span> <span class="op">~</span> <span class="fu">dHMMpooled</span><span class="op">(</span>probInit <span class="op">=</span> <span class="va">delta</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">2</span><span class="op">]</span>, 
                     probObs <span class="op">=</span> <span class="va">omega</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">2</span>,<span class="fl">1</span><span class="op">:</span><span class="fl">2</span><span class="op">]</span>, <span class="co"># observation matrix</span>
                     probTrans <span class="op">=</span> <span class="va">gamma</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">2</span>,<span class="fl">1</span><span class="op">:</span><span class="fl">2</span><span class="op">]</span>, <span class="co"># transition matrix</span>
                     len <span class="op">=</span> <span class="cn">T</span>,
@@ -5578,13 +5577,13 @@ A hidden Markov model is just two time series running in parallel. One for the s
   <span class="op">}</span>
 <span class="op">}</span><span class="op">)</span></code></pre></div>
 <div class="sourceCode" id="cb136"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="va">y_weighted</span> <span class="op">&lt;-</span> <span class="va">y</span> <span class="op">%&gt;%</span> 
+<code class="sourceCode R"><span class="va">y_pooled</span> <span class="op">&lt;-</span> <span class="va">y</span> <span class="op">%&gt;%</span> 
   <span class="fu">as_tibble</span><span class="op">(</span><span class="op">)</span> <span class="op">%&gt;%</span> 
   <span class="fu">group_by_all</span><span class="op">(</span><span class="op">)</span> <span class="op">%&gt;%</span> 
   <span class="fu">summarise</span><span class="op">(</span>S <span class="op">=</span> <span class="fu">n</span><span class="op">(</span><span class="op">)</span><span class="op">)</span> <span class="op">%&gt;%</span> 
   <span class="fu">relocate</span><span class="op">(</span><span class="va">S</span><span class="op">)</span> <span class="op">%&gt;%</span> 
   <span class="fu"><a href="https://rdrr.io/r/base/matrix.html">as.matrix</a></span><span class="op">(</span><span class="op">)</span>
-<span class="va">y_weighted</span>
+<span class="va">y_pooled</span>
 <span class="co">##        S winter 1 winter 2 winter 3 winter 4 winter 5</span>
 <span class="co">##  [1,] 21        1        0        0        0        0</span>
 <span class="co">##  [2,]  2        1        0        0        1        0</span>
@@ -5601,7 +5600,7 @@ A hidden Markov model is just two time series running in parallel. One for the s
 <span class="co">## [13,]  8        1        1        1        1        0</span>
 <span class="co">## [14,]  1        1        1        1        1        1</span></code></pre></div>
 <div class="sourceCode" id="cb137"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="va">my.constants</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>N <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html">nrow</a></span><span class="op">(</span><span class="va">y_weighted</span><span class="op">)</span>, T <span class="op">=</span> <span class="fl">5</span>, S <span class="op">=</span> <span class="va">y_weighted</span><span class="op">[</span>,<span class="st">'S'</span><span class="op">]</span><span class="op">)</span>
+<code class="sourceCode R"><span class="va">my.constants</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>N <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html">nrow</a></span><span class="op">(</span><span class="va">y_pooled</span><span class="op">)</span>, T <span class="op">=</span> <span class="fl">5</span>, S <span class="op">=</span> <span class="va">y_pooled</span><span class="op">[</span>,<span class="st">'S'</span><span class="op">]</span><span class="op">)</span>
 <span class="va">my.constants</span>
 <span class="co">## $N</span>
 <span class="co">## [1] 14</span>
@@ -5612,7 +5611,7 @@ A hidden Markov model is just two time series running in parallel. One for the s
 <span class="co">## $S</span>
 <span class="co">##  [1] 21  2  1  1  2  1  8  4  2  1  4  1  8  1</span>
 
-<span class="va">my.data</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>y <span class="op">=</span> <span class="va">y_weighted</span><span class="op">[</span>,<span class="op">-</span><span class="fl">1</span><span class="op">]</span> <span class="op">+</span> <span class="fl">1</span><span class="op">)</span>
+<span class="va">my.data</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>y <span class="op">=</span> <span class="va">y_pooled</span><span class="op">[</span>,<span class="op">-</span><span class="fl">1</span><span class="op">]</span> <span class="op">+</span> <span class="fl">1</span><span class="op">)</span>
 
 <span class="va">initial.values</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>phi <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html">runif</a></span><span class="op">(</span><span class="fl">1</span>,<span class="fl">0</span>,<span class="fl">1</span><span class="op">)</span>,
                                   p <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html">runif</a></span><span class="op">(</span><span class="fl">1</span>,<span class="fl">0</span>,<span class="fl">1</span><span class="op">)</span><span class="op">)</span>
@@ -5631,8 +5630,8 @@ A hidden Markov model is just two time series running in parallel. One for the s
                           niter <span class="op">=</span> <span class="va">n.iter</span>,
                           nburnin <span class="op">=</span> <span class="va">n.burnin</span>,
                           nchains <span class="op">=</span> <span class="va">n.chains</span><span class="op">)</span>
-<span class="co">## Registering the following user-provided distributions: dHMMweighted</span>
-<span class="co">## NIMBLE has registered dHMMweighted as a distribution based on its use in BUGS code. Note that if you make changes to the nimbleFunctions for the distribution, you must call 'deregisterDistributions' before using the distribution in BUGS code for those changes to take effect.</span>
+<span class="co">## Registering the following user-provided distributions: dHMMpooled</span>
+<span class="co">## NIMBLE has registered dHMMpooled as a distribution based on its use in BUGS code. Note that if you make changes to the nimbleFunctions for the distribution, you must call 'deregisterDistributions' before using the distribution in BUGS code for those changes to take effect.</span>
 <span class="co">## |-------------|-------------|-------------|-------------|</span>
 <span class="co">## |-------------------------------------------------------|</span>
 <span class="co">## |-------------|-------------|-------------|-------------|</span>
@@ -5657,9 +5656,9 @@ A hidden Markov model is just two time series running in parallel. One for the s
 <h2>
 <span class="header-section-number">3.10</span> Decoding after marginalization<a class="anchor" aria-label="anchor" href="#decoding"><i class="fas fa-link"></i></a>
 </h2>
-<div id="theory-1" class="section level3" number="3.10.1">
+<div id="theory" class="section level3" number="3.10.1">
 <h3>
-<span class="header-section-number">3.10.1</span> Theory<a class="anchor" aria-label="anchor" href="#theory-1"><i class="fas fa-link"></i></a>
+<span class="header-section-number">3.10.1</span> Theory<a class="anchor" aria-label="anchor" href="#theory"><i class="fas fa-link"></i></a>
 </h3>
 <p>On peut estimer, ou bien décoder avec Viterbi, voir la différence dans <a href="https://luisdamiano.github.io/BayesHMM/articles/introduction.html" class="uri">https://luisdamiano.github.io/BayesHMM/articles/introduction.html</a>. Voir aussi la page wikipedia pour les formules .</p>
 <p>In some situations, you might want to compute the sequence of states alive and dead that is most likely to have generated the observed sequence of detections and non-detections. To do so, you can use the Viterbi algorithm. Briefly speaking, this algorithm does this and that. Use colors to explain, as for the forward algorithm. See also <a href="https://en.wikipedia.org/wiki/Forward_algorithm" class="uri">https://en.wikipedia.org/wiki/Forward_algorithm</a>.</p>
@@ -6077,14 +6076,14 @@ A hidden Markov model is just two time series running in parallel. One for the s
 <li><a class="nav-link" href="#fitting-hmm-with-nimble"><span class="header-section-number">3.7</span> Fitting HMM with NIMBLE</a></li>
 <li>
 <a class="nav-link" href="#marginalization"><span class="header-section-number">3.8</span> Marginalization</a><ul class="nav navbar-nav">
-<li><a class="nav-link" href="#theory"><span class="header-section-number">3.8.1</span> Theory</a></li>
+<li><a class="nav-link" href="#forward-algorithm"><span class="header-section-number">3.8.1</span> Forward algorithm</a></li>
 <li><a class="nav-link" href="#implementation-in-nimble"><span class="header-section-number">3.8.2</span> Implementation in NIMBLE</a></li>
 </ul>
 </li>
 <li><a class="nav-link" href="#pooled-likelihood"><span class="header-section-number">3.9</span> Pooled encounter histories</a></li>
 <li>
 <a class="nav-link" href="#decoding"><span class="header-section-number">3.10</span> Decoding after marginalization</a><ul class="nav navbar-nav">
-<li><a class="nav-link" href="#theory-1"><span class="header-section-number">3.10.1</span> Theory</a></li>
+<li><a class="nav-link" href="#theory"><span class="header-section-number">3.10.1</span> Theory</a></li>
 <li><a class="nav-link" href="#compute-first-average-after"><span class="header-section-number">3.10.2</span> Compute first, average after</a></li>
 <li><a class="nav-link" href="#average-first-compute-after"><span class="header-section-number">3.10.3</span> Average first, compute after</a></li>
 </ul>

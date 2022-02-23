@@ -899,9 +899,9 @@ y <- y - 1 # non-detection = 0, detection = 1
 
 ## Marginalization {#marginalization}
 
-Shall we estimate the latent states $z_{i,t}$ or not? We can get rid of the states, so that likelihood is a function of $\phi$ and $p$ only. This is the function we would maximize in a Frequentist approach. 
+In some situations, you will not be interested in inferring the hidden states $z_{i,t}$, so why bother estimating them? The good news is that you can get rid of the states, so that the likelihood is a function of survival and detection probabilities $\phi$ and $p$ only. By the way, this is the function you would maximize in a Frequentist approach. 
 
-The neat thing with Nimble is that it provides marginalised models through nimbleEcology, we'll get back to it in Reference forward to section below (forward algorithm). Using the formula of total probability:
+Using the formula of total probability, we get by summing over all possible states:
 
 \begin{align*}
 \Pr(\mathbf{y}_i) &= \Pr(y_{i,1}, y_{i,2}, \ldots, y_{i,T})\\
@@ -909,11 +909,11 @@ The neat thing with Nimble is that it provides marginalised models through nimbl
                 &= \sum_{z_{i,1}} \cdots \sum_{z_{i,T}} \left(\prod_{t=1}^T{\omega_{z_{i,t}, y_{i,t}}}\right) \left(\Pr(z_{i,1}) \prod_{t=2}^T{\gamma_{z_{i,t-1},z_{i,t}}}\right)\\
 \end{align*}
 
-Very inefficient. 
+This function is complex to evaluate because it involves many operations ($TN^T$ operations to be precise, where $T$ is the length of encounter histories and $N$ is the number of hidden states), which number increases exponentially as the number of states increases. This complexity precludes using this method to get rid of the states. Fortunately, we have another algorithm in the HMM toolbox that is useful.  
 
-### Theory
+### Forward algorithm
 
-**Forward algorithm.  I need to transpose the observation matrix in the NIMBLE code, this needs to be said when explaining the forward algorithm.**
+Several products that are computed several times. What if we could store the results and use them later. Recurrence. Dynamic programming. Order of complexity $TN^2$. Give examples, and compare with expression above. Explain forward algo with colors. Mention that: The neat thing with NIMBLE is that it provides marginalised models through nimbleEcology, we'll get back to it in Reference forward to section below (forward algorithm). 
 
 ### Implementation in NIMBLE
 
@@ -1041,8 +1041,6 @@ mcmc.output <- nimbleMCMC(code = hmm.survival,
 MCMCsummary(mcmc.output, round = 2)
 ```
 
-Mention NimbleEcology.
-
 **Compute number of nodes. Show that the z are no longer in there.**
 
 ## Pooled encounter histories {#pooled-likelihood}
@@ -1050,7 +1048,7 @@ Mention NimbleEcology.
 In this section, we're gonna use NIMBLE functions to express the likelihood using pooled encounter histories. We use a vector `size` that contains the number of individuals with a particular encounter history. Courtesy of Chloé Nater. Implement of Turek et al. 
 
 ```{r}
-dHMMweighted <- nimbleFunction(
+dHMMpooled <- nimbleFunction(
   run = function(x = double(1), 
                  probInit = double(1),
                  probObs = double(2),
@@ -1072,7 +1070,7 @@ dHMMweighted <- nimbleFunction(
 
 
 ```{r}
-rHMMweighted <- nimbleFunction(
+rHMMpooled <- nimbleFunction(
   run = function(n = integer(),
                  probInit = double(1),
                  probObs = double(2),
@@ -1096,13 +1094,13 @@ rHMMweighted <- nimbleFunction(
 
 
 ```{r}
-assign('dHMMweighted', dHMMweighted, .GlobalEnv)
-assign('rHMMweighted', rHMMweighted, .GlobalEnv)
+assign('dHMMpooled', dHMMpooled, .GlobalEnv)
+assign('rHMMpooled', rHMMpooled, .GlobalEnv)
 ```
 
 
 ```{r}
-dHMMweighted(x = c(2,2,1,1,1),
+dHMMpooled(x = c(2,2,1,1,1),
              probInit = delta,
              probObs = Gamma,
              probTrans = Omega,
@@ -1112,7 +1110,7 @@ dHMMweighted(x = c(2,2,1,1,1),
 
 
 ```{r}
-rHMMweighted(probInit = delta,
+rHMMpooled(probInit = delta,
              probObs = Gamma,
              probTrans = Omega,
              len = 5,
@@ -1136,7 +1134,7 @@ hmm.survival <- nimbleCode({
   omega[2,1] <- 1        # Pr(dead t -> non-detected t)
   omega[2,2] <- 0        # Pr(dead t -> detected t)
   for (i in 1:N){
-    y[i,1:T] ~ dHMMweighted(probInit = delta[1:2], 
+    y[i,1:T] ~ dHMMpooled(probInit = delta[1:2], 
                     probObs = omega[1:2,1:2], # observation matrix
                     probTrans = gamma[1:2,1:2], # transition matrix
                     len = T,
@@ -1147,21 +1145,21 @@ hmm.survival <- nimbleCode({
 
 
 ```{r}
-y_weighted <- y %>% 
+y_pooled <- y %>% 
   as_tibble() %>% 
   group_by_all() %>% 
   summarise(S = n()) %>% 
   relocate(S) %>% 
   as.matrix()
-y_weighted
+y_pooled
 ```
 
 
 ```{r}
-my.constants <- list(N = nrow(y_weighted), T = 5, S = y_weighted[,'S'])
+my.constants <- list(N = nrow(y_pooled), T = 5, S = y_pooled[,'S'])
 my.constants
 
-my.data <- list(y = y_weighted[,-1] + 1)
+my.data <- list(y = y_pooled[,-1] + 1)
 
 initial.values <- function() list(phi = runif(1,0,1),
                                   p = runif(1,0,1))
