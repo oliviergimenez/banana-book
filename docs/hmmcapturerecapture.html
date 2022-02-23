@@ -1295,10 +1295,7 @@ winter 5
 <h3>
 <span class="header-section-number">3.3.2</span> Transition matrix<a class="anchor" aria-label="anchor" href="#transition-matrix"><i class="fas fa-link"></i></a>
 </h3>
-<p>You might have figured it out already, the core of our Markov process is made of transition probabilities between states alive and dead.</p>
-<p>For example, the probability of transitioning from state alive at <span class="math inline">\(t-1\)</span> to state alive at <span class="math inline">\(t\)</span> is <span class="math inline">\(\Pr(z_{i,t} = 1 | z_{i,t-1} = 1) = \gamma_{1,1}\)</span>. It is the survival probability <span class="math inline">\(\phi\)</span>.</p>
-<p>The probability of dying over the interval <span class="math inline">\((t-1, t)\)</span> is <span class="math inline">\(\Pr(z_{i,t} = 2 | z_{i,t-1} = 1) = \gamma_{1,2} = 1 - \phi\)</span>.</p>
-<p>Now if an animal is dead at <span class="math inline">\(t-1\)</span>, then <span class="math inline">\(\Pr(z_t = 1 | z_{t-1} = 2) = 0\)</span> and <span class="math inline">\(\Pr(z_{i,t} = 2 | z_{i,t-1} = 2) = 1\)</span>.</p>
+<p>You might have figured it out already (if not, not a problem), the core of our Markov process is made of transition probabilities between states alive and dead. For example, the probability of transitioning from state alive at <span class="math inline">\(t-1\)</span> to state alive at <span class="math inline">\(t\)</span> is <span class="math inline">\(\Pr(z_{i,t} = 1 | z_{i,t-1} = 1) = \gamma_{1,1}\)</span>. It is the survival probability <span class="math inline">\(\phi\)</span>. The probability of dying over the interval <span class="math inline">\((t-1, t)\)</span> is <span class="math inline">\(\Pr(z_{i,t} = 2 | z_{i,t-1} = 1) = \gamma_{1,2} = 1 - \phi\)</span>. Now if an animal is dead at <span class="math inline">\(t-1\)</span>, then <span class="math inline">\(\Pr(z_t = 1 | z_{t-1} = 2) = 0\)</span> and <span class="math inline">\(\Pr(z_{i,t} = 2 | z_{i,t-1} = 2) = 1\)</span>.</p>
 <p>We can gather these probabilities of transition between states from one occasion to the next in a matrix, say <span class="math inline">\(\mathbf{\Gamma}\)</span>, which we will call the transition matrix:</p>
 <p><span class="math display">\[\begin{align*}
 \mathbf{\Gamma} =
@@ -1320,7 +1317,7 @@ winter 5
 \end{matrix}
 \hspace{-1.2em}
 \begin{matrix}
-    z_t=A &amp; z_t=D \\ \hdashline
+    z_t=1 &amp; z_t=2 \\ \hdashline
 \phi &amp; 1-\phi \\
 0 &amp; 1
 \end{matrix}
@@ -1329,7 +1326,7 @@ winter 5
 &amp; \\
 \left . \vphantom{ \begin{matrix} 12 \\ 12 \end{matrix} } \right )
     \begin{matrix}
-    z_{t-1}=A \\ z_{t-1}=D
+    z_{t-1}=1 \; \mbox{(alive)} \\ z_{t-1}=2 \; \mbox{(dead)}
     \end{matrix}
 \end{matrix}
 \]</span></p>
@@ -1339,9 +1336,7 @@ winter 5
 <h3>
 <span class="header-section-number">3.3.3</span> Initial states<a class="anchor" aria-label="anchor" href="#initial-states"><i class="fas fa-link"></i></a>
 </h3>
-<p>A Markov process has to start somewhere. We need the probabilities of initial states, i.e. the states of an individual at <span class="math inline">\(t = 1\)</span>.</p>
-<p>We will gather the probability of being in each state (alive or 1 and dead or 2) in the first winter in a vector. We will use <span class="math inline">\(\mathbf{\delta} = \left(\Pr(z_{i,1} = 1), \Pr(z_{i,1} = 2)\right)\)</span>.</p>
-<p>For simplicity, we will assume that all individuals are marked and released in the first winter, hence alive when first captured, which means that they are all in state alive or 1 for sure. Therefore we have <span class="math inline">\(\mathbf{\delta} = \left(1, 0\right)\)</span>.</p>
+<p>A Markov process has to start somewhere. We need the probabilities of initial states, i.e. the states of an individual at <span class="math inline">\(t = 1\)</span>. We will gather the probability of being in each state (alive or 1 and dead or 2) in the first winter in a vector. We will use <span class="math inline">\(\mathbf{\delta} = \left(\Pr(z_{i,1} = 1), \Pr(z_{i,1} = 2)\right)\)</span>. For simplicity, we will assume that all individuals are marked and released in the first winter, hence alive when first captured, which means that they are all in state alive or 1 for sure. Therefore we have <span class="math inline">\(\mathbf{\delta} = \left(1, 0\right)\)</span>.</p>
 </div>
 <div id="likelihood" class="section level3" number="3.3.4">
 <h3>
@@ -1351,20 +1346,20 @@ winter 5
 <p>We’re gonna work backward, starting from the last sampling occasion. Using conditional probabilities, the likelihood can be written as the product of the probability of <span class="math inline">\(z_T\)</span> i.e. you’re alive or not on the last occasion given your past history, that is the states at previous occasions, times the probability of your past history:</p>
 <p><span class="math display">\[\begin{align*}
 \Pr(\mathbf{z}) &amp;= \Pr(z_T, z_{T-1}, z_{T-2}, \ldots, z_1) \color{white}{\Pr(z_{T-1}, z_{T-2},\ldots, z_1) \Pr(z_{T-2}, \ldots, z_1)}\\
-                &amp;= \Pr(z_T | z_{T-1}, z_{T-2},\ldots, z_1) \Pr(z_{T-1}, z_{T-2},\ldots, z_1) \\
+                &amp;= \color{blue}{\Pr(z_T | z_{T-1}, z_{T-2},\ldots, z_1) \Pr(z_{T-1}, z_{T-2},\ldots, z_1)} \\
 \end{align*}\]</span></p>
 <p>Then because we have a Markov model, we’re memory less, that is the probabilty of next state, here <span class="math inline">\(z_T\)</span>, depends only on the current state, that is <span class="math inline">\(z_{T-1}\)</span>, and not the previous states:</p>
 <p><span class="math display">\[\begin{align*}
 \Pr(\mathbf{z}) &amp;= \Pr(z_T, z_{T-1}, z_{T-2}, \ldots, z_1) \color{white}{\Pr(z_{T-1}, z_{T-2},\ldots, z_1) \Pr(z_{T-2}, \ldots, z_1)}\\
                 &amp;= \Pr(z_T | z_{T-1}, z_{T-2},\ldots, z_1) \Pr(z_{T-1}, z_{T-2},\ldots, z_1) \\
-                &amp;= \Pr(z_T | z_{T-1}) \Pr(z_{T-1}, z_{T-2},\ldots, z_1) \\
+                &amp;= \color{blue}{\Pr(z_T | z_{T-1})} \Pr(z_{T-1}, z_{T-2},\ldots, z_1) \\
 \end{align*}\]</span></p>
 <p>You can apply the same reasoning to <span class="math inline">\(T-1\)</span>. First use conditional probabilities:</p>
 <p><span class="math display">\[\begin{align*}
 \Pr(\mathbf{z}) &amp;= \Pr(z_T, z_{T-1}, z_{T-2}, \ldots, z_1) \color{white}{\Pr(z_{T-1}, z_{T-2},\ldots, z_1) \Pr(z_{T-2}, \ldots, z_1)}\\
                 &amp;= \Pr(z_T | z_{T-1}, z_{T-2},\ldots, z_1) \Pr(z_{T-1}, z_{T-2},\ldots, z_1) \\
                 &amp;= \Pr(z_T | z_{T-1}) \Pr(z_{T-1}, z_{T-2},\ldots, z_1) \\
-                &amp;= \Pr(z_T | z_{T-1}) \Pr(z_{T-1} | z_{T-2}, \ldots, z_1) \Pr(z_{T-2}, \ldots, z_1)\\
+                &amp;= \Pr(z_T | z_{T-1}) \color{blue}{\Pr(z_{T-1} | z_{T-2}, \ldots, z_1) \Pr(z_{T-2}, \ldots, z_1)}\\
 \end{align*}\]</span></p>
 <p>Then apply the Markovian property:</p>
 <p><span class="math display">\[\begin{align*}
@@ -1372,7 +1367,7 @@ winter 5
                 &amp;= \Pr(z_T | z_{T-1}, z_{T-2},\ldots, z_1) \Pr(z_{T-1}, z_{T-2},\ldots, z_1) \\
                 &amp;= \Pr(z_T | z_{T-1}) \Pr(z_{T-1}, z_{T-2},\ldots, z_1) \\
                 &amp;= \Pr(z_T | z_{T-1}) \Pr(z_{T-1} | z_{T-2}, \ldots, z_1) \Pr(z_{T-2}, \ldots, z_1)\\
-                &amp;= \Pr(z_T | z_{T-1}) \Pr(z_{T-1} | z_{T-2}) \Pr(z_{T-2}, \ldots, z_1)\\
+                &amp;= \Pr(z_T | z_{T-1}) \color{blue}{\Pr(z_{T-1} | z_{T-2})} \Pr(z_{T-2}, \ldots, z_1)\\
 \end{align*}\]</span></p>
 <p>And so on up to <span class="math inline">\(z_2\)</span>. You end up with this expression for the likelihood:</p>
 <p><span class="math display">\[\begin{align*}
@@ -1382,7 +1377,7 @@ winter 5
                 &amp;= \Pr(z_T | z_{T-1}) \Pr(z_{T-1} | z_{T-2}, \ldots, z_1) \Pr(z_{T-2}, \ldots, z_1)\\
                 &amp;= \Pr(z_T | z_{T-1}) \Pr(z_{T-1} | z_{T-2}) \Pr(z_{T-2}, \ldots, z_1)\\
                 &amp;= \ldots \\
-                &amp;= \Pr(z_T | z_{T-1}) \Pr(z_{T-1} | z_{T-2}) \ldots \Pr(z_{2} | z_{1}) \Pr(z_{1})\\
+                &amp;= \color{blue}{\Pr(z_T | z_{T-1}) \Pr(z_{T-1} | z_{T-2}) \ldots \Pr(z_{2} | z_{1}) \Pr(z_{1})}\\
 \end{align*}\]</span></p>
 <p>This is a product of conditional probabilities of states given previous states, and the probability of initial states <span class="math inline">\(\Pr(z_1)\)</span>. Using a more compact notation for the product of conditional probabilities, we get:</p>
 <p><span class="math display">\[\begin{align*}
@@ -1393,7 +1388,7 @@ winter 5
                 &amp;= \Pr(z_T | z_{T-1}) \Pr(z_{T-1} | z_{T-2}) \Pr(z_{T-2}, \ldots, z_1)\\
                 &amp;= \ldots \\
                 &amp;= \Pr(z_T | z_{T-1}) \Pr(z_{T-1} | z_{T-2}) \ldots \Pr(z_{2} | z_{1}) \Pr(z_{1})\\
-                &amp;= \Pr(z_{1}) \prod_{t=2}^T{\Pr(z_{t} | z_{t-1})}\\
+                &amp;= \color{blue}{\Pr(z_{1}) \prod_{t=2}^T{\Pr(z_{t} | z_{t-1})}}\\
 \end{align*}\]</span></p>
 <p>In the product, you can recognize the transition parameters <span class="math inline">\(\gamma\)</span> we defined above, so that the likelihood of a Markov model can be written as:</p>
 <p><span class="math display">\[\begin{align*}
@@ -1423,8 +1418,7 @@ winter 5
 <h2>
 <span class="header-section-number">3.4</span> Bayesian formulation<a class="anchor" aria-label="anchor" href="#bayesian-formulation"><i class="fas fa-link"></i></a>
 </h2>
-<p>Now that we have the likelihood of a Markov model, we can complement it with a prior for survival to apply the Bayes theorem.</p>
-<p>Before implementing this model in NIMBLE, we note that the likelihood is a product of conditional probabilities of binary events (alive or dead). Usually binary events are associated with the Bernoulli distribution. Here however, we will use its extension to several outcomes (from a coin to a dice) known as the categorical distribution<a class="footnote-ref" tabindex="0" data-toggle="popover" data-content="&lt;p&gt;The categorical distribution is a multinomial distribution with a single draw.&lt;/p&gt;"><sup>24</sup></a>. To get a better idea of how the categorical distribution works, let’s simulate from it. Consider for example a random value drawn from a categorical distribution with probability 0.1, 0.3 and 0.6. Think of a dice with three faces, face 1 has probability 0.1 of occurring, face 2 probability 0.3 and face 3 has probability 0.6, the sum of these probabilities being 1. We expect to get a 3 more often than a 2 and rarely a 1:</p>
+<p>Before implementing this model in NIMBLE, we provide a Bayesian formulation of our model. We first note that the likelihood is a product of conditional probabilities of binary events (alive or dead). Usually binary events are associated with the Bernoulli distribution. Here however, we will use its extension to several outcomes (from a coin with two sides to a dice with more than two faces) known as the categorical distribution<a class="footnote-ref" tabindex="0" data-toggle="popover" data-content="&lt;p&gt;The categorical distribution is a multinomial distribution with a single draw.&lt;/p&gt;"><sup>24</sup></a>. To get a better idea of how the categorical distribution works, let’s simulate from it. Consider for example a random value drawn from a categorical distribution with probability 0.1, 0.3 and 0.6. Think of a dice with three faces, face 1 has probability 0.1 of occurring, face 2 probability 0.3 and face 3 has probability 0.6, the sum of these probabilities being 1. We expect to get a 3 more often than a 2 and rarely a 1:</p>
 <div class="sourceCode" id="cb94"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/pkg/nimble/man/Categorical.html">rcat</a></span><span class="op">(</span>n <span class="op">=</span> <span class="fl">1</span>, prob <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimble-R-functions.html">c</a></span><span class="op">(</span><span class="fl">0.1</span>, <span class="fl">0.3</span>, <span class="fl">0.6</span><span class="op">)</span><span class="op">)</span>
 <span class="co">## [1] 3</span></code></pre></div>
@@ -1460,7 +1454,7 @@ winter 5
 \end{array}\right)
 \end{align*}\]</span></p>
 <p>that is <span class="math inline">\(\color{blue}{\gamma_{z_{t-1} = 2,z_{t}} = (0, 1)}\)</span> and <span class="math inline">\(z_t | z_{t-1} = 2 \sim \text{Categorical}((0, 1))\)</span> (if the individual is dead, it remains dead with probability 1).</p>
-<p>We also need a prior on survival. Without surprise, we use a uniform distribution between 0 and 1, or a Beta distribution with parameters 1 and 1. Overall our model is:</p>
+<p>We also need a prior on survival. Without surprise, we will use a uniform distribution between 0 and 1, which is also a Beta distribution with parameters 1 and 1. Overall our model is:</p>
 <p><span class="math display">\[\begin{align*}
    z_1 &amp;\sim \text{Categorical}(\delta) &amp;\text{[likelihood, }t = 1 \text{]}\\
    z_t | z_{t-1} &amp;\sim \text{Categorical}(\gamma_{z_{t-1},z_{t}}) &amp;\text{[likelihood, }t &gt; 1 \text{]}\\
@@ -1471,7 +1465,7 @@ winter 5
 <h2>
 <span class="header-section-number">3.5</span> NIMBLE implementation<a class="anchor" aria-label="anchor" href="#nimble-implementation"><i class="fas fa-link"></i></a>
 </h2>
-<p>How to implement in NIMBLE the Markov model we just built? First things first, we need some bricks that are relatively easy to put in place. Let’s start with the prior on survival, the vector of initial state probabilities and the transition matrix:</p>
+<p>How to implement in NIMBLE the Markov model we just built? We need to put in place a few bricks before running our model. Let’s start with the prior on survival, the vector of initial state probabilities and the transition matrix:</p>
 <div class="sourceCode" id="cb96"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb96-1"><a href="hmmcapturerecapture.html#cb96-1" aria-hidden="true" tabindex="-1"></a>markov.survival <span class="ot">&lt;-</span> <span class="fu">nimbleCode</span>({</span>
 <span id="cb96-2"><a href="hmmcapturerecapture.html#cb96-2" aria-hidden="true" tabindex="-1"></a>  phi <span class="sc">~</span> <span class="fu">dunif</span>(<span class="dv">0</span>, <span class="dv">1</span>) <span class="co"># prior</span></span>
 <span id="cb96-3"><a href="hmmcapturerecapture.html#cb96-3" aria-hidden="true" tabindex="-1"></a>  delta[<span class="dv">1</span>] <span class="ot">&lt;-</span> <span class="dv">1</span>          <span class="co"># Pr(alive t = 1) = 1</span></span>
@@ -1527,7 +1521,7 @@ winter 5
   <span class="op">}</span> <span class="co"># i</span>
 <span class="op">}</span><span class="op">)</span></code></pre></div>
 <p>Note that in this example, <span class="math inline">\(\delta\)</span> is used as a placeholder for more complex models we will build in chapters to come. Here, you could simply write <code>z[i,1] &lt;- 1</code>.</p>
-<p>Now we’re ready to resume our standard NIMBLE workflow. First we read in data. Because we have loops and indices that do not change, we use constants as explained in Section @ref{start-nimble}:</p>
+<p>Now we’re ready to resume our NIMBLE workflow. First we read in data. Because we have loops and indices that do not change, we use constants as explained in Section <a href="intronimble.html#start-nimble">2.3</a>:</p>
 <div class="sourceCode" id="cb102"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">my.constants</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>N <span class="op">=</span> <span class="fl">57</span>, T <span class="op">=</span> <span class="fl">5</span><span class="op">)</span>
 <span class="va">my.data</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>z <span class="op">=</span> <span class="va">z</span><span class="op">)</span></code></pre></div>
@@ -1590,7 +1584,7 @@ winter 5
 <span class="co">## [4,]    1    1    1    1    2</span>
 <span class="co">## [5,]    1    1    1    1    1</span>
 <span class="co">## [6,]    1    1    2    2    2</span></code></pre></div>
-<p><strong>Note: dcat() could be replaced by dbern() everywhere cause we have binary events. Does it make any difference? I think dcat() uses less efficient samplers than dbern(), but dcat() is convenient in terms of model building because it allows more than two outcomes. Worth noting here? If yes, forward reference next chapters.</strong></p>
+<p>We could <code><a href="https://rdrr.io/pkg/nimble/man/Categorical.html">dcat()</a></code> by <code>dbern()</code> everywhere in the code because we have binary events alive/dead. Would it make any difference? Although <code><a href="https://rdrr.io/pkg/nimble/man/Categorical.html">dcat()</a></code> uses less efficient samplers than <code>dbern()</code> (<strong>check w/ Perry/Daniel</strong>), <code><a href="https://rdrr.io/pkg/nimble/man/Categorical.html">dcat()</a></code> is convenient for model building to accomodate more than two outcomes, a feature that will become handy in the next chapters.</p>
 </div>
 <div id="hidden-markov-models" class="section level2" number="3.6">
 <h2>
@@ -1600,8 +1594,11 @@ winter 5
 <h3>
 <span class="header-section-number">3.6.1</span> Capture-recapture data<a class="anchor" aria-label="anchor" href="#capture-recapture-data"><i class="fas fa-link"></i></a>
 </h3>
-<p>Unfortunately, the data with alive and dead states is the data we wish we had. In real life, animals cannot be monitored exhaustively, like humans in a medical trial. This is why we use capture-recapture protocols<a class="footnote-ref" tabindex="0" data-toggle="popover" data-content='&lt;p&gt;Have a look to this enjoyable video on the basics principles of capture-recapture experiments &lt;a href="https://www.youtube.com/embed/tyX79mPm2xY" class="uri"&gt;https://www.youtube.com/embed/tyX79mPm2xY&lt;/a&gt;.&lt;/p&gt;'><sup>25</sup></a>, in which animals are captured, marked or identified, then released alive. Then, these animals may be detected again, or go undetected. Whenever animals go undetected, it might be that they were alive but missed, or because they were dead and therefore could not be detected. This issue is usually referred to as that of imperfect detection. As a consequence of imperfect detection, the Markov process for survival is only partially observed: You know an animal is alive when you detect it, but when an animal goes undetected, whether it is alive or dead is unknown to you. This is where hidden Markov models (HMMs) come in.</p>
-<p>Let’s get back to the data we had in the previous section. The truth is in <span class="math inline">\(z\)</span> which contains the fate of all individuals:</p>
+
+<div class="rmdnote">
+Unfortunately, the data with alive and dead states is the data we wish we had. In real life, animals cannot be monitored exhaustively, like humans in a medical trial. This is why we use capture-recapture protocols<a class="footnote-ref" tabindex="0" data-toggle="popover" data-content='&lt;p&gt;Have a look to this enjoyable video on the basics principles of capture-recapture experiments &lt;a href="https://www.youtube.com/embed/tyX79mPm2xY" class="uri"&gt;https://www.youtube.com/embed/tyX79mPm2xY&lt;/a&gt;.&lt;/p&gt;'><sup>25</sup></a>, in which animals are captured, individually marked, and released alive. Then, these animals may be detected again, or go undetected. Whenever animals go undetected, it might be that they were alive but missed, or because they were dead and therefore could not be detected. This issue is usually referred to as that of imperfect detection. As a consequence of imperfect detection, the Markov process for survival is only partially observed: You know an animal is alive when you detect it, but when an animal goes undetected, whether it is alive or dead is unknown to you. This is where hidden Markov models (HMMs) come in.
+</div>
+<p>Let’s get back to the data we had in the previous section. The truth is in <span class="math inline">\(z\)</span> which contains the fate of all individuals with <span class="math inline">\(z = 1\)</span> for alive, and <span class="math inline">\(z = 2\)</span> for dead:</p>
 <div style="border: 1px solid #ddd; padding: 0px; overflow-y: scroll; height:300px; overflow-x: scroll; width:100%; ">
 <div class="inline-table"><table class="table table-sm">
 <thead><tr>
@@ -2769,7 +2766,7 @@ winter 5
 </table></div>
 </div>
 <p>Unfortunately, we have only partial access to <span class="math inline">\(z\)</span>. What we do observe is <span class="math inline">\(y\)</span> the detections and non-detections. How are <span class="math inline">\(z\)</span> and <span class="math inline">\(y\)</span> connected?</p>
-<p>The easiest connection is with dead animals which go undetected for sure. Therefore when an animal is dead i.e. <span class="math inline">\(z = 2\)</span>, it cannot be detected, therefore <span class="math inline">\(y = 0\)</span>:</p>
+<p>The easiest connection is with dead animals which go undetected for sure. Therefore when an animal is dead i.e. <span class="math inline">\(z = 2\)</span>, it cannot be detected, therefore <span class="math inline">\(y = 0\)</span>: <strong>why not use 1 for non-detected and 2 for detected from here, and mention somewhere that usually people use 0 and 1?</strong></p>
 <div style="border: 1px solid #ddd; padding: 0px; overflow-y: scroll; height:300px; overflow-x: scroll; width:100%; ">
 <div class="inline-table"><table class="table table-sm">
 <thead><tr>
@@ -5103,14 +5100,14 @@ winter 5
 </tbody>
 </table></div>
 </div>
-<p>Compare with previous table. Some 1’s for alive have become 0’s for non-detection, other 1’s for alive have remained 1’s for detection. This table <span class="math inline">\(y\)</span> is what we observe in real life. I hope to have convinced that to make the connection between observations, the <span class="math inline">\(y\)</span>, and true states, the <span class="math inline">\(z\)</span>, we need to describe how observations are made (or emitted in the HMM terminology) from the states.</p>
+<p>Compare with previous table. Some 1’s for alive have become 0’s for non-detection, other 1’s for alive have remained 1’s for detection. This table <span class="math inline">\(y\)</span> is what we observe in real life. I hope I have convinced you that to make the connection between observations, the <span class="math inline">\(y\)</span>, and true states, the <span class="math inline">\(z\)</span>, we need to describe how observations are made (or emitted in the HMM terminology) from the states.</p>
 </div>
 <div id="observation-matrix" class="section level3" number="3.6.2">
 <h3>
 <span class="header-section-number">3.6.2</span> Observation matrix<a class="anchor" aria-label="anchor" href="#observation-matrix"><i class="fas fa-link"></i></a>
 </h3>
 <p>The novelty in HMMs is the link between observations and states. This link is made through observation probabilities. For example, the probability of detecting an animal <span class="math inline">\(i\)</span> at <span class="math inline">\(t\)</span> given it is alive at <span class="math inline">\(t\)</span> is <span class="math inline">\(\Pr(y_{i,t}=2|z_{i,t}=1)=\omega_{1,2}\)</span>. It is the detection probability <span class="math inline">\(p\)</span>. If individual <span class="math inline">\(i\)</span> is dead at <span class="math inline">\(t\)</span>, then it is missed for sure, and <span class="math inline">\(\Pr(y_{i,t}=1|z_{i,t}=2)=\omega_{2,1}=1\)</span>.</p>
-<p>We can gather these observation probabilities into an observation matrix <span class="math inline">\(\mathbf{\Omega}\)</span>. In rows we have the states alive <span class="math inline">\(z = 1\)</span> and dead <span class="math inline">\(z = 2\)</span>, while in columns we have the observations non-detected <span class="math inline">\(y = 1\)</span> and detected <span class="math inline">\(y = 2\)</span> (previously coded 0 and 1 respectively):</p>
+<p>We can gather these observation probabilities into an observation matrix <span class="math inline">\(\mathbf{\Omega}\)</span>. In rows we have the states alive <span class="math inline">\(z = 1\)</span> and dead <span class="math inline">\(z = 2\)</span>, while in columns we have the observations non-detected <span class="math inline">\(y = 1\)</span> and detected <span class="math inline">\(y = 2\)</span> (previously coded 0 and 1 respectively): <strong>if we go for 1 and 2, do wee need the comment between parentheses?</strong></p>
 <p><span class="math display">\[\begin{align*}
 \mathbf{\Omega} =
 \left(\begin{array}{cc}
@@ -5131,7 +5128,8 @@ winter 5
 \end{matrix}
 \hspace{-1.2em}
 \begin{matrix}
-    y_t=1 &amp; y_t=2 \\ \hdashline
+    y_t=1 &amp; y_t=2 \\
+    \mbox{(non-detected)} &amp; \mbox{(detected)} \\ \hdashline
 1 - p &amp; p\\
 1 &amp; 0\\
 \end{matrix}
@@ -5140,7 +5138,7 @@ winter 5
 &amp; \\
 \left . \vphantom{ \begin{matrix} 12 \\ 12 \end{matrix} } \right )
     \begin{matrix}
-    z_{t}=A \\ z_{t}=D
+    z_{t}=1 \; \mbox{(alive)}\\ z_{t}=2 \; \mbox{(dead)}
     \end{matrix}
 \end{matrix}
 \]</span></p>
@@ -5151,23 +5149,26 @@ winter 5
 </h3>
 <p>Our hidden Markov model can be represented this way:</p>
 <div class="inline-figure"><img src="banana-book_files/figure-html/unnamed-chunk-131-1.png" width="672"></div>
-<p>States <span class="math inline">\(z\)</span> are in gray. Observations <span class="math inline">\(y\)</span> are in white. All individuals are first captured in the first winter <span class="math inline">\(t = 1\)</span>, and are therefore all alive <span class="math inline">\(z_1 = 1\)</span> and detected <span class="math inline">\(y_1 = 2\)</span>. A hidden Markov model is just two time series running in parallel. One for the states with the Markovian property, and the other of for the observations generated from the states.</p>
-<p>An example is as follows, in which an individual is detected at first sampling occasion, detected again, then missed for the rest of the study. While on occasion <span class="math inline">\(t=3\)</span> that individual was alive <span class="math inline">\(z_3=1\)</span> and went undetected <span class="math inline">\(y_3=1\)</span>, on occasions <span class="math inline">\(t=4\)</span> and <span class="math inline">\(t=5\)</span> it went undetected <span class="math inline">\(y_4=y_5=1\)</span> because it was dead <span class="math inline">\(z_4=z_5=2\)</span>.</p>
+<p>States <span class="math inline">\(z\)</span> are in gray. Observations <span class="math inline">\(y\)</span> are in white. All individuals are first captured in the first winter <span class="math inline">\(t = 1\)</span>, and are therefore all alive <span class="math inline">\(z_1 = 1\)</span> and detected <span class="math inline">\(y_1 = 2\)</span>.</p>
+
+<div class="rmdnote">
+A hidden Markov model is just two time series running in parallel. One for the states with the Markovian property, and the other of for the observations generated from the states.
+</div>
+<p>Have a look to the example below, in which an individual is detected at first sampling occasion, detected again, then missed for the rest of the study. While on occasion <span class="math inline">\(t=3\)</span> that individual was alive <span class="math inline">\(z_3=1\)</span> and went undetected <span class="math inline">\(y_3=1\)</span>, on occasions <span class="math inline">\(t=4\)</span> and <span class="math inline">\(t=5\)</span> it went undetected <span class="math inline">\(y_4=y_5=1\)</span> because it was dead <span class="math inline">\(z_4=z_5=2\)</span>.</p>
 <div class="inline-figure"><img src="banana-book_files/figure-html/unnamed-chunk-132-1.png" width="672"></div>
 </div>
 <div id="likelihood-1" class="section level3" number="3.6.4">
 <h3>
 <span class="header-section-number">3.6.4</span> Likelihood<a class="anchor" aria-label="anchor" href="#likelihood-1"><i class="fas fa-link"></i></a>
 </h3>
-<p>The likelihood is the probability of the observed data <span class="math inline">\(y\)</span> given the parameters of our model, the unkowns. Here the unknows are the parameters <span class="math inline">\(\phi\)</span>, <span class="math inline">\(p\)</span> and the latent states <span class="math inline">\(z\)</span>.</p>
-<p>Using the formula of total probability, then the likelihood of a Markov chain, we get that the likelihood of an HMM for a single individual <span class="math inline">\(i\)</span>:</p>
+<p>The likelihood is the probability of the observed data <span class="math inline">\(y\)</span> given the parameters of our model, the unkowns. Here the unknows are the survival and detection probabilities <span class="math inline">\(\phi\)</span> and <span class="math inline">\(p\)</span>, and the latent states <span class="math inline">\(z\)</span>. Using the definition of a conditional probability, then the likelihood of a Markov chain, we get that the likelihood of an HMM for a single individual <span class="math inline">\(i\)</span>:</p>
 <p><span class="math display">\[\begin{align*}
 \Pr(\mathbf{y}_i) &amp;= \Pr(y_{i,1}, y_{i,2}, \ldots, y_{i,T})\\
                   &amp;= \Pr(y_{i,1}, y_{i,2}, \ldots, y_{i,T} | z_{i,1}, z_{i,2}, \ldots, z_{i,T}) \Pr(z_{i,1}, z_{i,2}, \ldots, z_{i,T})\\
                 &amp;= \left(\prod_{t=1}^T{\omega_{z_{i,t}, y_{i,t}}}\right) \left(\Pr(z_{i,1}) \prod_{t=2}^T{\gamma_{z_{i,t-1},z_{i,t}}}\right)\\
 \end{align*}\]</span></p>
-<p>To obtain the likelihood of the whole dataset, we need to multiply this individual likelihood for each animal <span class="math inline">\(\prod_{i=1}^N{\Pr(\mathbf{y}_i)}\)</span>. When several individuals have the same contribution, calculating their individual contribution only once can greatly reduce the computational burden, as illustrated in Section @ref{pooled-likelihood}.</p>
-<p>The Bayesian approach with MCMC methods allows treating the latent states <span class="math inline">\(z_{i,t}\)</span> as if they were parameters, and to be estimated as such. However, the likelihood is rather complex with a large number of latent states <span class="math inline">\(z_{i,t}\)</span>, which comes at computational costs and with slow mixing. There are situations where the latent states are the focus of ecological inference and need to be estimated (see suggestions of Further reading below). However, if not needed, you might want to get rid of the latent states and focus on the parameters, which often speeds up computations and improves mixing as shown in Section @ref{marginalization}. Actually, you can even estimate the latent states afterwards, as illustrated in Section @ref{decoding}.</p>
+<p>To obtain the likelihood of the whole dataset, we need to multiply this individual likelihood for each animal <span class="math inline">\(\displaystyle{\prod_{i=1}^N{\Pr(\mathbf{y}_i)}}\)</span>. When several individuals have the same contribution, calculating their individual contribution only once can greatly reduce the computational burden, as illustrated in Section <a href="hmmcapturerecapture.html#pooled-likelihood">3.9</a>.</p>
+<p>The Bayesian approach with MCMC methods allows treating the latent states <span class="math inline">\(z_{i,t}\)</span> as if they were parameters, and to be estimated as such. However, the likelihood is rather complex with a large number of latent states <span class="math inline">\(z_{i,t}\)</span>, which comes with computational costs and slow mixing. There are situations where the latent states are the focus of ecological inference and need to be estimated (see Suggested reading below). However, if not needed, you might want to get rid of the latent states and focus on the parameters, which often speeds up computations and improves mixing as shown in Section <a href="hmmcapturerecapture.html#marginalization">3.8</a>. Actually, you can even estimate the latent states afterwards, as illustrated in Section <a href="hmmcapturerecapture.html#decoding">3.10</a>.</p>
 <!-- It has a matrix formulation: -->
 <!-- \begin{align*} -->
 <!-- \Pr(\mathbf{y}) &= \mathbf{\delta} \; \mathbf{\Omega} \; \mathbf{\Gamma} \cdots \mathbf{\Omega} \; \mathbf{\Gamma} \; \mathbf{\Omega} \; \mathbb{1} -->
@@ -5211,8 +5212,7 @@ winter 5
   \phi &amp;\sim \text{Beta}(1, 1) &amp;\text{[prior for }\phi \text{]} \\
   p &amp;\sim \text{Beta}(1, 1) &amp;\text{[prior for }p \text{]} \\
 \end{align*}\]</span></p>
-<p>It has an observation layer for the <span class="math inline">\(y\)</span>’s, conditional on the <span class="math inline">\(z\)</span>’s. We also consider uniform priors for the detection and survival probabilities.</p>
-<p>How to implement this model in NIMBLE?</p>
+<p>It has an observation layer for the <span class="math inline">\(y\)</span>’s, conditional on the <span class="math inline">\(z\)</span>’s. We also consider uniform priors for the detection and survival probabilities. How to implement this model in NIMBLE?</p>
 <p>We start with priors for survival and detection probabilities:</p>
 <div class="sourceCode" id="cb109"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb109-1"><a href="hmmcapturerecapture.html#cb109-1" aria-hidden="true" tabindex="-1"></a>hmm.survival <span class="ot">&lt;-</span> <span class="fu">nimbleCode</span>({</span>
 <span id="cb109-2"><a href="hmmcapturerecapture.html#cb109-2" aria-hidden="true" tabindex="-1"></a>  phi <span class="sc">~</span> <span class="fu">dunif</span>(<span class="dv">0</span>, <span class="dv">1</span>) <span class="co"># prior survival</span></span>
@@ -5277,7 +5277,7 @@ winter 5
 <span class="co">## </span>
 <span class="co">## $T</span>
 <span class="co">## [1] 5</span></code></pre></div>
-<p>The data are made of 0’s for non-detections and 1’s for detections. To use the categorical distribution, we need to code 1’s and 2’s. We simply add 1 to get the correct format, that is <span class="math inline">\(y = 1\)</span> for non-detection and <span class="math inline">\(y = 2\)</span> for detection:</p>
+<p>The data are made of 0’s for non-detections and 1’s for detections. To use the categorical distribution, we need to code 1’s and 2’s. We simply add 1 to get the correct format, that is <span class="math inline">\(y = 1\)</span> for non-detection and <span class="math inline">\(y = 2\)</span> for detection: <strong>Using 1 and 2 would make my life easier… The 0/1 coding is a convention. Using 1/2 would make explicit that non-detections are actual data.</strong></p>
 <div class="sourceCode" id="cb114"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">my.data</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>y <span class="op">=</span> <span class="va">y</span> <span class="op">+</span> <span class="fl">1</span><span class="op">)</span></code></pre></div>
 <p>Now let’s write a function for the initial values:</p>
@@ -5355,7 +5355,7 @@ winter 5
 <span class="header-section-number">3.8</span> Marginalization<a class="anchor" aria-label="anchor" href="#marginalization"><i class="fas fa-link"></i></a>
 </h2>
 <p>Shall we estimate the latent states <span class="math inline">\(z_{i,t}\)</span> or not? We can get rid of the states, so that likelihood is a function of <span class="math inline">\(\phi\)</span> and <span class="math inline">\(p\)</span> only. This is the function we would maximize in a Frequentist approach.</p>
-<p>The neat thing with Nimble is that it provides marginalised models through nimbleEcology, we’ll get back to it in Reference forward to section below (forward algorithm).</p>
+<p>The neat thing with Nimble is that it provides marginalised models through nimbleEcology, we’ll get back to it in Reference forward to section below (forward algorithm). Using the formula of total probability:</p>
 <p><span class="math display">\[\begin{align*}
 \Pr(\mathbf{y}_i) &amp;= \Pr(y_{i,1}, y_{i,2}, \ldots, y_{i,T})\\
                 &amp;= \sum_{z_{i,1}} \cdots \sum_{z_{i,T}} \Pr(y_{i,1}, y_{i,2}, \ldots, y_{i,T} | z_{i,1}, z_{i,2}, \ldots, z_{i,T}) \Pr(z_{i,1}, z_{i,2}, \ldots, z_{i,T})\\
@@ -5714,7 +5714,7 @@ winter 5
   <span class="op">}</span>
   <span class="kw"><a href="https://rdrr.io/r/base/function.html">return</a></span><span class="op">(</span><span class="va">MLP</span><span class="op">)</span>
 <span class="op">}</span></code></pre></div>
-<p>Instead of writing your own function, you could use an already existing function to implement the Viterbi algorithm. For example, viterbi in package HMM. Then call it from NIMBLE as we have seen in Section @ref{callrfninnimble}. However, difficulty of dealing with states at initial encounter.</p>
+<p>Instead of writing your own function, you could use an already existing function to implement the Viterbi algorithm. For example, viterbi in package HMM. Then call it from NIMBLE as we have seen in Section <a href="intronimble.html#callrfninnimble">2.4.2</a>. However, difficulty of dealing with states at initial encounter.</p>
 <p>Reste alors à décider si on calcule viterbi à chaque itération, puis on faire la moyenne/médiane, ou bien si on prend les moyennes/médianes a posterior des paramètres et qu’on fait Viterbi <a href="https://discourse.mc-stan.org/t/how-to-get-the-best-state-sequence-using-viterbi-algorithm/18969" class="uri">https://discourse.mc-stan.org/t/how-to-get-the-best-state-sequence-using-viterbi-algorithm/18969</a>. What is the better option?</p>
 </div>
 <div id="compute-first-average-after" class="section level3" number="3.10.2">
@@ -6108,7 +6108,7 @@ winter 5
 <footer class="bg-primary text-light mt-5"><div class="container"><div class="row">
 
   <div class="col-12 col-md-6 mt-3">
-    <p>"<strong>Bayesian Analysis of Capture-Recapture Data with Hidden Markov Models</strong>: Theory and Case Studies in R" was written by Olivier Gimenez. It was last built on 2022-02-22.</p>
+    <p>"<strong>Bayesian Analysis of Capture-Recapture Data with Hidden Markov Models</strong>: Theory and Case Studies in R" was written by Olivier Gimenez. It was last built on 2022-02-23.</p>
   </div>
 
   <div class="col-12 col-md-6 mt-3">

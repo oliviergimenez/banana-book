@@ -109,13 +109,7 @@ Here the animal remains alive over the first two time intervals $(z_{i,1} = z_{i
 
 ### Transition matrix
 
-You might have figured it out already, the core of our Markov process is made of transition probabilities between states alive and dead. 
-
-For example, the probability of transitioning from state alive at $t-1$ to state alive at $t$ is $\Pr(z_{i,t} = 1 | z_{i,t-1} = 1) = \gamma_{1,1}$. It is the survival probability $\phi$.
-
-The probability of dying over the interval $(t-1, t)$ is $\Pr(z_{i,t} = 2 | z_{i,t-1} = 1) = \gamma_{1,2} = 1 - \phi$.
-
-Now if an animal is dead at $t-1$, then $\Pr(z_t = 1 | z_{t-1} = 2) = 0$ and $\Pr(z_{i,t} = 2 | z_{i,t-1} = 2) = 1$. 
+You might have figured it out already (if not, not a problem), the core of our Markov process is made of transition probabilities between states alive and dead. For example, the probability of transitioning from state alive at $t-1$ to state alive at $t$ is $\Pr(z_{i,t} = 1 | z_{i,t-1} = 1) = \gamma_{1,1}$. It is the survival probability $\phi$. The probability of dying over the interval $(t-1, t)$ is $\Pr(z_{i,t} = 2 | z_{i,t-1} = 1) = \gamma_{1,2} = 1 - \phi$. Now if an animal is dead at $t-1$, then $\Pr(z_t = 1 | z_{t-1} = 2) = 0$ and $\Pr(z_{i,t} = 2 | z_{i,t-1} = 2) = 1$. 
 
 We can gather these probabilities of transition between states from one occasion to the next in a matrix, say $\mathbf{\Gamma}$, which we will call the transition matrix:
 
@@ -141,7 +135,7 @@ $$
 \end{matrix}
 \hspace{-1.2em}
 \begin{matrix}
-    z_t=A & z_t=D \\ \hdashline
+    z_t=1 & z_t=2 \\ \hdashline
 \phi & 1-\phi \\
 0 & 1
 \end{matrix}
@@ -150,7 +144,7 @@ $$
 & \\
 \left . \vphantom{ \begin{matrix} 12 \\ 12 \end{matrix} } \right )
     \begin{matrix}
-    z_{t-1}=A \\ z_{t-1}=D
+    z_{t-1}=1 \; \mbox{(alive)} \\ z_{t-1}=2 \; \mbox{(dead)}
     \end{matrix}
 \end{matrix}
 $$
@@ -159,11 +153,7 @@ Take the time you need to navigate through this matrix, and get familiar with it
 
 ### Initial states
 
-A Markov process has to start somewhere. We need the probabilities of initial states, i.e. the states of an individual at $t = 1$. 
-
-We will gather the probability of being in each state (alive or 1 and dead or 2) in the first winter in a vector. We will use $\mathbf{\delta} = \left(\Pr(z_{i,1} = 1), \Pr(z_{i,1} = 2)\right)$.  
-
-For simplicity, we will assume that all individuals are marked and released in the first winter, hence alive when first captured, which means that they are all in state alive or 1 for sure. Therefore we have $\mathbf{\delta} = \left(1, 0\right)$.
+A Markov process has to start somewhere. We need the probabilities of initial states, i.e. the states of an individual at $t = 1$. We will gather the probability of being in each state (alive or 1 and dead or 2) in the first winter in a vector. We will use $\mathbf{\delta} = \left(\Pr(z_{i,1} = 1), \Pr(z_{i,1} = 2)\right)$. For simplicity, we will assume that all individuals are marked and released in the first winter, hence alive when first captured, which means that they are all in state alive or 1 for sure. Therefore we have $\mathbf{\delta} = \left(1, 0\right)$.
 
 ### Likelihood
 
@@ -173,7 +163,7 @@ We're gonna work backward, starting from the last sampling occasion. Using condi
 
 \begin{align*}
 \Pr(\mathbf{z}) &= \Pr(z_T, z_{T-1}, z_{T-2}, \ldots, z_1) \color{white}{\Pr(z_{T-1}, z_{T-2},\ldots, z_1) \Pr(z_{T-2}, \ldots, z_1)}\\
-                &= \Pr(z_T | z_{T-1}, z_{T-2},\ldots, z_1) \Pr(z_{T-1}, z_{T-2},\ldots, z_1) \\
+                &= \color{blue}{\Pr(z_T | z_{T-1}, z_{T-2},\ldots, z_1) \Pr(z_{T-1}, z_{T-2},\ldots, z_1)} \\
 \end{align*}
 
 Then because we have a Markov model, we're memory less, that is the probabilty of next state, here $z_T$, depends only on the current state, that is $z_{T-1}$, and not the previous states:
@@ -181,7 +171,7 @@ Then because we have a Markov model, we're memory less, that is the probabilty o
 \begin{align*}
 \Pr(\mathbf{z}) &= \Pr(z_T, z_{T-1}, z_{T-2}, \ldots, z_1) \color{white}{\Pr(z_{T-1}, z_{T-2},\ldots, z_1) \Pr(z_{T-2}, \ldots, z_1)}\\
                 &= \Pr(z_T | z_{T-1}, z_{T-2},\ldots, z_1) \Pr(z_{T-1}, z_{T-2},\ldots, z_1) \\
-                &= \Pr(z_T | z_{T-1}) \Pr(z_{T-1}, z_{T-2},\ldots, z_1) \\
+                &= \color{blue}{\Pr(z_T | z_{T-1})} \Pr(z_{T-1}, z_{T-2},\ldots, z_1) \\
 \end{align*}
 
 You can apply the same reasoning to $T-1$. First use conditional probabilities: 
@@ -190,7 +180,7 @@ You can apply the same reasoning to $T-1$. First use conditional probabilities:
 \Pr(\mathbf{z}) &= \Pr(z_T, z_{T-1}, z_{T-2}, \ldots, z_1) \color{white}{\Pr(z_{T-1}, z_{T-2},\ldots, z_1) \Pr(z_{T-2}, \ldots, z_1)}\\
                 &= \Pr(z_T | z_{T-1}, z_{T-2},\ldots, z_1) \Pr(z_{T-1}, z_{T-2},\ldots, z_1) \\
                 &= \Pr(z_T | z_{T-1}) \Pr(z_{T-1}, z_{T-2},\ldots, z_1) \\
-                &= \Pr(z_T | z_{T-1}) \Pr(z_{T-1} | z_{T-2}, \ldots, z_1) \Pr(z_{T-2}, \ldots, z_1)\\
+                &= \Pr(z_T | z_{T-1}) \color{blue}{\Pr(z_{T-1} | z_{T-2}, \ldots, z_1) \Pr(z_{T-2}, \ldots, z_1)}\\
 \end{align*}
 
 Then apply the Markovian property:
@@ -200,7 +190,7 @@ Then apply the Markovian property:
                 &= \Pr(z_T | z_{T-1}, z_{T-2},\ldots, z_1) \Pr(z_{T-1}, z_{T-2},\ldots, z_1) \\
                 &= \Pr(z_T | z_{T-1}) \Pr(z_{T-1}, z_{T-2},\ldots, z_1) \\
                 &= \Pr(z_T | z_{T-1}) \Pr(z_{T-1} | z_{T-2}, \ldots, z_1) \Pr(z_{T-2}, \ldots, z_1)\\
-                &= \Pr(z_T | z_{T-1}) \Pr(z_{T-1} | z_{T-2}) \Pr(z_{T-2}, \ldots, z_1)\\
+                &= \Pr(z_T | z_{T-1}) \color{blue}{\Pr(z_{T-1} | z_{T-2})} \Pr(z_{T-2}, \ldots, z_1)\\
 \end{align*}
 
 And so on up to $z_2$. You end up with this expression for the likelihood:
@@ -212,7 +202,7 @@ And so on up to $z_2$. You end up with this expression for the likelihood:
                 &= \Pr(z_T | z_{T-1}) \Pr(z_{T-1} | z_{T-2}, \ldots, z_1) \Pr(z_{T-2}, \ldots, z_1)\\
                 &= \Pr(z_T | z_{T-1}) \Pr(z_{T-1} | z_{T-2}) \Pr(z_{T-2}, \ldots, z_1)\\
                 &= \ldots \\
-                &= \Pr(z_T | z_{T-1}) \Pr(z_{T-1} | z_{T-2}) \ldots \Pr(z_{2} | z_{1}) \Pr(z_{1})\\
+                &= \color{blue}{\Pr(z_T | z_{T-1}) \Pr(z_{T-1} | z_{T-2}) \ldots \Pr(z_{2} | z_{1}) \Pr(z_{1})}\\
 \end{align*}
 
 This is a product of conditional probabilities of states given previous states, and the probability of initial states $\Pr(z_1)$. Using a more compact notation for the product of conditional probabilities, we get:
@@ -225,7 +215,7 @@ This is a product of conditional probabilities of states given previous states, 
                 &= \Pr(z_T | z_{T-1}) \Pr(z_{T-1} | z_{T-2}) \Pr(z_{T-2}, \ldots, z_1)\\
                 &= \ldots \\
                 &= \Pr(z_T | z_{T-1}) \Pr(z_{T-1} | z_{T-2}) \ldots \Pr(z_{2} | z_{1}) \Pr(z_{1})\\
-                &= \Pr(z_{1}) \prod_{t=2}^T{\Pr(z_{t} | z_{t-1})}\\
+                &= \color{blue}{\Pr(z_{1}) \prod_{t=2}^T{\Pr(z_{t} | z_{t-1})}}\\
 \end{align*}
 
 In the product, you can recognize the transition parameters $\gamma$ we defined above, so that the likelihood of a Markov model can be written as:
@@ -257,9 +247,7 @@ The probability of having the sequence alive, alive and dead is the probability 
 
 ## Bayesian formulation
 
-Now that we have the likelihood of a Markov model, we can complement it with a prior for survival to apply the Bayes theorem. 
-
-Before implementing this model in NIMBLE, we note that the likelihood is a product of conditional probabilities of binary events (alive or dead). Usually binary events are associated with the Bernoulli distribution. Here however,  we will use its extension to several outcomes (from a coin to a dice) known as the categorical distribution^[The categorical distribution is a multinomial distribution with a single draw.]. To get a better idea of how the categorical distribution works, let's simulate from it. Consider for example a random value drawn from a categorical distribution with probability 0.1, 0.3 and 0.6. Think of a dice with three faces, face 1 has probability 0.1 of occurring, face 2 probability 0.3 and face 3 has probability 0.6, the sum of these probabilities being 1. We expect to get a 3 more often than a 2 and rarely a 1: 
+Before implementing this model in NIMBLE, we provide a Bayesian formulation of our model. We first note that the likelihood is a product of conditional probabilities of binary events (alive or dead). Usually binary events are associated with the Bernoulli distribution. Here however,  we will use its extension to several outcomes (from a coin with two sides to a dice with more than two faces) known as the categorical distribution^[The categorical distribution is a multinomial distribution with a single draw.]. To get a better idea of how the categorical distribution works, let's simulate from it. Consider for example a random value drawn from a categorical distribution with probability 0.1, 0.3 and 0.6. Think of a dice with three faces, face 1 has probability 0.1 of occurring, face 2 probability 0.3 and face 3 has probability 0.6, the sum of these probabilities being 1. We expect to get a 3 more often than a 2 and rarely a 1: 
 ```{r}
 rcat(n = 1, prob = c(0.1, 0.3, 0.6))
 ```
@@ -308,7 +296,7 @@ Otherwise, if individual $i$ dies over $(t-1,t)$ i.e. $z_{t-1} = 2$, we need the
 
 that is $\color{blue}{\gamma_{z_{t-1} = 2,z_{t}} = (0, 1)}$ and $z_t | z_{t-1} = 2 \sim \text{Categorical}((0, 1))$ (if the individual is dead, it remains dead with probability 1). 
 
-We also need a prior on survival. Without surprise, we use a uniform distribution between 0 and 1, or a Beta distribution with parameters 1 and 1. Overall our model is: 
+We also need a prior on survival. Without surprise, we will use a uniform distribution between 0 and 1, which is also a Beta distribution with parameters 1 and 1. Overall our model is: 
 
 \begin{align*}
    z_1 &\sim \text{Categorical}(\delta) &\text{[likelihood, }t = 1 \text{]}\\
@@ -319,7 +307,7 @@ We also need a prior on survival. Without surprise, we use a uniform distributio
 
 ## NIMBLE implementation
 
-How to implement in NIMBLE the Markov model we just built? First things first, we need some bricks that are relatively easy to put in place. Let's start with the prior on survival, the vector of initial state probabilities and the transition matrix:
+How to implement in NIMBLE the Markov model we just built? We need to put in place a few bricks before running our model. Let's start with the prior on survival, the vector of initial state probabilities and the transition matrix:
 ```{r eval = FALSE}
 markov.survival <- nimbleCode({
   phi ~ dunif(0, 1) # prior
@@ -390,7 +378,7 @@ markov.survival <- nimbleCode({
 
 Note that in this example, $\delta$ is used as a placeholder for more complex models we will build in chapters to come. Here, you could simply write `z[i,1] <- 1`.
 
-Now we're ready to resume our standard NIMBLE workflow. First we read in data. Because we have loops and indices that do not change, we use constants as explained in Section \@ref{start-nimble}:
+Now we're ready to resume our NIMBLE workflow. First we read in data. Because we have loops and indices that do not change, we use constants as explained in Section \@ref(start-nimble):
 ```{r}
 my.constants <- list(N = 57, T = 5)
 my.data <- list(z = z)
@@ -467,15 +455,17 @@ for (i in 1:nind){
 head(z) 
 ```
 
-**Note: dcat() could be replaced by dbern() everywhere cause we have binary events. Does it make any difference? I think dcat() uses less efficient samplers than dbern(), but dcat() is convenient in terms of model building because it allows more than two outcomes. Worth noting here? If yes, forward reference next chapters.**
+We could `dcat()` by `dbern()` everywhere in the code because we have binary events alive/dead. Would it make any difference? Although `dcat()` uses less efficient samplers than `dbern()` (**check w/ Perry/Daniel**), `dcat()` is convenient for model building to accomodate more than two outcomes, a feature that will become handy in the next chapters. 
 
 ## Hidden Markov models
 
 ### Capture-recapture data
 
-Unfortunately, the data with alive and dead states is the data we wish we had. In real life, animals cannot be monitored exhaustively, like humans in a medical trial. This is why we use capture-recapture protocols^[Have a look to this enjoyable video on the basics principles of capture-recapture experiments <https://www.youtube.com/embed/tyX79mPm2xY>.], in which animals are captured, marked or identified, then released alive. Then, these animals may be detected again, or go undetected. Whenever animals go undetected, it might be that they were alive but missed, or because they were dead and therefore could not be detected. This issue is usually referred to as that of imperfect detection. As a consequence of imperfect detection, the Markov process for survival is only partially observed: You know an animal is alive when you detect it, but when an animal goes undetected, whether it is alive or dead is unknown to you. This is where hidden Markov models (HMMs) come in.
+```{block2 hmm-verbal, type='rmdnote', eval = FALSE}
+Unfortunately, the data with alive and dead states is the data we wish we had. In real life, animals cannot be monitored exhaustively, like humans in a medical trial. This is why we use capture-recapture protocols^[Have a look to this enjoyable video on the basics principles of capture-recapture experiments <https://www.youtube.com/embed/tyX79mPm2xY>.], in which animals are captured, individually marked, and released alive. Then, these animals may be detected again, or go undetected. Whenever animals go undetected, it might be that they were alive but missed, or because they were dead and therefore could not be detected. This issue is usually referred to as that of imperfect detection. As a consequence of imperfect detection, the Markov process for survival is only partially observed: You know an animal is alive when you detect it, but when an animal goes undetected, whether it is alive or dead is unknown to you. This is where hidden Markov models (HMMs) come in.
+```
 
-Let's get back to the data we had in the previous section. The truth is in $z$ which contains the fate of all individuals:
+Let's get back to the data we had in the previous section. The truth is in $z$ which contains the fate of all individuals with $z = 1$ for alive, and $z = 2$ for dead:
 
 ```{r echo = FALSE}
 colnames(z) <- paste0("winter ", 1:nocc)
@@ -488,7 +478,7 @@ z %>%
 
 Unfortunately, we have only partial access to $z$. What we do observe is $y$ the detections and non-detections. How are $z$ and $y$ connected?
 
-The easiest connection is with dead animals which go undetected for sure. Therefore when an animal is dead i.e. $z = 2$, it cannot be detected, therefore $y = 0$:
+The easiest connection is with dead animals which go undetected for sure. Therefore when an animal is dead i.e. $z = 2$, it cannot be detected, therefore $y = 0$: **why not use 1 for non-detected and 2 for detected from here, and mention somewhere that usually people use 0 and 1?**
 
 ```{r echo = FALSE}
 z %>%
@@ -538,13 +528,13 @@ y %>%
  kableExtra::scroll_box(width = "100%", height = "300px")
 ```
 
-Compare with previous table. Some 1's for alive have become 0's for non-detection, other 1's for alive have remained 1's for detection. This table $y$ is what we observe in real life. I hope to have convinced that to make the connection between observations, the $y$, and true states, the $z$,  we need to describe how observations are made (or emitted in the HMM terminology) from the states.
+Compare with previous table. Some 1's for alive have become 0's for non-detection, other 1's for alive have remained 1's for detection. This table $y$ is what we observe in real life. I hope I have convinced you that to make the connection between observations, the $y$, and true states, the $z$,  we need to describe how observations are made (or emitted in the HMM terminology) from the states.
 
 ### Observation matrix
 
 The novelty in HMMs is the link between observations and states. This link is made through observation probabilities. For example, the probability of detecting an animal $i$ at $t$ given it is alive at $t$ is $\Pr(y_{i,t}=2|z_{i,t}=1)=\omega_{1,2}$. It is the detection probability $p$. If individual $i$ is dead at $t$, then it is missed for sure, and  $\Pr(y_{i,t}=1|z_{i,t}=2)=\omega_{2,1}=1$. 
 
-We can gather these observation probabilities into an observation matrix $\mathbf{\Omega}$. In rows we have the states alive $z = 1$ and dead $z = 2$, while in columns we have the observations non-detected $y = 1$ and detected $y = 2$ (previously coded 0 and 1 respectively):
+We can gather these observation probabilities into an observation matrix $\mathbf{\Omega}$. In rows we have the states alive $z = 1$ and dead $z = 2$, while in columns we have the observations non-detected $y = 1$ and detected $y = 2$ (previously coded 0 and 1 respectively): **if we go for 1 and 2, do wee need the comment between parentheses?**
 
 \begin{align*}
 \mathbf{\Omega} =
@@ -568,7 +558,8 @@ $$
 \end{matrix}
 \hspace{-1.2em}
 \begin{matrix}
-    y_t=1 & y_t=2 \\ \hdashline
+    y_t=1 & y_t=2 \\
+    \mbox{(non-detected)} & \mbox{(detected)} \\ \hdashline
 1 - p & p\\
 1 & 0\\
 \end{matrix}
@@ -577,7 +568,7 @@ $$
 & \\
 \left . \vphantom{ \begin{matrix} 12 \\ 12 \end{matrix} } \right )
     \begin{matrix}
-    z_{t}=A \\ z_{t}=D
+    z_{t}=1 \; \mbox{(alive)}\\ z_{t}=2 \; \mbox{(dead)}
     \end{matrix}
 \end{matrix}
 $$
@@ -592,12 +583,12 @@ Our hidden Markov model can be represented this way:
 \tikzset{state/.style = {circle, draw, minimum size = 30pt, scale = 3, line width=1pt}}
 \node [state,fill=lightgray!75] (6) [] {$z_{3}$};
 \node [state,fill=lightgray!75] (5) [left = 20mm of 6] {$z_{2}$};
-\node [state,fill=lightgray!75] (4) [left = 20mm of 5] {$z_{1}$};
+\node [state,fill=lightgray!75] (4) [left = 20mm of 5] {$z_{1} = 1$};
 \node [state,fill=lightgray!75] (7) [right = 20mm of 6] {$z_{4}$};
 \node [state,fill=lightgray!75] (8) [right = 20mm of 7] {$z_{5}$};
 \node [state,fill=white] (16) [above = 20mm of 6] {$y_{3}$};
 \node [state,fill=white] (15) [above = 20mm of 5] {$y_{2}$};
-\node [state,fill=white] (14) [above = 20mm of 4] {$y_{1}$};
+\node [state,fill=white] (14) [above = 20mm of 4] {$y_{1} = 2$};
 \node [state,fill=white] (17) [above = 20mm of 7] {$y_{4}$};
 \node [state,fill=white] (18) [above = 20mm of 8] {$y_{5}$};
 \draw[->,black, line width=0.25mm,-latex] (4) to (5);
@@ -612,9 +603,13 @@ Our hidden Markov model can be represented this way:
 \end{tikzpicture}
 ```
 
-States $z$ are in gray. Observations $y$ are in white. All individuals are first captured in the first winter $t = 1$, and are therefore all alive $z_1 = 1$ and detected $y_1 = 2$. A hidden Markov model is just two time series running in parallel. One for the states with the Markovian property, and the other of for the observations generated from the states.
+States $z$ are in gray. Observations $y$ are in white. All individuals are first captured in the first winter $t = 1$, and are therefore all alive $z_1 = 1$ and detected $y_1 = 2$. 
 
-An example is as follows, in which an individual is detected at first sampling occasion, detected again, then missed for the rest of the study. While on occasion $t=3$ that individual was alive $z_3=1$ and went undetected $y_3=1$, on occasions $t=4$ and $t=5$ it went undetected $y_4=y_5=1$ because it was dead $z_4=z_5=2$.
+```{block2 hmm-diagram, type='rmdnote', eval = FALSE}
+A hidden Markov model is just two time series running in parallel. One for the states with the Markovian property, and the other of for the observations generated from the states.
+```
+
+Have a look to the example below, in which an individual is detected at first sampling occasion, detected again, then missed for the rest of the study. While on occasion $t=3$ that individual was alive $z_3=1$ and went undetected $y_3=1$, on occasions $t=4$ and $t=5$ it went undetected $y_4=y_5=1$ because it was dead $z_4=z_5=2$.
 
 ```{r, engine = 'tikz', echo = FALSE}
 \usetikzlibrary{arrows, fit, positioning, automata}
@@ -644,9 +639,7 @@ An example is as follows, in which an individual is detected at first sampling o
 
 ### Likelihood
 
-The likelihood is the probability of the observed data $y$ given the parameters of our model, the unkowns. Here the unknows are the parameters $\phi$, $p$ and the latent states $z$. 
-
-Using the formula of total probability, then the likelihood of a Markov chain, we get that the likelihood of an HMM for a single individual $i$:
+The likelihood is the probability of the observed data $y$ given the parameters of our model, the unkowns. Here the unknows are the survival and detection probabilities $\phi$ and $p$, and the latent states $z$. Using the definition of a conditional probability, then the likelihood of a Markov chain, we get that the likelihood of an HMM for a single individual $i$:
 
 \begin{align*}
 \Pr(\mathbf{y}_i) &= \Pr(y_{i,1}, y_{i,2}, \ldots, y_{i,T})\\
@@ -654,9 +647,9 @@ Using the formula of total probability, then the likelihood of a Markov chain, w
                 &= \left(\prod_{t=1}^T{\omega_{z_{i,t}, y_{i,t}}}\right) \left(\Pr(z_{i,1}) \prod_{t=2}^T{\gamma_{z_{i,t-1},z_{i,t}}}\right)\\
 \end{align*}
 
-To obtain the likelihood of the whole dataset, we need to multiply this individual likelihood for each animal $\prod_{i=1}^N{\Pr(\mathbf{y}_i)}$. When several individuals have the same contribution, calculating their individual contribution only once can greatly reduce the computational burden, as illustrated in Section \@ref{pooled-likelihood}. 
+To obtain the likelihood of the whole dataset, we need to multiply this individual likelihood for each animal $\displaystyle{\prod_{i=1}^N{\Pr(\mathbf{y}_i)}}$. When several individuals have the same contribution, calculating their individual contribution only once can greatly reduce the computational burden, as illustrated in Section \@ref(pooled-likelihood).
 
-The Bayesian approach with MCMC methods allows treating the latent states $z_{i,t}$ as if they were parameters, and to be estimated as such. However, the likelihood is rather complex with a large number of latent states $z_{i,t}$, which comes at computational costs and with slow mixing. There are situations where the latent states are the focus of ecological inference and need to be estimated (see suggestions of Further reading below). However, if not needed, you might want to get rid of the latent states and focus on the parameters, which often speeds up computations and improves mixing as shown in Section \@ref{marginalization}. Actually, you can even estimate the latent states afterwards, as illustrated in Section \@ref{decoding}.
+The Bayesian approach with MCMC methods allows treating the latent states $z_{i,t}$ as if they were parameters, and to be estimated as such. However, the likelihood is rather complex with a large number of latent states $z_{i,t}$, which comes with computational costs and slow mixing. There are situations where the latent states are the focus of ecological inference and need to be estimated (see Suggested reading below). However, if not needed, you might want to get rid of the latent states and focus on the parameters, which often speeds up computations and improves mixing as shown in Section \@ref(marginalization). Actually, you can even estimate the latent states afterwards, as illustrated in Section \@ref(decoding).
 
 <!-- It has a matrix formulation: -->
 <!-- \begin{align*} -->
@@ -711,9 +704,7 @@ Our model so far is written as follows:
   p &\sim \text{Beta}(1, 1) &\text{[prior for }p \text{]} \\
 \end{align*}
 
-It has an observation layer for the $y$'s, conditional on the $z$'s. We also consider uniform priors for the detection and survival probabilities.
-
-How to implement this model in NIMBLE?
+It has an observation layer for the $y$'s, conditional on the $z$'s. We also consider uniform priors for the detection and survival probabilities. How to implement this model in NIMBLE?
 
 ```{r, echo=FALSE}
 hmm.survival <- nimbleCode({
@@ -811,7 +802,7 @@ my.constants <- list(N = nrow(y), T = 5)
 my.constants
 ```
 
-The data are made of 0's for non-detections and 1's for detections. To use the categorical distribution, we need to code 1's and 2's. We simply add 1 to get the correct format, that is $y = 1$ for non-detection and $y = 2$ for detection:
+The data are made of 0's for non-detections and 1's for detections. To use the categorical distribution, we need to code 1's and 2's. We simply add 1 to get the correct format, that is $y = 1$ for non-detection and $y = 2$ for detection: **Using 1 and 2 would make my life easier... The 0/1 coding is a convention. Using 1/2 would make explicit that non-detections are actual data.**
 ```{r}
 my.data <- list(y = y + 1)
 ```
@@ -910,7 +901,7 @@ y <- y - 1 # non-detection = 0, detection = 1
 
 Shall we estimate the latent states $z_{i,t}$ or not? We can get rid of the states, so that likelihood is a function of $\phi$ and $p$ only. This is the function we would maximize in a Frequentist approach. 
 
-The neat thing with Nimble is that it provides marginalised models through nimbleEcology, we'll get back to it in Reference forward to section below (forward algorithm). 
+The neat thing with Nimble is that it provides marginalised models through nimbleEcology, we'll get back to it in Reference forward to section below (forward algorithm). Using the formula of total probability:
 
 \begin{align*}
 \Pr(\mathbf{y}_i) &= \Pr(y_{i,1}, y_{i,2}, \ldots, y_{i,T})\\
@@ -1273,7 +1264,7 @@ for (i in 2:T) {
 }
 ```
 
-Instead of writing your own function, you could use an already existing function to implement the Viterbi algorithm. For example, viterbi in package HMM. Then call it from NIMBLE as we have seen in Section \@ref{callrfninnimble}. However, difficulty of dealing with states at initial encounter. 
+Instead of writing your own function, you could use an already existing function to implement the Viterbi algorithm. For example, viterbi in package HMM. Then call it from NIMBLE as we have seen in Section \@ref(callrfninnimble). However, difficulty of dealing with states at initial encounter. 
 
 Reste alors à décider si on calcule viterbi à chaque itération, puis on faire la moyenne/médiane, ou bien si on prend les moyennes/médianes a posterior des paramètres et qu'on fait Viterbi https://discourse.mc-stan.org/t/how-to-get-the-best-state-sequence-using-viterbi-algorithm/18969. What is the better option? 
 
