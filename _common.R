@@ -6,6 +6,8 @@ library(MCMCvis)
 library(magick)
 library(pdftools)
 library(wesanderson)
+library(RColorBrewer)
+library(hrbrthemes)
 #library(nimbleEcology)
 #library(basicMCMCplots)
 
