@@ -637,7 +637,7 @@ Have a look to the example below, in which an individual is detected at first sa
 \end{tikzpicture}
 ```
 
-### Likelihood
+### Likelihood {#likelihoodhmm}
 
 The likelihood is the probability of the observed data $y$ given the parameters of our model, the unkowns. Here the unknows are the survival and detection probabilities $\phi$ and $p$, and the latent states $z$. Using the definition of a conditional probability, then the likelihood of a Markov chain, we get that the likelihood of an HMM for a single individual $i$:
 
@@ -831,6 +831,7 @@ n.chains <- 2
 
 At last, we're ready to run NIMBLE:
 ```{r, message=FALSE, eval = FALSE}
+start_time <- Sys.time()
 mcmc.output <- nimbleMCMC(code = hmm.survival,
                           constants = my.constants,
                           data = my.data,
@@ -839,9 +840,12 @@ mcmc.output <- nimbleMCMC(code = hmm.survival,
                           niter = n.iter,
                           nburnin = n.burnin,
                           nchains = n.chains)
+end_time <- Sys.time()
+end_time - start_time
 ```
 
 ```{r, message=FALSE, cache = F, echo = FALSE}
+start_time <- Sys.time()
 mcmc.output <- nimbleMCMC(code = hmm.survival,
                           constants = my.constants,
                           data = my.data,
@@ -851,6 +855,8 @@ mcmc.output <- nimbleMCMC(code = hmm.survival,
                           nburnin = n.burnin,
                           nchains = n.chains,
                           progressBar = FALSE)
+end_time <- Sys.time()
+end_time - start_time
 ```
 
 We can have a look to numerical summaries:
@@ -1027,6 +1033,7 @@ n.chains <- 2
 
 
 ```{r cache = F}
+start_time <- Sys.time()
 mcmc.output <- nimbleMCMC(code = hmm.survival,
                           constants = my.constants,
                           data = my.data,
@@ -1035,6 +1042,8 @@ mcmc.output <- nimbleMCMC(code = hmm.survival,
                           niter = n.iter,
                           nburnin = n.burnin,
                           nchains = n.chains)
+end_time <- Sys.time()
+end_time - start_time
 ```
 
 ```{r}
@@ -1045,8 +1054,11 @@ MCMCsummary(mcmc.output, round = 2)
 
 ## Pooled encounter histories {#pooled-likelihood}
 
-In this section, we're gonna use NIMBLE functions to express the likelihood using pooled encounter histories. We use a vector `size` that contains the number of individuals with a particular encounter history. Courtesy of Chloé Nater. Implement of Turek et al. 
+We can go one step further to make convergence even faster. As mentionned earlier in Section \@ref(likelihoodhmm), the likelihood of an HMM fitted to capture-recapture data often involves individuals that share the same encounter histories. Instead of repeating the same calculations several times, the likelihood contribution that is shared by say $x$ individuals is raised to the power $x$ in the likelihood of the whole dataset, hence making the same operations only once^[This idea is used in routine in capture-recapture software like MARK or E-SURGE. For Bayesian software however, it is only recently that the trick was tested in NIMBLE (in Turek, de Valpine, and Paciorek (2016). Efficient Markov chain Monte Carlo sampling for hierarchical hidden Markov models. *Environmental and Ecological Statistics* 23: 549-564. Many thanks to Chloé Nater for showing me how to implement it.].
 
+In this section, we amend the NIMBLE functions we wrote for marginalizing latent states in Section \@ref(marginalization) to express the likelihood using pooled encounter histories. We use a vector `size` that contains the number of individuals with the same encounter history. 
+
+The density function is the function `dHMM` to which we add a `size` argument, and raise the individual likelihood to the power `size`, or multiply by `size` as we work on the log scale `log(sum(alpha[1:2])) * size`:
 ```{r}
 dHMMpooled <- nimbleFunction(
   run = function(x = double(1), 
@@ -1068,7 +1080,7 @@ dHMMpooled <- nimbleFunction(
 )
 ```
 
-
+The `rHMM` function is renamed `rHMMpooled` for compatibility but remains unchanged:
 ```{r}
 rHMMpooled <- nimbleFunction(
   run = function(n = integer(),
@@ -1092,32 +1104,13 @@ rHMMpooled <- nimbleFunction(
   })
 ```
 
-
+We assign these two function to the global R environment so that we can use them:
 ```{r}
 assign('dHMMpooled', dHMMpooled, .GlobalEnv)
 assign('rHMMpooled', rHMMpooled, .GlobalEnv)
 ```
 
-
-```{r}
-dHMMpooled(x = c(2,2,1,1,1),
-             probInit = delta,
-             probObs = Gamma,
-             probTrans = Omega,
-             len = 5,
-             size = 5)
-```
-
-
-```{r}
-rHMMpooled(probInit = delta,
-             probObs = Gamma,
-             probTrans = Omega,
-             len = 5,
-             size = 5)
-```
-
-
+You can now plug your pooled HMM density function in your NIMBLE code:
 ```{r}
 hmm.survival <- nimbleCode({
   phi ~ dunif(0, 1) # prior survival
@@ -1135,44 +1128,39 @@ hmm.survival <- nimbleCode({
   omega[2,2] <- 0        # Pr(dead t -> detected t)
   for (i in 1:N){
     y[i,1:T] ~ dHMMpooled(probInit = delta[1:2], 
-                    probObs = omega[1:2,1:2], # observation matrix
-                    probTrans = gamma[1:2,1:2], # transition matrix
-                    len = T,
-                    size = S[i]) # nb of sampling occasions
+                          probObs = omega[1:2,1:2], # observation matrix
+                          probTrans = gamma[1:2,1:2], # transition matrix
+                          len = T, # nb of sampling occasions
+                          size = size[i]) # number of individuals with encounter history i
   }
 })
 ```
 
-
+Before running NIMBLE, we need to actually pool individuals with the same encounter history together:
 ```{r}
 y_pooled <- y %>% 
   as_tibble() %>% 
-  group_by_all() %>% 
-  summarise(S = n()) %>% 
-  relocate(S) %>% 
+  group_by_all() %>% # group
+  summarise(size = n()) %>% # count
+  relocate(size) %>% # put size in front
+  arrange(-size) %>% # sort along size
   as.matrix()
 y_pooled
 ```
 
+For example, we have `r y_pooled[1,1]` individuals with encounter history `r y_pooled[1,2:6]`.
 
+Now you can resume the NIMBLE workflow:
 ```{r}
-my.constants <- list(N = nrow(y_pooled), T = 5, S = y_pooled[,'S'])
-my.constants
-
-my.data <- list(y = y_pooled[,-1] + 1)
-
+my.constants <- list(N = nrow(y_pooled), T = 5, size = y_pooled[,'size'])
+my.data <- list(y = y_pooled[,-1] + 1) # delete size from dataset
 initial.values <- function() list(phi = runif(1,0,1),
                                   p = runif(1,0,1))
-
 parameters.to.save <- c("phi", "p")
-
 n.iter <- 5000
 n.burnin <- 1000
 n.chains <- 2
-```
-
-
-```{r cache = F}
+start_time <- Sys.time()
 mcmc.output <- nimbleMCMC(code = hmm.survival,
                           constants = my.constants,
                           data = my.data,
@@ -1181,12 +1169,12 @@ mcmc.output <- nimbleMCMC(code = hmm.survival,
                           niter = n.iter,
                           nburnin = n.burnin,
                           nchains = n.chains)
-```
-
-
-```{r}
+end_time <- Sys.time()
+end_time - start_time
 MCMCsummary(mcmc.output, round = 2)
 ```
+
+The results are the same as those obtained previously. The simulations took less time, and the gain in computation times will be even bigger for more complex models as we will see in the next chapters. 
 
 <!-- Works preeeeeety well ;-) two small issues though: -->
 
