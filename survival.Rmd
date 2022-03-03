@@ -1,1102 +1,762 @@
 # Survival {#survival}
 
-<!-- ```{r} -->
-<!-- knitr::include_graphics("images/lebreton.png") -->
-<!-- ``` -->
-
-<!-- ## History of the Cormack-Jolly-Seber (CJS) model -->
-
-<!-- S.T. Buckland (2016). A Conversation with Richard M. Cormack. Statistical Science 31: 142-150. -->
-
-<!-- ```{r, echo=FALSE, out.width="80%"} -->
-<!-- knitr::include_graphics("images/cormack-left.png") -->
-
-<!-- ```{r, echo=FALSE, out.width="80%"} -->
-<!-- knitr::include_graphics("images/cormack-right.png") -->
-<!-- ``` -->
-
-<!-- ```{r, echo=FALSE, out.width="70%"} -->
-<!-- knitr::include_graphics("images/king.png") -->
-<!-- ``` -->
-
-<!-- Bayesian uptake -->
-
-<!-- ## What we've seen so far  -->
-
-<!-- ```{r, engine = 'tikz', echo = FALSE} -->
-<!-- \usetikzlibrary{arrows, fit, positioning, automata} -->
-<!-- \begin{tikzpicture}[node distance = 2cm] -->
-<!-- \tikzset{state/.style = {circle, draw, minimum size = 30pt, scale = 3, line width=1pt}} -->
-<!-- \node [state,fill=lightgray!75] (6) [] {$1$}; -->
-<!-- \node [state,fill=lightgray!75] (5) [left = 20mm of 6] {$1$}; -->
-<!-- \node [state,fill=lightgray!75] (4) [left = 20mm of 5] {$1$}; -->
-<!-- \node [state,fill=lightgray!75] (3) [left = 20mm of 4] {$1$}; -->
-<!-- \node [state,fill=lightgray!75] (7) [right = 20mm of 6] {$2$}; -->
-<!-- \node [state,fill=lightgray!75] (8) [right = 20mm of 7] {$2$}; -->
-<!-- \node [state,fill=lightgray!75] (9) [right = 20mm of 8] {$\cdots$}; -->
-<!-- \node [state,fill=white] (16) [above = 20mm of 6] {$1$}; -->
-<!-- \node [state,fill=white] (15) [above = 20mm of 5] {$2$}; -->
-<!-- \node [state,fill=white] (14) [above = 20mm of 4] {$1$}; -->
-<!-- \node [state,fill=white] (17) [above = 20mm of 7] {$1$}; -->
-<!-- \node [state,fill=white] (18) [above = 20mm of 8] {$1$}; -->
-<!-- \draw[->,black, line width=0.25mm,-latex] (3) -- node[above=3mm, align=center] {\huge $\varphi$} (4); -->
-<!-- \draw[->,black, line width=0.25mm,-latex] (4) -- node[above=3mm, align=center] {\huge $\varphi$} (5); -->
-<!-- \draw[->,black, line width=0.25mm,-latex] (5) -- node[above=3mm, align=center] {\huge $\varphi$} (6); -->
-<!-- \draw[->,black, line width=0.25mm,-latex] (6) -- node[above=3mm, align=center] {\huge $1 - \varphi$} (7); -->
-<!-- \draw[->,black, line width=0.25mm,-latex] (7) -- node[above=3mm, align=center] {\huge $1$} (8); -->
-<!-- \draw[->,black, line width=0.25mm,-latex] (8) -- node[above=3mm, align=center] {\huge $1$} (9); -->
-<!-- \draw[->,black, line width=0.25mm,-latex] (4) -- node[left=3mm, align=center] {\huge $1 - p$} (14); -->
-<!-- \draw[->,black, line width=0.25mm,-latex] (5) -- node[left=3mm, align=center] {\huge $p$} (15); -->
-<!-- \draw[->,black, line width=0.25mm,-latex] (6) -- node[left=3mm, align=center] {\huge $1 - p$} (16); -->
-<!-- \draw[->,black, line width=0.25mm,-latex] (7) -- node[left=3mm, align=center] {\huge $1$} (17); -->
-<!-- \draw[->,black, line width=0.25mm,-latex] (8) -- node[left=3mm, align=center] {\huge $1$} (18); -->
-<!-- \end{tikzpicture} -->
-<!-- ``` -->
-
-<!-- + For states (in gray), $z = 1$ is alive, $z = 2$ is dead. -->
-
-<!-- + For observations (in white), $y = 1$ is non-detected, $y = 2$ is detected -->
-
-<!-- ## In the CJS model, survival and recapture are time-varying -->
-
-<!-- ```{r, engine = 'tikz', echo = FALSE} -->
-<!-- \usetikzlibrary{arrows, fit, positioning, automata} -->
-<!-- \begin{tikzpicture}[node distance = 2cm] -->
-<!-- \tikzset{state/.style = {circle, draw, minimum size = 30pt, scale = 3, line width=1pt}} -->
-<!-- \node [state,fill=lightgray!75] (6) [] {$1$}; -->
-<!-- \node [state,fill=lightgray!75] (5) [left = 20mm of 6] {$1$}; -->
-<!-- \node [state,fill=lightgray!75] (4) [left = 20mm of 5] {$1$}; -->
-<!-- \node [state,fill=lightgray!75] (3) [left = 20mm of 4] {$1$}; -->
-<!-- \node [state,fill=lightgray!75] (7) [right = 20mm of 6] {$2$}; -->
-<!-- \node [state,fill=lightgray!75] (8) [right = 20mm of 7] {$2$}; -->
-<!-- \node [state,fill=lightgray!75] (9) [right = 20mm of 8] {$\cdots$}; -->
-<!-- \node [state,fill=white] (16) [above = 20mm of 6] {$1$}; -->
-<!-- \node [state,fill=white] (15) [above = 20mm of 5] {$2$}; -->
-<!-- \node [state,fill=white] (14) [above = 20mm of 4] {$1$}; -->
-<!-- \node [state,fill=white] (17) [above = 20mm of 7] {$1$}; -->
-<!-- \node [state,fill=white] (18) [above = 20mm of 8] {$1$}; -->
-<!-- \draw[->,black, line width=0.25mm,-latex] (3) -- node[above=3mm, align=center] {\huge $\varphi_1$} (4); -->
-<!-- \draw[->,black, line width=0.25mm,-latex] (4) -- node[above=3mm, align=center] {\huge $\varphi_2$} (5); -->
-<!-- \draw[->,black, line width=0.25mm,-latex] (5) -- node[above=3mm, align=center] {\huge $\varphi_3$} (6); -->
-<!-- \draw[->,black, line width=0.25mm,-latex] (6) -- node[above=3mm, align=center] {\huge $1 - \varphi_4$} (7); -->
-<!-- \draw[->,black, line width=0.25mm,-latex] (7) -- node[above=3mm, align=center] {\huge $1$} (8); -->
-<!-- \draw[->,black, line width=0.25mm,-latex] (8) -- node[above=3mm, align=center] {\huge $1$} (9); -->
-<!-- \draw[->,black, line width=0.25mm,-latex] (4) -- node[left=3mm, align=center] {\huge $1 - p_2$} (14); -->
-<!-- \draw[->,black, line width=0.25mm,-latex] (5) -- node[left=3mm, align=center] {\huge $p_3$} (15); -->
-<!-- \draw[->,black, line width=0.25mm,-latex] (6) -- node[left=3mm, align=center] {\huge $1 - p_4$} (16); -->
-<!-- \draw[->,black, line width=0.25mm,-latex] (7) -- node[left=3mm, align=center] {\huge $1$} (17); -->
-<!-- \draw[->,black, line width=0.25mm,-latex] (8) -- node[left=3mm, align=center] {\huge $1$} (18); -->
-<!-- \end{tikzpicture} -->
-<!-- ``` -->
-
-<!-- + Survival probability is $\phi_t = \Pr(z_{t+1} = 1 | z_t = 1)$. -->
-
-<!-- + Recapture (detection) probability is $p_t = \Pr(y_{t} = 1 | z_t = 1)$. -->
-
-<!-- + Accounts for variation in e.g. environmental conditions (survival) or sampling effort (detection).  -->
-
-<!-- ## Capture, mark and recapture -->
-
-<!-- ```{r, echo=FALSE, out.width="90%"} -->
-<!-- knitr::include_graphics("images/gull.jpg") -->
-<!-- ``` -->
-
-<!-- ```{r, echo=FALSE, out.width="110%"} -->
-<!-- knitr::include_graphics("images/bighorn.png") -->
-<!-- ``` -->
-
-<!-- Artificial marks -->
-
-<!-- ## Capture, mark and recapture -->
-
-<!-- ```{r, echo=FALSE, out.width="90%"} -->
-<!-- knitr::include_graphics("images/lynx.png") -->
-<!-- ``` -->
-
-<!-- ```{r, echo=FALSE, out.width="120%"} -->
-<!-- knitr::include_graphics("images/bearscat.png") -->
-<!-- ``` -->
-
-<!-- Natural marks -->
-
-<!-- ## The famous Dipper example -->
-
-<!-- ```{r, echo=FALSE, out.width="60%", fig.cap="White-throated Dipper (Cinclus cinclus)"} -->
-<!-- knitr::include_graphics("images/Marzo_BaguesMance.jpg") -->
-<!-- ``` -->
-
-<!-- ```{r, echo=FALSE, fig.cap="Gilbert Marzolin", out.width="60%"} -->
-<!-- knitr::include_graphics("images/Marzocuissardes.jpg") -->
-<!-- ``` -->
-
-<!-- ## 294 dippers captured and recaptured between 1981 and 1987 with known sex and wing length -->
-
-<!-- ```{r echo = FALSE} -->
-<!-- dipper <- read_csv(here::here("dat", "dipper.csv")) -->
-<!-- dipper %>%   -->
-<!--   kableExtra::kable() %>% -->
-<!--   kableExtra::scroll_box(width = "100%", height = "400px") -->
-<!-- y <- dipper %>% -->
-<!--   select(year_1981:year_1987) %>% -->
-<!--   as.matrix() -->
-<!-- ``` -->
-
-<!-- ## Back to Nimble.  -->
-
-<!-- ### Our model so far $(\phi, p)$ -->
-
-<!-- ```{r eval = FALSE} -->
-<!-- hmm.phip <- nimbleCode({ -->
-<!--   phi ~ dunif(0, 1) # prior survival -->
-<!--   p ~ dunif(0, 1) # prior detection -->
-<!--   # likelihood -->
-<!--   gamma[1,1] <- phi      # Pr(alive t -> alive t+1) -->
-<!--   gamma[1,2] <- 1 - phi  # Pr(alive t -> dead t+1) -->
-<!--   gamma[2,1] <- 0        # Pr(dead t -> alive t+1) -->
-<!--   gamma[2,2] <- 1        # Pr(dead t -> dead t+1) -->
-<!--   delta[1] <- 1          # Pr(alive t = 1) = 1 -->
-<!--   delta[2] <- 0          # Pr(dead t = 1) = 0 -->
-<!--   omega[1,1] <- 1 - p    # Pr(alive t -> non-detected t) -->
-<!--   omega[1,2] <- p        # Pr(alive t -> detected t) -->
-<!--   omega[2,1] <- 1        # Pr(dead t -> non-detected t) -->
-<!--   omega[2,2] <- 0        # Pr(dead t -> detected t) -->
-<!--   for (i in 1:N){ -->
-<!--     z[i,first[i]] ~ dcat(delta[1:2]) -->
-<!--     for (j in (first[i]+1):T){ -->
-<!--       z[i,j] ~ dcat(gamma[z[i,j-1], 1:2]) -->
-<!--       y[i,j] ~ dcat(omega[z[i,j], 1:2]) -->
-<!--     } -->
-<!--   } -->
-<!-- }) -->
-<!-- ``` -->
-
-<!-- ### Our model so far $(\phi, p)$ -->
-
-<!-- ```{r echo = FALSE} -->
-<!-- load(here::here("dat","dipper.RData")) -->
-<!-- MCMCsummary(object = mcmc.phip, params = c("phi","p"), round = 2) -->
-<!-- ``` -->
-
-<!-- ### The CJS model $(\phi_t, p_t)$ -->
-
-<!-- ```{r eval=FALSE} -->
-<!-- hmm.phitpt <- nimbleCode({ -->
-<!--   delta[1] <- 1          # Pr(alive t = 1) = 1 -->
-<!--   delta[2] <- 0          # Pr(dead t = 1) = 0 -->
-<!--   for (t in 1:(T-1)){ -->
-<!--     phi[t] ~ dunif(0, 1) # prior survival #<< -->
-<!--     gamma[1,1,t] <- phi[t]      # Pr(alive t -> alive t+1) -->
-<!--     gamma[1,2,t] <- 1 - phi[t]  # Pr(alive t -> dead t+1) -->
-<!--     gamma[2,1,t] <- 0        # Pr(dead t -> alive t+1) -->
-<!--     gamma[2,2,t] <- 1        # Pr(dead t -> dead t+1) -->
-<!--     p[t] ~ dunif(0, 1) # prior detection #<< -->
-<!--     omega[1,1,t] <- 1 - p[t]    # Pr(alive t -> non-detected t) -->
-<!--     omega[1,2,t] <- p[t]        # Pr(alive t -> detected t) -->
-<!--     omega[2,1,t] <- 1        # Pr(dead t -> non-detected t) -->
-<!--     omega[2,2,t] <- 0        # Pr(dead t -> detected t) -->
-<!--   } -->
-<!--   # likelihood -->
-<!--   for (i in 1:N){ -->
-<!--     z[i,first[i]] ~ dcat(delta[1:2]) -->
-<!--     for (j in (first[i]+1):T){ -->
-<!--       z[i,j] ~ dcat(gamma[z[i,j-1], 1:2, j-1]) -->
-<!--       y[i,j] ~ dcat(omega[z[i,j], 1:2, j-1]) -->
-<!--     } -->
-<!--   } -->
-<!-- }) -->
-<!-- ``` -->
-
-<!-- ### The CJS model $(\phi_t, p_t)$ -->
-
-
-<!-- ```{r eval=FALSE} -->
-<!-- hmm.phitpt <- nimbleCode({ -->
-<!--   delta[1] <- 1          # Pr(alive t = 1) = 1 -->
-<!--   delta[2] <- 0          # Pr(dead t = 1) = 0 -->
-<!--   for (t in 1:(T-1)){ #<< -->
-<!--     phi[t] ~ dunif(0, 1) # prior survival -->
-<!--     gamma[1,1,t] <- phi[t]      # Pr(alive t -> alive t+1) -->
-<!--     gamma[1,2,t] <- 1 - phi[t]  # Pr(alive t -> dead t+1) -->
-<!--     gamma[2,1,t] <- 0        # Pr(dead t -> alive t+1) -->
-<!--     gamma[2,2,t] <- 1        # Pr(dead t -> dead t+1) -->
-<!--     p[t] ~ dunif(0, 1) # prior detection -->
-<!--     omega[1,1,t] <- 1 - p[t]    # Pr(alive t -> non-detected t) -->
-<!--     omega[1,2,t] <- p[t]        # Pr(alive t -> detected t) -->
-<!--     omega[2,1,t] <- 1        # Pr(dead t -> non-detected t) -->
-<!--     omega[2,2,t] <- 0        # Pr(dead t -> detected t) -->
-<!--   } #<< -->
-<!--   # likelihood -->
-<!--   for (i in 1:N){ -->
-<!--     z[i,first[i]] ~ dcat(delta[1:2]) -->
-<!--     for (j in (first[i]+1):T){ -->
-<!--       z[i,j] ~ dcat(gamma[z[i,j-1], 1:2, j-1]) -->
-<!--       y[i,j] ~ dcat(omega[z[i,j], 1:2, j-1]) -->
-<!--     } -->
-<!--   } -->
-<!-- }) -->
-<!-- ``` -->
-
-<!-- ### The CJS model $(\phi_t, p_t)$ -->
-
-<!-- ```{r eval=FALSE} -->
-<!-- hmm.phitpt <- nimbleCode({ -->
-<!--   delta[1] <- 1          # Pr(alive t = 1) = 1 -->
-<!--   delta[2] <- 0          # Pr(dead t = 1) = 0 -->
-<!--   for (t in 1:(T-1)){ -->
-<!--     phi[t] ~ dunif(0, 1) # prior survival -->
-<!--     gamma[1,1,t] <- phi[t]      # Pr(alive t -> alive t+1) #<< -->
-<!--     gamma[1,2,t] <- 1 - phi[t]  # Pr(alive t -> dead t+1) #<< -->
-<!--     gamma[2,1,t] <- 0        # Pr(dead t -> alive t+1) #<< -->
-<!--     gamma[2,2,t] <- 1        # Pr(dead t -> dead t+1) #<< -->
-<!--     p[t] ~ dunif(0, 1) # prior detection -->
-<!--     omega[1,1,t] <- 1 - p[t]    # Pr(alive t -> non-detected t) -->
-<!--     omega[1,2,t] <- p[t]        # Pr(alive t -> detected t) -->
-<!--     omega[2,1,t] <- 1        # Pr(dead t -> non-detected t) -->
-<!--     omega[2,2,t] <- 0        # Pr(dead t -> detected t) -->
-<!--   } -->
-<!--   # likelihood -->
-<!--   for (i in 1:N){ -->
-<!--     z[i,first[i]] ~ dcat(delta[1:2]) -->
-<!--     for (j in (first[i]+1):T){ -->
-<!--       z[i,j] ~ dcat(gamma[z[i,j-1], 1:2, j-1]) -->
-<!--       y[i,j] ~ dcat(omega[z[i,j], 1:2, j-1]) -->
-<!--     } -->
-<!--   } -->
-<!-- }) -->
-<!-- ``` -->
-
-<!-- ### The CJS model $(\phi_t, p_t)$ -->
-
-<!-- ```{r eval=FALSE} -->
-<!-- hmm.phitpt <- nimbleCode({ -->
-<!--   delta[1] <- 1          # Pr(alive t = 1) = 1 -->
-<!--   delta[2] <- 0          # Pr(dead t = 1) = 0 -->
-<!--   for (t in 1:(T-1)){ -->
-<!--     phi[t] ~ dunif(0, 1) # prior survival -->
-<!--     gamma[1,1,t] <- phi[t]      # Pr(alive t -> alive t+1) -->
-<!--     gamma[1,2,t] <- 1 - phi[t]  # Pr(alive t -> dead t+1) -->
-<!--     gamma[2,1,t] <- 0        # Pr(dead t -> alive t+1) -->
-<!--     gamma[2,2,t] <- 1        # Pr(dead t -> dead t+1)  -->
-<!--     p[t] ~ dunif(0, 1) # prior detection -->
-<!--     omega[1,1,t] <- 1 - p[t]    # Pr(alive t -> non-detected t) #<< -->
-<!--     omega[1,2,t] <- p[t]        # Pr(alive t -> detected t) #<< -->
-<!--     omega[2,1,t] <- 1        # Pr(dead t -> non-detected t) #<< -->
-<!--     omega[2,2,t] <- 0        # Pr(dead t -> detected t) #<< -->
-<!--   } -->
-<!--   # likelihood -->
-<!--   for (i in 1:N){ -->
-<!--     z[i,first[i]] ~ dcat(delta[1:2]) -->
-<!--     for (j in (first[i]+1):T){ -->
-<!--       z[i,j] ~ dcat(gamma[z[i,j-1], 1:2, j-1]) -->
-<!--       y[i,j] ~ dcat(omega[z[i,j], 1:2, j-1]) -->
-<!--     } -->
-<!--   } -->
-<!-- }) -->
-<!-- ``` -->
-
-<!-- ### The CJS model $(\phi_t, p_t)$ -->
-
-<!-- ```{r eval=FALSE} -->
-<!-- hmm.phitpt <- nimbleCode({ -->
-<!--   delta[1] <- 1          # Pr(alive t = 1) = 1 -->
-<!--   delta[2] <- 0          # Pr(dead t = 1) = 0 -->
-<!--   for (t in 1:(T-1)){ -->
-<!--     phi[t] ~ dunif(0, 1) # prior survival -->
-<!--     gamma[1,1,t] <- phi[t]      # Pr(alive t -> alive t+1) -->
-<!--     gamma[1,2,t] <- 1 - phi[t]  # Pr(alive t -> dead t+1) -->
-<!--     gamma[2,1,t] <- 0        # Pr(dead t -> alive t+1) -->
-<!--     gamma[2,2,t] <- 1        # Pr(dead t -> dead t+1)  -->
-<!--     p[t] ~ dunif(0, 1) # prior detection -->
-<!--     omega[1,1,t] <- 1 - p[t]    # Pr(alive t -> non-detected t) -->
-<!--     omega[1,2,t] <- p[t]        # Pr(alive t -> detected t) -->
-<!--     omega[2,1,t] <- 1        # Pr(dead t -> non-detected t) -->
-<!--     omega[2,2,t] <- 0        # Pr(dead t -> detected t) -->
-<!--   } -->
-<!--   # likelihood -->
-<!--   for (i in 1:N){ -->
-<!--     z[i,first[i]] ~ dcat(delta[1:2]) -->
-<!--     for (j in (first[i]+1):T){ -->
-<!--       z[i,j] ~ dcat(gamma[z[i,j-1], 1:2, j-1]) #<< -->
-<!--       y[i,j] ~ dcat(omega[z[i,j], 1:2, j-1]) #<< -->
-<!--     } -->
-<!--   } -->
-<!-- }) -->
-<!-- ``` -->
-
-<!-- ### The CJS model $(\phi_t, p_t)$ -->
-
-<!-- ```{r echo = FALSE} -->
-<!-- load(here::here("dat","dipper.RData")) -->
-<!-- MCMCsummary(object = mcmc.phitpt, params = c("phi","p"), round = 2) -->
-<!-- ``` -->
-
-<!-- ### Time-varying survival $(\phi_t, p)$ -->
-
-<!-- ```{r eval=FALSE} -->
-<!-- hmm.phitp <- nimbleCode({ -->
-<!--   for (t in 1:(T-1)){ -->
-<!--     phi[t] ~ dunif(0, 1) # prior survival -->
-<!--     gamma[1,1,t] <- phi[t]      # Pr(alive t -> alive t+1) -->
-<!--     gamma[1,2,t] <- 1 - phi[t]  # Pr(alive t -> dead t+1) -->
-<!--     gamma[2,1,t] <- 0        # Pr(dead t -> alive t+1) -->
-<!--     gamma[2,2,t] <- 1        # Pr(dead t -> dead t+1) -->
-<!--   } -->
-<!--   p ~ dunif(0, 1) # prior detection -->
-<!--   delta[1] <- 1          # Pr(alive t = 1) = 1 -->
-<!--   delta[2] <- 0          # Pr(dead t = 1) = 0 -->
-<!--   omega[1,1] <- 1 - p    # Pr(alive t -> non-detected t) -->
-<!--   omega[1,2] <- p        # Pr(alive t -> detected t) -->
-<!--   omega[2,1] <- 1        # Pr(dead t -> non-detected t) -->
-<!--   omega[2,2] <- 0        # Pr(dead t -> detected t) -->
-<!--   # likelihood -->
-<!--   for (i in 1:N){ -->
-<!--     z[i,first[i]] ~ dcat(delta[1:2]) -->
-<!--     for (j in (first[i]+1):T){ -->
-<!--       z[i,j] ~ dcat(gamma[z[i,j-1], 1:2, j-1]) -->
-<!--       y[i,j] ~ dcat(omega[z[i,j], 1:2]) -->
-<!--     } -->
-<!--   } -->
-<!-- }) -->
-<!-- ``` -->
-<!-- ] -->
-
-<!-- ### Time-varying survival $(\phi_t, p)$ -->
-
-<!-- ```{r echo = FALSE} -->
-<!-- load(here::here("dat","dipper.RData")) -->
-<!-- MCMCsummary(object = mcmc.phitp, params = c("phi","p"), round = 2) -->
-<!-- ``` -->
-
-<!-- ### Time-varying detection $(\phi, p_t)$ -->
-
-<!-- ```{r eval=FALSE} -->
-<!-- hmm.phipt <- nimbleCode({ -->
-<!--   phi ~ dunif(0, 1) # prior survival -->
-<!--   gamma[1,1] <- phi      # Pr(alive t -> alive t+1) -->
-<!--   gamma[1,2] <- 1 - phi  # Pr(alive t -> dead t+1) -->
-<!--   gamma[2,1] <- 0        # Pr(dead t -> alive t+1) -->
-<!--   gamma[2,2] <- 1        # Pr(dead t -> dead t+1) -->
-<!--   delta[1] <- 1          # Pr(alive t = 1) = 1 -->
-<!--   delta[2] <- 0          # Pr(dead t = 1) = 0 -->
-<!--   for (t in 1:(T-1)){ -->
-<!--     p[t] ~ dunif(0, 1) # prior detection -->
-<!--     omega[1,1,t] <- 1 - p[t]    # Pr(alive t -> non-detected t) -->
-<!--     omega[1,2,t] <- p[t]        # Pr(alive t -> detected t) -->
-<!--     omega[2,1,t] <- 1        # Pr(dead t -> non-detected t) -->
-<!--     omega[2,2,t] <- 0        # Pr(dead t -> detected t) -->
-<!--   } -->
-<!--   # likelihood -->
-<!--   for (i in 1:N){ -->
-<!--     z[i,first[i]] ~ dcat(delta[1:2]) -->
-<!--     for (j in (first[i]+1):T){ -->
-<!--       z[i,j] ~ dcat(gamma[z[i,j-1], 1:2]) -->
-<!--       y[i,j] ~ dcat(omega[z[i,j], 1:2, j-1]) -->
-<!--     } -->
-<!--   } -->
-<!-- }) -->
-<!-- ``` -->
-
-<!-- ### Time-varying detection $(\phi, p_t)$ -->
-
-<!-- ```{r echo = FALSE} -->
-<!-- load(here::here("dat","dipper.RData")) -->
-<!-- MCMCsummary(object = mcmc.phipt, params = c("phi","p"), round = 2) -->
-<!-- ``` -->
-
-<!-- ## How to select a best model? Model selection -->
-
-<!-- + Which of the four models above is best supported by the data? -->
-
-<!-- + The proportion of explained variance $R^2$ is problematic, because the more variables you have, the bigger $R^2$ is. -->
-
-<!-- + The idea is to penalize models with too many parameters. -->
-
-<!-- ## Akaike information criterion (AIC) -->
-
-<!-- $$AIC = - 2 \log(L(\hat{\theta}_1,\ldots,\hat{\theta}_K)) + 2 K$$ -->
-
-<!-- with $L$ the likelihood and $K$ the number of parameters $\theta_i$. -->
-
-<!-- $$\text{AIC} = {\color{purple}{- 2 \log(L(\hat{\theta}_1,\ldots,\hat{\theta}_K))}} + 2 K$$ -->
-
-<!-- <span style="color: purple;">A measure of goodness-of-fit of the model to the data</span>: the more parameters you have, the smaller the deviance is (or the bigger the likelihood is). -->
-
-<!-- $$\text{AIC} = - 2 \log(L(\hat{\theta}_1,\ldots,\hat{\theta}_K)) + {\color{purple}{2 K}}$$ -->
-
-<!-- <span style="color: purple;">A penalty</span>: twice the number of parameters $K$ -->
-
-<!-- + AIC makes the balance between *quality of fit* and *complexity* of a model. -->
-
-<!-- + Best model is the one with lowest AIC value. -->
-
-<!-- + Two models are difficult to distinguish if $\Delta \text{AIC} < 2$. -->
-
-<!-- ## Bayesian version -->
-
-<!-- + Watanabe-Akaike (Widely-Applicable) Information Criteria or WAIC: -->
-
-<!-- $$\textrm{WAIC} = -2 \sum_{i = 1}^n \log E[\Pr(y_i \mid \theta)] +  -->
-<!--                   2 p_\text{WAIC}$$ -->
-
-<!-- + where $E[p(y_i \mid \theta)]$ is the posterior mean of the likelihood evaluated pointwise at each $i$th observation. -->
-
-<!-- + $p_\text{WAIC}$ is a penalty computed using the posterior variance of the likelihood.  -->
-
-<!-- + More in this video <https://www.youtube.com/watch?v=vSjL2Zc-gEQ> by R. McElreath. -->
-
-<!-- + Nimble provides the conditional WAIC, where all parameters directly involved in the likelihood are considered. If you would want to calculate the marginal WAIC, integrating over latent variables, you could monitor the relevant nodes and carry out the calculations yourself based on the MCMC output. -->
-
-<!-- ## How to compute WAIC in Nimble? -->
-
-<!-- ```{r eval = FALSE} -->
-<!-- parameters.to.save <- c("phi", "p") -->
-<!-- mcmc.phitpt <- nimbleMCMC(code = hmm.phitpt,  -->
-<!--                           constants = my.constants, -->
-<!--                           data = my.data,               -->
-<!--                           inits = initial.values, -->
-<!--                           monitors = parameters.to.save, -->
-<!--                           niter = n.iter, -->
-<!--                           nburnin = n.burnin,  -->
-<!--                           nchains = n.chains) -->
-<!-- ``` -->
-
-<!-- ```{r eval = FALSE} -->
-<!-- parameters.to.save <- c("phi", "p", "z") #<< -->
-<!-- mcmc.phitpt <- nimbleMCMC(code = hmm.phitpt,  -->
-<!--                           constants = my.constants, -->
-<!--                           data = my.data,               -->
-<!--                           inits = initial.values, -->
-<!--                           monitors = parameters.to.save, -->
-<!--                           niter = n.iter, -->
-<!--                           nburnin = n.burnin,  -->
-<!--                           nchains = n.chains, -->
-<!--                           WAIC = TRUE) #<< -->
-<!-- ``` -->
-
-<!-- ## Dipper example - continued -->
-
-<!-- ```{r echo = FALSE} -->
-<!-- load(here::here("dat","dipper_waic.RData")) -->
-<!-- data.frame(model = c("(phi,p)", -->
-<!--                      "(phit,p)", -->
-<!--                      "(phi,pt)", -->
-<!--                      "(phit,pt)"), -->
-<!--            WAIC = c(mcmc.phip$WAIC,  -->
-<!--              mcmc.phitp$WAIC,  -->
-<!--              mcmc.phipt$WAIC,  -->
-<!--              mcmc.phitpt$WAIC)) -->
-<!-- ``` -->
-
-<!-- ## Can we explain time variation? Embrace heterogeneity -->
-
-<!-- + Include temporal covariates, say $x_t$. -->
-
-<!-- + $\text{logit}(\phi_t) = \beta_1 + \beta_2 x_t$. -->
-
-<!-- + Let's investigate the effect of water flow on dipper survival ([Marzolin 2002](https://doi.org/10.2307/3802934)). -->
-
-<!-- ```{r eval = FALSE} -->
-<!-- hmm.phiflowp <- nimbleCode({ -->
-<!--   delta[1] <- 1          # Pr(alive t = 1) = 1 -->
-<!--   delta[2] <- 0          # Pr(dead t = 1) = 0 -->
-<!--   for (t in 1:(T-1)){ -->
-<!--     logit(phi[t]) <- beta[1] + beta[2] * flow[t] #<< -->
-<!--     gamma[1,1,t] <- phi[t]      # Pr(alive t -> alive t+1) -->
-<!--     gamma[1,2,t] <- 1 - phi[t]  # Pr(alive t -> dead t+1) -->
-<!--     gamma[2,1,t] <- 0        # Pr(dead t -> alive t+1) -->
-<!--     gamma[2,2,t] <- 1        # Pr(dead t -> dead t+1) -->
-<!--   } -->
-<!--   p ~ dunif(0, 1) # prior detection -->
-<!--   omega[1,1] <- 1 - p    # Pr(alive t -> non-detected t) -->
-<!--   omega[1,2] <- p        # Pr(alive t -> detected t) -->
-<!--   omega[2,1] <- 1        # Pr(dead t -> non-detected t) -->
-<!--   omega[2,2] <- 0        # Pr(dead t -> detected t) -->
-<!--   beta[1] ~ dnorm(0, 1.5) # prior intercept #<< -->
-<!--   beta[2] ~ dnorm(0, 1.5) # prior slope #<< -->
-<!--   # likelihood -->
-<!--   for (i in 1:N){ -->
-<!--     z[i,first[i]] ~ dcat(delta[1:2]) -->
-<!--     for (j in (first[i]+1):T){ -->
-<!--       z[i,j] ~ dcat(gamma[z[i,j-1], 1:2, j-1]) -->
-<!--       y[i,j] ~ dcat(omega[z[i,j], 1:2]) -->
-<!--     } -->
-<!--   } -->
-<!-- }) -->
-<!-- ``` -->
-
-<!-- ```{r eval = FALSE} -->
-<!-- # water flow in L/s -->
-<!-- water_flow <- c(443, 1114, 529, 434, 627, 466) # 1981, 1982, ..., 1987 -->
-<!-- water_flow_st <- (water_flow - mean(water_flow))/sd(water_flow) #<< -->
-<!-- ``` -->
-<!-- ] -->
-
-<!-- ```{r eval = FALSE} -->
-<!-- my.constants <- list(N = nrow(y),  -->
-<!--                      T = ncol(y),  -->
-<!--                      first = first,  -->
-<!--                      flow = water_flow_st) #<< -->
-
-<!-- initial.values <- function() list(beta = rnorm(2,0,1), -->
-<!--                                   p = runif(1,0,1), -->
-<!--                                   z = zinits) -->
-
-<!-- parameters.to.save <- c("beta", "p", "phi") -->
-<!-- ``` -->
-
-<!-- ### Regression intercept and slope -->
-
-<!-- ```{r, echo = FALSE} -->
-<!-- load(here::here("dat/dipperflow.RData")) -->
-<!-- MCMCplot(object = mcmc.phiflowp, params = "beta", ISB = TRUE) -->
-<!-- ``` -->
-
-<!-- ### Time-dependent (covariate constrained) survival probability estimates -->
-
-<!-- ```{r, echo = FALSE} -->
-<!-- load(here::here("dat/dipperflow.RData")) -->
-<!-- MCMCplot(object = mcmc.phiflowp, params = "phi", ISB = TRUE) -->
-<!-- ``` -->
-
-<!-- ## Embrace heterogeneity -->
-
-<!-- + Include temporal covariates, say $x_t$ -->
-
-<!-- + $\text{logit}(\phi_t) = \beta_1 + \beta_2 x_t$ -->
-
-<!-- + If temporal variation not fully explained by covariates, add random effects -->
-
-<!-- + $\text{logit}(\phi_t) = \beta_1 + \beta_2 x_t + \varepsilon_t, \; \varepsilon_t \sim N(0,\sigma^2)$ -->
-
-<!-- ```{r eval = FALSE} -->
-<!-- hmm.phiflowREp <- nimbleCode({ -->
-<!--   for (t in 1:(T-1)){ -->
-<!--     logit(phi[t]) <- beta[1] + beta[2] * flow[t] + eps[t]  -->
-<!--     eps[t] ~ dnorm(0, sd = sdeps)  -->
-<!--     ...   -->
-<!--   } -->
-<!--   sdeps ~ dunif(0,10)  -->
-<!--   ... -->
-<!-- ``` -->
-
-<!-- ## What about individual heterogeneity? -->
-
-<!-- + Discrete covariate like, e.g., sex -->
-
-<!-- + Continuous covariate like, e.g., mass or size -->
-
-<!-- ## Sex and wing length in Dipper -->
-
-<!-- ```{r echo = FALSE} -->
-<!-- dipper %>%   -->
-<!--   kableExtra::kable() %>% -->
-<!--   kableExtra::scroll_box(width = "100%", height = "400px") -->
-<!-- ``` -->
-
-<!-- ## Sex effect -->
-
-<!-- + Let's use a covariate $\text{sex}$ that takes value 0 if male, and 1 if female -->
-
-<!-- + And write $\text{logit}(\phi_i) = \beta_1 + \beta_2 \; \text{sex}_i$ for bird $i$ -->
-
-<!-- + Then male survival is  -->
-
-<!-- $$\text{logit}(\phi_i) = \beta_1$$ -->
-
-<!-- + And female survival is  -->
-
-<!-- $$\text{logit}(\phi_i) = \beta_1 + \beta_2$$ -->
-
-<!-- ### Nimble implementation with sex as a covariate -->
-
-<!-- ```{r eval = FALSE} -->
-<!-- hmm.phisexp <- nimbleCode({ -->
-<!-- ... -->
-<!--   for (i in 1:N){ #<< -->
-<!--     logit(phi[i]) <- beta[1] + beta[2] * sex[i] #<< -->
-<!--     gamma[1,1,i] <- phi[i]      # Pr(alive t -> alive t+1) -->
-<!--     gamma[1,2,i] <- 1 - phi[i]  # Pr(alive t -> dead t+1) -->
-<!--     gamma[2,1,i] <- 0        # Pr(dead t -> alive t+1) -->
-<!--     gamma[2,2,i] <- 1        # Pr(dead t -> dead t+1) -->
-<!--   } #<< -->
-<!--   beta[1] ~ dnorm(mean = 0, sd = 1.5) #<< -->
-<!--   beta[2] ~ dnorm(mean = 0, sd = 1.5) #<< -->
-<!--   phi_male <- 1/(1+exp(-beta[1])) #<< -->
-<!--   phi_female <- 1/(1+exp(-(beta[1]+beta[2]))) #<< -->
-<!-- ... -->
-<!--   # likelihood -->
-<!--   for (i in 1:N){ -->
-<!--     z[i,first[i]] ~ dcat(delta[1:2]) -->
-<!--     for (j in (first[i]+1):T){ -->
-<!--       z[i,j] ~ dcat(gamma[z[i,j-1], 1:2, i]) #<< -->
-<!--       y[i,j] ~ dcat(omega[z[i,j], 1:2]) -->
-<!--     } -->
-<!--   } -->
-<!-- }) -->
-<!-- ``` -->
-
-<!-- ```{r echo = FALSE} -->
-<!-- load(here::here("dat/phisexp.RData")) -->
-<!-- MCMCsummary(object = mcmc.phisexp, round = 2) -->
-<!-- ``` -->
-
-
-<!-- ### Nimble implementation with nested indexing -->
-
-<!-- + Let's use a covariate $\text{sex}$ that contains 1s and 2s, indicating the sex of each individual: 1 if male, and 2 if female -->
-
-<!-- ```{r eval = FALSE} -->
-<!-- ... -->
-<!-- for (i in 1:N){ -->
-<!--   phi[i] <- beta[sex[i]] #<< -->
-<!--   gamma[1,1,i] <- phi[i]      # Pr(alive t -> alive t+1) -->
-<!--   gamma[1,2,i] <- 1 - phi[i]  # Pr(alive t -> dead t+1) -->
-<!--   gamma[2,1,i] <- 0           # Pr(dead t -> alive t+1) -->
-<!--   gamma[2,2,i] <- 1           # Pr(dead t -> dead t+1) -->
-<!-- } -->
-<!-- beta[1] ~ dunif(0,1) # male survival #<< -->
-<!-- beta[2] ~ dunif(0,1) # female survival #<< -->
-<!-- ... -->
-<!-- ``` -->
-
-<!-- + E.g. for individual $i = 2$, `beta[sex[i]]` gives `beta[sex[2]]` which will be `beta[1]` or `beta[2]` depending on whether sex[2] is 1 or 2. -->
-
-<!-- ```{r echo = FALSE} -->
-<!-- load(here::here("dat/phisexpni.RData")) -->
-<!-- MCMCsummary(object = mcmc.phisexp.ni, round = 2) -->
-<!-- ``` -->
-
-<!-- ### What about wing length? -->
-
-<!-- ```{r eval = FALSE} -->
-<!-- ...   -->
-<!--   for (i in 1:N){ #<< -->
-<!--     logit(phi[i]) <- beta[1] + beta[2] * winglength[i] #<< -->
-<!--     gamma[1,1,i] <- phi[i]      # Pr(alive t -> alive t+1) -->
-<!--     gamma[1,2,i] <- 1 - phi[i]  # Pr(alive t -> dead t+1) -->
-<!--     gamma[2,1,i] <- 0        # Pr(dead t -> alive t+1) -->
-<!--     gamma[2,2,i] <- 1        # Pr(dead t -> dead t+1) -->
-<!--   } -->
-<!--   beta[1] ~ dnorm(mean = 0, sd = 1.5) # intercept #<< -->
-<!--   beta[2] ~ dnorm(mean = 0, sd = 1.5) # slope #<< -->
-<!-- ... -->
-<!-- ``` -->
-
-<!-- ### Wing length -->
-
-<!-- ```{r, echo = FALSE} -->
-<!-- load(here::here("dat/phiwingp.RData")) -->
-<!-- beta1 <- c(mcmc.phiwlp$chain1[,'beta[1]'], mcmc.phiwlp$chain2[,'beta[1]']) -->
-<!-- beta2 <- c(mcmc.phiwlp$chain1[,'beta[2]'], mcmc.phiwlp$chain2[,'beta[2]']) -->
-<!-- wing.length.st <- as.vector(scale(dipper$wing_length)) -->
-<!-- predicted_survival <- matrix(NA,  -->
-<!--                              nrow = length(beta1),  -->
-<!--                              ncol = length(wing.length.st)) -->
-<!-- for (i in 1:length(beta1)){ -->
-<!--   for (j in 1:length(wing.length.st)){ -->
-<!--     predicted_survival[i,j] <- plogis(beta1[i] + beta2[i] * wing.length.st[j]) -->
-<!--   } -->
-<!-- } -->
-<!-- mean_survival <- apply(predicted_survival, 2, mean) -->
-<!-- lci <- apply(predicted_survival, 2, quantile, prob = 2.5/100) -->
-<!-- uci <- apply(predicted_survival, 2, quantile, prob = 97.5/100) -->
-<!-- ord <- order(wing.length.st) -->
-<!-- df <- data.frame(wing_length = wing.length.st[ord], -->
-<!--                  survival = mean_survival[ord], -->
-<!--                  lci = lci[ord], -->
-<!--                  uci = uci[ord]) -->
-<!-- df %>% -->
-<!--   ggplot() +  -->
-<!--   aes(x = wing_length, y = survival) +  -->
-<!--   geom_line() +  -->
-<!--   geom_ribbon(aes(ymin = lci, ymax = uci), fill = "grey70", alpha = 0.5) +  -->
-<!--   ylim(0,1) +  -->
-<!--   labs(x = "wing length", y = "estimated survival") -->
-<!-- ``` -->
-
-<!-- + You may test an effect of both sex and wing length, see exercise in Worksheets.  -->
-
-<!-- ## What if covariates vary with individual and time? -->
-
-<!-- + Think of age for example (see exercises in Worksheets); covariate or nested indexing works fine. -->
-
-<!-- + Now, think of body size across life. -->
-
-<!-- + Problem is we cannot record size when animal is non-detected. -->
-
-<!-- + Discretize in small, medium and large and treat as a state <span>&#8212;</span> more later. -->
-
-<!-- + Assume a model for covariate and fill in missing values (imputation). -->
-
-
-<!-- ## Why Bayes? Incorporate prior information. -->
-
-<!-- ## Vague prior -->
-
-<!-- + So far, we have assumed a vague prior: -->
-
-<!-- $$\phi_{prior} \sim \text{Beta}(1,1) = \text{Uniform}(0,1)$$ -->
-
-<!-- + With a vague prior, mean posterior survival is $\phi_{posterior} = 0.56$  -->
-
-<!-- + With credible interval $[0.52,0.62]$ -->
-
-<!-- ```{r, echo = FALSE} -->
-<!-- load(here::here("dat","dipper.RData")) -->
-<!-- PR <- runif(1500, 0, 1) -->
-<!-- MCMCtrace(mcmc.phip,  -->
-<!--           params = c('phi'), -->
-<!--           ISB = FALSE, -->
-<!--           exact = TRUE, -->
-<!--           priors = PR, -->
-<!--           pdf = FALSE, -->
-<!--           Rhat = FALSE, -->
-<!--           n.eff = FALSE, -->
-<!-- #          post_zm = TRUE, -->
-<!--           sz_txt = NULL, -->
-<!--           ind = TRUE, -->
-<!--           type = "density", -->
-<!--           lwd_den = 3, -->
-<!--           lwd_pr = 3, -->
-<!--           col_pr = "gray70", -->
-<!--           lty_pr = 2, -->
-<!--           main_den = "", -->
-<!--           xlab_den = "survival") -->
-<!-- ``` -->
-
-<!-- Posterior distribution of survival in color (two chains), prior in gray dashed line. -->
-
-<!-- ## How to incorporate prior information? -->
-
-<!-- + Using information on body mass and annual survival of 27 European passerines, we can predict survival of European dippers using only body mass. -->
-
-<!-- + For dippers, body mass is 59.8g, therefore $\phi = 0.57$ with $\text{sd} = 0.073$. -->
-
-<!-- + Assuming an informative prior $\phi_{prior} \sim \text{Normal}(0.57,0.073^2)$. -->
-
-<!-- + Mean posterior $\phi_{posterior} = 0.56$ with credible interval $[0.52, 0.61]$. -->
-
-<!-- + No increase of precision in posterior inference. -->
-
-<!-- ## How to incorporate prior information? -->
-
-<!-- + Now if you had only the three first years of data, what would have happened? -->
-
-<!-- + Width of credible interval is 0.53 (vague prior) vs. 0.24 (informative prior). -->
-
-<!-- + Huge increase of precision in posterior inference, a $120\%$ gain! -->
-
-<!-- ### Compare survival posterior with and without informative prior -->
-
-<!-- ```{r, echo = FALSE} -->
-<!-- load(here::here("dat","phip3y.RData")) -->
-<!-- phinoprior <- c(mcmc.phip$chain1[,"phi"], mcmc.phip$chain2[,"phi"]) -->
-<!-- load(here::here("dat","phipriorp3y.RData")) -->
-<!-- phiprior <- c(mcmc.phip$chain1[,"phi"], mcmc.phip$chain2[,"phi"]) -->
-<!-- df <- data.frame(posterior = c(phinoprior, phiprior), -->
-<!--                  type = c(rep("w/ vague prior", length(phinoprior)), -->
-<!--                           rep("w/ informative prior", length(phiprior)))) -->
-<!-- df %>% -->
-<!--   ggplot() +  -->
-<!--   aes(x = posterior, fill = type) +  -->
-<!--   geom_density(aes(y = ..density..),  -->
-<!--                bins = 40,  -->
-<!--                color = "white",  -->
-<!--                alpha = 0.6) +  -->
-<!--   labs(x = "survival", fill = "") + -->
-<!--   scale_fill_manual(values = wesanderson::wes_palette("Royal1")[2:1]) -->
-<!-- ``` -->
-
-<!-- ## Prior elicitation via moment matching -->
-
-
-<!-- + The prior $\phi_{prior} \sim \text{Normal}(0.57,0.073^2)$ is not entirely satisfying -->
-
-<!-- + Remember the Beta distribution -->
-
-<!-- + Recall that the Beta distribution is a continuous distribution with values between 0 and 1. Useful for modelling survival or detection probabilities.  -->
-
-<!-- + If $X \sim Beta(\alpha,\beta)$, then the first and second moments of $X$ are: -->
-
-<!-- $$\mu = \text{E}(X) = \frac{\alpha}{\alpha + \beta}$$ -->
-
-<!-- $$\sigma^2 = \text{Var}(X) = \frac{\alpha\beta}{(\alpha + \beta)^2 (\alpha + \beta + 1)}$$ -->
-
-<!-- ## Moment matching -->
-
-<!-- + In the capture-recapture example, we know a priori that the mean of the probability we're interested in is $\mu = 0.57$ and its variance is $\sigma^2 = 0.073^2$. -->
-
-<!-- + Parameters $\mu$ and $\sigma^2$ are seen as the moments of a $Beta(\alpha,\beta)$ distribution. -->
-
-<!-- + Now we look for values of $\alpha$ and $\beta$ that match the observed moments of the Beta distribution $\mu$ and $\sigma^2$. -->
-
-<!-- + We need another set of equations: -->
-
-<!-- $$\alpha = \bigg(\frac{1-\mu}{\sigma^2}- \frac{1}{\mu} \bigg)\mu^2$$ -->
-
-<!-- $$\beta = \alpha \bigg(\frac{1}{\mu}-1\bigg)$$ -->
-
-<!-- + For our model, that means: -->
-
-<!-- ```{r echo = TRUE} -->
-<!-- (alpha <- ( (1 - 0.57)/(0.073*0.073) - (1/0.57) )*0.57^2) -->
-<!-- (beta <- alpha * ( (1/0.57) - 1)) -->
-<!-- ``` -->
-
-<!-- + Now use $\phi_{prior} \sim \text{Beta}(\alpha = 25.6,\beta = 19.3)$ instead of $\phi_{prior} \sim \text{Normal}(0.57,0.073^2)$ -->
-
-<!-- ## Prior predictive checks -->
-
-<!-- ## Linear regression -->
-
-<!-- Unreasonable prior $\beta \sim N(0, 1000^2)$ -->
-
-<!-- ```{r, echo = FALSE} -->
-<!-- df <- rnorm(1000, 0, 1000) -->
-<!-- df %>% -->
-<!--   as_tibble() %>% -->
-<!--   ggplot(aes(x = value)) +  -->
-<!--   geom_density(size = 2) +  -->
-<!--   labs(x = "Height (m)") + -->
-<!--   theme_light(base_size = 20) -->
-<!-- ``` -->
-
-<!-- Reasonable prior $\beta \sim N(2, 0.5^2)$ -->
-
-<!-- ```{r, echo = FALSE} -->
-<!-- df <- rnorm(1000, 2, 0.5) -->
-<!-- df %>% -->
-<!--   as_tibble() %>% -->
-<!--   ggplot(aes(x = value)) +  -->
-<!--   geom_density(size = 2) +  -->
-<!--   labs(x = "Height (m)") + -->
-<!--   theme_light(base_size = 20) -->
-<!-- ``` -->
-
-<!-- ## Logistic regression -->
-
-<!-- Unreasonable prior $\text{logit}(\phi) = \beta \sim N(0, 10^2)$ -->
-
-<!-- ```{r, echo = FALSE} -->
-<!-- df <- plogis(rnorm(1000, 0, 10))  -->
-<!-- df %>% -->
-<!--   as_tibble() %>% -->
-<!--   ggplot(aes(x = value)) +  -->
-<!--   geom_density(size = 2) +  -->
-<!--   labs(x = "survival") + -->
-<!--   theme_light(base_size = 20) -->
-<!-- ``` -->
-
-<!-- Reasonable prior $\text{logit}(\phi) = \beta \sim N(0, 1.5^2)$ -->
-
-<!-- ```{r, echo = FALSE} -->
-<!-- df <- plogis(rnorm(1000, 0, 1.5))  -->
-<!-- df %>% -->
-<!--   as_tibble() %>% -->
-<!--   ggplot(aes(x = value)) +  -->
-<!--   geom_density(size = 2) +  -->
-<!--   labs(x = "survival") + -->
-<!--   theme_light(base_size = 20) -->
-<!-- ``` -->
-
-<!-- ## Capture-recapture models rely on assumptions -->
-
-<!-- + Design -->
-<!--     + No mark lost -->
-<!--     + Identity of individuals recorded without error (no false positives) -->
-<!--     + Captured individuals are a random sample -->
-
-<!-- + Model -->
-<!--     + Homogeneity of survival and recapture probabilities -->
-<!--     + Independence between individuals (overdispersion) -->
-
-<!-- + Test validity of assumptions -->
-<!--     + These assumptions should be valid, whatever inferential framework -->
-<!--     + Use goodness-of-fit tests <span>&#8212;</span> Pradel et al. (2005) -->
-<!--     + `R` implementation with [package `R2ucare`](https://besjournals.onlinelibrary.wiley.com/doi/full/10.1111/2041-210X.13014) -->
-<!--     + Posterior predictive checks can also be used (not covered; [Gelman et al. 2020](https://arxiv.org/pdf/2011.01808.pdf)) -->
-
-<!-- ### Parameter-redundancy issue -->
-
-<!-- ```{r, echo = FALSE} -->
-<!-- load(here::here("dat", "profiledeviance.RData")) -->
-<!-- df <- data.frame(last_survival = grid_lastphi,  -->
-<!--                  max_dev = devmax) -->
-<!-- mytable <- df %>% slice(c(20, 27, 38, 44)) %>% round(2) -->
-<!-- ggplot() +  -->
-<!--   geom_line(data = df,  -->
-<!--             aes(x = last_survival, y = max_dev), -->
-<!--             size = 1.5, -->
-<!--             color = "gray70") +  -->
-<!--   geom_point(data = df %>% slice(c(20, 27, 38, 44)),  -->
-<!--              aes(x = last_survival, y = max_dev),  -->
-<!--              size = 3.5,  -->
-<!--              pch = 16, -->
-<!--              color = "darkblue") + -->
-<!--   labs(x = "survival over last time interval", y = "-log-likelihood") +  -->
-<!--   theme_light(base_size = 14) +  -->
-<!--   annotation_custom(gridExtra::tableGrob(mytable, rows=NULL), xmin=0.4, xmax=0.9, ymin=350, ymax=380) -->
-<!-- ``` -->
-
-<!-- + Last survival and recapture probabilities cannot be estimated separately. -->
-
-<!-- + Poor mixing of the chains. -->
-
-<!-- <!-- --- --> -->
-<!-- <!-- ## Parameter redundancy --> -->
-
-<!-- <!-- -- --> -->
-
-<!-- <!-- + Two issues --> -->
-
-<!-- <!-- -- --> -->
-
-<!-- <!-- + Intrinsic redundancy --> -->
-<!-- <!--     + Likelihood can be expressed by a smaller number of parameters --> -->
-<!-- <!--     + Feature of the model --> -->
-
-<!-- <!-- -- --> -->
-
-<!-- <!-- + Extrinsic redundancy --> -->
-<!-- <!--     + Model structure is fine --> -->
-<!-- <!--     + But lack of data makes a parameter non-estimable --> -->
-<!-- <!--     + Feature of the data --> -->
-
-<!-- ## Prior-posterior overlap for $\phi_4$ and $\phi_6$ -->
-
-<!-- ```{r, echo = FALSE} -->
-<!-- load(here::here("dat","dipper.RData")) -->
-<!-- PR <- runif(1500, 0, 1) -->
-<!-- MCMCtrace(mcmc.phitpt,  -->
-<!--           params = c('phi[4]'), -->
-<!--           ISB = FALSE, -->
-<!--           exact = TRUE, -->
-<!--           priors = PR, -->
-<!--           pdf = FALSE, -->
-<!--           Rhat = FALSE, -->
-<!--           n.eff = FALSE, -->
-<!--           ind = FALSE, -->
-<!--           type = "density", -->
-<!--           lwd_den = 3, -->
-<!--           lwd_pr = 3, -->
-<!--           col_pr = "gray70", -->
-<!--           lty_pr = 2, -->
-<!--           main_den = "", -->
-<!--           xlab_den = "survival prob. between years 1984 and 1985", -->
-<!--           sz_txt = 1.8, -->
-<!--           sz_ax = 1.8, -->
-<!--           sz_ax_txt = 1.8, -->
-<!--           sz_tick_txt = 1.8, -->
-<!--           sz_main_txt = 1.8) -->
-<!-- ``` -->
-
-
-<!-- ```{r, echo = FALSE} -->
-<!-- load(here::here("dat","dipper.RData")) -->
-<!-- PR <- runif(1500, 0, 1) -->
-<!-- MCMCtrace(mcmc.phitpt,  -->
-<!--           params = c('phi[6]'), -->
-<!--           ISB = FALSE, -->
-<!--           exact = TRUE, -->
-<!--           priors = PR, -->
-<!--           pdf = FALSE, -->
-<!--           Rhat = FALSE, -->
-<!--           n.eff = FALSE, -->
-<!--           ind = FALSE, -->
-<!--           type = "density", -->
-<!--           lwd_den = 3, -->
-<!--           lwd_pr = 3, -->
-<!--           col_pr = "gray70", -->
-<!--           lty_pr = 2, -->
-<!--           main_den = "", -->
-<!--           xlab_den = "survival prob. between years 1986 and 1987", -->
-<!--           sz_txt = 1.8, -->
-<!--           sz_ax = 1.8, -->
-<!--           sz_ax_txt = 1.8, -->
-<!--           sz_tick_txt = 1.8, -->
-<!--           sz_main_txt = 1.8) -->
-
-<!-- ``` -->
-
-<!-- ## Prior-posterior overlap for $p_3$ and $p_7$ -->
-
-<!-- ```{r, echo = FALSE} -->
-<!-- load(here::here("dat","dipper.RData")) -->
-<!-- PR <- runif(1500, 0, 1) -->
-<!-- MCMCtrace(mcmc.phitpt,  -->
-<!--           params = c('p[2]'), -->
-<!--           ISB = FALSE, -->
-<!--           exact = TRUE, -->
-<!--           priors = PR, -->
-<!--           pdf = FALSE, -->
-<!--           Rhat = FALSE, -->
-<!--           n.eff = FALSE, -->
-<!--           ind = FALSE, -->
-<!--           type = "density", -->
-<!--           lwd_den = 3, -->
-<!--           lwd_pr = 3, -->
-<!--           col_pr = "gray70", -->
-<!--           lty_pr = 2, -->
-<!--           main_den = "", -->
-<!--           xlab_den = "recapture prob. at year 1983", -->
-<!--           sz_txt = 1.8, -->
-<!--           sz_ax = 1.8, -->
-<!--           sz_ax_txt = 1.8, -->
-<!--           sz_tick_txt = 1.8, -->
-<!--           sz_main_txt = 1.8) -->
-
-<!-- ``` -->
-
-<!-- ```{r, echo = FALSE} -->
-<!-- load(here::here("dat","dipper.RData")) -->
-<!-- PR <- runif(1500, 0, 1) -->
-<!-- MCMCtrace(mcmc.phitpt,  -->
-<!--           params = c('p[6]'), -->
-<!--           ISB = FALSE, -->
-<!--           exact = TRUE, -->
-<!--           priors = PR, -->
-<!--           pdf = FALSE, -->
-<!--           Rhat = FALSE, -->
-<!--           n.eff = FALSE, -->
-<!--           ind = FALSE, -->
-<!--           type = "density", -->
-<!--           lwd_den = 3, -->
-<!--           lwd_pr = 3, -->
-<!--           col_pr = "gray70", -->
-<!--           lty_pr = 2, -->
-<!--           main_den = "", -->
-<!--           xlab_den = "recapture prob. at year 1987", -->
-<!--           sz_txt = 1.8, -->
-<!--           sz_ax = 1.8, -->
-<!--           sz_ax_txt = 1.8, -->
-<!--           sz_tick_txt = 1.8, -->
-<!--           sz_main_txt = 1.8) -->
-
-<!-- ``` -->
-
-<!-- ## What does survival actually mean in capture-recapture ? -->
-
-<!-- + Survival refers to the study area. -->
-
-<!-- + Mortality and permanent emigration are confounded. -->
-
-<!-- + Therefore we estimate apparent survival, not true survival. -->
-
-<!-- + Apparent survival probability = true survival × study area fidelity. -->
-
-<!-- + Consequently, apparent survival < true survival unless study area fidelity = 1. -->
-
-<!-- + Use caution with interpretation. If possible, combine with ring-recovery data, or go spatial to get closer to true survival. -->
-
-
-<!-- ## Further reading -->
-
-<!-- + CJS state-space formulation [Gimenez et al. (2007)](https://oliviergimenez.github.io/pubs/Gimenezetal2007EcologicalModelling.pdf) and [Royle (2008)](https://onlinelibrary.wiley.com/doi/10.1111/j.1541-0420.2007.00891.x). -->
-
-<!-- + Work on missing values by [Bonner et al. (2006)](https://onlinelibrary.wiley.com/doi/abs/10.1111/j.1541-0420.2005.00399.x) and [Langrock and King (2013)](https://projecteuclid.org/journals/annals-of-applied-statistics/volume-7/issue-3/Maximum-likelihood-estimation-of-markrecapturerecovery-models-in-the-presence-of/10.1214/13-AOAS644.full) and [Worthington et al. (2015)](https://link.springer.com/article/10.1007/s13253-014-0184-z). -->
-
-<!-- + The example on how to incorporate prior information is in [McCarthy and Masters (2005)](https://besjournals.onlinelibrary.wiley.com/doi/abs/10.1111/j.1365-2664.2005.01101.x). -->
-
-<!-- + Combine live recapture w/ dead recoveries by [Lebreton et al. (1999)](https://www.tandfonline.com/doi/pdf/10.1080/00063659909477230) and go spatial to account for emigration [Gilroy et al. (2012)](https://esajournals.onlinelibrary.wiley.com/doi/full/10.1890/12-0124.1) and [Schaub & Royle (2014)](https://besjournals.onlinelibrary.wiley.com/doi/full/10.1111/2041-210X.12134). -->
-
-<!-- + Non-identifiability in a Bayesian framework, see [Gimenez et al. (2009)](https://oliviergimenez.github.io/pubs/Gimenezetal2009-weakidentifiability.pdf) and [book by Cole (2020)](https://www.routledge.com/Parameter-Redundancy-and-Identifiability/Cole/p/book/9781498720878). -->
+## Introduction
+
+Blabla.
+
+
+```{r}
+knitr::include_graphics("images/lebreton.png")
+```
+
+## History of the Cormack-Jolly-Seber (CJS) model
+
+S.T. Buckland (2016). A Conversation with Richard M. Cormack. Statistical Science 31: 142-150.
+
+```{r, echo=FALSE, out.width="80%"}
+knitr::include_graphics("images/cormack-left.png")
+
+```{r, echo=FALSE, out.width="80%"}
+knitr::include_graphics("images/cormack-right.png")
+```
+
+```{r, echo=FALSE, out.width="70%"}
+knitr::include_graphics("images/king.png")
+```
+
+Bayesian uptake
+
+## What we've seen so far
+
+```{r, engine = 'tikz', echo = FALSE}
+\usetikzlibrary{arrows, fit, positioning, automata}
+\begin{tikzpicture}[node distance = 2cm]
+\tikzset{state/.style = {circle, draw, minimum size = 30pt, scale = 3, line width=1pt}}
+\node [state,fill=lightgray!75] (6) [] {$1$};
+\node [state,fill=lightgray!75] (5) [left = 20mm of 6] {$1$};
+\node [state,fill=lightgray!75] (4) [left = 20mm of 5] {$1$};
+\node [state,fill=lightgray!75] (3) [left = 20mm of 4] {$1$};
+\node [state,fill=lightgray!75] (7) [right = 20mm of 6] {$2$};
+\node [state,fill=lightgray!75] (8) [right = 20mm of 7] {$2$};
+\node [state,fill=lightgray!75] (9) [right = 20mm of 8] {$\cdots$};
+\node [state,fill=white] (16) [above = 20mm of 6] {$1$};
+\node [state,fill=white] (15) [above = 20mm of 5] {$2$};
+\node [state,fill=white] (14) [above = 20mm of 4] {$1$};
+\node [state,fill=white] (17) [above = 20mm of 7] {$1$};
+\node [state,fill=white] (18) [above = 20mm of 8] {$1$};
+\draw[->,black, line width=0.25mm,-latex] (3) -- node[above=3mm, align=center] {\huge $\varphi$} (4);
+\draw[->,black, line width=0.25mm,-latex] (4) -- node[above=3mm, align=center] {\huge $\varphi$} (5);
+\draw[->,black, line width=0.25mm,-latex] (5) -- node[above=3mm, align=center] {\huge $\varphi$} (6);
+\draw[->,black, line width=0.25mm,-latex] (6) -- node[above=3mm, align=center] {\huge $1 - \varphi$} (7);
+\draw[->,black, line width=0.25mm,-latex] (7) -- node[above=3mm, align=center] {\huge $1$} (8);
+\draw[->,black, line width=0.25mm,-latex] (8) -- node[above=3mm, align=center] {\huge $1$} (9);
+\draw[->,black, line width=0.25mm,-latex] (4) -- node[left=3mm, align=center] {\huge $1 - p$} (14);
+\draw[->,black, line width=0.25mm,-latex] (5) -- node[left=3mm, align=center] {\huge $p$} (15);
+\draw[->,black, line width=0.25mm,-latex] (6) -- node[left=3mm, align=center] {\huge $1 - p$} (16);
+\draw[->,black, line width=0.25mm,-latex] (7) -- node[left=3mm, align=center] {\huge $1$} (17);
+\draw[->,black, line width=0.25mm,-latex] (8) -- node[left=3mm, align=center] {\huge $1$} (18);
+\end{tikzpicture}
+```
+
+For states (in gray), $z = 1$ is alive, $z = 2$ is dead.
+
+For observations (in white), $y = 1$ is non-detected, $y = 2$ is detected
+
+## In the CJS model, survival and recapture are time-varying
+
+```{r, engine = 'tikz', echo = FALSE}
+\usetikzlibrary{arrows, fit, positioning, automata}
+\begin{tikzpicture}[node distance = 2cm]
+\tikzset{state/.style = {circle, draw, minimum size = 30pt, scale = 3, line width=1pt}}
+\node [state,fill=lightgray!75] (6) [] {$1$};
+\node [state,fill=lightgray!75] (5) [left = 20mm of 6] {$1$};
+\node [state,fill=lightgray!75] (4) [left = 20mm of 5] {$1$};
+\node [state,fill=lightgray!75] (3) [left = 20mm of 4] {$1$};
+\node [state,fill=lightgray!75] (7) [right = 20mm of 6] {$2$};
+\node [state,fill=lightgray!75] (8) [right = 20mm of 7] {$2$};
+\node [state,fill=lightgray!75] (9) [right = 20mm of 8] {$\cdots$};
+\node [state,fill=white] (16) [above = 20mm of 6] {$1$};
+\node [state,fill=white] (15) [above = 20mm of 5] {$2$};
+\node [state,fill=white] (14) [above = 20mm of 4] {$1$};
+\node [state,fill=white] (17) [above = 20mm of 7] {$1$};
+\node [state,fill=white] (18) [above = 20mm of 8] {$1$};
+\draw[->,black, line width=0.25mm,-latex] (3) -- node[above=3mm, align=center] {\huge $\varphi_1$} (4);
+\draw[->,black, line width=0.25mm,-latex] (4) -- node[above=3mm, align=center] {\huge $\varphi_2$} (5);
+\draw[->,black, line width=0.25mm,-latex] (5) -- node[above=3mm, align=center] {\huge $\varphi_3$} (6);
+\draw[->,black, line width=0.25mm,-latex] (6) -- node[above=3mm, align=center] {\huge $1 - \varphi_4$} (7);
+\draw[->,black, line width=0.25mm,-latex] (7) -- node[above=3mm, align=center] {\huge $1$} (8);
+\draw[->,black, line width=0.25mm,-latex] (8) -- node[above=3mm, align=center] {\huge $1$} (9);
+\draw[->,black, line width=0.25mm,-latex] (4) -- node[left=3mm, align=center] {\huge $1 - p_2$} (14);
+\draw[->,black, line width=0.25mm,-latex] (5) -- node[left=3mm, align=center] {\huge $p_3$} (15);
+\draw[->,black, line width=0.25mm,-latex] (6) -- node[left=3mm, align=center] {\huge $1 - p_4$} (16);
+\draw[->,black, line width=0.25mm,-latex] (7) -- node[left=3mm, align=center] {\huge $1$} (17);
+\draw[->,black, line width=0.25mm,-latex] (8) -- node[left=3mm, align=center] {\huge $1$} (18);
+\end{tikzpicture}
+```
+
+Survival probability is $\phi_t = \Pr(z_{t+1} = 1 | z_t = 1)$.
+
+Recapture (detection) probability is $p_t = \Pr(y_{t} = 1 | z_t = 1)$.
+
+Accounts for variation in e.g. environmental conditions (survival) or sampling effort (detection).
+
+## Capture, mark and recapture
+
+```{r, echo=FALSE, out.width="90%"}
+knitr::include_graphics("images/gull.jpg")
+```
+
+```{r, echo=FALSE, out.width="110%"}
+knitr::include_graphics("images/bighorn.png")
+```
+
+Artificial marks
+
+## Capture, mark and recapture
+
+```{r, echo=FALSE, out.width="90%"}
+knitr::include_graphics("images/lynx.png")
+```
+
+```{r, echo=FALSE, out.width="120%"}
+knitr::include_graphics("images/bearscat.png")
+```
+
+Natural marks
+
+## The famous Dipper example
+
+```{r, echo=FALSE, out.width="60%", fig.cap="White-throated Dipper (Cinclus cinclus)"}
+knitr::include_graphics("images/Marzo_BaguesMance.jpg")
+```
+
+```{r, echo=FALSE, fig.cap="Gilbert Marzolin", out.width="60%"}
+knitr::include_graphics("images/Marzocuissardes.jpg")
+```
+
+## 294 dippers captured and recaptured between 1981 and 1987 with known sex and wing length
+
+```{r echo = FALSE}
+dipper <- read_csv(here::here("dat", "dipper.csv"))
+dipper %>%
+  kableExtra::kable() %>%
+  kableExtra::scroll_box(width = "100%", height = "400px")
+y <- dipper %>%
+  select(year_1981:year_1987) %>%
+  as.matrix()
+```
+
+## Back to Nimble.
+
+### Our model so far $(\phi, p)$
+
+```{r eval = FALSE}
+hmm.phip <- nimbleCode({
+  phi ~ dunif(0, 1) # prior survival
+  p ~ dunif(0, 1) # prior detection
+  # likelihood
+  gamma[1,1] <- phi      # Pr(alive t -> alive t+1)
+  gamma[1,2] <- 1 - phi  # Pr(alive t -> dead t+1)
+  gamma[2,1] <- 0        # Pr(dead t -> alive t+1)
+  gamma[2,2] <- 1        # Pr(dead t -> dead t+1)
+  delta[1] <- 1          # Pr(alive t = 1) = 1
+  delta[2] <- 0          # Pr(dead t = 1) = 0
+  omega[1,1] <- 1 - p    # Pr(alive t -> non-detected t)
+  omega[1,2] <- p        # Pr(alive t -> detected t)
+  omega[2,1] <- 1        # Pr(dead t -> non-detected t)
+  omega[2,2] <- 0        # Pr(dead t -> detected t)
+  for (i in 1:N){
+    z[i,first[i]] ~ dcat(delta[1:2])
+    for (j in (first[i]+1):T){
+      z[i,j] ~ dcat(gamma[z[i,j-1], 1:2])
+      y[i,j] ~ dcat(omega[z[i,j], 1:2])
+    }
+  }
+})
+```
+
+### Our model so far $(\phi, p)$
+
+```{r echo = FALSE}
+load(here::here("dat","dipper.RData"))
+MCMCsummary(object = mcmc.phip, params = c("phi","p"), round = 2)
+```
+
+### The CJS model $(\phi_t, p_t)$
+
+```{r eval=FALSE}
+hmm.phitpt <- nimbleCode({
+  delta[1] <- 1          # Pr(alive t = 1) = 1
+  delta[2] <- 0          # Pr(dead t = 1) = 0
+  for (t in 1:(T-1)){
+    phi[t] ~ dunif(0, 1) # prior survival #<<
+    gamma[1,1,t] <- phi[t]      # Pr(alive t -> alive t+1)
+    gamma[1,2,t] <- 1 - phi[t]  # Pr(alive t -> dead t+1)
+    gamma[2,1,t] <- 0        # Pr(dead t -> alive t+1)
+    gamma[2,2,t] <- 1        # Pr(dead t -> dead t+1)
+    p[t] ~ dunif(0, 1) # prior detection #<<
+    omega[1,1,t] <- 1 - p[t]    # Pr(alive t -> non-detected t)
+    omega[1,2,t] <- p[t]        # Pr(alive t -> detected t)
+    omega[2,1,t] <- 1        # Pr(dead t -> non-detected t)
+    omega[2,2,t] <- 0        # Pr(dead t -> detected t)
+  }
+  # likelihood
+  for (i in 1:N){
+    z[i,first[i]] ~ dcat(delta[1:2])
+    for (j in (first[i]+1):T){
+      z[i,j] ~ dcat(gamma[z[i,j-1], 1:2, j-1])
+      y[i,j] ~ dcat(omega[z[i,j], 1:2, j-1])
+    }
+  }
+})
+```
+
+### The CJS model $(\phi_t, p_t)$
+
+
+```{r eval=FALSE}
+hmm.phitpt <- nimbleCode({
+  delta[1] <- 1          # Pr(alive t = 1) = 1
+  delta[2] <- 0          # Pr(dead t = 1) = 0
+  for (t in 1:(T-1)){ #<<
+    phi[t] ~ dunif(0, 1) # prior survival
+    gamma[1,1,t] <- phi[t]      # Pr(alive t -> alive t+1)
+    gamma[1,2,t] <- 1 - phi[t]  # Pr(alive t -> dead t+1)
+    gamma[2,1,t] <- 0        # Pr(dead t -> alive t+1)
+    gamma[2,2,t] <- 1        # Pr(dead t -> dead t+1)
+    p[t] ~ dunif(0, 1) # prior detection
+    omega[1,1,t] <- 1 - p[t]    # Pr(alive t -> non-detected t)
+    omega[1,2,t] <- p[t]        # Pr(alive t -> detected t)
+    omega[2,1,t] <- 1        # Pr(dead t -> non-detected t)
+    omega[2,2,t] <- 0        # Pr(dead t -> detected t)
+  } #<<
+  # likelihood
+  for (i in 1:N){
+    z[i,first[i]] ~ dcat(delta[1:2])
+    for (j in (first[i]+1):T){
+      z[i,j] ~ dcat(gamma[z[i,j-1], 1:2, j-1])
+      y[i,j] ~ dcat(omega[z[i,j], 1:2, j-1])
+    }
+  }
+})
+```
+
+### The CJS model $(\phi_t, p_t)$
+
+```{r eval=FALSE}
+hmm.phitpt <- nimbleCode({
+  delta[1] <- 1          # Pr(alive t = 1) = 1
+  delta[2] <- 0          # Pr(dead t = 1) = 0
+  for (t in 1:(T-1)){
+    phi[t] ~ dunif(0, 1) # prior survival
+    gamma[1,1,t] <- phi[t]      # Pr(alive t -> alive t+1) #<<
+    gamma[1,2,t] <- 1 - phi[t]  # Pr(alive t -> dead t+1) #<<
+    gamma[2,1,t] <- 0        # Pr(dead t -> alive t+1) #<<
+    gamma[2,2,t] <- 1        # Pr(dead t -> dead t+1) #<<
+    p[t] ~ dunif(0, 1) # prior detection
+    omega[1,1,t] <- 1 - p[t]    # Pr(alive t -> non-detected t)
+    omega[1,2,t] <- p[t]        # Pr(alive t -> detected t)
+    omega[2,1,t] <- 1        # Pr(dead t -> non-detected t)
+    omega[2,2,t] <- 0        # Pr(dead t -> detected t)
+  }
+  # likelihood
+  for (i in 1:N){
+    z[i,first[i]] ~ dcat(delta[1:2])
+    for (j in (first[i]+1):T){
+      z[i,j] ~ dcat(gamma[z[i,j-1], 1:2, j-1])
+      y[i,j] ~ dcat(omega[z[i,j], 1:2, j-1])
+    }
+  }
+})
+```
+
+### The CJS model $(\phi_t, p_t)$
+
+```{r eval=FALSE}
+hmm.phitpt <- nimbleCode({
+  delta[1] <- 1          # Pr(alive t = 1) = 1
+  delta[2] <- 0          # Pr(dead t = 1) = 0
+  for (t in 1:(T-1)){
+    phi[t] ~ dunif(0, 1) # prior survival
+    gamma[1,1,t] <- phi[t]      # Pr(alive t -> alive t+1)
+    gamma[1,2,t] <- 1 - phi[t]  # Pr(alive t -> dead t+1)
+    gamma[2,1,t] <- 0        # Pr(dead t -> alive t+1)
+    gamma[2,2,t] <- 1        # Pr(dead t -> dead t+1)
+    p[t] ~ dunif(0, 1) # prior detection
+    omega[1,1,t] <- 1 - p[t]    # Pr(alive t -> non-detected t) #<<
+    omega[1,2,t] <- p[t]        # Pr(alive t -> detected t) #<<
+    omega[2,1,t] <- 1        # Pr(dead t -> non-detected t) #<<
+    omega[2,2,t] <- 0        # Pr(dead t -> detected t) #<<
+  }
+  # likelihood
+  for (i in 1:N){
+    z[i,first[i]] ~ dcat(delta[1:2])
+    for (j in (first[i]+1):T){
+      z[i,j] ~ dcat(gamma[z[i,j-1], 1:2, j-1])
+      y[i,j] ~ dcat(omega[z[i,j], 1:2, j-1])
+    }
+  }
+})
+```
+
+### The CJS model $(\phi_t, p_t)$
+
+```{r eval=FALSE}
+hmm.phitpt <- nimbleCode({
+  delta[1] <- 1          # Pr(alive t = 1) = 1
+  delta[2] <- 0          # Pr(dead t = 1) = 0
+  for (t in 1:(T-1)){
+    phi[t] ~ dunif(0, 1) # prior survival
+    gamma[1,1,t] <- phi[t]      # Pr(alive t -> alive t+1)
+    gamma[1,2,t] <- 1 - phi[t]  # Pr(alive t -> dead t+1)
+    gamma[2,1,t] <- 0        # Pr(dead t -> alive t+1)
+    gamma[2,2,t] <- 1        # Pr(dead t -> dead t+1)
+    p[t] ~ dunif(0, 1) # prior detection
+    omega[1,1,t] <- 1 - p[t]    # Pr(alive t -> non-detected t)
+    omega[1,2,t] <- p[t]        # Pr(alive t -> detected t)
+    omega[2,1,t] <- 1        # Pr(dead t -> non-detected t)
+    omega[2,2,t] <- 0        # Pr(dead t -> detected t)
+  }
+  # likelihood
+  for (i in 1:N){
+    z[i,first[i]] ~ dcat(delta[1:2])
+    for (j in (first[i]+1):T){
+      z[i,j] ~ dcat(gamma[z[i,j-1], 1:2, j-1]) #<<
+      y[i,j] ~ dcat(omega[z[i,j], 1:2, j-1]) #<<
+    }
+  }
+})
+```
+
+### The CJS model $(\phi_t, p_t)$
+
+```{r echo = FALSE}
+load(here::here("dat","dipper.RData"))
+MCMCsummary(object = mcmc.phitpt, params = c("phi","p"), round = 2)
+```
+
+### Time-varying survival $(\phi_t, p)$
+
+```{r eval=FALSE}
+hmm.phitp <- nimbleCode({
+  for (t in 1:(T-1)){
+    phi[t] ~ dunif(0, 1) # prior survival
+    gamma[1,1,t] <- phi[t]      # Pr(alive t -> alive t+1)
+    gamma[1,2,t] <- 1 - phi[t]  # Pr(alive t -> dead t+1)
+    gamma[2,1,t] <- 0        # Pr(dead t -> alive t+1)
+    gamma[2,2,t] <- 1        # Pr(dead t -> dead t+1)
+  }
+  p ~ dunif(0, 1) # prior detection
+  delta[1] <- 1          # Pr(alive t = 1) = 1
+  delta[2] <- 0          # Pr(dead t = 1) = 0
+  omega[1,1] <- 1 - p    # Pr(alive t -> non-detected t)
+  omega[1,2] <- p        # Pr(alive t -> detected t)
+  omega[2,1] <- 1        # Pr(dead t -> non-detected t)
+  omega[2,2] <- 0        # Pr(dead t -> detected t)
+  # likelihood
+  for (i in 1:N){
+    z[i,first[i]] ~ dcat(delta[1:2])
+    for (j in (first[i]+1):T){
+      z[i,j] ~ dcat(gamma[z[i,j-1], 1:2, j-1])
+      y[i,j] ~ dcat(omega[z[i,j], 1:2])
+    }
+  }
+})
+```
+]
+
+### Time-varying survival $(\phi_t, p)$
+
+```{r echo = FALSE}
+load(here::here("dat","dipper.RData"))
+MCMCsummary(object = mcmc.phitp, params = c("phi","p"), round = 2)
+```
+
+### Time-varying detection $(\phi, p_t)$
+
+```{r eval=FALSE}
+hmm.phipt <- nimbleCode({
+  phi ~ dunif(0, 1) # prior survival
+  gamma[1,1] <- phi      # Pr(alive t -> alive t+1)
+  gamma[1,2] <- 1 - phi  # Pr(alive t -> dead t+1)
+  gamma[2,1] <- 0        # Pr(dead t -> alive t+1)
+  gamma[2,2] <- 1        # Pr(dead t -> dead t+1)
+  delta[1] <- 1          # Pr(alive t = 1) = 1
+  delta[2] <- 0          # Pr(dead t = 1) = 0
+  for (t in 1:(T-1)){
+    p[t] ~ dunif(0, 1) # prior detection
+    omega[1,1,t] <- 1 - p[t]    # Pr(alive t -> non-detected t)
+    omega[1,2,t] <- p[t]        # Pr(alive t -> detected t)
+    omega[2,1,t] <- 1        # Pr(dead t -> non-detected t)
+    omega[2,2,t] <- 0        # Pr(dead t -> detected t)
+  }
+  # likelihood
+  for (i in 1:N){
+    z[i,first[i]] ~ dcat(delta[1:2])
+    for (j in (first[i]+1):T){
+      z[i,j] ~ dcat(gamma[z[i,j-1], 1:2])
+      y[i,j] ~ dcat(omega[z[i,j], 1:2, j-1])
+    }
+  }
+})
+```
+
+### Time-varying detection $(\phi, p_t)$
+
+```{r echo = FALSE}
+load(here::here("dat","dipper.RData"))
+MCMCsummary(object = mcmc.phipt, params = c("phi","p"), round = 2)
+```
+
+
+
+## Why Bayes? Incorporate prior information.
+
+## Vague prior
+
+So far, we have assumed a vague prior:
+
+$$\phi_{prior} \sim \text{Beta}(1,1) = \text{Uniform}(0,1)$$
+
+With a vague prior, mean posterior survival is $\phi_{posterior} = 0.56$
+
+With credible interval $[0.52,0.62]$
+
+```{r, echo = FALSE}
+load(here::here("dat","dipper.RData"))
+PR <- runif(1500, 0, 1)
+MCMCtrace(mcmc.phip,
+          params = c('phi'),
+          ISB = FALSE,
+          exact = TRUE,
+          priors = PR,
+          pdf = FALSE,
+          Rhat = FALSE,
+          n.eff = FALSE,
+#          post_zm = TRUE,
+          sz_txt = NULL,
+          ind = TRUE,
+          type = "density",
+          lwd_den = 3,
+          lwd_pr = 3,
+          col_pr = "gray70",
+          lty_pr = 2,
+          main_den = "",
+          xlab_den = "survival")
+```
+
+Posterior distribution of survival in color (two chains), prior in gray dashed line.
+
+## How to incorporate prior information?
+
+Using information on body mass and annual survival of 27 European passerines, we can predict survival of European dippers using only body mass.
+
+For dippers, body mass is 59.8g, therefore $\phi = 0.57$ with $\text{sd} = 0.073$.
+
+Assuming an informative prior $\phi_{prior} \sim \text{Normal}(0.57,0.073^2)$.
+
+Mean posterior $\phi_{posterior} = 0.56$ with credible interval $[0.52, 0.61]$.
+
+No increase of precision in posterior inference.
+
+## How to incorporate prior information?
+
+Now if you had only the three first years of data, what would have happened?
+
+Width of credible interval is 0.53 (vague prior) vs. 0.24 (informative prior).
+
+Huge increase of precision in posterior inference, a $120\%$ gain!
+
+### Compare survival posterior with and without informative prior
+
+```{r, echo = FALSE}
+load(here::here("dat","phip3y.RData"))
+phinoprior <- c(mcmc.phip$chain1[,"phi"], mcmc.phip$chain2[,"phi"])
+load(here::here("dat","phipriorp3y.RData"))
+phiprior <- c(mcmc.phip$chain1[,"phi"], mcmc.phip$chain2[,"phi"])
+df <- data.frame(posterior = c(phinoprior, phiprior),
+                 type = c(rep("w/ vague prior", length(phinoprior)),
+                          rep("w/ informative prior", length(phiprior))))
+df %>%
+  ggplot() +
+  aes(x = posterior, fill = type) +
+  geom_density(aes(y = ..density..),
+               bins = 40,
+               color = "white",
+               alpha = 0.6) +
+  labs(x = "survival", fill = "") +
+  scale_fill_manual(values = wesanderson::wes_palette("Royal1")[2:1])
+```
+
+## Prior elicitation via moment matching
+
+
+The prior $\phi_{prior} \sim \text{Normal}(0.57,0.073^2)$ is not entirely satisfying
+
+Remember the Beta distribution
+
+Recall that the Beta distribution is a continuous distribution with values between 0 and 1. Useful for modelling survival or detection probabilities.
+
+If $X \sim Beta(\alpha,\beta)$, then the first and second moments of $X$ are:
+
+$$\mu = \text{E}(X) = \frac{\alpha}{\alpha + \beta}$$
+
+$$\sigma^2 = \text{Var}(X) = \frac{\alpha\beta}{(\alpha + \beta)^2 (\alpha + \beta + 1)}$$
+
+## Moment matching
+
+In the capture-recapture example, we know a priori that the mean of the probability we're interested in is $\mu = 0.57$ and its variance is $\sigma^2 = 0.073^2$. Parameters $\mu$ and $\sigma^2$ are seen as the moments of a $Beta(\alpha,\beta)$ distribution. Now we look for values of $\alpha$ and $\beta$ that match the observed moments of the Beta distribution $\mu$ and $\sigma^2$. We need another set of equations:
+
+$$\alpha = \bigg(\frac{1-\mu}{\sigma^2}- \frac{1}{\mu} \bigg)\mu^2$$
+
+$$\beta = \alpha \bigg(\frac{1}{\mu}-1\bigg)$$
+
+For our model, that means:
+
+```{r echo = TRUE}
+(alpha <- ( (1 - 0.57)/(0.073*0.073) - (1/0.57) )*0.57^2)
+(beta <- alpha * ( (1/0.57) - 1))
+```
+
+Now use $\phi_{prior} \sim \text{Beta}(\alpha = 25.6,\beta = 19.3)$ instead of $\phi_{prior} \sim \text{Normal}(0.57,0.073^2)$
+
+## Prior predictive checks
+
+### Linear regression
+
+Unreasonable prior $\beta \sim N(0, 1000^2)$
+
+```{r, echo = FALSE}
+df <- rnorm(1000, 0, 1000)
+df %>%
+  as_tibble() %>%
+  ggplot(aes(x = value)) +
+  geom_density(size = 2) +
+  labs(x = "Height (m)") +
+  theme_light(base_size = 20)
+```
+
+Reasonable prior $\beta \sim N(2, 0.5^2)$
+
+```{r, echo = FALSE}
+df <- rnorm(1000, 2, 0.5)
+df %>%
+  as_tibble() %>%
+  ggplot(aes(x = value)) +
+  geom_density(size = 2) +
+  labs(x = "Height (m)") +
+  theme_light(base_size = 20)
+```
+
+### Logistic regression
+
+Unreasonable prior $\text{logit}(\phi) = \beta \sim N(0, 10^2)$
+
+```{r, echo = FALSE}
+df <- plogis(rnorm(1000, 0, 10))
+df %>%
+  as_tibble() %>%
+  ggplot(aes(x = value)) +
+  geom_density(size = 2) +
+  labs(x = "survival") +
+  theme_light(base_size = 20)
+```
+
+Reasonable prior $\text{logit}(\phi) = \beta \sim N(0, 1.5^2)$
+
+```{r, echo = FALSE}
+df <- plogis(rnorm(1000, 0, 1.5))
+df %>%
+  as_tibble() %>%
+  ggplot(aes(x = value)) +
+  geom_density(size = 2) +
+  labs(x = "survival") +
+  theme_light(base_size = 20)
+```
+
+## Capture-recapture models rely on assumptions
+
+Design: No mark lost, Identity of individuals recorded without error (no false positives), Captured individuals are a random sample
+
+Model: Homogeneity of survival and recapture probabilities, Independence between individuals (overdispersion)
+
+Test validity of assumptions: These assumptions should be valid, whatever inferential framework, Use goodness-of-fit tests <span>&#8212;</span> Pradel et al. (2005), `R` implementation with [package `R2ucare`](https://besjournals.onlinelibrary.wiley.com/doi/full/10.1111/2041-210X.13014), Posterior predictive checks can also be used (not covered; [Gelman et al. 2020](https://arxiv.org/pdf/2011.01808.pdf)). Forward reference to chapter with gof and model selection. 
+
+### Parameter-redundancy issue
+
+```{r, echo = FALSE}
+load(here::here("dat", "profiledeviance.RData"))
+df <- data.frame(last_survival = grid_lastphi,
+                 max_dev = devmax)
+mytable <- df %>% slice(c(20, 27, 38, 44)) %>% round(2)
+ggplot() +
+  geom_line(data = df,
+            aes(x = last_survival, y = max_dev),
+            size = 1.5,
+            color = "gray70") +
+  geom_point(data = df %>% slice(c(20, 27, 38, 44)),
+             aes(x = last_survival, y = max_dev),
+             size = 3.5,
+             pch = 16,
+             color = "darkblue") +
+  labs(x = "survival over last time interval", y = "-log-likelihood") +
+  theme_light(base_size = 14) +
+  annotation_custom(gridExtra::tableGrob(mytable, rows=NULL), xmin=0.4, xmax=0.9, ymin=350, ymax=380)
+```
+
+Last survival and recapture probabilities cannot be estimated separately.
+
+Poor mixing of the chains.
+
+---
+## Parameter redundancy
+
+Two issues
+
+Intrinsic redundancy: Likelihood can be expressed by a smaller number of parameters; Feature of the model
+
+Extrinsic redundancy: Model structure is fine, But lack of data makes a parameter non-estimable, Feature of the data.
+
+## Prior-posterior overlap for $\phi_4$ and $\phi_6$
+
+```{r, echo = FALSE}
+load(here::here("dat","dipper.RData"))
+PR <- runif(1500, 0, 1)
+MCMCtrace(mcmc.phitpt,
+          params = c('phi[4]'),
+          ISB = FALSE,
+          exact = TRUE,
+          priors = PR,
+          pdf = FALSE,
+          Rhat = FALSE,
+          n.eff = FALSE,
+          ind = FALSE,
+          type = "density",
+          lwd_den = 3,
+          lwd_pr = 3,
+          col_pr = "gray70",
+          lty_pr = 2,
+          main_den = "",
+          xlab_den = "survival prob. between years 1984 and 1985",
+          sz_txt = 1.8,
+          sz_ax = 1.8,
+          sz_ax_txt = 1.8,
+          sz_tick_txt = 1.8,
+          sz_main_txt = 1.8)
+```
+
+
+```{r, echo = FALSE}
+load(here::here("dat","dipper.RData"))
+PR <- runif(1500, 0, 1)
+MCMCtrace(mcmc.phitpt,
+          params = c('phi[6]'),
+          ISB = FALSE,
+          exact = TRUE,
+          priors = PR,
+          pdf = FALSE,
+          Rhat = FALSE,
+          n.eff = FALSE,
+          ind = FALSE,
+          type = "density",
+          lwd_den = 3,
+          lwd_pr = 3,
+          col_pr = "gray70",
+          lty_pr = 2,
+          main_den = "",
+          xlab_den = "survival prob. between years 1986 and 1987",
+          sz_txt = 1.8,
+          sz_ax = 1.8,
+          sz_ax_txt = 1.8,
+          sz_tick_txt = 1.8,
+          sz_main_txt = 1.8)
+
+```
+
+## Prior-posterior overlap for $p_3$ and $p_7$
+
+```{r, echo = FALSE}
+load(here::here("dat","dipper.RData"))
+PR <- runif(1500, 0, 1)
+MCMCtrace(mcmc.phitpt,
+          params = c('p[2]'),
+          ISB = FALSE,
+          exact = TRUE,
+          priors = PR,
+          pdf = FALSE,
+          Rhat = FALSE,
+          n.eff = FALSE,
+          ind = FALSE,
+          type = "density",
+          lwd_den = 3,
+          lwd_pr = 3,
+          col_pr = "gray70",
+          lty_pr = 2,
+          main_den = "",
+          xlab_den = "recapture prob. at year 1983",
+          sz_txt = 1.8,
+          sz_ax = 1.8,
+          sz_ax_txt = 1.8,
+          sz_tick_txt = 1.8,
+          sz_main_txt = 1.8)
+
+```
+
+```{r, echo = FALSE}
+load(here::here("dat","dipper.RData"))
+PR <- runif(1500, 0, 1)
+MCMCtrace(mcmc.phitpt,
+          params = c('p[6]'),
+          ISB = FALSE,
+          exact = TRUE,
+          priors = PR,
+          pdf = FALSE,
+          Rhat = FALSE,
+          n.eff = FALSE,
+          ind = FALSE,
+          type = "density",
+          lwd_den = 3,
+          lwd_pr = 3,
+          col_pr = "gray70",
+          lty_pr = 2,
+          main_den = "",
+          xlab_den = "recapture prob. at year 1987",
+          sz_txt = 1.8,
+          sz_ax = 1.8,
+          sz_ax_txt = 1.8,
+          sz_tick_txt = 1.8,
+          sz_main_txt = 1.8)
+
+```
+
+## What does survival actually mean in capture-recapture ?
+
+Survival refers to the study area.
+
+Mortality and permanent emigration are confounded.
+
+Therefore we estimate apparent survival, not true survival.
+
+Apparent survival probability = true survival × study area fidelity.
+
+Consequently, apparent survival < true survival unless study area fidelity = 1.
+
+Use caution with interpretation. If possible, combine with ring-recovery data, or go spatial to get closer to true survival.
+
+## Summary
+
++ Blabla.
+
++ Blabla.
+
+## Suggested reading
+
++ CJS state-space formulation [Gimenez et al. (2007)](https://oliviergimenez.github.io/pubs/Gimenezetal2007EcologicalModelling.pdf) and [Royle (2008)](https://onlinelibrary.wiley.com/doi/10.1111/j.1541-0420.2007.00891.x).
+
++ Work on missing values by [Bonner et al. (2006)](https://onlinelibrary.wiley.com/doi/abs/10.1111/j.1541-0420.2005.00399.x) and [Langrock and King (2013)](https://projecteuclid.org/journals/annals-of-applied-statistics/volume-7/issue-3/Maximum-likelihood-estimation-of-markrecapturerecovery-models-in-the-presence-of/10.1214/13-AOAS644.full) and [Worthington et al. (2015)](https://link.springer.com/article/10.1007/s13253-014-0184-z).
+
++ The example on how to incorporate prior information is in [McCarthy and Masters (2005)](https://besjournals.onlinelibrary.wiley.com/doi/abs/10.1111/j.1365-2664.2005.01101.x).
+
++ Combine live recapture w/ dead recoveries by [Lebreton et al. (1999)](https://www.tandfonline.com/doi/pdf/10.1080/00063659909477230) and go spatial to account for emigration [Gilroy et al. (2012)](https://esajournals.onlinelibrary.wiley.com/doi/full/10.1890/12-0124.1) and [Schaub & Royle (2014)](https://besjournals.onlinelibrary.wiley.com/doi/full/10.1111/2041-210X.12134).
+
++ Non-identifiability in a Bayesian framework, see [Gimenez et al. (2009)](https://oliviergimenez.github.io/pubs/Gimenezetal2009-weakidentifiability.pdf) and [book by Cole (2020)](https://www.routledge.com/Parameter-Redundancy-and-Identifiability/Cole/p/book/9781498720878).

@@ -1,2 +1,243 @@
 # Covariates {#covariates}
 
+<!-- ## Can we explain time variation? Embrace heterogeneity -->
+
+<!-- + Include temporal covariates, say $x_t$. -->
+
+<!-- + $\text{logit}(\phi_t) = \beta_1 + \beta_2 x_t$. -->
+
+<!-- + Let's investigate the effect of water flow on dipper survival ([Marzolin 2002](https://doi.org/10.2307/3802934)). -->
+
+<!-- ```{r eval = FALSE} -->
+<!-- hmm.phiflowp <- nimbleCode({ -->
+<!--   delta[1] <- 1          # Pr(alive t = 1) = 1 -->
+<!--   delta[2] <- 0          # Pr(dead t = 1) = 0 -->
+<!--   for (t in 1:(T-1)){ -->
+<!--     logit(phi[t]) <- beta[1] + beta[2] * flow[t] #<< -->
+<!--     gamma[1,1,t] <- phi[t]      # Pr(alive t -> alive t+1) -->
+<!--     gamma[1,2,t] <- 1 - phi[t]  # Pr(alive t -> dead t+1) -->
+<!--     gamma[2,1,t] <- 0        # Pr(dead t -> alive t+1) -->
+<!--     gamma[2,2,t] <- 1        # Pr(dead t -> dead t+1) -->
+<!--   } -->
+<!--   p ~ dunif(0, 1) # prior detection -->
+<!--   omega[1,1] <- 1 - p    # Pr(alive t -> non-detected t) -->
+<!--   omega[1,2] <- p        # Pr(alive t -> detected t) -->
+<!--   omega[2,1] <- 1        # Pr(dead t -> non-detected t) -->
+<!--   omega[2,2] <- 0        # Pr(dead t -> detected t) -->
+<!--   beta[1] ~ dnorm(0, 1.5) # prior intercept #<< -->
+<!--   beta[2] ~ dnorm(0, 1.5) # prior slope #<< -->
+<!--   # likelihood -->
+<!--   for (i in 1:N){ -->
+<!--     z[i,first[i]] ~ dcat(delta[1:2]) -->
+<!--     for (j in (first[i]+1):T){ -->
+<!--       z[i,j] ~ dcat(gamma[z[i,j-1], 1:2, j-1]) -->
+<!--       y[i,j] ~ dcat(omega[z[i,j], 1:2]) -->
+<!--     } -->
+<!--   } -->
+<!-- }) -->
+<!-- ``` -->
+
+<!-- ```{r eval = FALSE} -->
+<!-- # water flow in L/s -->
+<!-- water_flow <- c(443, 1114, 529, 434, 627, 466) # 1981, 1982, ..., 1987 -->
+<!-- water_flow_st <- (water_flow - mean(water_flow))/sd(water_flow) #<< -->
+<!-- ``` -->
+<!-- ] -->
+
+<!-- ```{r eval = FALSE} -->
+<!-- my.constants <- list(N = nrow(y),  -->
+<!--                      T = ncol(y),  -->
+<!--                      first = first,  -->
+<!--                      flow = water_flow_st) #<< -->
+
+<!-- initial.values <- function() list(beta = rnorm(2,0,1), -->
+<!--                                   p = runif(1,0,1), -->
+<!--                                   z = zinits) -->
+
+<!-- parameters.to.save <- c("beta", "p", "phi") -->
+<!-- ``` -->
+
+<!-- ### Regression intercept and slope -->
+
+<!-- ```{r, echo = FALSE} -->
+<!-- load(here::here("dat/dipperflow.RData")) -->
+<!-- MCMCplot(object = mcmc.phiflowp, params = "beta", ISB = TRUE) -->
+<!-- ``` -->
+
+<!-- ### Time-dependent (covariate constrained) survival probability estimates -->
+
+<!-- ```{r, echo = FALSE} -->
+<!-- load(here::here("dat/dipperflow.RData")) -->
+<!-- MCMCplot(object = mcmc.phiflowp, params = "phi", ISB = TRUE) -->
+<!-- ``` -->
+
+<!-- ## Embrace heterogeneity -->
+
+<!-- + Include temporal covariates, say $x_t$ -->
+
+<!-- + $\text{logit}(\phi_t) = \beta_1 + \beta_2 x_t$ -->
+
+<!-- + If temporal variation not fully explained by covariates, add random effects -->
+
+<!-- + $\text{logit}(\phi_t) = \beta_1 + \beta_2 x_t + \varepsilon_t, \; \varepsilon_t \sim N(0,\sigma^2)$ -->
+
+<!-- ```{r eval = FALSE} -->
+<!-- hmm.phiflowREp <- nimbleCode({ -->
+<!--   for (t in 1:(T-1)){ -->
+<!--     logit(phi[t]) <- beta[1] + beta[2] * flow[t] + eps[t]  -->
+<!--     eps[t] ~ dnorm(0, sd = sdeps)  -->
+<!--     ...   -->
+<!--   } -->
+<!--   sdeps ~ dunif(0,10)  -->
+<!--   ... -->
+<!-- ``` -->
+
+<!-- ## What about individual heterogeneity? -->
+
+<!-- + Discrete covariate like, e.g., sex -->
+
+<!-- + Continuous covariate like, e.g., mass or size -->
+
+<!-- ## Sex and wing length in Dipper -->
+
+<!-- ```{r echo = FALSE} -->
+<!-- dipper %>%   -->
+<!--   kableExtra::kable() %>% -->
+<!--   kableExtra::scroll_box(width = "100%", height = "400px") -->
+<!-- ``` -->
+
+<!-- ## Sex effect -->
+
+<!-- + Let's use a covariate $\text{sex}$ that takes value 0 if male, and 1 if female -->
+
+<!-- + And write $\text{logit}(\phi_i) = \beta_1 + \beta_2 \; \text{sex}_i$ for bird $i$ -->
+
+<!-- + Then male survival is  -->
+
+<!-- $$\text{logit}(\phi_i) = \beta_1$$ -->
+
+<!-- + And female survival is  -->
+
+<!-- $$\text{logit}(\phi_i) = \beta_1 + \beta_2$$ -->
+
+<!-- ### Nimble implementation with sex as a covariate -->
+
+<!-- ```{r eval = FALSE} -->
+<!-- hmm.phisexp <- nimbleCode({ -->
+<!-- ... -->
+<!--   for (i in 1:N){ #<< -->
+<!--     logit(phi[i]) <- beta[1] + beta[2] * sex[i] #<< -->
+<!--     gamma[1,1,i] <- phi[i]      # Pr(alive t -> alive t+1) -->
+<!--     gamma[1,2,i] <- 1 - phi[i]  # Pr(alive t -> dead t+1) -->
+<!--     gamma[2,1,i] <- 0        # Pr(dead t -> alive t+1) -->
+<!--     gamma[2,2,i] <- 1        # Pr(dead t -> dead t+1) -->
+<!--   } #<< -->
+<!--   beta[1] ~ dnorm(mean = 0, sd = 1.5) #<< -->
+<!--   beta[2] ~ dnorm(mean = 0, sd = 1.5) #<< -->
+<!--   phi_male <- 1/(1+exp(-beta[1])) #<< -->
+<!--   phi_female <- 1/(1+exp(-(beta[1]+beta[2]))) #<< -->
+<!-- ... -->
+<!--   # likelihood -->
+<!--   for (i in 1:N){ -->
+<!--     z[i,first[i]] ~ dcat(delta[1:2]) -->
+<!--     for (j in (first[i]+1):T){ -->
+<!--       z[i,j] ~ dcat(gamma[z[i,j-1], 1:2, i]) #<< -->
+<!--       y[i,j] ~ dcat(omega[z[i,j], 1:2]) -->
+<!--     } -->
+<!--   } -->
+<!-- }) -->
+<!-- ``` -->
+
+<!-- ```{r echo = FALSE} -->
+<!-- load(here::here("dat/phisexp.RData")) -->
+<!-- MCMCsummary(object = mcmc.phisexp, round = 2) -->
+<!-- ``` -->
+
+
+<!-- ### Nimble implementation with nested indexing -->
+
+<!-- + Let's use a covariate $\text{sex}$ that contains 1s and 2s, indicating the sex of each individual: 1 if male, and 2 if female -->
+
+<!-- ```{r eval = FALSE} -->
+<!-- ... -->
+<!-- for (i in 1:N){ -->
+<!--   phi[i] <- beta[sex[i]] #<< -->
+<!--   gamma[1,1,i] <- phi[i]      # Pr(alive t -> alive t+1) -->
+<!--   gamma[1,2,i] <- 1 - phi[i]  # Pr(alive t -> dead t+1) -->
+<!--   gamma[2,1,i] <- 0           # Pr(dead t -> alive t+1) -->
+<!--   gamma[2,2,i] <- 1           # Pr(dead t -> dead t+1) -->
+<!-- } -->
+<!-- beta[1] ~ dunif(0,1) # male survival #<< -->
+<!-- beta[2] ~ dunif(0,1) # female survival #<< -->
+<!-- ... -->
+<!-- ``` -->
+
+<!-- + E.g. for individual $i = 2$, `beta[sex[i]]` gives `beta[sex[2]]` which will be `beta[1]` or `beta[2]` depending on whether sex[2] is 1 or 2. -->
+
+<!-- ```{r echo = FALSE} -->
+<!-- load(here::here("dat/phisexpni.RData")) -->
+<!-- MCMCsummary(object = mcmc.phisexp.ni, round = 2) -->
+<!-- ``` -->
+
+<!-- ### What about wing length? -->
+
+<!-- ```{r eval = FALSE} -->
+<!-- ...   -->
+<!--   for (i in 1:N){ #<< -->
+<!--     logit(phi[i]) <- beta[1] + beta[2] * winglength[i] #<< -->
+<!--     gamma[1,1,i] <- phi[i]      # Pr(alive t -> alive t+1) -->
+<!--     gamma[1,2,i] <- 1 - phi[i]  # Pr(alive t -> dead t+1) -->
+<!--     gamma[2,1,i] <- 0        # Pr(dead t -> alive t+1) -->
+<!--     gamma[2,2,i] <- 1        # Pr(dead t -> dead t+1) -->
+<!--   } -->
+<!--   beta[1] ~ dnorm(mean = 0, sd = 1.5) # intercept #<< -->
+<!--   beta[2] ~ dnorm(mean = 0, sd = 1.5) # slope #<< -->
+<!-- ... -->
+<!-- ``` -->
+
+<!-- ### Wing length -->
+
+<!-- ```{r, echo = FALSE} -->
+<!-- load(here::here("dat/phiwingp.RData")) -->
+<!-- beta1 <- c(mcmc.phiwlp$chain1[,'beta[1]'], mcmc.phiwlp$chain2[,'beta[1]']) -->
+<!-- beta2 <- c(mcmc.phiwlp$chain1[,'beta[2]'], mcmc.phiwlp$chain2[,'beta[2]']) -->
+<!-- wing.length.st <- as.vector(scale(dipper$wing_length)) -->
+<!-- predicted_survival <- matrix(NA,  -->
+<!--                              nrow = length(beta1),  -->
+<!--                              ncol = length(wing.length.st)) -->
+<!-- for (i in 1:length(beta1)){ -->
+<!--   for (j in 1:length(wing.length.st)){ -->
+<!--     predicted_survival[i,j] <- plogis(beta1[i] + beta2[i] * wing.length.st[j]) -->
+<!--   } -->
+<!-- } -->
+<!-- mean_survival <- apply(predicted_survival, 2, mean) -->
+<!-- lci <- apply(predicted_survival, 2, quantile, prob = 2.5/100) -->
+<!-- uci <- apply(predicted_survival, 2, quantile, prob = 97.5/100) -->
+<!-- ord <- order(wing.length.st) -->
+<!-- df <- data.frame(wing_length = wing.length.st[ord], -->
+<!--                  survival = mean_survival[ord], -->
+<!--                  lci = lci[ord], -->
+<!--                  uci = uci[ord]) -->
+<!-- df %>% -->
+<!--   ggplot() +  -->
+<!--   aes(x = wing_length, y = survival) +  -->
+<!--   geom_line() +  -->
+<!--   geom_ribbon(aes(ymin = lci, ymax = uci), fill = "grey70", alpha = 0.5) +  -->
+<!--   ylim(0,1) +  -->
+<!--   labs(x = "wing length", y = "estimated survival") -->
+<!-- ``` -->
+
+<!-- + You may test an effect of both sex and wing length, see exercise in Worksheets.  -->
+
+<!-- ## What if covariates vary with individual and time? -->
+
+<!-- + Think of age for example (see exercises in Worksheets); covariate or nested indexing works fine. -->
+
+<!-- + Now, think of body size across life. -->
+
+<!-- + Problem is we cannot record size when animal is non-detected. -->
+
+<!-- + Discretize in small, medium and large and treat as a state <span>&#8212;</span> more later. -->
+
+<!-- + Assume a model for covariate and fill in missing values (imputation). -->
+
