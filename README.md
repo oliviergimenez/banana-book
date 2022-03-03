@@ -8,4 +8,7 @@ People who sent feedback:
 -   Mahdieh Tourani \@TouraniMa
 -   Cyrus Kavwele \@cyruskavwele
 -   Rémi Fraysse
+-   Fitsum Abadi \@FitsumAG
+-   Cyril Milleret \@Milleret_Cyril
+-   Matthieu Paquet
 -   
