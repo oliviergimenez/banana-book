@@ -5161,14 +5161,29 @@ A hidden Markov model is just two time series running in parallel. One for the s
 <h3>
 <span class="header-section-number">3.6.4</span> Likelihood<a class="anchor" aria-label="anchor" href="#likelihoodhmm"><i class="fas fa-link"></i></a>
 </h3>
-<p>The likelihood is the probability of the observed data <span class="math inline">\(y\)</span> given the parameters of our model, the unkowns. Here the unknows are the survival and detection probabilities <span class="math inline">\(\phi\)</span> and <span class="math inline">\(p\)</span>, and the latent states <span class="math inline">\(z\)</span>. Using the definition of a conditional probability, then the likelihood of a Markov chain, we get that the likelihood of an HMM for a single individual <span class="math inline">\(i\)</span>:</p>
+<p>In the Bayesian framework, we usually work with the so-called complete likelihood, that is the probability of the observed data <span class="math inline">\(y\)</span> and the latent states <span class="math inline">\(z\)</span> given the parameters of our model, here the survival and detection probabilities <span class="math inline">\(\phi\)</span> and <span class="math inline">\(p\)</span>. The complete likelihood for individual <span class="math inline">\(i\)</span> is:</p>
+<p><span class="math display">\[\begin{align*}
+\Pr(\mathbf{y}_i, \mathbf{z}_i) &amp;= \Pr(y_{i,1}, y_{i,2}, \ldots, y_{i,T}, z_{i,1}, z_{i,2}, \ldots, z_{i,T})\\
+\end{align*}\]</span></p>
+<p>Using the definition of a conditional probability, we have:</p>
+<p><span class="math display">\[\begin{align*}
+\Pr(\mathbf{y}_i) &amp;= \Pr(y_{i,1}, y_{i,2}, \ldots, y_{i,T})\\
+                  &amp;= \color{blue}{\Pr(y_{i,1}, y_{i,2}, \ldots, y_{i,T} | z_{i,1}, z_{i,2}, \ldots, z_{i,T}) \Pr(z_{i,1}, z_{i,2}, \ldots, z_{i,T})}\\
+\end{align*}\]</span></p>
+<p>Then by using the independence of the <span class="math inline">\(y\)</span> conditional on the <span class="math inline">\(z\)</span>, and the likelihood of a Markov chain, we get that:</p>
 <p><span class="math display">\[\begin{align*}
 \Pr(\mathbf{y}_i) &amp;= \Pr(y_{i,1}, y_{i,2}, \ldots, y_{i,T})\\
                   &amp;= \Pr(y_{i,1}, y_{i,2}, \ldots, y_{i,T} | z_{i,1}, z_{i,2}, \ldots, z_{i,T}) \Pr(z_{i,1}, z_{i,2}, \ldots, z_{i,T})\\
-                &amp;= \left(\prod_{t=1}^T{\omega_{z_{i,t}, y_{i,t}}}\right) \left(\Pr(z_{i,1}) \prod_{t=2}^T{\gamma_{z_{i,t-1},z_{i,t}}}\right)\\
+                &amp;= \color{blue}{\left(\prod_{t=1}^T{\Pr{(y_{i,t} | z_{i,t})}}\right) \left(\Pr(z_{i,1}) \prod_{t=2}^T{\Pr{(z_{i,t} | z_{i,t-1})}}\right)}\\
 \end{align*}\]</span></p>
-<p>To obtain the likelihood of the whole dataset, we need to multiply this individual likelihood for each animal <span class="math inline">\(\displaystyle{\prod_{i=1}^N{\Pr(\mathbf{y}_i)}}\)</span>. When several individuals have the same contribution, calculating their individual contribution only once can greatly reduce the computational burden, as illustrated in Section <a href="hmmcapturerecapture.html#pooled-likelihood">3.9</a>.</p>
-<p>The Bayesian approach with MCMC methods allows treating the latent states <span class="math inline">\(z_{i,t}\)</span> as if they were parameters, and to be estimated as such. However, the likelihood is rather complex with a large number of latent states <span class="math inline">\(z_{i,t}\)</span>, which comes with computational costs and slow mixing. There are situations where the latent states are the focus of ecological inference and need to be estimated (see Suggested reading below). However, if not needed, you might want to get rid of the latent states and focus on the parameters, which often speeds up computations and improves mixing as shown in Section <a href="hmmcapturerecapture.html#marginalization">3.8</a>. Actually, you can even estimate the latent states afterwards, as illustrated in Section <a href="hmmcapturerecapture.html#decoding">3.10</a>.</p>
+<p>Finally, by recognizing the observation and transition probabilities, we have that the complete likelihood for individual <span class="math inline">\(i\)</span> is:</p>
+<p><span class="math display">\[\begin{align*}
+\Pr(\mathbf{y}_i) &amp;= \Pr(y_{i,1}, y_{i,2}, \ldots, y_{i,T})\\
+                  &amp;= \Pr(y_{i,1}, y_{i,2}, \ldots, y_{i,T} | z_{i,1}, z_{i,2}, \ldots, z_{i,T}) \Pr(z_{i,1}, z_{i,2}, \ldots, z_{i,T})\\
+                &amp;= \color{blue}{\left(\prod_{t=1}^T{\omega_{z_{i,t}, y_{i,t}}}\right) \left(\Pr(z_{i,1}) \prod_{t=2}^T{\gamma_{z_{i,t-1},z_{i,t}}}\right)}\\
+\end{align*}\]</span></p>
+<p>To obtain the complete likelihood of the whole dataset, we need to multiply this individual likelihood for each animal <span class="math inline">\(\displaystyle{\prod_{i=1}^N{\Pr(\mathbf{y}_i,\mathbf{z}_i)}}\)</span>. When several individuals have the same contribution, calculating their individual contribution only once can greatly reduce the computational burden, as illustrated in Section <a href="hmmcapturerecapture.html#pooled-likelihood">3.9</a>.</p>
+<p>The Bayesian approach with MCMC methods allows treating the latent states <span class="math inline">\(z_{i,t}\)</span> as if they were parameters, and to be estimated as such. However, the likelihood is rather complex with a large number of latent states <span class="math inline">\(z_{i,t}\)</span>, which comes with computational costs and slow mixing. There are situations where the latent states are the focus of ecological inference and need to be estimated (see Suggested reading below). However, if not needed, you might want to get rid of the latent states and rely on the so-called marginal likelihood. By doing so, you can avoid sampling the latent states, focus on the ecological parameters, and often speeds up computations and improves mixing as shown in Section <a href="hmmcapturerecapture.html#marginalization">3.8</a>. Actually, you can even estimate the latent states afterwards, as illustrated in Section <a href="hmmcapturerecapture.html#decoding">3.10</a>.</p>
 <!-- It has a matrix formulation: -->
 <!-- \begin{align*} -->
 <!-- \Pr(\mathbf{y}) &= \mathbf{\delta} \; \mathbf{\Omega} \; \mathbf{\Gamma} \cdots \mathbf{\Omega} \; \mathbf{\Gamma} \; \mathbf{\Omega} \; \mathbb{1} -->
@@ -5277,7 +5292,7 @@ A hidden Markov model is just two time series running in parallel. One for the s
 <span class="co">## </span>
 <span class="co">## $T</span>
 <span class="co">## [1] 5</span></code></pre></div>
-<p>The data are made of 0’s for non-detections and 1’s for detections. To use the categorical distribution, we need to code 1’s and 2’s. We simply add 1 to get the correct format, that is <span class="math inline">\(y = 1\)</span> for non-detection and <span class="math inline">\(y = 2\)</span> for detection: <strong>Using 1 and 2 would make my life easier… The 0/1 coding is a convention. Using 1/2 would make explicit that non-detections are actual data.</strong></p>
+<p>The data are made of 0’s for non-detections and 1’s for detections. To use the categorical distribution, we need to code 1’s and 2’s. We simply add 1 to get the correct format, that is <span class="math inline">\(y = 1\)</span> for non-detection and <span class="math inline">\(y = 2\)</span> for detection: <strong>Using 1 and 2 would make my life easier… The 0/1 coding is a convention; Using the 1/2 coding would make clear that non-detections are actual data (while the use of 0s for non-detections is sometimes confusing). Do it, do it.</strong></p>
 <div class="sourceCode" id="cb114"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">my.data</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>y <span class="op">=</span> <span class="va">y</span> <span class="op">+</span> <span class="fl">1</span><span class="op">)</span></code></pre></div>
 <p>Now let’s write a function for the initial values:</p>
@@ -5310,7 +5325,7 @@ A hidden Markov model is just two time series running in parallel. One for the s
                           nchains <span class="op">=</span> <span class="va">n.chains</span><span class="op">)</span>
 <span class="va">end_time</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Sys.time.html">Sys.time</a></span><span class="op">(</span><span class="op">)</span>
 <span class="va">end_time</span> <span class="op">-</span> <span class="va">start_time</span></code></pre></div>
-<pre><code>## Time difference of 31.2 secs</code></pre>
+<pre><code>## Time difference of 30.96 secs</code></pre>
 <p>We can have a look to numerical summaries:</p>
 <div class="sourceCode" id="cb120"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/pkg/MCMCvis/man/MCMCsummary.html">MCMCsummary</a></span><span class="op">(</span><span class="va">mcmc.output</span>, round <span class="op">=</span> <span class="fl">2</span><span class="op">)</span>
@@ -5358,24 +5373,151 @@ A hidden Markov model is just two time series running in parallel. One for the s
 <h2>
 <span class="header-section-number">3.8</span> Marginalization<a class="anchor" aria-label="anchor" href="#marginalization"><i class="fas fa-link"></i></a>
 </h2>
-<p>In some situations, you will not be interested in inferring the hidden states <span class="math inline">\(z_{i,t}\)</span>, so why bother estimating them? The good news is that you can get rid of the states, so that the likelihood is a function of survival and detection probabilities <span class="math inline">\(\phi\)</span> and <span class="math inline">\(p\)</span> only. By the way, this is the function you would maximize in a Frequentist approach.</p>
-<p>Using the formula of total probability, we get by summing over all possible states:</p>
+<p>In some situations, you will not be interested in inferring the hidden states <span class="math inline">\(z_{i,t}\)</span>, so why bother estimating them? The good news is that you can get rid of the states, so that the marginal likelihood is a function of survival and detection probabilities <span class="math inline">\(\phi\)</span> and <span class="math inline">\(p\)</span> only.</p>
+<div id="brute-force-approach" class="section level3" number="3.8.1">
+<h3>
+<span class="header-section-number">3.8.1</span> Brute-force approach<a class="anchor" aria-label="anchor" href="#brute-force-approach"><i class="fas fa-link"></i></a>
+</h3>
+<p>Using the formula of total probability, we get the marginal likelihood by summing over all possible states in the complete likelihood:</p>
 <p><span class="math display">\[\begin{align*}
 \Pr(\mathbf{y}_i) &amp;= \Pr(y_{i,1}, y_{i,2}, \ldots, y_{i,T})\\
-                &amp;= \sum_{z_{i,1}} \cdots \sum_{z_{i,T}} \Pr(y_{i,1}, y_{i,2}, \ldots, y_{i,T} | z_{i,1}, z_{i,2}, \ldots, z_{i,T}) \Pr(z_{i,1}, z_{i,2}, \ldots, z_{i,T})\\
-                &amp;= \sum_{z_{i,1}} \cdots \sum_{z_{i,T}} \left(\prod_{t=1}^T{\omega_{z_{i,t}, y_{i,t}}}\right) \left(\Pr(z_{i,1}) \prod_{t=2}^T{\gamma_{z_{i,t-1},z_{i,t}}}\right)\\
+                &amp;= \sum_{\mathbf{z}_i} \Pr(\mathbf{y}_i, \mathbf{z}_i)\\
+                &amp;= \sum_{z_{i,1}} \cdots \sum_{z_{i,T}} \Pr(y_{i,1}, y_{i,2}, \ldots, y_{i,T}, z_{i,1}, z_{i,2}, \ldots, z_{i,T})\\
 \end{align*}\]</span></p>
-<p>This function is complex to evaluate because it involves many operations (<span class="math inline">\(TN^T\)</span> operations to be precise, where <span class="math inline">\(T\)</span> is the length of encounter histories and <span class="math inline">\(N\)</span> is the number of hidden states), which number increases exponentially as the number of states increases. This complexity precludes using this method to get rid of the states. Fortunately, we have another algorithm in the HMM toolbox that is useful.</p>
-<div id="forward-algorithm" class="section level3" number="3.8.1">
-<h3>
-<span class="header-section-number">3.8.1</span> Forward algorithm<a class="anchor" aria-label="anchor" href="#forward-algorithm"><i class="fas fa-link"></i></a>
-</h3>
-<p>Several products that are computed several times. What if we could store the results and use them later. Recurrence. Dynamic programming. Order of complexity <span class="math inline">\(TN^2\)</span>. Give examples, and compare with expression above. Explain forward algo with colors. Mention that: The neat thing with NIMBLE is that it provides marginalised models through nimbleEcology, we’ll get back to it in Reference forward to section below (forward algorithm).</p>
+<p>Going through the same steps as for deriving the complete likelihood, we obtain the marginal likelihood:</p>
+<p><span class="math display">\[\begin{align*}
+\Pr(\mathbf{y}_i) &amp;= \sum_{z_{i,1}} \cdots \sum_{z_{i,T}} \left(\prod_{t=1}^T{\omega_{z_{i,t}, y_{i,t}}}\right) \left(\Pr(z_{i,1}) \prod_{t=2}^T{\gamma_{z_{i,t-1},z_{i,t}}}\right)\\
+\end{align*}\]</span></p>
+<p>Let’s go through an example. Let’s imagine we have <span class="math inline">\(T = 3\)</span> winters, and we’d like to write the likelihood for an individual having the encounter history detected, detected then non-detected. Remember that non-detected is coded 1 and detected 2, while alive is coded 1 and dead 2. We need to calculate <span class="math inline">\(\Pr(y_1 = 2, y_2 = 2, y_3 = 1)\)</span> which, according to the formula above, is given by:</p>
+<p><span class="math display">\[\begin{align*}
+\begin{split}
+\Pr(y_1 = 2, y_2 = 2, y_3 = 1) &amp;= \sum_{i=1}^{2} \sum_{j=1}^{2} \sum_{k=1}^{2} \left[\Pr(y_1 = 2 | z_1 = i) \Pr(y_2 = 2 | z_2 = j) \Pr(y_3 = 1 | z_3 = k)\right] \\ 
+&amp; \qquad \left(\Pr(z_1=i) \Pr(z_2 = j | z_1 = i) \Pr(z_3 = k | z_2 = j)\right)\\
+\end{split}
+\end{align*}\]</span></p>
+<p>Expliciting all the sums in <span class="math inline">\(\Pr(y_1 = 2, y_2 = 2, y_3 = 1)\)</span>, we get the long and ugly expression:</p>
+<p><span class="math display">\[\begin{align*}
+\begin{split}
+\Pr(y_1 = 2, y_2 = 2, y_3 = 1) &amp;= \\
+&amp; \Pr(y_1 = 2 | z_1 = 1) \Pr(y_2 = 2 | z_2 = 1) \Pr(y_3 = 1 | z_3 = 1) \times \\ 
+&amp; \qquad \Pr(z_1 = 1) \Pr(z_2 = 1 | z_1 = 1) \Pr(z_3 = 1 | z_2 = 1) +\\
+&amp;  \Pr(y_1 = 2 | z_1 = 2) \Pr(y_2 = 2 | z_2 = 1) \Pr(y_3 = 1 | z_3 = 1) \times\\ 
+&amp; \qquad \Pr(z_1 = 2) \Pr(z_2 = 1 | z_1 = 2) \Pr(z_3 = 1 | z_2 = 1) +\\
+&amp;  \Pr(y_1 = 2 | z_1 = 1) \Pr(y_2 = 2 | z_2 = 2) \Pr(y_3 = 1 | z_3 = 1) \times\\ 
+&amp; \qquad \Pr(z_1 = 1) \Pr(z_2 = 2 | z_1 = 1) \Pr(z_3 = 1 | z_2 = 2) +\\
+&amp;  \Pr(y_1 = 2 | z_1 = 2) \Pr(y_2 = 2 | z_2 = 2) \Pr(y_3 = 1 | z_3 = 1) \times\\ 
+&amp; \qquad \Pr(z_1 = 2) \Pr(z_2 = 2 | z_1 = 2) \Pr(z_3 = 1 | z_2 = 2) +\\
+&amp;  \Pr(y_1 = 2 | z_1 = 1) \Pr(y_2 = 2 | z_2 = 1) \Pr(y_3 = 1 | z_3 = 2) \times\\ 
+&amp; \qquad \Pr(z_1 = 1) \Pr(z_2 = 1 | z_1 = 1) \Pr(z_3 = 2 | z_2 = 1) +\\
+&amp;  \Pr(y_1 = 2 | z_1 = 2) \Pr(y_2 = 2 | z_2 = 1) \Pr(y_3 = 1 | z_3 = 2) \times\\ 
+&amp; \qquad \Pr(z_1 = 2) \Pr(z_2 = 1 | z_1 = 2) \Pr(z_3 = 2 | z_2 = 1) +\\
+&amp;  \Pr(y_1 = 2 | z_1 = 1) \Pr(y_2 = 2 | z_2 = 2) \Pr(y_3 = 1 | z_3 = 2) \times\\ 
+&amp; \qquad \Pr(z_1 = 1) \Pr(z_2 = 2 | z_1 = 1) \Pr(z_3 = 2 | z_2 = 2) +\\
+&amp;  \Pr(y_1 = 2 | z_1 = 2) \Pr(y_2 = 2 | z_2 = 2) \Pr(y_3 = 1 | z_3 = 2) \times\\ 
+&amp; \qquad \Pr(z_1 = 2) \Pr(z_2 = 2 | z_1 = 2) \Pr(z_3 = 2 | z_2 = 2)\\
+\end{split}
+\end{align*}\]</span></p>
+<p>You can simplify this expression by noticing that i) all individuals are alive for sure when marked and released in first winter, or <span class="math inline">\(\Pr(z_1=2) = 0\)</span> and ii) dead individuals are non-detected for sure, or <span class="math inline">\(\Pr(y_t = 2|z_t = 2) = 0\)</span>, which lead to:</p>
+<p><span class="math display">\[\begin{align*}
+\begin{split}
+\Pr(y_1 = 2, y_2 = 2, y_3 = 1) &amp;= \\
+&amp; \Pr(y_1 = 2 | z_1 = 1) \Pr(y_2 = 2 | z_2 = 1) \Pr(y_3 = 1 | z_3 = 1) \times \\ 
+&amp; \qquad \Pr(z_1 = 1) \Pr(z_2 = 1 | z_1 = 1) \Pr(z_3 = 1 | z_2 = 1) +\\
+&amp;  \Pr(y_1 = 2 | z_1 = 1) \Pr(y_2 = 2 | z_2 = 1) \Pr(y_3 = 1 | z_3 = 2) \times\\ 
+&amp; \qquad \Pr(z_1 = 1) \Pr(z_2 = 1 | z_1 = 1) \Pr(z_3 = 2 | z_2 = 1)\\
+\end{split}
+\end{align*}\]</span></p>
+<p>Because all individuals are captured in first winter, or <span class="math inline">\(\Pr(y_1 = 2 | z_1 = 1) = 1\)</span>, we get:</p>
+<p><span class="math display">\[\begin{align*}
+\begin{split}
+\Pr(y_1 = 2, y_2 = 2, y_3 = 1) &amp;= \\
+&amp; 1 (1-p) \times \\
+&amp; \qquad 1 \phi \phi +\\
+&amp; 1 p 1 \times \\
+&amp; \qquad 1 \phi (1-\phi)\\
+\end{split}
+\end{align*}\]</span></p>
+<p>You end up with <span class="math inline">\(\Pr(y_1 = 2, y_2 = 2, y_3 = 1) = \phi p (1 - p\phi)\)</span>.</p>
+<p>The latent states are no longer involved in the likelihood for this individual. However, even on a rather simple example, the marginal likelihood is quite complex to evaluate because it involves many operations. If <span class="math inline">\(T\)</span> is the length of our encounter histories and <span class="math inline">\(N\)</span> is the number of hidden states (two for alive and dead, but this will be more in some chapters to come), then we need to calculate the sum of <span class="math inline">\(N^T\)</span> terms (the sums in the formula above), each of which has two products of <span class="math inline">\(T\)</span> factors (the products in the formula above), hence <span class="math inline">\(2TN^T\)</span> calculations in total. You can check that in the simple example above, we have <span class="math inline">\(T^N = 2^3 = 8\)</span> terms that are summed, each of which is a product of <span class="math inline">\(2T = 2 \times 3 = 6\)</span> terms. This means that the number of operations increases exponentially as the number of states increases. In most cases, this complexity precludes using this method to get rid of the states. Fortunately, we have another algorithm in the HMM toolbox that is useful to calculate the marginal likelihood efficiently.</p>
 </div>
-<div id="implementation-in-nimble" class="section level3" number="3.8.2">
+<div id="forward-algorithm" class="section level3" number="3.8.2">
 <h3>
-<span class="header-section-number">3.8.2</span> Implementation in NIMBLE<a class="anchor" aria-label="anchor" href="#implementation-in-nimble"><i class="fas fa-link"></i></a>
+<span class="header-section-number">3.8.2</span> Forward algorithm<a class="anchor" aria-label="anchor" href="#forward-algorithm"><i class="fas fa-link"></i></a>
 </h3>
+<p>In the brute-force approach, several products are computed several times to calculate the marginal likelihood. What if we could store these products and use them later while computing the probability of the observation sequence? This is precisely what the forward algorithm does.</p>
+<p>We need to introduce <span class="math inline">\(\alpha_t(j)\)</span> the probability for the latent state <span class="math inline">\(z\)</span> of being in state <span class="math inline">\(j\)</span> at <span class="math inline">\(t\)</span> after seeing the first <span class="math inline">\(j\)</span> observations <span class="math inline">\(y_1, \ldots, y_t\)</span>, that is <span class="math inline">\(\alpha_t(j) = \Pr(y_1, \ldots, y_t, z_t = j)\)</span>.</p>
+<p>Using the law of total probability, we can write the marginal likelihood as a function of <span class="math inline">\(\alpha_T(j)\)</span>, namely we have <span class="math inline">\(\Pr(\mathbf{y}) = \displaystyle{\sum_{j=1}^N\Pr(y_1, \ldots, y_t, z_t = j)} = \displaystyle{\sum_{j=1}^N\alpha_T(j)}\)</span>.</p>
+<p>How to calculate the the <span class="math inline">\(\alpha_T(j)\)</span>s? This is where the magic of the forward algorithm happens. We use a recurrence relationship that saves us many computations.</p>
+<p>The recurrence states that:</p>
+<p><span class="math display">\[\begin{align*}
+\alpha_t(j) &amp;= \sum_{i=1}^N \alpha_{t-1}(i) \gamma_{i,j} \omega_{j,y_t}
+\end{align*}\]</span></p>
+<p>How to obtain this recurrence? First, using the law of total probability with <span class="math inline">\(z_{t-1}\)</span>, we have that:
+<span class="math display">\[\begin{align*}
+\alpha_t(j) &amp;= \sum_{i=1}^N \Pr(y_1, \ldots, y_t, z_{t-1} = i, z_t = j)\\
+\end{align*}\]</span></p>
+<p>Second, using conditional probabilities, we get:
+<span class="math display">\[\begin{align*}
+\alpha_t(j) &amp;= \sum_{i=1}^N \Pr(y_t | z_{t-1} = i, z_t = j, y_1, \ldots, y_t) \Pr(z_{t-1} = i, z_t = j, y_1, \ldots, y_t)
+\end{align*}\]</span></p>
+<p>Third, using conditional probabilities again, on the second term of the product, we get:
+<span class="math display">\[\begin{align*}
+\alpha_t(j) &amp;= \sum_{i=1}^N \Pr(y_t | z_{t-1} = i, z_t = j, y_1, \ldots, y_t) \times \\ &amp; \Pr(z_t = j | z_{t-1} = i, y_1, \ldots, y_t) \Pr(z_{t-1} = i, y_1, \ldots, y_t)
+\end{align*}\]</span></p>
+<p>Which, using conditional independence, simplifies into:</p>
+<p><span class="math display">\[\begin{align*}
+\alpha_t(j) &amp;= \sum_{i=1}^N \Pr(y_t | z_t = j) \Pr(z_t = j | z_{t-1} = i) \Pr(z_{t-1} = i, y_1, \ldots, y_t)
+\end{align*}\]</span></p>
+<p>Recognizing that <span class="math inline">\(\Pr(y_{t}|z_{t}=j)=\omega_{j,y_t}\)</span>, <span class="math inline">\(\Pr(z_{t} = j | z_{t-1} = i) = \gamma_{i,j}\)</span> and <span class="math inline">\(\Pr(z_{t-1} = i, y_1, \ldots, y_t) = \alpha_{t-1}(i)\)</span>, we obtain the recurrence.</p>
+<p>In practice, the forward algorithm works as follows. First you initialize the procedure by calculating for all <span class="math inline">\(j\)</span>: <span class="math inline">\(\alpha_1(j) = Pr(z_1 = j) \omega_{j,y_1}\)</span>. Then you compute for all <span class="math inline">\(j\)</span> the relationship <span class="math inline">\(\alpha_t(j) = \displaystyle{\sum_{i=1}^N \alpha_{t-1}(i) \gamma_{i,j} \omega_{j,y_t}}\)</span> for <span class="math inline">\(t = 2, \ldots, T\)</span>. Finally, you compute <span class="math inline">\(\Pr(\mathbf{y}) = \displaystyle{\sum_{j=1}^N\alpha_T(j)}\)</span>. At each time <span class="math inline">\(t\)</span>, we need to calculate <span class="math inline">\(N\)</span> values of <span class="math inline">\(\alpha_t(j)\)</span>, and each <span class="math inline">\(\alpha_t(j)\)</span> is a sum of <span class="math inline">\(N\)</span> products of <span class="math inline">\(\alpha_{t-1}\)</span>, <span class="math inline">\(\gamma_{i,j}\)</span> and <span class="math inline">\(\omega_{j,y_t}\)</span>, hence <span class="math inline">\(TN^2\)</span> computations in total, much less than <span class="math inline">\(2TN^T\)</span> in the brute-force approach.</p>
+<p>Going back to our example, we wish to calculate <span class="math inline">\(\Pr(y_1 = 2, y_2 = 2, y_3 = 1)\)</span>. First we initialize and compute <span class="math inline">\(\alpha_1(1)\)</span> and <span class="math inline">\(\alpha_1(2)\)</span>. We have:</p>
+<p><span class="math display">\[\begin{align*}
+\alpha_1(1) &amp;= \Pr(z_1=1) \omega_{1,y_1=2}\\
+            &amp;= 1
+\end{align*}\]</span></p>
+<p>because all animals are alive and captured in first winter. We also have:</p>
+<p><span class="math display">\[\begin{align*}
+\alpha_1(2) &amp;= \Pr(z_1=2) \omega_{2,y_1=2}\\
+            &amp;= 0
+\end{align*}\]</span></p>
+<p>Then we compute <span class="math inline">\(\alpha_2(1)\)</span> and <span class="math inline">\(\alpha_2(2)\)</span>. We have:</p>
+<p><span class="math display">\[\begin{align*}
+\alpha_2(1) &amp;= \sum_{i=1}^2 \alpha_1(i) \gamma_{i,1} \omega_{1,y_2=2}\\
+            &amp;= \gamma_{1,1} \omega_{1,y_2=2}\\
+            &amp;= \phi p
+\end{align*}\]</span></p>
+<p>because <span class="math inline">\(\alpha_1(2) = 0\)</span>. Also, we have:</p>
+<p><span class="math display">\[\begin{align*}
+\alpha_2(2) &amp;= \sum_{i=1}^2 \alpha_1(i) \gamma_{i,2} \omega_{2,y_2=2}\\
+            &amp;= \gamma_{1,2} \omega_{2,y_2=2}\\
+            &amp;= (1-\phi) 0
+\end{align*}\]</span></p>
+<p>Finally we compute <span class="math inline">\(\alpha_3(1)\)</span> and <span class="math inline">\(\alpha_3(2)\)</span>. We have:</p>
+<p><span class="math display">\[\begin{align*}
+\alpha_3(1) &amp;= \sum_{i=1}^2 \alpha_2(i) \gamma_{i,1} \omega_{1,y_3=1}\\
+            &amp;= \alpha_2(1) \gamma_{1,1} \omega_{1,y_3=1}\\
+            &amp;= \phi p \phi (1-p)
+\end{align*}\]</span></p>
+<p>We also have:</p>
+<p><span class="math display">\[\begin{align*}
+\alpha_3(2) &amp;= \sum_{i=1}^2 \alpha_2(i) \gamma_{i,2} \omega_{2,y_3=1}\\
+            &amp;= \alpha_2(1) \gamma_{1,2} \omega_{2,y_3=1}\\
+            &amp;= \phi p (1-\phi) 1
+\end{align*}\]</span></p>
+<p>Eventually, we compute <span class="math inline">\(\Pr(y_1=2,y_2=2,y_3=1)\)</span>:</p>
+<p><span class="math display">\[\begin{align*}
+\Pr(y_1=2,y_2=2,y_3=1) &amp;= \alpha_3(1) + \alpha_3(2)\\
+            &amp;= \phi p (\phi) (1-p) + \phi p (1-\phi)\\
+            &amp;= \phi p (1-\phi p)
+\end{align*}\]</span></p>
+<p>You can check that we did in total <span class="math inline">\(3 \times 2^2 = 12\)</span> operations.</p>
+</div>
+<div id="nimble-implementation-1" class="section level3" number="3.8.3">
+<h3>
+<span class="header-section-number">3.8.3</span> NIMBLE implementation<a class="anchor" aria-label="anchor" href="#nimble-implementation-1"><i class="fas fa-link"></i></a>
+</h3>
+<p>In NIMBLE, we use functions to implement the forward algorithm. The only difference with the theory above is that we work on the log scale for numerical stability.</p>
+<p>First we write the density function:</p>
 <div class="sourceCode" id="cb122"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">dHMM</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimbleFunction.html">nimbleFunction</a></span><span class="op">(</span>
   run <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">x</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/double.html">double</a></span><span class="op">(</span><span class="fl">1</span><span class="op">)</span>, 
@@ -5394,6 +5536,7 @@ A hidden Markov model is just two time series running in parallel. One for the s
     <span class="kw"><a href="https://rdrr.io/r/base/function.html">return</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/Log.html">exp</a></span><span class="op">(</span><span class="va">logL</span><span class="op">)</span><span class="op">)</span>
   <span class="op">}</span>
 <span class="op">)</span></code></pre></div>
+<p>In passing, this is the function you would maximize in a Frequentist approach. Then we write a function to simulate values from a HMM:</p>
 <div class="sourceCode" id="cb123"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">rHMM</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimbleFunction.html">nimbleFunction</a></span><span class="op">(</span>
   run <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">n</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimNumeric.html">integer</a></span><span class="op">(</span><span class="op">)</span>,
@@ -5414,24 +5557,14 @@ A hidden Markov model is just two time series running in parallel. One for the s
     <span class="op">}</span>
     <span class="kw"><a href="https://rdrr.io/r/base/function.html">return</a></span><span class="op">(</span><span class="va">y</span><span class="op">)</span>
   <span class="op">}</span><span class="op">)</span></code></pre></div>
+<p>We assign these functions to the global R environment:</p>
 <div class="sourceCode" id="cb124"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/r/base/assign.html">assign</a></span><span class="op">(</span><span class="st">'dHMM'</span>, <span class="va">dHMM</span>, <span class="va">.GlobalEnv</span><span class="op">)</span>
 <span class="fu"><a href="https://rdrr.io/r/base/assign.html">assign</a></span><span class="op">(</span><span class="st">'rHMM'</span>, <span class="va">rHMM</span>, <span class="va">.GlobalEnv</span><span class="op">)</span></code></pre></div>
+<p>Now we resume our workflow:</p>
 <div class="sourceCode" id="cb125"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="fu">dHMM</span><span class="op">(</span>x <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimble-R-functions.html">c</a></span><span class="op">(</span><span class="fl">2</span>,<span class="fl">2</span>,<span class="fl">1</span>,<span class="fl">1</span>,<span class="fl">1</span><span class="op">)</span>,
-     probInit <span class="op">=</span> <span class="va">delta</span>,
-     probObs <span class="op">=</span> <span class="va">Gamma</span>,
-     probTrans <span class="op">=</span> <span class="va">Omega</span>,
-     len <span class="op">=</span> <span class="fl">5</span><span class="op">)</span>
-<span class="co">## [1] 0.05177</span></code></pre></div>
-<div class="sourceCode" id="cb126"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="fu">rHMM</span><span class="op">(</span>probInit <span class="op">=</span> <span class="va">delta</span>,
-     probObs <span class="op">=</span> <span class="va">Gamma</span>,
-     probTrans <span class="op">=</span> <span class="va">Omega</span>,
-     len <span class="op">=</span> <span class="fl">5</span><span class="op">)</span>
-<span class="co">## [1] 2 2 2 1 2</span></code></pre></div>
-<div class="sourceCode" id="cb127"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="va">hmm.survival</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimbleCode.html">nimbleCode</a></span><span class="op">(</span><span class="op">{</span>
+<code class="sourceCode R"><span class="co"># code</span>
+<span class="va">hmm.survival</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimbleCode.html">nimbleCode</a></span><span class="op">(</span><span class="op">{</span>
   <span class="va">phi</span> <span class="op">~</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html">dunif</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1</span><span class="op">)</span> <span class="co"># prior survival</span>
   <span class="va">p</span> <span class="op">~</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html">dunif</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1</span><span class="op">)</span> <span class="co"># prior detection</span>
   <span class="co"># likelihood</span>
@@ -5451,27 +5584,22 @@ A hidden Markov model is just two time series running in parallel. One for the s
                     probTrans <span class="op">=</span> <span class="va">gamma</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">2</span>,<span class="fl">1</span><span class="op">:</span><span class="fl">2</span><span class="op">]</span>, <span class="co"># transition matrix</span>
                     len <span class="op">=</span> <span class="cn">T</span><span class="op">)</span> <span class="co"># nb of sampling occasions</span>
   <span class="op">}</span>
-<span class="op">}</span><span class="op">)</span></code></pre></div>
-<div class="sourceCode" id="cb128"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="va">my.constants</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>N <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html">nrow</a></span><span class="op">(</span><span class="va">y</span><span class="op">)</span>, T <span class="op">=</span> <span class="fl">5</span><span class="op">)</span>
-<span class="va">my.constants</span>
-<span class="co">## $N</span>
-<span class="co">## [1] 57</span>
-<span class="co">## </span>
-<span class="co">## $T</span>
-<span class="co">## [1] 5</span>
-
+<span class="op">}</span><span class="op">)</span>
+<span class="co"># constants</span>
+<span class="va">my.constants</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>N <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html">nrow</a></span><span class="op">(</span><span class="va">y</span><span class="op">)</span>, T <span class="op">=</span> <span class="fl">5</span><span class="op">)</span>
+<span class="co"># data</span>
 <span class="va">my.data</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>y <span class="op">=</span> <span class="va">y</span> <span class="op">+</span> <span class="fl">1</span><span class="op">)</span>
-
+<span class="co"># initial values - no need to specify values for z anymore</span>
 <span class="va">initial.values</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>phi <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html">runif</a></span><span class="op">(</span><span class="fl">1</span>,<span class="fl">0</span>,<span class="fl">1</span><span class="op">)</span>,
                                   p <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html">runif</a></span><span class="op">(</span><span class="fl">1</span>,<span class="fl">0</span>,<span class="fl">1</span><span class="op">)</span><span class="op">)</span>
-
+<span class="co"># parameters to save</span>
 <span class="va">parameters.to.save</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimble-R-functions.html">c</a></span><span class="op">(</span><span class="st">"phi"</span>, <span class="st">"p"</span><span class="op">)</span>
-
+<span class="co"># MCMC details</span>
 <span class="va">n.iter</span> <span class="op">&lt;-</span> <span class="fl">5000</span>
 <span class="va">n.burnin</span> <span class="op">&lt;-</span> <span class="fl">1000</span>
 <span class="va">n.chains</span> <span class="op">&lt;-</span> <span class="fl">2</span></code></pre></div>
-<div class="sourceCode" id="cb129"><pre class="downlit sourceCode r">
+<p>And run NIMBLE:</p>
+<div class="sourceCode" id="cb126"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">start_time</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Sys.time.html">Sys.time</a></span><span class="op">(</span><span class="op">)</span>
 <span class="va">mcmc.output</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimbleMCMC.html">nimbleMCMC</a></span><span class="op">(</span>code <span class="op">=</span> <span class="va">hmm.survival</span>,
                           constants <span class="op">=</span> <span class="va">my.constants</span>,
@@ -5489,13 +5617,13 @@ A hidden Markov model is just two time series running in parallel. One for the s
 <span class="co">## |-------------------------------------------------------|</span>
 <span class="va">end_time</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Sys.time.html">Sys.time</a></span><span class="op">(</span><span class="op">)</span>
 <span class="va">end_time</span> <span class="op">-</span> <span class="va">start_time</span>
-<span class="co">## Time difference of 27.84 secs</span></code></pre></div>
-<div class="sourceCode" id="cb130"><pre class="downlit sourceCode r">
+<span class="co">## Time difference of 27.04 secs</span></code></pre></div>
+<p>The numerical summaries are similar to those we obtained from using the complete likelihood:</p>
+<div class="sourceCode" id="cb127"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/pkg/MCMCvis/man/MCMCsummary.html">MCMCsummary</a></span><span class="op">(</span><span class="va">mcmc.output</span>, round <span class="op">=</span> <span class="fl">2</span><span class="op">)</span>
 <span class="co">##     mean   sd 2.5%  50% 97.5% Rhat n.eff</span>
-<span class="co">## p   0.61 0.06 0.49 0.61  0.73 1.00  1396</span>
-<span class="co">## phi 0.76 0.04 0.67 0.76  0.84 1.01  1435</span></code></pre></div>
-<p><strong>Compute number of nodes. Show that the z are no longer in there.</strong></p>
+<span class="co">## p   0.61 0.06 0.49 0.61  0.72    1  1211</span>
+<span class="co">## phi 0.76 0.04 0.67 0.76  0.84    1  1483</span></code></pre></div>
 </div>
 </div>
 <div id="pooled-likelihood" class="section level2" number="3.9">
@@ -5505,7 +5633,7 @@ A hidden Markov model is just two time series running in parallel. One for the s
 <p>We can go one step further to make convergence even faster. As mentionned earlier in Section <a href="hmmcapturerecapture.html#likelihoodhmm">3.6.4</a>, the likelihood of an HMM fitted to capture-recapture data often involves individuals that share the same encounter histories. Instead of repeating the same calculations several times, the likelihood contribution that is shared by say <span class="math inline">\(x\)</span> individuals is raised to the power <span class="math inline">\(x\)</span> in the likelihood of the whole dataset, hence making the same operations only once<a class="footnote-ref" tabindex="0" data-toggle="popover" data-content="&lt;p&gt;This idea is used in routine in capture-recapture software like MARK or E-SURGE. For Bayesian software however, it is only recently that the trick was tested in NIMBLE (in Turek, de Valpine, and Paciorek (2016). Efficient Markov chain Monte Carlo sampling for hierarchical hidden Markov models. &lt;em&gt;Environmental and Ecological Statistics&lt;/em&gt; 23: 549-564. Many thanks to Chloé Nater for showing me how to implement it.&lt;/p&gt;"><sup>26</sup></a>.</p>
 <p>In this section, we amend the NIMBLE functions we wrote for marginalizing latent states in Section <a href="hmmcapturerecapture.html#marginalization">3.8</a> to express the likelihood using pooled encounter histories. We use a vector <code>size</code> that contains the number of individuals with the same encounter history.</p>
 <p>The density function is the function <code>dHMM</code> to which we add a <code>size</code> argument, and raise the individual likelihood to the power <code>size</code>, or multiply by <code>size</code> as we work on the log scale <code>log(sum(alpha[1:2])) * size</code>:</p>
-<div class="sourceCode" id="cb131"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb128"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">dHMMpooled</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimbleFunction.html">nimbleFunction</a></span><span class="op">(</span>
   run <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">x</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/double.html">double</a></span><span class="op">(</span><span class="fl">1</span><span class="op">)</span>, 
                  <span class="va">probInit</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/double.html">double</a></span><span class="op">(</span><span class="fl">1</span><span class="op">)</span>,
@@ -5525,7 +5653,7 @@ A hidden Markov model is just two time series running in parallel. One for the s
   <span class="op">}</span>
 <span class="op">)</span></code></pre></div>
 <p>The <code>rHMM</code> function is renamed <code>rHMMpooled</code> for compatibility but remains unchanged:</p>
-<div class="sourceCode" id="cb132"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb129"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">rHMMpooled</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimbleFunction.html">nimbleFunction</a></span><span class="op">(</span>
   run <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">n</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimNumeric.html">integer</a></span><span class="op">(</span><span class="op">)</span>,
                  <span class="va">probInit</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/double.html">double</a></span><span class="op">(</span><span class="fl">1</span><span class="op">)</span>,
@@ -5547,11 +5675,11 @@ A hidden Markov model is just two time series running in parallel. One for the s
     <span class="kw"><a href="https://rdrr.io/r/base/function.html">return</a></span><span class="op">(</span><span class="va">y</span><span class="op">)</span>
   <span class="op">}</span><span class="op">)</span></code></pre></div>
 <p>We assign these two function to the global R environment so that we can use them:</p>
-<div class="sourceCode" id="cb133"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb130"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/r/base/assign.html">assign</a></span><span class="op">(</span><span class="st">'dHMMpooled'</span>, <span class="va">dHMMpooled</span>, <span class="va">.GlobalEnv</span><span class="op">)</span>
 <span class="fu"><a href="https://rdrr.io/r/base/assign.html">assign</a></span><span class="op">(</span><span class="st">'rHMMpooled'</span>, <span class="va">rHMMpooled</span>, <span class="va">.GlobalEnv</span><span class="op">)</span></code></pre></div>
 <p>You can now plug your pooled HMM density function in your NIMBLE code:</p>
-<div class="sourceCode" id="cb134"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb131"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">hmm.survival</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimbleCode.html">nimbleCode</a></span><span class="op">(</span><span class="op">{</span>
   <span class="va">phi</span> <span class="op">~</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html">dunif</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1</span><span class="op">)</span> <span class="co"># prior survival</span>
   <span class="va">p</span> <span class="op">~</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html">dunif</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1</span><span class="op">)</span> <span class="co"># prior detection</span>
@@ -5575,7 +5703,7 @@ A hidden Markov model is just two time series running in parallel. One for the s
   <span class="op">}</span>
 <span class="op">}</span><span class="op">)</span></code></pre></div>
 <p>Before running NIMBLE, we need to actually pool individuals with the same encounter history together:</p>
-<div class="sourceCode" id="cb135"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb132"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">y_pooled</span> <span class="op">&lt;-</span> <span class="va">y</span> <span class="op">%&gt;%</span> 
   <span class="fu">as_tibble</span><span class="op">(</span><span class="op">)</span> <span class="op">%&gt;%</span> 
   <span class="fu">group_by_all</span><span class="op">(</span><span class="op">)</span> <span class="op">%&gt;%</span> <span class="co"># group</span>
@@ -5601,7 +5729,7 @@ A hidden Markov model is just two time series running in parallel. One for the s
 <span class="co">## [14,]    1        1        1        1        1        1</span></code></pre></div>
 <p>For example, we have 21 individuals with encounter history 1, 0, 0, 0, 0.</p>
 <p>Now you can resume the NIMBLE workflow:</p>
-<div class="sourceCode" id="cb136"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb133"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">my.constants</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>N <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html">nrow</a></span><span class="op">(</span><span class="va">y_pooled</span><span class="op">)</span>, T <span class="op">=</span> <span class="fl">5</span>, size <span class="op">=</span> <span class="va">y_pooled</span><span class="op">[</span>,<span class="st">'size'</span><span class="op">]</span><span class="op">)</span>
 <span class="va">my.data</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>y <span class="op">=</span> <span class="va">y_pooled</span><span class="op">[</span>,<span class="op">-</span><span class="fl">1</span><span class="op">]</span> <span class="op">+</span> <span class="fl">1</span><span class="op">)</span> <span class="co"># delete size from dataset</span>
 <span class="va">initial.values</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>phi <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html">runif</a></span><span class="op">(</span><span class="fl">1</span>,<span class="fl">0</span>,<span class="fl">1</span><span class="op">)</span>,
@@ -5627,11 +5755,11 @@ A hidden Markov model is just two time series running in parallel. One for the s
 <span class="co">## |-------------------------------------------------------|</span>
 <span class="va">end_time</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Sys.time.html">Sys.time</a></span><span class="op">(</span><span class="op">)</span>
 <span class="va">end_time</span> <span class="op">-</span> <span class="va">start_time</span>
-<span class="co">## Time difference of 26.87 secs</span>
+<span class="co">## Time difference of 28.43 secs</span>
 <span class="fu"><a href="https://rdrr.io/pkg/MCMCvis/man/MCMCsummary.html">MCMCsummary</a></span><span class="op">(</span><span class="va">mcmc.output</span>, round <span class="op">=</span> <span class="fl">2</span><span class="op">)</span>
 <span class="co">##     mean   sd 2.5%  50% 97.5% Rhat n.eff</span>
-<span class="co">## p   0.61 0.06 0.49 0.61  0.72 1.01  1395</span>
-<span class="co">## phi 0.76 0.04 0.67 0.76  0.84 1.00  1469</span></code></pre></div>
+<span class="co">## p   0.61 0.06 0.49 0.61  0.72    1  1453</span>
+<span class="co">## phi 0.76 0.04 0.67 0.76  0.84    1  1359</span></code></pre></div>
 <p>The results are the same as those obtained previously. The simulations took less time, and the gain in computation times will be even bigger for more complex models as we will see in the next chapters.</p>
 <!-- Works preeeeeety well ;-) two small issues though: -->
 <!-- 1. I get this warning:  -->
@@ -5655,7 +5783,7 @@ A hidden Markov model is just two time series running in parallel. One for the s
 <p>On peut estimer, ou bien décoder avec Viterbi, voir la différence dans <a href="https://luisdamiano.github.io/BayesHMM/articles/introduction.html" class="uri">https://luisdamiano.github.io/BayesHMM/articles/introduction.html</a>. Voir aussi la page wikipedia pour les formules .</p>
 <p>In some situations, you might want to compute the sequence of states alive and dead that is most likely to have generated the observed sequence of detections and non-detections. To do so, you can use the Viterbi algorithm. Briefly speaking, this algorithm does this and that. Use colors to explain, as for the forward algorithm. See also <a href="https://en.wikipedia.org/wiki/Forward_algorithm" class="uri">https://en.wikipedia.org/wiki/Forward_algorithm</a>.</p>
 <p>Let’s write a function that computes the most likely sequence of states given transition and observation matrices, a vector of initial state probabilities and an observed sequence of detections and non-detections for which you aim to compute the sequence of states from which it was most likely generated:</p>
-<div class="sourceCode" id="cb137"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb134"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="co"># from https://github.com/vbehnam/viterbi</span>
 <span class="va">getViterbi</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">Omega</span>, <span class="va">Gamma</span>, <span class="va">delta</span>, <span class="va">y</span><span class="op">)</span> <span class="op">{</span>
 
@@ -5713,11 +5841,11 @@ A hidden Markov model is just two time series running in parallel. One for the s
 <span class="header-section-number">3.10.2</span> Compute first, average after<a class="anchor" aria-label="anchor" href="#compute-first-average-after"><i class="fas fa-link"></i></a>
 </h3>
 <p>From there, we first get values from the posterior distribution of survival and detection:</p>
-<div class="sourceCode" id="cb138"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb135"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">phi</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimble-R-functions.html">c</a></span><span class="op">(</span><span class="va">mcmc.output</span><span class="op">$</span><span class="va">chain1</span><span class="op">[</span>,<span class="st">'phi'</span><span class="op">]</span>, <span class="va">mcmc.output</span><span class="op">$</span><span class="va">chain2</span><span class="op">[</span>,<span class="st">'phi'</span><span class="op">]</span><span class="op">)</span>
 <span class="va">p</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimble-R-functions.html">c</a></span><span class="op">(</span><span class="va">mcmc.output</span><span class="op">$</span><span class="va">chain1</span><span class="op">[</span>,<span class="st">'p'</span><span class="op">]</span>, <span class="va">mcmc.output</span><span class="op">$</span><span class="va">chain2</span><span class="op">[</span>,<span class="st">'p'</span><span class="op">]</span><span class="op">)</span></code></pre></div>
 <p>First option is to apply Viterbi to each MCMC sample, then to compute median of the MCMC Viterbi paths for each observed sequence:</p>
-<div class="sourceCode" id="cb139"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb136"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">niter</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimble-R-functions.html">length</a></span><span class="op">(</span><span class="va">p</span><span class="op">)</span>
 <span class="va">res</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimMatrix.html">matrix</a></span><span class="op">(</span><span class="cn">NA</span>, nrow <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html">nrow</a></span><span class="op">(</span><span class="va">y</span><span class="op">)</span>, ncol <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimble-R-functions.html">length</a></span><span class="op">(</span><span class="va">y</span><span class="op">[</span><span class="fl">1</span>,<span class="op">]</span><span class="op">)</span><span class="op">)</span>
 <span class="kw">for</span> <span class="op">(</span><span class="va">i</span> <span class="kw">in</span> <span class="fl">1</span><span class="op">:</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html">nrow</a></span><span class="op">(</span><span class="va">y</span><span class="op">)</span><span class="op">)</span><span class="op">{</span>
@@ -5742,7 +5870,7 @@ A hidden Markov model is just two time series running in parallel. One for the s
   <span class="va">res</span><span class="op">[</span><span class="va">i</span>, <span class="fl">1</span><span class="op">:</span><span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimble-R-functions.html">length</a></span><span class="op">(</span><span class="va">y</span><span class="op">[</span><span class="fl">1</span>,<span class="op">]</span><span class="op">)</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/apply.html">apply</a></span><span class="op">(</span><span class="va">res_mcmc</span>, <span class="fl">2</span>, <span class="va">median</span><span class="op">)</span>
 <span class="op">}</span></code></pre></div>
 <p>Compare Viterbi decoding to actual states <span class="math inline">\(z\)</span>:</p>
-<div class="sourceCode" id="cb140"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb137"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">df</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/expand.grid.html">expand.grid</a></span><span class="op">(</span>X <span class="op">=</span> <span class="fl">1</span><span class="op">:</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html">nrow</a></span><span class="op">(</span><span class="va">z</span><span class="op">)</span>, Y <span class="op">=</span> <span class="fl">1</span><span class="op">:</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html">ncol</a></span><span class="op">(</span><span class="va">z</span><span class="op">)</span><span class="op">)</span>
 <span class="va">df</span><span class="op">$</span><span class="va">Z</span> <span class="op">&lt;-</span> <span class="fu">as_factor</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimble-R-functions.html">c</a></span><span class="op">(</span><span class="va">z</span> <span class="op">-</span> <span class="va">res</span><span class="op">)</span><span class="op">)</span>
 <span class="va">myPallette</span> <span class="op">&lt;-</span> <span class="fu">RColorBrewer</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/RColorBrewer/man/ColorBrewer.html">brewer.pal</a></span><span class="op">(</span>name <span class="op">=</span> <span class="st">"RdBu"</span>, n <span class="op">=</span> <span class="fl">4</span><span class="op">)</span>
@@ -5758,7 +5886,7 @@ A hidden Markov model is just two time series running in parallel. One for the s
                                <span class="st">"-1"</span> <span class="op">=</span> <span class="st">"Alive is decoded dead"</span><span class="op">)</span><span class="op">)</span><span class="op">+</span>
   <span class="fu">labs</span><span class="op">(</span>x <span class="op">=</span> <span class="st">"individuals"</span>, y <span class="op">=</span> <span class="st">"winters"</span>, fill <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span> <span class="op">+</span>
   <span class="fu">theme_light</span><span class="op">(</span><span class="op">)</span></code></pre></div>
-<div class="inline-figure"><img src="banana-book_files/figure-html/unnamed-chunk-165-1.png" width="672"></div>
+<div class="inline-figure"><img src="banana-book_files/figure-html/unnamed-chunk-163-1.png" width="672"></div>
 <p>Here we compute the Viterbi paths after we run NIMBLE. Alternatively, you can define a NIMBLE function to compute the Viterbi path first, then plug it in your code to apply Viterbi. This does not make any difference apart from increasing the computational cost.</p>
 </div>
 <div id="average-first-compute-after" class="section level3" number="3.10.3">
@@ -5766,7 +5894,7 @@ A hidden Markov model is just two time series running in parallel. One for the s
 <span class="header-section-number">3.10.3</span> Average first, compute after<a class="anchor" aria-label="anchor" href="#average-first-compute-after"><i class="fas fa-link"></i></a>
 </h3>
 <p>Second option is to compute posterior mean of the observation and transition matrices, then to apply Viterbi:</p>
-<div class="sourceCode" id="cb141"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb138"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="co"># Initial states</span>
 <span class="va">delta</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimble-R-functions.html">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">0</span><span class="op">)</span>
 <span class="co"># Transition matrix</span>
@@ -5788,7 +5916,7 @@ A hidden Markov model is just two time series running in parallel. One for the s
   <span class="va">res</span><span class="op">[</span><span class="va">i</span>, <span class="fl">1</span><span class="op">:</span><span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimble-R-functions.html">length</a></span><span class="op">(</span><span class="va">y</span><span class="op">[</span><span class="fl">1</span>,<span class="op">]</span><span class="op">)</span> <span class="op">]</span> <span class="op">&lt;-</span> <span class="fu">getViterbi</span><span class="op">(</span><span class="va">emission</span>, <span class="va">transition</span>, <span class="va">delta</span>, <span class="va">y</span><span class="op">[</span><span class="va">i</span>,<span class="op">]</span> <span class="op">+</span> <span class="fl">1</span><span class="op">)</span>
 <span class="op">}</span></code></pre></div>
 <p>Compare Viterbi decoding to actual states <span class="math inline">\(z\)</span>:</p>
-<div class="sourceCode" id="cb142"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb139"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">df</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/expand.grid.html">expand.grid</a></span><span class="op">(</span>X <span class="op">=</span> <span class="fl">1</span><span class="op">:</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html">nrow</a></span><span class="op">(</span><span class="va">z</span><span class="op">)</span>, Y <span class="op">=</span> <span class="fl">1</span><span class="op">:</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html">ncol</a></span><span class="op">(</span><span class="va">z</span><span class="op">)</span><span class="op">)</span>
 <span class="va">df</span><span class="op">$</span><span class="va">Z</span> <span class="op">&lt;-</span> <span class="fu">as_factor</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimble-R-functions.html">c</a></span><span class="op">(</span><span class="va">z</span> <span class="op">-</span> <span class="va">res</span><span class="op">)</span><span class="op">)</span>
 <span class="va">myPallette</span> <span class="op">&lt;-</span> <span class="fu">RColorBrewer</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/RColorBrewer/man/ColorBrewer.html">brewer.pal</a></span><span class="op">(</span>name <span class="op">=</span> <span class="st">"RdBu"</span>, n <span class="op">=</span> <span class="fl">4</span><span class="op">)</span>
@@ -5804,7 +5932,7 @@ A hidden Markov model is just two time series running in parallel. One for the s
                                <span class="st">"-1"</span> <span class="op">=</span> <span class="st">"Alive is decoded dead"</span><span class="op">)</span><span class="op">)</span><span class="op">+</span>
   <span class="fu">labs</span><span class="op">(</span>x <span class="op">=</span> <span class="st">"individuals"</span>, y <span class="op">=</span> <span class="st">"winters"</span>, fill <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span> <span class="op">+</span>
   <span class="fu">theme_light</span><span class="op">(</span><span class="op">)</span></code></pre></div>
-<div class="inline-figure"><img src="banana-book_files/figure-html/unnamed-chunk-167-1.png" width="672"></div>
+<div class="inline-figure"><img src="banana-book_files/figure-html/unnamed-chunk-165-1.png" width="672"></div>
 </div>
 </div>
 <div id="summary-2" class="section level2" number="3.11">
@@ -5820,13 +5948,11 @@ A hidden Markov model is just two time series running in parallel. One for the s
 <h2>
 <span class="header-section-number">3.12</span> Suggested reading<a class="anchor" aria-label="anchor" href="#suggested-reading-2"><i class="fas fa-link"></i></a>
 </h2>
-<p>Infering the latent states <span class="math inline">\(z\)</span> can be useful to estimate prevalence, e.g. in animal epidemiology with <a href="https://veterinaryresearch.biomedcentral.com/articles/10.1186/1297-9716-45-39">prevalence of a disease</a>, in evolutionary ecology with <a href="https://onlinelibrary.wiley.com/doi/abs/10.1002/cjs.5550360105">sex ratio</a> or in conservation biology with <a href="https://onlinelibrary.wiley.com/doi/full/10.1002/ece3.4819?af=R">prevalence of hybrids</a>.</p>
-<p>More about so-called marginalisation in <a href="https://esajournals.onlinelibrary.wiley.com/doi/abs/10.1002/eap.2112">Yackulic et al. (2020)</a>. Reference forward to section below (forward algorithm).</p>
 <ul>
-<li><p>Zucchini, MacDonald and Langrock (2016) <a href="https://www.routledge.com/Hidden-Markov-Models-for-Time-Series-An-Introduction-Using-R-Second-Edition/Zucchini-MacDonald-Langrock/p/book/9781482253832">Hidden Markov Models for Time Series: An Introduction Using R (2nd ed)</a>. Chapman and Hall/CRC.</p></li>
 <li><p>McClintock, B.T., Langrock, R., Gimenez, O., Cam, E., Borchers, D.L., Glennie, R. and Patterson, T.A. (2020), <a href="https://onlinelibrary.wiley.com/doi/full/10.1111/ele.13610">Uncovering ecological state dynamics with hidden Markov models</a>. Ecology Letters, 23: 1878-1903.</p></li>
-<li><p>Yackulic, C. B. Dodrill, M., Dzul, M., Sanderlin, J. S., and Reid, J. A.. (2020). <a href="https://esajournals.onlinelibrary.wiley.com/doi/abs/10.1002/eap.2112">A need for speed in Bayesian population models: a practical guide to marginalizing and recovering discrete latent states</a>. Ecological Applications 30:e02112.</p></li>
-<li><p>L. R. Rabiner (1989). <a href="https://web.ece.ucsb.edu/Faculty/Rabiner/ece259/Reprints/tutorial%20on%20hmm%20and%20applications.pdf">A tutorial on hidden Markov models and selected applications in speech recognition</a>. Proceedings of the IEEE, 77:257-286.</p></li>
+<li><p>Rabiner L.R. (1989). <a href="https://web.ece.ucsb.edu/Faculty/Rabiner/ece259/Reprints/tutorial%20on%20hmm%20and%20applications.pdf">A tutorial on hidden Markov models and selected applications in speech recognition</a>. Proceedings of the IEEE, 77:257-286.</p></li>
+<li><p>Yackulic, C. B. Dodrill, M., Dzul, M., Sanderlin, J. S., and Reid, J. A. (2020). <a href="https://esajournals.onlinelibrary.wiley.com/doi/abs/10.1002/eap.2112">A need for speed in Bayesian population models: a practical guide to marginalizing and recovering discrete latent states</a>. Ecological Applications 30:e02112.</p></li>
+<li><p>Zucchini, W., MacDonald I.L. and Langrock R. (2016) <a href="https://www.routledge.com/Hidden-Markov-Models-for-Time-Series-An-Introduction-Using-R-Second-Edition/Zucchini-MacDonald-Langrock/p/book/9781482253832">Hidden Markov Models for Time Series: An Introduction Using R (2nd ed)</a>. Chapman and Hall/CRC.</p></li>
 </ul>
 <!-- heller_novel_2021 --><!-- Gimenez et al. 2007, Royle 2008. Recall difference between SSM and HMM? -->
 </div>
@@ -5866,8 +5992,9 @@ A hidden Markov model is just two time series running in parallel. One for the s
 <li><a class="nav-link" href="#fitting-hmm-with-nimble"><span class="header-section-number">3.7</span> Fitting HMM with NIMBLE</a></li>
 <li>
 <a class="nav-link" href="#marginalization"><span class="header-section-number">3.8</span> Marginalization</a><ul class="nav navbar-nav">
-<li><a class="nav-link" href="#forward-algorithm"><span class="header-section-number">3.8.1</span> Forward algorithm</a></li>
-<li><a class="nav-link" href="#implementation-in-nimble"><span class="header-section-number">3.8.2</span> Implementation in NIMBLE</a></li>
+<li><a class="nav-link" href="#brute-force-approach"><span class="header-section-number">3.8.1</span> Brute-force approach</a></li>
+<li><a class="nav-link" href="#forward-algorithm"><span class="header-section-number">3.8.2</span> Forward algorithm</a></li>
+<li><a class="nav-link" href="#nimble-implementation-1"><span class="header-section-number">3.8.3</span> NIMBLE implementation</a></li>
 </ul>
 </li>
 <li><a class="nav-link" href="#pooled-likelihood"><span class="header-section-number">3.9</span> Pooled encounter histories</a></li>

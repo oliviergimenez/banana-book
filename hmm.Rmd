@@ -639,17 +639,39 @@ Have a look to the example below, in which an individual is detected at first sa
 
 ### Likelihood {#likelihoodhmm}
 
-The likelihood is the probability of the observed data $y$ given the parameters of our model, the unkowns. Here the unknows are the survival and detection probabilities $\phi$ and $p$, and the latent states $z$. Using the definition of a conditional probability, then the likelihood of a Markov chain, we get that the likelihood of an HMM for a single individual $i$:
+In the Bayesian framework, we usually work with the so-called complete likelihood, that is the probability of the observed data $y$ and the latent states $z$ given the parameters of our model, here the survival and detection probabilities $\phi$ and $p$. The complete likelihood for individual $i$ is:
+
+\begin{align*}
+\Pr(\mathbf{y}_i, \mathbf{z}_i) &= \Pr(y_{i,1}, y_{i,2}, \ldots, y_{i,T}, z_{i,1}, z_{i,2}, \ldots, z_{i,T})\\
+\end{align*}
+
+Using the definition of a conditional probability, we have:
+
+\begin{align*}
+\Pr(\mathbf{y}_i) &= \Pr(y_{i,1}, y_{i,2}, \ldots, y_{i,T})\\
+                  &= \color{blue}{\Pr(y_{i,1}, y_{i,2}, \ldots, y_{i,T} | z_{i,1}, z_{i,2}, \ldots, z_{i,T}) \Pr(z_{i,1}, z_{i,2}, \ldots, z_{i,T})}\\
+\end{align*}
+
+Then by using the independence of the $y$ conditional on the $z$, and the likelihood of a Markov chain, we get that:
 
 \begin{align*}
 \Pr(\mathbf{y}_i) &= \Pr(y_{i,1}, y_{i,2}, \ldots, y_{i,T})\\
                   &= \Pr(y_{i,1}, y_{i,2}, \ldots, y_{i,T} | z_{i,1}, z_{i,2}, \ldots, z_{i,T}) \Pr(z_{i,1}, z_{i,2}, \ldots, z_{i,T})\\
-                &= \left(\prod_{t=1}^T{\omega_{z_{i,t}, y_{i,t}}}\right) \left(\Pr(z_{i,1}) \prod_{t=2}^T{\gamma_{z_{i,t-1},z_{i,t}}}\right)\\
+                &= \color{blue}{\left(\prod_{t=1}^T{\Pr{(y_{i,t} | z_{i,t})}}\right) \left(\Pr(z_{i,1}) \prod_{t=2}^T{\Pr{(z_{i,t} | z_{i,t-1})}}\right)}\\
 \end{align*}
 
-To obtain the likelihood of the whole dataset, we need to multiply this individual likelihood for each animal $\displaystyle{\prod_{i=1}^N{\Pr(\mathbf{y}_i)}}$. When several individuals have the same contribution, calculating their individual contribution only once can greatly reduce the computational burden, as illustrated in Section \@ref(pooled-likelihood).
+Finally, by recognizing the observation and transition probabilities, we have that the complete likelihood for individual $i$ is:
 
-The Bayesian approach with MCMC methods allows treating the latent states $z_{i,t}$ as if they were parameters, and to be estimated as such. However, the likelihood is rather complex with a large number of latent states $z_{i,t}$, which comes with computational costs and slow mixing. There are situations where the latent states are the focus of ecological inference and need to be estimated (see Suggested reading below). However, if not needed, you might want to get rid of the latent states and focus on the parameters, which often speeds up computations and improves mixing as shown in Section \@ref(marginalization). Actually, you can even estimate the latent states afterwards, as illustrated in Section \@ref(decoding).
+\begin{align*}
+\Pr(\mathbf{y}_i) &= \Pr(y_{i,1}, y_{i,2}, \ldots, y_{i,T})\\
+                  &= \Pr(y_{i,1}, y_{i,2}, \ldots, y_{i,T} | z_{i,1}, z_{i,2}, \ldots, z_{i,T}) \Pr(z_{i,1}, z_{i,2}, \ldots, z_{i,T})\\
+                &= \color{blue}{\left(\prod_{t=1}^T{\omega_{z_{i,t}, y_{i,t}}}\right) \left(\Pr(z_{i,1}) \prod_{t=2}^T{\gamma_{z_{i,t-1},z_{i,t}}}\right)}\\
+\end{align*}
+
+
+To obtain the complete likelihood of the whole dataset, we need to multiply this individual likelihood for each animal $\displaystyle{\prod_{i=1}^N{\Pr(\mathbf{y}_i,\mathbf{z}_i)}}$. When several individuals have the same contribution, calculating their individual contribution only once can greatly reduce the computational burden, as illustrated in Section \@ref(pooled-likelihood).
+
+The Bayesian approach with MCMC methods allows treating the latent states $z_{i,t}$ as if they were parameters, and to be estimated as such. However, the likelihood is rather complex with a large number of latent states $z_{i,t}$, which comes with computational costs and slow mixing. There are situations where the latent states are the focus of ecological inference and need to be estimated (see Suggested reading below). However, if not needed, you might want to get rid of the latent states and rely on the so-called marginal likelihood. By doing so, you can avoid sampling the latent states, focus on the ecological parameters, and often speeds up computations and improves mixing as shown in Section \@ref(marginalization). Actually, you can even estimate the latent states afterwards, as illustrated in Section \@ref(decoding).
 
 <!-- It has a matrix formulation: -->
 <!-- \begin{align*} -->
@@ -802,7 +824,7 @@ my.constants <- list(N = nrow(y), T = 5)
 my.constants
 ```
 
-The data are made of 0's for non-detections and 1's for detections. To use the categorical distribution, we need to code 1's and 2's. We simply add 1 to get the correct format, that is $y = 1$ for non-detection and $y = 2$ for detection: **Using 1 and 2 would make my life easier... The 0/1 coding is a convention. Using 1/2 would make explicit that non-detections are actual data.**
+The data are made of 0's for non-detections and 1's for detections. To use the categorical distribution, we need to code 1's and 2's. We simply add 1 to get the correct format, that is $y = 1$ for non-detection and $y = 2$ for detection: **Using 1 and 2 would make my life easier... The 0/1 coding is a convention; Using the 1/2 coding would make clear that non-detections are actual data (while the use of 0s for non-detections is sometimes confusing). Do it, do it.**
 ```{r}
 my.data <- list(y = y + 1)
 ```
@@ -905,24 +927,188 @@ y <- y - 1 # non-detection = 0, detection = 1
 
 ## Marginalization {#marginalization}
 
-In some situations, you will not be interested in inferring the hidden states $z_{i,t}$, so why bother estimating them? The good news is that you can get rid of the states, so that the likelihood is a function of survival and detection probabilities $\phi$ and $p$ only. By the way, this is the function you would maximize in a Frequentist approach. 
+In some situations, you will not be interested in inferring the hidden states $z_{i,t}$, so why bother estimating them? The good news is that you can get rid of the states, so that the marginal likelihood is a function of survival and detection probabilities $\phi$ and $p$ only.  
 
-Using the formula of total probability, we get by summing over all possible states:
+### Brute-force approach
+
+Using the formula of total probability, we get the marginal likelihood by summing over all possible states in the complete likelihood:
 
 \begin{align*}
 \Pr(\mathbf{y}_i) &= \Pr(y_{i,1}, y_{i,2}, \ldots, y_{i,T})\\
-                &= \sum_{z_{i,1}} \cdots \sum_{z_{i,T}} \Pr(y_{i,1}, y_{i,2}, \ldots, y_{i,T} | z_{i,1}, z_{i,2}, \ldots, z_{i,T}) \Pr(z_{i,1}, z_{i,2}, \ldots, z_{i,T})\\
-                &= \sum_{z_{i,1}} \cdots \sum_{z_{i,T}} \left(\prod_{t=1}^T{\omega_{z_{i,t}, y_{i,t}}}\right) \left(\Pr(z_{i,1}) \prod_{t=2}^T{\gamma_{z_{i,t-1},z_{i,t}}}\right)\\
+                &= \sum_{\mathbf{z}_i} \Pr(\mathbf{y}_i, \mathbf{z}_i)\\
+                &= \sum_{z_{i,1}} \cdots \sum_{z_{i,T}} \Pr(y_{i,1}, y_{i,2}, \ldots, y_{i,T}, z_{i,1}, z_{i,2}, \ldots, z_{i,T})\\
 \end{align*}
 
-This function is complex to evaluate because it involves many operations ($TN^T$ operations to be precise, where $T$ is the length of encounter histories and $N$ is the number of hidden states), which number increases exponentially as the number of states increases. This complexity precludes using this method to get rid of the states. Fortunately, we have another algorithm in the HMM toolbox that is useful.  
+Going through the same steps as for deriving the complete likelihood, we obtain the marginal likelihood:
+
+\begin{align*}
+\Pr(\mathbf{y}_i) &= \sum_{z_{i,1}} \cdots \sum_{z_{i,T}} \left(\prod_{t=1}^T{\omega_{z_{i,t}, y_{i,t}}}\right) \left(\Pr(z_{i,1}) \prod_{t=2}^T{\gamma_{z_{i,t-1},z_{i,t}}}\right)\\
+\end{align*}
+
+
+Let's go through an example. Let's imagine we have $T = 3$ winters, and we'd like to write the likelihood for an individual having the encounter history detected, detected then non-detected. Remember that non-detected is coded 1 and detected 2, while alive is coded 1 and dead 2. We need to calculate $\Pr(y_1 = 2, y_2 = 2, y_3 = 1)$ which, according to the formula above, is given by:
+
+\begin{align*}
+\begin{split}
+\Pr(y_1 = 2, y_2 = 2, y_3 = 1) &= \sum_{i=1}^{2} \sum_{j=1}^{2} \sum_{k=1}^{2} \left[\Pr(y_1 = 2 | z_1 = i) \Pr(y_2 = 2 | z_2 = j) \Pr(y_3 = 1 | z_3 = k)\right] \\ 
+& \qquad \left(\Pr(z_1=i) \Pr(z_2 = j | z_1 = i) \Pr(z_3 = k | z_2 = j)\right)\\
+\end{split}
+\end{align*}
+
+Expliciting all the sums in $\Pr(y_1 = 2, y_2 = 2, y_3 = 1)$, we get the long and ugly expression:
+
+\begin{align*}
+\begin{split}
+\Pr(y_1 = 2, y_2 = 2, y_3 = 1) &= \\
+& \Pr(y_1 = 2 | z_1 = 1) \Pr(y_2 = 2 | z_2 = 1) \Pr(y_3 = 1 | z_3 = 1) \times \\ 
+& \qquad \Pr(z_1 = 1) \Pr(z_2 = 1 | z_1 = 1) \Pr(z_3 = 1 | z_2 = 1) +\\
+&  \Pr(y_1 = 2 | z_1 = 2) \Pr(y_2 = 2 | z_2 = 1) \Pr(y_3 = 1 | z_3 = 1) \times\\ 
+& \qquad \Pr(z_1 = 2) \Pr(z_2 = 1 | z_1 = 2) \Pr(z_3 = 1 | z_2 = 1) +\\
+&  \Pr(y_1 = 2 | z_1 = 1) \Pr(y_2 = 2 | z_2 = 2) \Pr(y_3 = 1 | z_3 = 1) \times\\ 
+& \qquad \Pr(z_1 = 1) \Pr(z_2 = 2 | z_1 = 1) \Pr(z_3 = 1 | z_2 = 2) +\\
+&  \Pr(y_1 = 2 | z_1 = 2) \Pr(y_2 = 2 | z_2 = 2) \Pr(y_3 = 1 | z_3 = 1) \times\\ 
+& \qquad \Pr(z_1 = 2) \Pr(z_2 = 2 | z_1 = 2) \Pr(z_3 = 1 | z_2 = 2) +\\
+&  \Pr(y_1 = 2 | z_1 = 1) \Pr(y_2 = 2 | z_2 = 1) \Pr(y_3 = 1 | z_3 = 2) \times\\ 
+& \qquad \Pr(z_1 = 1) \Pr(z_2 = 1 | z_1 = 1) \Pr(z_3 = 2 | z_2 = 1) +\\
+&  \Pr(y_1 = 2 | z_1 = 2) \Pr(y_2 = 2 | z_2 = 1) \Pr(y_3 = 1 | z_3 = 2) \times\\ 
+& \qquad \Pr(z_1 = 2) \Pr(z_2 = 1 | z_1 = 2) \Pr(z_3 = 2 | z_2 = 1) +\\
+&  \Pr(y_1 = 2 | z_1 = 1) \Pr(y_2 = 2 | z_2 = 2) \Pr(y_3 = 1 | z_3 = 2) \times\\ 
+& \qquad \Pr(z_1 = 1) \Pr(z_2 = 2 | z_1 = 1) \Pr(z_3 = 2 | z_2 = 2) +\\
+&  \Pr(y_1 = 2 | z_1 = 2) \Pr(y_2 = 2 | z_2 = 2) \Pr(y_3 = 1 | z_3 = 2) \times\\ 
+& \qquad \Pr(z_1 = 2) \Pr(z_2 = 2 | z_1 = 2) \Pr(z_3 = 2 | z_2 = 2)\\
+\end{split}
+\end{align*}
+
+You can simplify this expression by noticing that i) all individuals are alive for sure when marked and released in first winter, or $\Pr(z_1=2) = 0$ and ii) dead individuals are non-detected for sure, or $\Pr(y_t = 2|z_t = 2) = 0$, which lead to:
+
+\begin{align*}
+\begin{split}
+\Pr(y_1 = 2, y_2 = 2, y_3 = 1) &= \\
+& \Pr(y_1 = 2 | z_1 = 1) \Pr(y_2 = 2 | z_2 = 1) \Pr(y_3 = 1 | z_3 = 1) \times \\ 
+& \qquad \Pr(z_1 = 1) \Pr(z_2 = 1 | z_1 = 1) \Pr(z_3 = 1 | z_2 = 1) +\\
+&  \Pr(y_1 = 2 | z_1 = 1) \Pr(y_2 = 2 | z_2 = 1) \Pr(y_3 = 1 | z_3 = 2) \times\\ 
+& \qquad \Pr(z_1 = 1) \Pr(z_2 = 1 | z_1 = 1) \Pr(z_3 = 2 | z_2 = 1)\\
+\end{split}
+\end{align*}
+
+Because all individuals are captured in first winter, or $\Pr(y_1 = 2 | z_1 = 1) = 1$, we get:
+
+\begin{align*}
+\begin{split}
+\Pr(y_1 = 2, y_2 = 2, y_3 = 1) &= \\
+& 1 (1-p) \times \\
+& \qquad 1 \phi \phi +\\
+& 1 p 1 \times \\
+& \qquad 1 \phi (1-\phi)\\
+\end{split}
+\end{align*}
+
+You end up with $\Pr(y_1 = 2, y_2 = 2, y_3 = 1) = \phi p (1 - p\phi)$. 
+
+The latent states are no longer involved in the likelihood for this individual. However, even on a rather simple example, the marginal likelihood is quite complex to evaluate because it involves many operations. If $T$ is the length of our encounter histories and $N$ is the number of hidden states (two for alive and dead, but this will be more in some chapters to come), then we need to calculate the sum of $N^T$ terms (the sums in the formula above), each of which has two products of $T$ factors (the products in the formula above), hence $2TN^T$ calculations in total. You can check that in the simple example above, we have $T^N = 2^3 = 8$ terms that are summed, each of which is a product of $2T = 2 \times 3 = 6$ terms. This means that the number of operations increases exponentially as the number of states increases. In most cases, this complexity precludes using this method to get rid of the states. Fortunately, we have another algorithm in the HMM toolbox that is useful to calculate the marginal likelihood efficiently.
 
 ### Forward algorithm
 
-Several products that are computed several times. What if we could store the results and use them later. Recurrence. Dynamic programming. Order of complexity $TN^2$. Give examples, and compare with expression above. Explain forward algo with colors. Mention that: The neat thing with NIMBLE is that it provides marginalised models through nimbleEcology, we'll get back to it in Reference forward to section below (forward algorithm). 
+In the brute-force approach, several products are computed several times to calculate the marginal likelihood. What if we could store these products and use them later while computing the probability of the observation sequence? This is precisely what the forward algorithm does. 
 
-### Implementation in NIMBLE
+We need to introduce $\alpha_t(j)$ the probability for the latent state $z$ of being in state $j$ at $t$  after seeing the first $j$ observations $y_1, \ldots, y_t$, that is $\alpha_t(j) = \Pr(y_1, \ldots, y_t, z_t = j)$. 
 
+Using the law of total probability, we can write the marginal likelihood as a function of $\alpha_T(j)$, namely we have $\Pr(\mathbf{y}) = \displaystyle{\sum_{j=1}^N\Pr(y_1, \ldots, y_t, z_t = j)} = \displaystyle{\sum_{j=1}^N\alpha_T(j)}$. 
+
+How to calculate the the $\alpha_T(j)$s? This is where the magic of the forward algorithm happens. We use a recurrence relationship that saves us many computations.
+
+The recurrence states that:
+
+\begin{align*}
+\alpha_t(j) &= \sum_{i=1}^N \alpha_{t-1}(i) \gamma_{i,j} \omega_{j,y_t}
+\end{align*}
+
+How to obtain this recurrence? First, using the law of total probability with $z_{t-1}$, we have that:
+\begin{align*}
+\alpha_t(j) &= \sum_{i=1}^N \Pr(y_1, \ldots, y_t, z_{t-1} = i, z_t = j)\\
+\end{align*}
+
+Second, using conditional probabilities, we get:
+\begin{align*}
+\alpha_t(j) &= \sum_{i=1}^N \Pr(y_t | z_{t-1} = i, z_t = j, y_1, \ldots, y_t) \Pr(z_{t-1} = i, z_t = j, y_1, \ldots, y_t)
+\end{align*}
+
+Third, using conditional probabilities again, on the second term of the product, we get:
+\begin{align*}
+\alpha_t(j) &= \sum_{i=1}^N \Pr(y_t | z_{t-1} = i, z_t = j, y_1, \ldots, y_t) \times \\ & \Pr(z_t = j | z_{t-1} = i, y_1, \ldots, y_t) \Pr(z_{t-1} = i, y_1, \ldots, y_t)
+\end{align*}
+
+Which, using conditional independence, simplifies into:
+
+\begin{align*}
+\alpha_t(j) &= \sum_{i=1}^N \Pr(y_t | z_t = j) \Pr(z_t = j | z_{t-1} = i) \Pr(z_{t-1} = i, y_1, \ldots, y_t)
+\end{align*}
+
+Recognizing that $\Pr(y_{t}|z_{t}=j)=\omega_{j,y_t}$, $\Pr(z_{t} = j | z_{t-1} = i) = \gamma_{i,j}$ and $\Pr(z_{t-1} = i, y_1, \ldots, y_t) = \alpha_{t-1}(i)$, we obtain the recurrence. 
+
+In practice, the forward algorithm works as follows. First you initialize the procedure by calculating for all $j$: $\alpha_1(j) = Pr(z_1 = j) \omega_{j,y_1}$. Then you compute for all $j$ the relationship $\alpha_t(j) = \displaystyle{\sum_{i=1}^N \alpha_{t-1}(i) \gamma_{i,j} \omega_{j,y_t}}$ for $t = 2, \ldots, T$. Finally, you compute  $\Pr(\mathbf{y}) = \displaystyle{\sum_{j=1}^N\alpha_T(j)}$. At each time $t$, we need to calculate $N$ values of $\alpha_t(j)$, and each $\alpha_t(j)$ is a sum of $N$ products of $\alpha_{t-1}$, $\gamma_{i,j}$ and $\omega_{j,y_t}$, hence $TN^2$ computations in total, much less than $2TN^T$ in the brute-force approach.
+
+Going back to our example, we wish to calculate $\Pr(y_1 = 2, y_2 = 2, y_3 = 1)$. First we initialize and compute $\alpha_1(1)$ and $\alpha_1(2)$. We have:
+
+\begin{align*}
+\alpha_1(1) &= \Pr(z_1=1) \omega_{1,y_1=2}\\
+            &= 1
+\end{align*}
+
+because all animals are alive and captured in first winter. We also have:
+
+\begin{align*}
+\alpha_1(2) &= \Pr(z_1=2) \omega_{2,y_1=2}\\
+            &= 0
+\end{align*}
+
+Then we compute $\alpha_2(1)$ and $\alpha_2(2)$.  We have:
+
+\begin{align*}
+\alpha_2(1) &= \sum_{i=1}^2 \alpha_1(i) \gamma_{i,1} \omega_{1,y_2=2}\\
+            &= \gamma_{1,1} \omega_{1,y_2=2}\\
+            &= \phi p
+\end{align*}
+
+because $\alpha_1(2) = 0$. Also, we have:
+
+\begin{align*}
+\alpha_2(2) &= \sum_{i=1}^2 \alpha_1(i) \gamma_{i,2} \omega_{2,y_2=2}\\
+            &= \gamma_{1,2} \omega_{2,y_2=2}\\
+            &= (1-\phi) 0
+\end{align*}
+
+Finally we compute $\alpha_3(1)$ and $\alpha_3(2)$.  We have:
+
+\begin{align*}
+\alpha_3(1) &= \sum_{i=1}^2 \alpha_2(i) \gamma_{i,1} \omega_{1,y_3=1}\\
+            &= \alpha_2(1) \gamma_{1,1} \omega_{1,y_3=1}\\
+            &= \phi p \phi (1-p)
+\end{align*}
+
+We also have:
+
+\begin{align*}
+\alpha_3(2) &= \sum_{i=1}^2 \alpha_2(i) \gamma_{i,2} \omega_{2,y_3=1}\\
+            &= \alpha_2(1) \gamma_{1,2} \omega_{2,y_3=1}\\
+            &= \phi p (1-\phi) 1
+\end{align*}
+
+Eventually, we compute $\Pr(y_1=2,y_2=2,y_3=1)$:  
+
+\begin{align*}
+\Pr(y_1=2,y_2=2,y_3=1) &= \alpha_3(1) + \alpha_3(2)\\
+            &= \phi p (\phi) (1-p) + \phi p (1-\phi)\\
+            &= \phi p (1-\phi p)
+\end{align*}
+
+You can check that we did in total $3 \times 2^2 = 12$ operations.  
+
+### NIMBLE implementation
+
+In NIMBLE, we use functions to implement the forward algorithm. The only difference with the theory above is that we work on the log scale for numerical stability. 
+
+First we write the density function:
 ```{r}
 dHMM <- nimbleFunction(
   run = function(x = double(1), 
@@ -943,7 +1129,7 @@ dHMM <- nimbleFunction(
 )
 ```
 
-
+In passing, this is the function you would maximize in a Frequentist approach. Then we write a function to simulate values from a HMM:
 ```{r}
 rHMM <- nimbleFunction(
   run = function(n = integer(),
@@ -966,31 +1152,27 @@ rHMM <- nimbleFunction(
   })
 ```
 
-
+We assign these functions to the global R environment:
 ```{r}
 assign('dHMM', dHMM, .GlobalEnv)
 assign('rHMM', rHMM, .GlobalEnv)
 ```
 
-
-```{r}
+```{r, eval = FALSE, echo = FALSE}
 dHMM(x = c(2,2,1,1,1),
      probInit = delta,
      probObs = Gamma,
      probTrans = Omega,
      len = 5)
-```
-
-
-```{r}
 rHMM(probInit = delta,
      probObs = Gamma,
      probTrans = Omega,
      len = 5)
 ```
 
-
+Now we resume our workflow: 
 ```{r}
+# code
 hmm.survival <- nimbleCode({
   phi ~ dunif(0, 1) # prior survival
   p ~ dunif(0, 1) # prior detection
@@ -1012,26 +1194,22 @@ hmm.survival <- nimbleCode({
                     len = T) # nb of sampling occasions
   }
 })
-```
-
-
-```{r}
+# constants
 my.constants <- list(N = nrow(y), T = 5)
-my.constants
-
+# data
 my.data <- list(y = y + 1)
-
+# initial values - no need to specify values for z anymore
 initial.values <- function() list(phi = runif(1,0,1),
                                   p = runif(1,0,1))
-
+# parameters to save
 parameters.to.save <- c("phi", "p")
-
+# MCMC details
 n.iter <- 5000
 n.burnin <- 1000
 n.chains <- 2
 ```
 
-
+And run NIMBLE:
 ```{r cache = F}
 start_time <- Sys.time()
 mcmc.output <- nimbleMCMC(code = hmm.survival,
@@ -1046,11 +1224,11 @@ end_time <- Sys.time()
 end_time - start_time
 ```
 
+The numerical summaries are similar to those we obtained from using the complete likelihood:
 ```{r}
 MCMCsummary(mcmc.output, round = 2)
 ```
 
-**Compute number of nodes. Show that the z are no longer in there.**
 
 ## Pooled encounter histories {#pooled-likelihood}
 
@@ -1365,17 +1543,14 @@ df %>%
 
 ## Suggested reading
 
-Infering the latent states $z$ can be useful to estimate prevalence, e.g. in animal epidemiology with [prevalence of a disease](https://veterinaryresearch.biomedcentral.com/articles/10.1186/1297-9716-45-39), in evolutionary ecology with [sex ratio](https://onlinelibrary.wiley.com/doi/abs/10.1002/cjs.5550360105) or in conservation biology with [prevalence of hybrids](https://onlinelibrary.wiley.com/doi/full/10.1002/ece3.4819?af=R).
-
-More about so-called marginalisation in [Yackulic et al. (2020)](https://esajournals.onlinelibrary.wiley.com/doi/abs/10.1002/eap.2112). Reference forward to section below (forward algorithm). 
-
-+ Zucchini, MacDonald and Langrock (2016) [Hidden Markov Models for Time Series: An Introduction Using R (2nd ed)](https://www.routledge.com/Hidden-Markov-Models-for-Time-Series-An-Introduction-Using-R-Second-Edition/Zucchini-MacDonald-Langrock/p/book/9781482253832). Chapman and Hall/CRC.
 
 + McClintock, B.T., Langrock, R., Gimenez, O., Cam, E., Borchers, D.L., Glennie, R. and Patterson, T.A. (2020), [Uncovering ecological state dynamics with hidden Markov models](https://onlinelibrary.wiley.com/doi/full/10.1111/ele.13610). Ecology Letters, 23: 1878-1903.
 
-+  Yackulic, C. B. Dodrill, M., Dzul, M., Sanderlin, J. S., and Reid, J. A.. (2020). [A need for speed in Bayesian population models: a practical guide to marginalizing and recovering discrete latent states](https://esajournals.onlinelibrary.wiley.com/doi/abs/10.1002/eap.2112). Ecological Applications 30:e02112.
++ Rabiner L.R. (1989). [A tutorial on hidden Markov models and selected applications in speech recognition](https://web.ece.ucsb.edu/Faculty/Rabiner/ece259/Reprints/tutorial%20on%20hmm%20and%20applications.pdf). Proceedings of the IEEE, 77:257-286.
 
-+ L. R. Rabiner (1989). [A tutorial on hidden Markov models and selected applications in speech recognition](https://web.ece.ucsb.edu/Faculty/Rabiner/ece259/Reprints/tutorial%20on%20hmm%20and%20applications.pdf). Proceedings of the IEEE, 77:257-286.
++  Yackulic, C. B. Dodrill, M., Dzul, M., Sanderlin, J. S., and Reid, J. A. (2020). [A need for speed in Bayesian population models: a practical guide to marginalizing and recovering discrete latent states](https://esajournals.onlinelibrary.wiley.com/doi/abs/10.1002/eap.2112). Ecological Applications 30:e02112.
+
++ Zucchini, W., MacDonald I.L. and Langrock R. (2016) [Hidden Markov Models for Time Series: An Introduction Using R (2nd ed)](https://www.routledge.com/Hidden-Markov-Models-for-Time-Series-An-Introduction-Using-R-Second-Edition/Zucchini-MacDonald-Langrock/p/book/9781482253832). Chapman and Hall/CRC.
 
 <!-- heller_novel_2021 -->
 <!-- Gimenez et al. 2007, Royle 2008. Recall difference between SSM and HMM? -->

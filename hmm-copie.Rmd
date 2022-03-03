@@ -1,0 +1,97 @@
+# Hidden Markov models bis
+
+In the brute-force approach, several products are computed several times to calculate the marginal likelihood. What if we could store these products and use them later while computing the probability of the observation sequence? This is precisely what the forward algorithm does. 
+
+We need to introduce $\alpha_t(j)$ the probability for the latent state $z$ of being in state $j$ at $t$  after seeing the first $j$ observations $y_1, \ldots, y_t$, that is $\alpha_t(j) = \Pr(y_1, \ldots, y_t, z_t = j)$. 
+
+Using the law of total probability, we can write the marginal likelihood as a function of $\alpha_T(j)$, namely we have $\Pr(\mathbf{y}) = \displaystyle{\sum_{j=1}^N\Pr(y_1, \ldots, y_t, z_t = j)} = \displaystyle{\sum_{j=1}^N\alpha_T(j)}$. 
+
+How to calculate the the $\alpha_T(j)$s? This is where the magic of the forward algorithm happens. We use a recurrence relationship that saves us many computations.
+
+The recurrence states that:
+
+\begin{align*}
+\alpha_t(j) &= \sum_{i=1}^N \alpha_{t-1}(i) \gamma_{i,j} \omega_{j,y_t}
+\end{align*}
+
+How to obtain this recurrence? First, using the law of total probability with $z_{t-1}$, we have that:
+\begin{align*}
+\alpha_t(j) &= \sum_{i=1}^N \Pr(y_1, \ldots, y_t, z_{t-1} = i, z_t = j)\\
+\end{align*}
+
+Second, using conditional probabilities, we get:
+\begin{align*}
+\alpha_t(j) &= \sum_{i=1}^N \Pr(y_t | z_{t-1} = i, z_t = j, y_1, \ldots, y_t) \Pr(z_{t-1} = i, z_t = j, y_1, \ldots, y_t)
+\end{align*}
+
+Third, using conditional probabilities again, on the second term of the product, we get:
+\begin{align*}
+\alpha_t(j) &= \sum_{i=1}^N \Pr(y_t | z_{t-1} = i, z_t = j, y_1, \ldots, y_t) \times \\ & \Pr(z_t = j | z_{t-1} = i, y_1, \ldots, y_t) \Pr(z_{t-1} = i, y_1, \ldots, y_t)
+\end{align*}
+
+Which, using conditional independence, simplifies into:
+
+\begin{align*}
+\alpha_t(j) &= \sum_{i=1}^N \Pr(y_t | z_t = j) \Pr(z_t = j | z_{t-1} = i) \Pr(z_{t-1} = i, y_1, \ldots, y_t)
+\end{align*}
+
+Recognizing that $\Pr(y_{t}|z_{t}=j)=\omega_{j,y_t}$, $\Pr(z_{t} = j | z_{t-1} = i) = \gamma_{i,j}$ and $\Pr(z_{t-1} = i, y_1, \ldots, y_t) = \alpha_{t-1}(i)$, we obtain the recurrence. 
+
+In practice, the forward algorithm works as follows. First you initialize the procedure by calculating for all $j$: $\alpha_1(j) = Pr(z_1 = j) \omega_{j,y_1}$. Then you compute for all $j$ the relationship $\alpha_t(j) = \displaystyle{\sum_{i=1}^N \alpha_{t-1}(i) \gamma_{i,j} \omega_{j,y_t}}$ for $t = 2, \ldots, T$. Finally, you compute  $\Pr(\mathbf{y}) = \displaystyle{\sum_{j=1}^N\alpha_T(j)}$. At each time $t$, we need to calculate $N$ values of $\alpha_t(j)$, and each $\alpha_t(j)$ is a sum of $N$ products of $\alpha_{t-1}$, $\gamma_{i,j}$ and $\omega_{j,y_t}$, hence $TN^2$ computations in total, much less than $2TN^T$ in the brute-force approach.
+
+Going back to our example, we wish to calculate $\Pr(y_1 = 2, y_2 = 2, y_3 = 1)$. First we initialize and compute $\alpha_1(1)$ and $\alpha_1(2)$. We have:
+
+\begin{align*}
+\alpha_1(1) &= \Pr(z_1=1) \omega_{1,y_1=2}\\
+            &= 1
+\end{align*}
+
+because all animals are alive and captured in first winter. We also have:
+
+\begin{align*}
+\alpha_1(2) &= \Pr(z_1=2) \omega_{2,y_1=2}\\
+            &= 0
+\end{align*}
+
+Then we compute $\alpha_2(1)$ and $\alpha_2(2)$.  We have:
+
+\begin{align*}
+\alpha_2(1) &= \sum_{i=1}^2 \alpha_1(i) \gamma_{i,1} \omega_{1,y_2=2}\\
+            &= \gamma_{1,1} \omega_{1,y_2=2}\\
+            &= \phi p
+\end{align*}
+
+because $\alpha_1(2) = 0$. Also, we have:
+
+\begin{align*}
+\alpha_2(2) &= \sum_{i=1}^2 \alpha_1(i) \gamma_{i,2} \omega_{2,y_2=2}\\
+            &= \gamma_{1,2} \omega_{2,y_2=2}\\
+            &= (1-\phi) 0
+\end{align*}
+
+Finally we compute $\alpha_3(1)$ and $\alpha_3(2)$.  We have:
+
+\begin{align*}
+\alpha_3(1) &= \sum_{i=1}^2 \alpha_2(i) \gamma_{i,1} \omega_{1,y_3=1}\\
+            &= \alpha_2(1) \gamma_{1,1} \omega_{1,y_3=1}\\
+            &= \phi p \phi (1-p)
+\end{align*}
+
+We also have:
+
+\begin{align*}
+\alpha_3(2) &= \sum_{i=1}^2 \alpha_2(i) \gamma_{i,2} \omega_{2,y_3=1}\\
+            &= \alpha_2(1) \gamma_{1,2} \omega_{2,y_3=1}\\
+            &= \phi p (1-\phi) 1
+\end{align*}
+
+Eventually, we compute $\Pr(y_1=2,y_2=2,y_3=1)$:  
+
+\begin{align*}
+\Pr(y_1=2,y_2=2,y_3=1) &= \alpha_3(1) + \alpha_3(2)\\
+            &= \phi p (\phi) (1-p) + \phi p (1-\phi)\\
+            &= \phi p (1-\phi p)
+\end{align*}
+
+You can check that we did in total $3 \times 2^2 = 12$ operations.  
+
