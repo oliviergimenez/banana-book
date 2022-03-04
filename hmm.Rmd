@@ -247,7 +247,7 @@ The probability of having the sequence alive, alive and dead is the probability 
 
 ## Bayesian formulation
 
-Before implementing this model in NIMBLE, we provide a Bayesian formulation of our model. We first note that the likelihood is a product of conditional probabilities of binary events (alive or dead). Usually binary events are associated with the Bernoulli distribution. Here however,  we will use its extension to several outcomes (from a coin with two sides to a dice with more than two faces) known as the categorical distribution^[The categorical distribution is a multinomial distribution with a single draw.]. To get a better idea of how the categorical distribution works, let's simulate from it. Consider for example a random value drawn from a categorical distribution with probability 0.1, 0.3 and 0.6. Think of a dice with three faces, face 1 has probability 0.1 of occurring, face 2 probability 0.3 and face 3 has probability 0.6, the sum of these probabilities being 1. We expect to get a 3 more often than a 2 and rarely a 1: 
+Before implementing this model in NIMBLE, we provide a Bayesian formulation of our model. We first note that the likelihood is a product of conditional probabilities of binary events (alive or dead). Usually binary events are associated with the Bernoulli distribution. Here however,  we will use its extension to several outcomes (from a coin with two sides to a dice with more than two faces) known as the categorical distribution^[The categorical distribution is a multinomial distribution with a single draw.]. To get a better idea of how the categorical distribution works, let's simulate from it with the `rcat()` function. Consider for example a random value drawn from a categorical distribution with probability 0.1, 0.3 and 0.6. Think of a dice with three faces, face 1 has probability 0.1 of occurring, face 2 probability 0.3 and face 3 has probability 0.6, the sum of these probabilities being 1. We expect to get a 3 more often than a 2 and rarely a 1^[Alternatively, you can use the `sample()` function and `sample(x = 1:3, size = 1, replace = FALSE, prob = c(0.1, 0.3, 0.6))`]: 
 ```{r}
 rcat(n = 1, prob = c(0.1, 0.3, 0.6))
 ```
@@ -606,7 +606,7 @@ Our hidden Markov model can be represented this way:
 States $z$ are in gray. Observations $y$ are in white. All individuals are first captured in the first winter $t = 1$, and are therefore all alive $z_1 = 1$ and detected $y_1 = 2$. 
 
 ```{block2 hmm-diagram, type='rmdnote', eval = FALSE}
-A hidden Markov model is just two time series running in parallel. One for the states with the Markovian property, and the other of for the observations generated from the states.
+A hidden Markov model is just two time series running in parallel. One for the states with the Markovian property, and the other of for the observations generated from the states^[HMM are a special case of state-space models in which latent states are discrete.].
 ```
 
 Have a look to the example below, in which an individual is detected at first sampling occasion, detected again, then missed for the rest of the study. While on occasion $t=3$ that individual was alive $z_3=1$ and went undetected $y_3=1$, on occasions $t=4$ and $t=5$ it went undetected $y_4=y_5=1$ because it was dead $z_4=z_5=2$.
@@ -1106,7 +1106,7 @@ You can check that we did in total $3 \times 2^2 = 12$ operations.
 
 ### NIMBLE implementation
 
-In NIMBLE, we use functions to implement the forward algorithm. The only difference with the theory above is that we work on the log scale for numerical stability. 
+In NIMBLE, we use functions to implement the forward algorithm. The only differences with the theory above is that i) we work on the log scale for numerical stability and ii) we use a matrix formulation of the recurrence. 
 
 First we write the density function:
 ```{r}
@@ -1224,7 +1224,7 @@ end_time <- Sys.time()
 end_time - start_time
 ```
 
-The numerical summaries are similar to those we obtained from using the complete likelihood:
+The numerical summaries are similar to those we obtained with the complete likelihood, and effective samples sizes are larger denoting better mixing:
 ```{r}
 MCMCsummary(mcmc.output, round = 2)
 ```
@@ -1326,7 +1326,7 @@ y_pooled <- y %>%
 y_pooled
 ```
 
-For example, we have `r y_pooled[1,1]` individuals with encounter history `r y_pooled[1,2:6]`.
+For example, we have `r y_pooled[1,1]` individuals with encounter history (`r y_pooled[1,2:6]`).
 
 Now you can resume the NIMBLE workflow:
 ```{r}
@@ -1352,7 +1352,7 @@ end_time - start_time
 MCMCsummary(mcmc.output, round = 2)
 ```
 
-The results are the same as those obtained previously. The simulations took less time, and the gain in computation times will be even bigger for more complex models as we will see in the next chapters. 
+The results are the same as those obtained previously. The gain in computation times will be bigger for more complex models as we will see in the next chapters. 
 
 <!-- Works preeeeeety well ;-) two small issues though: -->
 
@@ -1374,6 +1374,8 @@ The results are the same as those obtained previously. The simulations took less
 On peut estimer, ou bien décoder avec Viterbi, voir la différence dans https://luisdamiano.github.io/BayesHMM/articles/introduction.html. Voir aussi la page wikipedia pour les formules . 
 
 In some situations, you might want to compute the sequence of states alive and dead that is most likely to have generated the observed sequence of detections and non-detections. To do so, you can use the Viterbi algorithm. Briefly speaking, this algorithm does this and that. Use colors to explain, as for the forward algorithm. See also <https://en.wikipedia.org/wiki/Forward_algorithm>.
+
+### NIMBLE implementation
 
 Let's write a function that computes the most likely sequence of states given transition and observation matrices, a vector of initial state probabilities and an observed sequence of detections and non-detections for which you aim to compute the sequence of states from which it was most likely generated:
 ```{r}
@@ -1468,7 +1470,7 @@ for (i in 1:nrow(y)){
 ```
 
 Compare Viterbi decoding to actual states $z$:
-```{r}
+```{r echo = FALSE}
 df <- expand.grid(X = 1:nrow(z), Y = 1:ncol(z))
 df$Z <- as_factor(c(z - res))
 myPallette <- RColorBrewer::brewer.pal(name = "RdBu", n = 4)
@@ -1516,7 +1518,7 @@ for (i in 1:nrow(y)){
 ```
 
 Compare Viterbi decoding to actual states $z$:
-```{r}
+```{r echo = FALSE}
 df <- expand.grid(X = 1:nrow(z), Y = 1:ncol(z))
 df$Z <- as_factor(c(z - res))
 myPallette <- RColorBrewer::brewer.pal(name = "RdBu", n = 4)
@@ -1537,20 +1539,27 @@ df %>%
 
 ## Summary
 
-+ Blabla.
++ A HMM is a model that consists of two parts: i) an unobserved sequence of discrete random variables - the states - satisfying the Markovian property (future states depends on current states only and not on past states) and ii) an observed sequence of discrete random variables - the observations - depending only on the current state.
 
-+ Blabla.
++ The Bayesian approach together with MCMC simulations allow estimating survival and detection probabilities as well as individual latent states alive or dead with the complete likelihood. If you can afford the computation times, then using the complete likelihood is the easiest path for model fitting.  
+
++ If you do not need to infer the latent states, you can use the marginal likelihood via the forward algorithm. By avoiding to sample the latent states, you usually get better mixing and faster convergence. 
+
++ If you do need to infer the latent states, and you cannot afford the computation times of the complete likelihood, then you can go for the marginal likelihood in conjunction with the Viterbi algorithm to decode the latent states.
+
++ If the computational burden is still an issue, and you have individuals that share the same encounter history, you can use a pooled likelihood to speed up the marginal likelihood evaluation and MCMC convergence. 
 
 ## Suggested reading
 
++ Jurafsky D. and Martin J.H. (2021) [Hidden Markov models](https://web.stanford.edu/~jurafsky/slp3/A.pdf). In Speech and Language Processing. 3rd edition. Pearson Education UK, 2021. 
 
-+ McClintock, B.T., Langrock, R., Gimenez, O., Cam, E., Borchers, D.L., Glennie, R. and Patterson, T.A. (2020), [Uncovering ecological state dynamics with hidden Markov models](https://onlinelibrary.wiley.com/doi/full/10.1111/ele.13610). Ecology Letters, 23: 1878-1903.
++ McClintock B.T., Langrock R., Gimenez O., Cam E., Borchers D.L., Glennie R. and Patterson T.A. (2020), [Uncovering ecological state dynamics with hidden Markov models](https://onlinelibrary.wiley.com/doi/full/10.1111/ele.13610). Ecology Letters, 23: 1878-1903.
 
 + Rabiner L.R. (1989). [A tutorial on hidden Markov models and selected applications in speech recognition](https://web.ece.ucsb.edu/Faculty/Rabiner/ece259/Reprints/tutorial%20on%20hmm%20and%20applications.pdf). Proceedings of the IEEE, 77:257-286.
 
-+  Yackulic, C. B. Dodrill, M., Dzul, M., Sanderlin, J. S., and Reid, J. A. (2020). [A need for speed in Bayesian population models: a practical guide to marginalizing and recovering discrete latent states](https://esajournals.onlinelibrary.wiley.com/doi/abs/10.1002/eap.2112). Ecological Applications 30:e02112.
+<!-- +  Yackulic, C. B. Dodrill, M., Dzul, M., Sanderlin, J. S., and Reid, J. A. (2020). [A need for speed in Bayesian population models: a practical guide to marginalizing and recovering discrete latent states](https://esajournals.onlinelibrary.wiley.com/doi/abs/10.1002/eap.2112). Ecological Applications 30:e02112. -->
 
-+ Zucchini, W., MacDonald I.L. and Langrock R. (2016) [Hidden Markov Models for Time Series: An Introduction Using R (2nd ed)](https://www.routledge.com/Hidden-Markov-Models-for-Time-Series-An-Introduction-Using-R-Second-Edition/Zucchini-MacDonald-Langrock/p/book/9781482253832). Chapman and Hall/CRC.
++ Zucchini W., MacDonald I.L. and Langrock R. (2016) [Hidden Markov Models for Time Series: An Introduction Using R (2nd ed)](https://www.routledge.com/Hidden-Markov-Models-for-Time-Series-An-Introduction-Using-R-Second-Edition/Zucchini-MacDonald-Langrock/p/book/9781482253832). Chapman and Hall/CRC.
 
 <!-- heller_novel_2021 -->
 <!-- Gimenez et al. 2007, Royle 2008. Recall difference between SSM and HMM? -->
