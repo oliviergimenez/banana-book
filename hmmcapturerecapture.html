@@ -5325,7 +5325,7 @@ A hidden Markov model is just two time series running in parallel. One for the s
                           nchains <span class="op">=</span> <span class="va">n.chains</span><span class="op">)</span>
 <span class="va">end_time</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Sys.time.html">Sys.time</a></span><span class="op">(</span><span class="op">)</span>
 <span class="va">end_time</span> <span class="op">-</span> <span class="va">start_time</span></code></pre></div>
-<pre><code>## Time difference of 28.92 secs</code></pre>
+<pre><code>## Time difference of 31.32 secs</code></pre>
 <p>We can have a look to numerical summaries:</p>
 <div class="sourceCode" id="cb120"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/pkg/MCMCvis/man/MCMCsummary.html">MCMCsummary</a></span><span class="op">(</span><span class="va">mcmc.output</span>, round <span class="op">=</span> <span class="fl">2</span><span class="op">)</span>
@@ -5617,7 +5617,7 @@ A hidden Markov model is just two time series running in parallel. One for the s
 <span class="co">## |-------------------------------------------------------|</span>
 <span class="va">end_time</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Sys.time.html">Sys.time</a></span><span class="op">(</span><span class="op">)</span>
 <span class="va">end_time</span> <span class="op">-</span> <span class="va">start_time</span>
-<span class="co">## Time difference of 26.65 secs</span></code></pre></div>
+<span class="co">## Time difference of 29.29 secs</span></code></pre></div>
 <p>The numerical summaries are similar to those we obtained with the complete likelihood, and effective samples sizes are larger denoting better mixing:</p>
 <div class="sourceCode" id="cb127"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/pkg/MCMCvis/man/MCMCsummary.html">MCMCsummary</a></span><span class="op">(</span><span class="va">mcmc.output</span>, round <span class="op">=</span> <span class="fl">2</span><span class="op">)</span>
@@ -5755,7 +5755,7 @@ A hidden Markov model is just two time series running in parallel. One for the s
 <span class="co">## |-------------------------------------------------------|</span>
 <span class="va">end_time</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Sys.time.html">Sys.time</a></span><span class="op">(</span><span class="op">)</span>
 <span class="va">end_time</span> <span class="op">-</span> <span class="va">start_time</span>
-<span class="co">## Time difference of 26.62 secs</span>
+<span class="co">## Time difference of 26.63 secs</span>
 <span class="fu"><a href="https://rdrr.io/pkg/MCMCvis/man/MCMCsummary.html">MCMCsummary</a></span><span class="op">(</span><span class="va">mcmc.output</span>, round <span class="op">=</span> <span class="fl">2</span><span class="op">)</span>
 <span class="co">##     mean   sd 2.5%  50% 97.5% Rhat n.eff</span>
 <span class="co">## p   0.61 0.06 0.49 0.61  0.72    1  1453</span>
@@ -5781,16 +5781,15 @@ A hidden Markov model is just two time series running in parallel. One for the s
 <h3>
 <span class="header-section-number">3.10.1</span> Theory<a class="anchor" aria-label="anchor" href="#theory"><i class="fas fa-link"></i></a>
 </h3>
-<p>On peut estimer, ou bien décoder avec Viterbi, voir la différence dans <a href="https://luisdamiano.github.io/BayesHMM/articles/introduction.html" class="uri">https://luisdamiano.github.io/BayesHMM/articles/introduction.html</a>. Voir aussi la page wikipedia pour les formules .</p>
-<p>Briefly speaking, this algorithm does this and that. Use colors to explain, as for the forward algorithm. See also <a href="https://en.wikipedia.org/wiki/Forward_algorithm" class="uri">https://en.wikipedia.org/wiki/Forward_algorithm</a>.</p>
+<p>On peut estimer, ou bien décoder avec Viterbi, voir la différence dans <a href="https://luisdamiano.github.io/BayesHMM/articles/introduction.html" class="uri">https://luisdamiano.github.io/BayesHMM/articles/introduction.html</a>. Briefly speaking, this algorithm does this and that. Use colors to explain, as for the forward algorithm. See also <a href="https://en.wikipedia.org/wiki/Forward_algorithm" class="uri">https://en.wikipedia.org/wiki/Forward_algorithm</a>.</p>
 </div>
 <div id="implementation" class="section level3" number="3.10.2">
 <h3>
 <span class="header-section-number">3.10.2</span> Implementation<a class="anchor" aria-label="anchor" href="#implementation"><i class="fas fa-link"></i></a>
 </h3>
-<p>Let’s write a R function to implement the Viterbi algorithm. As parameters, this function will take the transition and observation matrices, the vector of initial state probabilities and the observed sequence of detections and non-detections for which you aim to compute the sequence of states from which it was most likely generated:</p>
+<p>Let’s write a R function to implement the Viterbi algorithm. As parameters, our function will take the transition and observation matrices, the vector of initial state probabilities and the observed sequence of detections and non-detections for which you aim to compute the sequence of states from which it was most likely generated:</p>
 <div class="sourceCode" id="cb134"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="co"># getViterbi() returns path that most likely generated observed sequence of detection/non-detections</span>
+<code class="sourceCode R"><span class="co"># getViterbi() returns sequence of states that most likely generated sequence of observations</span>
 <span class="co"># adapted from https://github.com/vbehnam/viterbi</span>
 <span class="va">getViterbi</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">Omega</span>, <span class="va">Gamma</span>, <span class="va">delta</span>, <span class="va">y</span><span class="op">)</span> <span class="op">{</span>
 <span class="co"># Omega: transition matrix</span>
@@ -5821,7 +5820,7 @@ A hidden Markov model is just two time series running in parallel. One for the s
       <span class="va">probSeq</span><span class="op">[</span><span class="va">j</span>,<span class="va">i</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="op">-</span><span class="fl">1</span>
       <span class="co"># loop to find max and argmax for k</span>
       <span class="kw">for</span> <span class="op">(</span><span class="va">k</span> <span class="kw">in</span> <span class="fl">1</span><span class="op">:</span><span class="va">N</span><span class="op">)</span> <span class="op">{</span>
-        <span class="va">value</span> <span class="op">&lt;-</span> <span class="va">probSeq</span><span class="op">[</span><span class="va">k</span>, <span class="va">i</span><span class="op">-</span><span class="fl">1</span><span class="op">]</span> <span class="op">*</span> <span class="va">Gamma</span><span class="op">[</span><span class="va">k</span>,<span class="va">j</span><span class="op">]</span> <span class="op">*</span> <span class="va">Omega</span><span class="op">[</span><span class="va">j</span>,<span class="va">obs</span><span class="op">]</span>
+        <span class="va">value</span> <span class="op">&lt;-</span> <span class="va">probSeq</span><span class="op">[</span><span class="va">k</span>,<span class="va">i</span><span class="op">-</span><span class="fl">1</span><span class="op">]</span> <span class="op">*</span> <span class="va">Gamma</span><span class="op">[</span><span class="va">k</span>,<span class="va">j</span><span class="op">]</span> <span class="op">*</span> <span class="va">Omega</span><span class="op">[</span><span class="va">j</span>,<span class="va">obs</span><span class="op">]</span>
         <span class="kw">if</span> <span class="op">(</span><span class="va">value</span> <span class="op">&gt;</span> <span class="va">probSeq</span><span class="op">[</span><span class="va">j</span>,<span class="va">i</span><span class="op">]</span><span class="op">)</span> <span class="op">{</span>
           <span class="co"># maximizing for k</span>
           <span class="va">probSeq</span><span class="op">[</span><span class="va">j</span>,<span class="va">i</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="va">value</span>
@@ -5844,24 +5843,42 @@ A hidden Markov model is just two time series running in parallel. One for the s
   <span class="op">}</span>
   <span class="kw"><a href="https://rdrr.io/r/base/function.html">return</a></span><span class="op">(</span><span class="va">mlp</span><span class="op">)</span>
 <span class="op">}</span></code></pre></div>
-<p>Example using the simulated data.</p>
-<p>Instead of writing your own function, you could use an already existing function to implement the Viterbi algorithm. For example, viterbi in package HMM. Then call it from NIMBLE as we have seen in Section <a href="intronimble.html#callrfninnimble">2.4.2</a>. However, difficulty of dealing with states at initial encounter.</p>
-<p>Reste alors à décider si on calcule viterbi à chaque itération, puis on faire la moyenne/médiane, ou bien si on prend les moyennes/médianes a posterior des paramètres et qu’on fait Viterbi <a href="https://discourse.mc-stan.org/t/how-to-get-the-best-state-sequence-using-viterbi-algorithm/18969" class="uri">https://discourse.mc-stan.org/t/how-to-get-the-best-state-sequence-using-viterbi-algorithm/18969</a>. What is the better option?</p>
-</div>
-<div id="compute-first-average-after" class="section level3" number="3.10.3">
-<h3>
-<span class="header-section-number">3.10.3</span> Compute first, average after<a class="anchor" aria-label="anchor" href="#compute-first-average-after"><i class="fas fa-link"></i></a>
-</h3>
-<p>From there, we first get values from the posterior distribution of survival and detection:</p>
+<p>Note that instead of writing your own R function, you could use a built-in function from an existing R package to implement the Viterbi algorithm<a class="footnote-ref" tabindex="0" data-toggle="popover" data-content="&lt;p&gt;For example, the &lt;code&gt;viterbi()&lt;/code&gt; function from the HMM and depmixS4 packages.&lt;/p&gt;"><sup>29</sup></a>, and call it from NIMBLE as we have seen in Section <a href="intronimble.html#callrfninnimble">2.4.2</a>. The difficulty is that in HMM for capture-recapture data, we have to deal with detection at first encounter, which is not estimated but is one because an individual has to be captured to be marked and released for the first time.</p>
+<p>Let’s test the <code>getViterbi()</code> function with an example. In our simulated dataset, animal #15 has the encounter history (2, 1, 1, 1, 1) which was generated from the sequence of states (1, 1, 2, 2, 2) with survival probability <span class="math inline">\(\phi = 0.8\)</span> and detection probability <span class="math inline">\(p = 0.6\)</span>. Applying our function to that animal encounter history, we get:</p>
 <div class="sourceCode" id="cb135"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="va">delta</span> <span class="co"># Vector of initial states probabilities</span>
+<span class="co">## [1] 1 0</span>
+<span class="va">Gamma</span> <span class="co"># Transition matrix</span>
+<span class="co">##      [,1] [,2]</span>
+<span class="co">## [1,]  0.8  0.2</span>
+<span class="co">## [2,]  0.0  1.0</span>
+<span class="va">Omega</span> <span class="co"># Observation matrix</span>
+<span class="co">##      [,1] [,2]</span>
+<span class="co">## [1,]  0.4  0.6</span>
+<span class="co">## [2,]  1.0  0.0</span>
+<span class="fu">getViterbi</span><span class="op">(</span>Omega <span class="op">=</span> <span class="va">Omega</span>, 
+           Gamma <span class="op">=</span> <span class="va">Gamma</span>, 
+           delta <span class="op">=</span> <span class="va">delta</span>, 
+           y <span class="op">=</span> <span class="va">y</span><span class="op">[</span><span class="fl">15</span>,<span class="op">]</span> <span class="op">+</span> <span class="fl">1</span><span class="op">)</span>
+<span class="co">## [1] 1 2 2 2 2</span></code></pre></div>
+<p>The Viterbi algorithm does pretty well at recovering the latent states, despite falsely decoding a death in the second winter while individual #15 only dies in the third winter.</p>
+<p>Now that we have a function that implements the Viterbi algorithm, we can use it with our MCMC outputs. You have two options, either you apply Viterbi to each MCMC iteration then you compute the posterior median or mode path for each individual, or you compute the posterior mean or median of the transition and observation matrices then you apply Viterbi to each individual encounter history.</p>
+<p>For both options, we will need the values from the posterior distributions of survival and detection probabilities:</p>
+<div class="sourceCode" id="cb136"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">phi</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimble-R-functions.html">c</a></span><span class="op">(</span><span class="va">mcmc.output</span><span class="op">$</span><span class="va">chain1</span><span class="op">[</span>,<span class="st">'phi'</span><span class="op">]</span>, <span class="va">mcmc.output</span><span class="op">$</span><span class="va">chain2</span><span class="op">[</span>,<span class="st">'phi'</span><span class="op">]</span><span class="op">)</span>
 <span class="va">p</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimble-R-functions.html">c</a></span><span class="op">(</span><span class="va">mcmc.output</span><span class="op">$</span><span class="va">chain1</span><span class="op">[</span>,<span class="st">'p'</span><span class="op">]</span>, <span class="va">mcmc.output</span><span class="op">$</span><span class="va">chain2</span><span class="op">[</span>,<span class="st">'p'</span><span class="op">]</span><span class="op">)</span></code></pre></div>
+</div>
+<div id="compute-average" class="section level3" number="3.10.3">
+<h3>
+<span class="header-section-number">3.10.3</span> Compute first, average after<a class="anchor" aria-label="anchor" href="#compute-average"><i class="fas fa-link"></i></a>
+</h3>
 <p>First option is to apply Viterbi to each MCMC sample, then to compute median of the MCMC Viterbi paths for each observed sequence:</p>
-<div class="sourceCode" id="cb136"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb137"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">niter</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimble-R-functions.html">length</a></span><span class="op">(</span><span class="va">p</span><span class="op">)</span>
-<span class="va">res</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimMatrix.html">matrix</a></span><span class="op">(</span><span class="cn">NA</span>, nrow <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html">nrow</a></span><span class="op">(</span><span class="va">y</span><span class="op">)</span>, ncol <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimble-R-functions.html">length</a></span><span class="op">(</span><span class="va">y</span><span class="op">[</span><span class="fl">1</span>,<span class="op">]</span><span class="op">)</span><span class="op">)</span>
+<span class="cn">T</span> <span class="op">&lt;-</span> <span class="fl">5</span>
+<span class="va">res</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimMatrix.html">matrix</a></span><span class="op">(</span><span class="cn">NA</span>, nrow <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html">nrow</a></span><span class="op">(</span><span class="va">y</span><span class="op">)</span>, ncol <span class="op">=</span> <span class="cn">T</span><span class="op">)</span>
 <span class="kw">for</span> <span class="op">(</span><span class="va">i</span> <span class="kw">in</span> <span class="fl">1</span><span class="op">:</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html">nrow</a></span><span class="op">(</span><span class="va">y</span><span class="op">)</span><span class="op">)</span><span class="op">{</span>
-  <span class="va">res_mcmc</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimMatrix.html">matrix</a></span><span class="op">(</span><span class="cn">NA</span>, nrow <span class="op">=</span> <span class="va">niter</span>, ncol <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimble-R-functions.html">length</a></span><span class="op">(</span><span class="va">y</span><span class="op">[</span><span class="fl">1</span>,<span class="op">]</span><span class="op">)</span><span class="op">)</span>
+  <span class="va">res_mcmc</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimMatrix.html">matrix</a></span><span class="op">(</span><span class="cn">NA</span>, nrow <span class="op">=</span> <span class="va">niter</span>, ncol <span class="op">=</span> <span class="cn">T</span><span class="op">)</span>
   <span class="kw">for</span> <span class="op">(</span><span class="va">j</span> <span class="kw">in</span> <span class="fl">1</span><span class="op">:</span><span class="va">niter</span><span class="op">)</span><span class="op">{</span>
     <span class="co"># Initial states</span>
     <span class="va">delta</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimble-R-functions.html">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">0</span><span class="op">)</span>
@@ -5877,42 +5894,41 @@ A hidden Markov model is just two time series running in parallel. One for the s
     <span class="va">emission</span><span class="op">[</span><span class="fl">1</span>,<span class="fl">2</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="va">p</span><span class="op">[</span><span class="va">j</span><span class="op">]</span>          <span class="co"># Pr(alive t -&gt; detected t)</span>
     <span class="va">emission</span><span class="op">[</span><span class="fl">2</span>,<span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span>          <span class="co"># Pr(dead t -&gt; non-detected t)</span>
     <span class="va">emission</span><span class="op">[</span><span class="fl">2</span>,<span class="fl">2</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0</span>          <span class="co"># Pr(dead t -&gt; detected t)</span>
-    <span class="va">res_mcmc</span><span class="op">[</span><span class="va">j</span>,<span class="fl">1</span><span class="op">:</span><span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimble-R-functions.html">length</a></span><span class="op">(</span><span class="va">y</span><span class="op">[</span><span class="fl">1</span>,<span class="op">]</span><span class="op">)</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fu">getViterbi</span><span class="op">(</span><span class="va">emission</span>, <span class="va">transition</span>, <span class="va">delta</span>, <span class="va">y</span><span class="op">[</span><span class="va">i</span>,<span class="op">]</span> <span class="op">+</span> <span class="fl">1</span><span class="op">)</span>
+    <span class="va">res_mcmc</span><span class="op">[</span><span class="va">j</span>,<span class="fl">1</span><span class="op">:</span><span class="cn">T</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fu">getViterbi</span><span class="op">(</span><span class="va">emission</span>, <span class="va">transition</span>, <span class="va">delta</span>, <span class="va">y</span><span class="op">[</span><span class="va">i</span>,<span class="op">]</span> <span class="op">+</span> <span class="fl">1</span><span class="op">)</span>
   <span class="op">}</span>
   <span class="va">res</span><span class="op">[</span><span class="va">i</span>, <span class="fl">1</span><span class="op">:</span><span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimble-R-functions.html">length</a></span><span class="op">(</span><span class="va">y</span><span class="op">[</span><span class="fl">1</span>,<span class="op">]</span><span class="op">)</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/apply.html">apply</a></span><span class="op">(</span><span class="va">res_mcmc</span>, <span class="fl">2</span>, <span class="va">median</span><span class="op">)</span>
 <span class="op">}</span></code></pre></div>
-<p>Compare Viterbi decoding to actual states <span class="math inline">\(z\)</span>:
-<img src="banana-book_files/figure-html/unnamed-chunk-163-1.png" width="672"></p>
-<p>Here we compute the Viterbi paths after we run NIMBLE. Alternatively, you can define a NIMBLE function to compute the Viterbi path first, then plug it in your code to apply Viterbi. This does not make any difference apart from increasing the computational cost.</p>
+<p>You can compare the Viterbi decoding to the actual states <span class="math inline">\(z\)</span>:
+<img src="banana-book_files/figure-html/unnamed-chunk-166-1.png" width="672"></p>
+<p>Decoding is on overall correct except that the alive actual state is often decoded as the dead state by the Viterbi algorithm. Note that here we compute the Viterbi paths after we run NIMBLE. You could write a NIMBLE function inspired by the R function <code>getViterbi()</code> and plug it in your model code to apply Viterbi. This does not make any difference except perhaps to increase MCMC computation times.</p>
 </div>
 <div id="average-first-compute-after" class="section level3" number="3.10.4">
 <h3>
 <span class="header-section-number">3.10.4</span> Average first, compute after<a class="anchor" aria-label="anchor" href="#average-first-compute-after"><i class="fas fa-link"></i></a>
 </h3>
-<p>Second option is to compute posterior mean of the observation and transition matrices, then to apply Viterbi:</p>
-<div class="sourceCode" id="cb137"><pre class="downlit sourceCode r">
+<p>Second option is to compute the posterior mean of the observation and transition matrices, then to apply Viterbi:</p>
+<div class="sourceCode" id="cb138"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="co"># Initial states</span>
 <span class="va">delta</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimble-R-functions.html">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">0</span><span class="op">)</span>
 <span class="co"># Transition matrix</span>
 <span class="va">transition</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimMatrix.html">matrix</a></span><span class="op">(</span><span class="cn">NA</span>, <span class="fl">2</span>, <span class="fl">2</span><span class="op">)</span>
 <span class="va">transition</span><span class="op">[</span><span class="fl">1</span>,<span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/mean.html">mean</a></span><span class="op">(</span><span class="va">phi</span><span class="op">)</span>      <span class="co"># Pr(alive t -&gt; alive t+1)</span>
 <span class="va">transition</span><span class="op">[</span><span class="fl">1</span>,<span class="fl">2</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span> <span class="op">-</span> <span class="fu"><a href="https://rdrr.io/r/base/mean.html">mean</a></span><span class="op">(</span><span class="va">phi</span><span class="op">)</span>  <span class="co"># Pr(alive t -&gt; dead t+1)</span>
-<span class="va">transition</span><span class="op">[</span><span class="fl">2</span>,<span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0</span>        <span class="co"># Pr(dead t -&gt; alive t+1)</span>
-<span class="va">transition</span><span class="op">[</span><span class="fl">2</span>,<span class="fl">2</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span>        <span class="co"># Pr(dead t -&gt; dead t+1)</span>
+<span class="va">transition</span><span class="op">[</span><span class="fl">2</span>,<span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0</span>              <span class="co"># Pr(dead t -&gt; alive t+1)</span>
+<span class="va">transition</span><span class="op">[</span><span class="fl">2</span>,<span class="fl">2</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span>              <span class="co"># Pr(dead t -&gt; dead t+1)</span>
 <span class="co"># Observation matrix </span>
 <span class="va">emission</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimMatrix.html">matrix</a></span><span class="op">(</span><span class="cn">NA</span>, <span class="fl">2</span>, <span class="fl">2</span><span class="op">)</span>
 <span class="va">emission</span><span class="op">[</span><span class="fl">1</span>,<span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span> <span class="op">-</span> <span class="fu"><a href="https://rdrr.io/r/base/mean.html">mean</a></span><span class="op">(</span><span class="va">p</span><span class="op">)</span>      <span class="co"># Pr(alive t -&gt; non-detected t)</span>
 <span class="va">emission</span><span class="op">[</span><span class="fl">1</span>,<span class="fl">2</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/mean.html">mean</a></span><span class="op">(</span><span class="va">p</span><span class="op">)</span>          <span class="co"># Pr(alive t -&gt; detected t)</span>
-<span class="va">emission</span><span class="op">[</span><span class="fl">2</span>,<span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span>          <span class="co"># Pr(dead t -&gt; non-detected t)</span>
-<span class="va">emission</span><span class="op">[</span><span class="fl">2</span>,<span class="fl">2</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0</span>          <span class="co"># Pr(dead t -&gt; detected t)</span>
-
-
-<span class="va">res</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimMatrix.html">matrix</a></span><span class="op">(</span><span class="cn">NA</span>, nrow <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html">nrow</a></span><span class="op">(</span><span class="va">y</span><span class="op">)</span>, ncol <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimble-R-functions.html">length</a></span><span class="op">(</span><span class="va">y</span><span class="op">[</span><span class="fl">1</span>,<span class="op">]</span><span class="op">)</span><span class="op">)</span>
+<span class="va">emission</span><span class="op">[</span><span class="fl">2</span>,<span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span>                <span class="co"># Pr(dead t -&gt; non-detected t)</span>
+<span class="va">emission</span><span class="op">[</span><span class="fl">2</span>,<span class="fl">2</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0</span>                <span class="co"># Pr(dead t -&gt; detected t)</span>
+<span class="va">res</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimMatrix.html">matrix</a></span><span class="op">(</span><span class="cn">NA</span>, nrow <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html">nrow</a></span><span class="op">(</span><span class="va">y</span><span class="op">)</span>, ncol <span class="op">=</span> <span class="cn">T</span><span class="op">)</span>
 <span class="kw">for</span> <span class="op">(</span><span class="va">i</span> <span class="kw">in</span> <span class="fl">1</span><span class="op">:</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html">nrow</a></span><span class="op">(</span><span class="va">y</span><span class="op">)</span><span class="op">)</span><span class="op">{</span>
   <span class="va">res</span><span class="op">[</span><span class="va">i</span>, <span class="fl">1</span><span class="op">:</span><span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimble-R-functions.html">length</a></span><span class="op">(</span><span class="va">y</span><span class="op">[</span><span class="fl">1</span>,<span class="op">]</span><span class="op">)</span> <span class="op">]</span> <span class="op">&lt;-</span> <span class="fu">getViterbi</span><span class="op">(</span><span class="va">emission</span>, <span class="va">transition</span>, <span class="va">delta</span>, <span class="va">y</span><span class="op">[</span><span class="va">i</span>,<span class="op">]</span> <span class="op">+</span> <span class="fl">1</span><span class="op">)</span>
 <span class="op">}</span></code></pre></div>
-<p>Compare Viterbi decoding to actual states <span class="math inline">\(z\)</span>:
-<img src="banana-book_files/figure-html/unnamed-chunk-165-1.png" width="672"></p>
+<p>Again, you can compare the result of the Viterbi decoding to the actual states <span class="math inline">\(z\)</span>:
+<img src="banana-book_files/figure-html/unnamed-chunk-168-1.png" width="672"></p>
+<p>The results are very similar to those we obtained in Section <a href="hmmcapturerecapture.html#compute-average">3.10.3</a>.</p>
 </div>
 </div>
 <div id="summary-2" class="section level2" number="3.11">
@@ -5987,7 +6003,7 @@ A hidden Markov model is just two time series running in parallel. One for the s
 <a class="nav-link" href="#decoding"><span class="header-section-number">3.10</span> Decoding after marginalization</a><ul class="nav navbar-nav">
 <li><a class="nav-link" href="#theory"><span class="header-section-number">3.10.1</span> Theory</a></li>
 <li><a class="nav-link" href="#implementation"><span class="header-section-number">3.10.2</span> Implementation</a></li>
-<li><a class="nav-link" href="#compute-first-average-after"><span class="header-section-number">3.10.3</span> Compute first, average after</a></li>
+<li><a class="nav-link" href="#compute-average"><span class="header-section-number">3.10.3</span> Compute first, average after</a></li>
 <li><a class="nav-link" href="#average-first-compute-after"><span class="header-section-number">3.10.4</span> Average first, compute after</a></li>
 </ul>
 </li>
