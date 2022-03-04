@@ -1373,15 +1373,13 @@ If you need to infer the latent states, and you cannot afford the computation ti
 
 ### Theory
 
-On peut estimer, ou bien décoder avec Viterbi, voir la différence dans https://luisdamiano.github.io/BayesHMM/articles/introduction.html. Voir aussi la page wikipedia pour les formules . 
-
-Briefly speaking, this algorithm does this and that. Use colors to explain, as for the forward algorithm. See also <https://en.wikipedia.org/wiki/Forward_algorithm>.
+On peut estimer, ou bien décoder avec Viterbi, voir la différence dans https://luisdamiano.github.io/BayesHMM/articles/introduction.html. Briefly speaking, this algorithm does this and that. Use colors to explain, as for the forward algorithm. See also <https://en.wikipedia.org/wiki/Forward_algorithm>.
 
 ### Implementation
 
-Let's write a R function to implement the Viterbi algorithm. As parameters, this function will take the transition and observation matrices, the vector of initial state probabilities and the observed sequence of detections and non-detections for which you aim to compute the sequence of states from which it was most likely generated:
+Let's write a R function to implement the Viterbi algorithm. As parameters, our function will take the transition and observation matrices, the vector of initial state probabilities and the observed sequence of detections and non-detections for which you aim to compute the sequence of states from which it was most likely generated:
 ```{r}
-# getViterbi() returns path that most likely generated observed sequence of detection/non-detections
+# getViterbi() returns sequence of states that most likely generated sequence of observations
 # adapted from https://github.com/vbehnam/viterbi
 getViterbi <- function(Omega, Gamma, delta, y) {
 # Omega: transition matrix
@@ -1412,7 +1410,7 @@ for (i in 2:T) {
       probSeq[j,i] <- -1
       # loop to find max and argmax for k
       for (k in 1:N) {
-        value <- probSeq[k, i-1] * Gamma[k,j] * Omega[j,obs]
+        value <- probSeq[k,i-1] * Gamma[k,j] * Omega[j,obs]
         if (value > probSeq[j,i]) {
           # maximizing for k
           probSeq[j,i] <- value
@@ -1437,26 +1435,90 @@ for (i in 2:T) {
 }
 ```
 
-Example using the simulated data.
+```{r echo = FALSE}
+set.seed(2022) # for reproducibility
+nocc <- 5 # nb of winters or sampling occasions
+nind <- 57 # nb of animals
+p <- 0.6 # detection prob
+phi <- 0.8 # survival prob
+# Vector of initial states probabilities
+delta <- c(1,0) # all individuals are alive in first winter
+# Transition matrix
+Gamma <- matrix(NA, 2, 2)
+Gamma[1,1] <- phi      # Pr(alive t -> alive t+1)
+Gamma[1,2] <- 1 - phi  # Pr(alive t -> dead t+1)
+Gamma[2,1] <- 0        # Pr(dead t -> alive t+1)
+Gamma[2,2] <- 1        # Pr(dead t -> dead t+1)
+# Observation matrix 
+Omega <- matrix(NA, 2, 2)
+Omega[1,1] <- 1 - p      # Pr(alive t -> non-detected t)
+Omega[1,2] <- p          # Pr(alive t -> detected t)
+Omega[2,1] <- 1          # Pr(dead t -> non-detected t)
+Omega[2,2] <- 0          # Pr(dead t -> detected t)
+# Matrix of states
+z <- matrix(NA, nrow = nind, ncol = nocc)
+y <- z
+y[,1] <- 2 # all individuals are detected in first winter
+for (i in 1:nind){
+  z[i,1] <- rcat(n = 1, prob = delta) # 1 for sure
+  for (t in 2:nocc){
+    # state at t given state at t-1
+    z[i,t] <- rcat(n = 1, prob = Gamma[z[i,t-1],1:2]) 
+    # observation at t given state at t
+    y[i,t] <- rcat(n = 1, prob = Omega[z[i,t],1:2]) 
+  }
+}
+y <- y - 1
+```
 
-Instead of writing your own function, you could use an already existing function to implement the Viterbi algorithm. For example, viterbi in package HMM. Then call it from NIMBLE as we have seen in Section \@ref(callrfninnimble). However, difficulty of dealing with states at initial encounter. 
+Note that instead of writing your own R function, you could use a built-in function from an existing R package to implement the Viterbi algorithm^[For example, the `viterbi()` function from the HMM and depmixS4 packages.], and call it from NIMBLE as we have seen in Section \@ref(callrfninnimble). The difficulty is that in HMM for capture-recapture data, we have to deal with detection at first encounter, which is not estimated but is one because an individual has to be captured to be marked and released for the first time. 
 
-Reste alors à décider si on calcule viterbi à chaque itération, puis on faire la moyenne/médiane, ou bien si on prend les moyennes/médianes a posterior des paramètres et qu'on fait Viterbi https://discourse.mc-stan.org/t/how-to-get-the-best-state-sequence-using-viterbi-algorithm/18969. What is the better option? 
+```{r echo = FALSE, eval = FALSE}
+library(HMM)
+# build HMM
+hmm <- initHMM(States = c("alive","dead"),
+              Symbols = c("nondet","det"), 
+              startProbs = delta,
+              transProbs = Gamma,
+              emissionProbs = Omega)
+hmm
+# sequence of observations
+observations <- c("det","nondet","nondet","nondet", "nondet")
+# calculate Viterbi path
+viterbi <- viterbi(hmm, observations)
+viterbi
+```
 
-### Compute first, average after
+Let's test the `getViterbi()` function with an example. In our simulated dataset, animal #15 has the encounter history (`r y[15,] + 1`) which was generated from the sequence of states (`r z[15,]`) with survival probability $\phi = 0.8$ and detection probability $p = 0.6$. Applying our function to that animal encounter history, we get:
+```{r}
+delta # Vector of initial states probabilities
+Gamma # Transition matrix
+Omega # Observation matrix
+getViterbi(Omega = Omega, 
+           Gamma = Gamma, 
+           delta = delta, 
+           y = y[15,] + 1)
+```
 
-From there, we first get values from the posterior distribution of survival and detection:
+The Viterbi algorithm does pretty well at recovering the latent states, despite falsely decoding a death in the second winter while individual #15 only dies in the third winter. 
+
+Now that we have a function that implements the Viterbi algorithm, we can use it with our MCMC outputs. You have two options, either you apply Viterbi to each MCMC iteration then you compute the posterior median or mode path for each individual, or you compute the posterior mean or median of the transition and observation matrices then you apply Viterbi to each individual encounter history. 
+
+For both options, we will need the values from the posterior distributions of survival and detection probabilities:
 ```{r}
 phi <- c(mcmc.output$chain1[,'phi'], mcmc.output$chain2[,'phi'])
 p <- c(mcmc.output$chain1[,'p'], mcmc.output$chain2[,'p'])
 ```
 
+### Compute first, average after {#compute-average}
+
 First option is to apply Viterbi to each MCMC sample, then to compute median of the MCMC Viterbi paths for each observed sequence:
 ```{r}
 niter <- length(p)
-res <- matrix(NA, nrow = nrow(y), ncol = length(y[1,]))
+T <- 5
+res <- matrix(NA, nrow = nrow(y), ncol = T)
 for (i in 1:nrow(y)){
-  res_mcmc <- matrix(NA, nrow = niter, ncol = length(y[1,]))
+  res_mcmc <- matrix(NA, nrow = niter, ncol = T)
   for (j in 1:niter){
     # Initial states
     delta <- c(1, 0)
@@ -1472,13 +1534,13 @@ for (i in 1:nrow(y)){
     emission[1,2] <- p[j]          # Pr(alive t -> detected t)
     emission[2,1] <- 1          # Pr(dead t -> non-detected t)
     emission[2,2] <- 0          # Pr(dead t -> detected t)
-    res_mcmc[j,1:length(y[1,])] <- getViterbi(emission, transition, delta, y[i,] + 1)
+    res_mcmc[j,1:T] <- getViterbi(emission, transition, delta, y[i,] + 1)
   }
   res[i, 1:length(y[1,])] <- apply(res_mcmc, 2, median)
 }
 ```
 
-Compare Viterbi decoding to actual states $z$:
+You can compare the Viterbi decoding to the actual states $z$:
 ```{r echo = FALSE}
 df <- expand.grid(X = 1:nrow(z), Y = 1:ncol(z))
 df$Z <- as_factor(c(z - res))
@@ -1497,11 +1559,11 @@ df %>%
   theme_light()
 ```
 
-Here we compute the Viterbi paths after we run NIMBLE. Alternatively, you can define a NIMBLE function to compute the Viterbi path first, then plug it in your code to apply Viterbi. This does not make any difference apart from increasing the computational cost. 
+Decoding is on overall correct except that the alive actual state is often decoded as the dead state by the Viterbi algorithm. Note that here we compute the Viterbi paths after we run NIMBLE. You could write a NIMBLE function inspired by the R function `getViterbi()` and plug it in your model code to apply Viterbi. This does not make any difference except perhaps to increase MCMC computation times. 
 
 ### Average first, compute after
 
-Second option is to compute posterior mean of the observation and transition matrices, then to apply Viterbi:
+Second option is to compute the posterior mean of the observation and transition matrices, then to apply Viterbi:
   
 ```{r}
 # Initial states
@@ -1510,23 +1572,21 @@ delta <- c(1, 0)
 transition <- matrix(NA, 2, 2)
 transition[1,1] <- mean(phi)      # Pr(alive t -> alive t+1)
 transition[1,2] <- 1 - mean(phi)  # Pr(alive t -> dead t+1)
-transition[2,1] <- 0        # Pr(dead t -> alive t+1)
-transition[2,2] <- 1        # Pr(dead t -> dead t+1)
+transition[2,1] <- 0              # Pr(dead t -> alive t+1)
+transition[2,2] <- 1              # Pr(dead t -> dead t+1)
 # Observation matrix 
 emission <- matrix(NA, 2, 2)
 emission[1,1] <- 1 - mean(p)      # Pr(alive t -> non-detected t)
 emission[1,2] <- mean(p)          # Pr(alive t -> detected t)
-emission[2,1] <- 1          # Pr(dead t -> non-detected t)
-emission[2,2] <- 0          # Pr(dead t -> detected t)
-
-
-res <- matrix(NA, nrow = nrow(y), ncol = length(y[1,]))
+emission[2,1] <- 1                # Pr(dead t -> non-detected t)
+emission[2,2] <- 0                # Pr(dead t -> detected t)
+res <- matrix(NA, nrow = nrow(y), ncol = T)
 for (i in 1:nrow(y)){
   res[i, 1:length(y[1,]) ] <- getViterbi(emission, transition, delta, y[i,] + 1)
 }
 ```
 
-Compare Viterbi decoding to actual states $z$:
+Again, you can compare the result of the Viterbi decoding to the actual states $z$:
 ```{r echo = FALSE}
 df <- expand.grid(X = 1:nrow(z), Y = 1:ncol(z))
 df$Z <- as_factor(c(z - res))
@@ -1545,6 +1605,7 @@ df %>%
   theme_light()
 ```
 
+The results are very similar to those we obtained in Section \@ref(compute-average). 
 
 ## Summary
 
