@@ -931,7 +931,7 @@ In some situations, you will not be interested in inferring the hidden states $z
 
 ### Brute-force approach
 
-Using the formula of total probability, we get the marginal likelihood by summing over all possible states in the complete likelihood:
+Using the formula of total probability, you get the marginal likelihood by summing over all possible states in the complete likelihood:
 
 \begin{align*}
 \Pr(\mathbf{y}_i) &= \Pr(y_{i,1}, y_{i,2}, \ldots, y_{i,T})\\
@@ -946,12 +946,12 @@ Going through the same steps as for deriving the complete likelihood, we obtain 
 \end{align*}
 
 
-Let's go through an example. Let's imagine we have $T = 3$ winters, and we'd like to write the likelihood for an individual having the encounter history detected, detected then non-detected. Remember that non-detected is coded 1 and detected 2, while alive is coded 1 and dead 2. We need to calculate $\Pr(y_1 = 2, y_2 = 2, y_3 = 1)$ which, according to the formula above, is given by:
+Let's go through an example. Let's imagine we have $T = 3$ winters, and we'd like to write the likelihood for an individual having the encounter history detected, detected then non-detected. Remember that non-detected is coded 1 and detected is coded 2, while alive is coded 1 and dead is coded 2. We need to calculate $\Pr(y_1 = 2, y_2 = 2, y_3 = 1)$ which, according to the formula above, is given by:
 
 \begin{align*}
 \begin{split}
-\Pr(y_1 = 2, y_2 = 2, y_3 = 1) &= \sum_{i=1}^{2} \sum_{j=1}^{2} \sum_{k=1}^{2} \left[\Pr(y_1 = 2 | z_1 = i) \Pr(y_2 = 2 | z_2 = j) \Pr(y_3 = 1 | z_3 = k)\right] \\ 
-& \qquad \left(\Pr(z_1=i) \Pr(z_2 = j | z_1 = i) \Pr(z_3 = k | z_2 = j)\right)\\
+\Pr(y_1 = 2, y_2 = 2, y_3 = 1) &= \sum_{i=1}^{2} \sum_{j=1}^{2} \sum_{k=1}^{2} \Pr(y_1 = 2 | z_1 = i) \Pr(y_2 = 2 | z_2 = j) \Pr(y_3 = 1 | z_3 = k) \\ 
+& \qquad \Pr(z_1=i) \Pr(z_2 = j | z_1 = i) \Pr(z_3 = k | z_2 = j)\\
 \end{split}
 \end{align*}
 
@@ -994,24 +994,18 @@ You can simplify this expression by noticing that i) all individuals are alive f
 Because all individuals are captured in first winter, or $\Pr(y_1 = 2 | z_1 = 1) = 1$, we get:
 
 \begin{align*}
-\begin{split}
-\Pr(y_1 = 2, y_2 = 2, y_3 = 1) &= \\
-& 1 (1-p) \times \\
-& \qquad 1 \phi \phi +\\
-& 1 p 1 \times \\
-& \qquad 1 \phi (1-\phi)\\
-\end{split}
+\Pr(y_1 = 2, y_2 = 2, y_3 = 1) =  1 (1-p) \times 1 \phi \phi + 1 p 1 \times 1 \phi (1-\phi)
 \end{align*}
 
 You end up with $\Pr(y_1 = 2, y_2 = 2, y_3 = 1) = \phi p (1 - p\phi)$. 
 
-The latent states are no longer involved in the likelihood for this individual. However, even on a rather simple example, the marginal likelihood is quite complex to evaluate because it involves many operations. If $T$ is the length of our encounter histories and $N$ is the number of hidden states (two for alive and dead, but this will be more in some chapters to come), then we need to calculate the sum of $N^T$ terms (the sums in the formula above), each of which has two products of $T$ factors (the products in the formula above), hence $2TN^T$ calculations in total. You can check that in the simple example above, we have $T^N = 2^3 = 8$ terms that are summed, each of which is a product of $2T = 2 \times 3 = 6$ terms. This means that the number of operations increases exponentially as the number of states increases. In most cases, this complexity precludes using this method to get rid of the states. Fortunately, we have another algorithm in the HMM toolbox that is useful to calculate the marginal likelihood efficiently.
+The latent states are no longer involved in the likelihood for this individual. However, even on a rather simple example, the marginal likelihood is quite complex to evaluate because it involves many operations. If $T$ is the length of our encounter histories and $N$ is the number of hidden states (two for alive and dead, but we will deal with more states in some chapters to come), then we need to calculate the sum of $N^T$ terms (the sums in the formula above), each of which has two products of $T$ factors (the products in the formula above), hence $2TN^T$ calculations in total. You can check that in the simple example above, we have $T^N = 2^3 = 8$ terms that are summed, each of which is a product of $2T = 2 \times 3 = 6$ terms. This means that the number of operations increases exponentially as the number of states increases. In most cases, this complexity precludes using this method to get rid of the states. Fortunately, we have another algorithm in the HMM toolbox that is useful to calculate the marginal likelihood efficiently.
 
 ### Forward algorithm {#forward-algorithm}
 
-In the brute-force approach, several products are computed several times to calculate the marginal likelihood. What if we could store these products and use them later while computing the probability of the observation sequence? This is precisely what the forward algorithm does. 
+In the brute-force approach, some products are computed several times to calculate the marginal likelihood. What if we could store these products and use them later while computing the probability of the observation sequence? This is precisely what the forward algorithm does. 
 
-We need to introduce $\alpha_t(j)$ the probability for the latent state $z$ of being in state $j$ at $t$  after seeing the first $j$ observations $y_1, \ldots, y_t$, that is $\alpha_t(j) = \Pr(y_1, \ldots, y_t, z_t = j)$. 
+We introduce $\alpha_t(j)$ the probability for the latent state $z$ of being in state $j$ at $t$  after seeing the first $j$ observations $y_1, \ldots, y_t$, that is $\alpha_t(j) = \Pr(y_1, \ldots, y_t, z_t = j)$. 
 
 Using the law of total probability, we can write the marginal likelihood as a function of $\alpha_T(j)$, namely we have $\Pr(\mathbf{y}) = \displaystyle{\sum_{j=1}^N\Pr(y_1, \ldots, y_t, z_t = j)} = \displaystyle{\sum_{j=1}^N\alpha_T(j)}$. 
 
@@ -1038,7 +1032,7 @@ Third, using conditional probabilities again, on the second term of the product,
 \alpha_t(j) &= \sum_{i=1}^N \Pr(y_t | z_{t-1} = i, z_t = j, y_1, \ldots, y_t) \times \\ & \Pr(z_t = j | z_{t-1} = i, y_1, \ldots, y_t) \Pr(z_{t-1} = i, y_1, \ldots, y_t)
 \end{align*}
 
-Which, using conditional independence, simplifies into:
+which, using conditional independence, simplifies into:
 
 \begin{align*}
 \alpha_t(j) &= \sum_{i=1}^N \Pr(y_t | z_t = j) \Pr(z_t = j | z_{t-1} = i) \Pr(z_{t-1} = i, y_1, \ldots, y_t)
@@ -1046,20 +1040,18 @@ Which, using conditional independence, simplifies into:
 
 Recognizing that $\Pr(y_{t}|z_{t}=j)=\omega_{j,y_t}$, $\Pr(z_{t} = j | z_{t-1} = i) = \gamma_{i,j}$ and $\Pr(z_{t-1} = i, y_1, \ldots, y_t) = \alpha_{t-1}(i)$, we obtain the recurrence. 
 
-In practice, the forward algorithm works as follows. First you initialize the procedure by calculating for all $j$: $\alpha_1(j) = Pr(z_1 = j) \omega_{j,y_1}$. Then you compute for all $j$ the relationship $\alpha_t(j) = \displaystyle{\sum_{i=1}^N \alpha_{t-1}(i) \gamma_{i,j} \omega_{j,y_t}}$ for $t = 2, \ldots, T$. Finally, you compute  $\Pr(\mathbf{y}) = \displaystyle{\sum_{j=1}^N\alpha_T(j)}$. At each time $t$, we need to calculate $N$ values of $\alpha_t(j)$, and each $\alpha_t(j)$ is a sum of $N$ products of $\alpha_{t-1}$, $\gamma_{i,j}$ and $\omega_{j,y_t}$, hence $TN^2$ computations in total, much less than $2TN^T$ in the brute-force approach.
+In practice, the forward algorithm works as follows. First you initialize the procedure by calculating for the states $j=1,\ldots,N$ the quantities $\alpha_1(j) = Pr(z_1 = j) \omega_{j,y_1}$. Then you compute for the states $j=1,\ldots,N$ the relationship $\alpha_t(j) = \displaystyle{\sum_{i=1}^N \alpha_{t-1}(i) \gamma_{i,j} \omega_{j,y_t}}$ for $t = 2, \ldots, T$. Finally, you compute the marginal likelihood as $\Pr(\mathbf{y}) = \displaystyle{\sum_{j=1}^N\alpha_T(j)}$. At each time $t$, we need to calculate $N$ values of $\alpha_t(j)$, and each $\alpha_t(j)$ is a sum of $N$ products of $\alpha_{t-1}$, $\gamma_{i,j}$ and $\omega_{j,y_t}$, hence $TN^2$ computations in total, which is much less than the $2TN^T$ calculations in the brute-force approach.
 
 Going back to our example, we wish to calculate $\Pr(y_1 = 2, y_2 = 2, y_3 = 1)$. First we initialize and compute $\alpha_1(1)$ and $\alpha_1(2)$. We have:
 
 \begin{align*}
-\alpha_1(1) &= \Pr(z_1=1) \omega_{1,y_1=2}\\
-            &= 1
+\alpha_1(1) = \Pr(z_1=1) \omega_{1,y_1=2} = 1
 \end{align*}
 
 because all animals are alive and captured in first winter. We also have:
 
 \begin{align*}
-\alpha_1(2) &= \Pr(z_1=2) \omega_{2,y_1=2}\\
-            &= 0
+\alpha_1(2) = \Pr(z_1=2) \omega_{2,y_1=2} = 0
 \end{align*}
 
 Then we compute $\alpha_2(1)$ and $\alpha_2(2)$.  We have:
@@ -1086,7 +1078,7 @@ Finally we compute $\alpha_3(1)$ and $\alpha_3(2)$.  We have:
             &= \phi p \phi (1-p)
 \end{align*}
 
-We also have:
+and:
 
 \begin{align*}
 \alpha_3(2) &= \sum_{i=1}^2 \alpha_2(i) \gamma_{i,2} \omega_{2,y_3=1}\\
@@ -1094,7 +1086,7 @@ We also have:
             &= \phi p (1-\phi) 1
 \end{align*}
 
-Eventually, we compute $\Pr(y_1=2,y_2=2,y_3=1)$:  
+Eventually, we compute $\Pr(y_1=2,y_2=2,y_3=1)$:
 
 \begin{align*}
 \Pr(y_1=2,y_2=2,y_3=1) &= \alpha_3(1) + \alpha_3(2)\\
@@ -1107,7 +1099,6 @@ You can check that we did in total $3 \times 2^2 = 12$ operations.
 ### NIMBLE implementation
 
 In NIMBLE, we use functions to implement the forward algorithm. The only differences with the theory above is that i) we work on the log scale for numerical stability and ii) we use a matrix formulation of the recurrence. 
-
 First we write the density function:
 ```{r}
 dHMM <- nimbleFunction(
@@ -1371,69 +1362,7 @@ The results are the same as those obtained previously. The gain in computation t
 
 If you need to infer the latent states, and you cannot afford the computation times of the complete likelihood of Section \@ref(likelihoodhmm), you can still use the marginal likelihood with the forward algorithm of Section \@ref(forward-algorithm). You will need an extra step to decode the latent states with the Viterbi algorithm. The Viterbi algorithm allows you to compute the sequence of states that is most likely to have generated the sequence of observations.
 
-### Theory
-
-Work in progress.
-
-### Implementation
-
-Let's write a R function to implement the Viterbi algorithm. As parameters, our function will take the transition and observation matrices, the vector of initial state probabilities and the observed sequence of detections and non-detections for which you aim to compute the sequence of states from which it was most likely generated:
-```{r}
-# getViterbi() returns sequence of states that most likely generated sequence of observations
-# adapted from https://github.com/vbehnam/viterbi
-getViterbi <- function(Omega, Gamma, delta, y) {
-# Omega: transition matrix
-# Gamma: observation matrix
-# delta: vector of initial state probabilities
-# y: observed sequence of detections and non-detections
-  
-# get number of states and sampling occasions
-N <- nrow(Gamma)
-T <- length(y)
-  
-# stateSeq contains the most likely states up until this point
-# probSeq is the corresponding likelihood
-probSeq <- matrix(0, nrow = N, ncol = T)
-stateSeq <- matrix(0, nrow = N, ncol = T)
-firstObs <- y[1]
-  
-# fill in first columns of both matrices
-#probSeq[,1] <- initial * emission[,firstObs]
-#stateSeq[,1] <- 0
-probSeq[,1] <- c(1,0) # initial = (1, 0) * emission[,firstObs] = (1, 0)
-stateSeq[,1] <- 1 # alive at first occasion
-
-for (i in 2:T) {
-    for (j in 1:N) {
-      obs <- y[i]
-      # initialize to -1, then overwritten by for loop coz all possible values are >= 0
-      probSeq[j,i] <- -1
-      # loop to find max and argmax for k
-      for (k in 1:N) {
-        value <- probSeq[k,i-1] * Gamma[k,j] * Omega[j,obs]
-        if (value > probSeq[j,i]) {
-          # maximizing for k
-          probSeq[j,i] <- value
-          # argmaximizing for k
-          stateSeq[j,i] <- k
-        }
-      }
-    }
-  }
-  # mlp = most likely path
-  mlp <- numeric(T)
-  # argmax for stateSeq[,T]
-  am <- which.max(probSeq[,T])
-  mlp[T] <- stateSeq[am,T]
-  
-  # backtrace using backpointers
-  for (i in T:2) {
-    zm <- which.max(probSeq[,i])
-    mlp[i-1] <- stateSeq[zm,i]
-  }
-  return(mlp)
-}
-```
+### Theory {#viterbi-theory}
 
 ```{r echo = FALSE}
 set.seed(2022) # for reproducibility
@@ -1471,7 +1400,94 @@ for (i in 1:nind){
 y <- y - 1
 ```
 
-Note that instead of writing your own R function, you could use a built-in function from an existing R package to implement the Viterbi algorithm^[For example, the `viterbi()` function from the HMM and depmixS4 packages.], and call it from NIMBLE as we have seen in Section \@ref(callrfninnimble). The difficulty is that in HMM for capture-recapture data, we have to deal with detection at first encounter, which is not estimated but is one because an individual has to be captured to be marked and released for the first time. 
+In our simulated dataset, animal #15 has the encounter history (`r y[15,] + 1`) which was generated from the sequence of states (`r z[15,]`) with survival probability $\phi = 0.8$ and detection probability $p = 0.6$. 
+
+Imagine you do not know the truth. What is the chance that animal #15 was alive throughout the study when observing the encounter history detected in first winter, then missed in each subsequent winter? The chance of being alive in the first winter and detected when alive is 1. The chance of being alive in the second winter and non-detected is $0.8 \times (1-0.6) = 0.32$. The same goes for third, fourth and fifth winters. In total, the probability of being alive throughout the study for an animal with encounter history (`r y[15,] + 1`) is $1 \times 0.32 \times 0.32 \times 0.32 \times 0.32 = 0.01048576$.
+
+Now what is the chance that animal #15 was alive, then dead for the rest of the study, when observing the encounter history (`r y[15,] + 1`)? And the chance of being alive in first and second winters, then dead after when observing the same encounter history? And so on. You need to enumerate all possible sequences of states and compute the probability for each of them, and choose the most probable sequence, that is with maximum probability. In our example, we would need to compute $2^5 = 32$ of these probabilities, and $N^T$ in general. Needless to say, these calculations quickly become cumbersome, if not impossible, as the number of states and/or the number of sampling occasions increases. 
+
+This is where the Viterbi algorithm comes in. The idea is to decompose this overall complex problem in a sequence of smallers problems that are easier to solve^[If dynamic programming rings a bell, the Viterbi algorithm should look familiar to you.]. The Viterbi algorithm is based on the fact that the optimal path to each winter and each state can be deduced from the optimal path to the previous winter and each state.  
+
+For first winter, the probability of being alive and detected is 1, while the probability of being dead and detected is 0. Now what is the probability of being alive in the second winter and non-detected? If the animal was alive in the first winter, it remains alive and is missed with probability $1 \times \phi (1-p) = 0.32$. If it was dead in the first winter, then this probability is 0. The maximum probability is 0.32 obviously so the most probable scenario to being alive in the second winter is being alive in the first winter. What about being dead in the second winter? If the animal was alive in first winter, then the probability is $1 \times (1-\phi) \times 1 = 0.2$. If dead, then this probability is $0 \times 0 \times (1-p) = 0$. The maximum probability is 0.2 obviously so the most probable scenario to being dead in the second winter is being alive in the first winter. Doing these calculations for third, fourth and fifth winters, we get the probabilities:
+
+|             | winter 1 |       winter2       |         winter 3        |           winter 4          |             winter 5            |
+|:-----------:|:--------:|:-------------------:|:-----------------------:|:---------------------------:|:-------------------------------:|
+| **state alive** |     1    | 0.32 = max(0, 0.32) | 0.2304 = max(0, 0.2304) | 0.110592 = max(0, 0.110592) | 0.053084416 = max(0, 0.05308416 |
+|  **state dead** |     0    |  1 = max(1, 0.2)  |    1 = max(0.096, 1)    |     1 = max(0.04608, 1)     |      1 = max(0.0221184, 1)      |
+| **observation** | detected |        missed       |          missed         |            missed           |              missed             |
+
+
+Finally, to get (or decode) the optimal path, you work backwards and trace back the previous value that yielded the maximum probability. The most probable state in the last winter is dead (1 > 0.05308416), dead again in the fourth winter (1 > 0.110592), dead in the third winter (1 > 0.2304), alive in the second winter (1 > 0.48) and alive in the firt winter (1 > 0). According to the Viterbi algorithm, the sequence of states that most likelily generated the sequence of observations (`r y[15,] + 1`) is alive then dead, dead, dead and dead or (1 2 2 2 2). This differs slightly from the actual sequence of states (`r z[15,]`) in that the state in second winter is decoded dead while animal #15 only dies in third winter.
+
+In contrast to the brute force approach, calculations are not duplicated but stored and used again like in the forward algorithm. Briefly speaking, the Viterbi algorithm works like the forward algorithm where sums are replaced by calculating maximums. 
+
+In practice, the Viterbi algorithm works as illustrated in Figure \@ref(fig:treillis-viterbi). First you initialize the procedure by calculating at $t=1$ for all states $j=1,\ldots,N$ the values $\nu_1(j) = Pr(z_1 = j) \omega_{j,y_1}$. Then you compute for all states $j=1,\ldots,N$ the values $\nu_t(j) = \displaystyle{\max_{i=1,\ldots,N} \nu_{t-1}(i) \gamma_{i,j} \omega_{j,y_t}}$ for $t = 2, \ldots, T$. Here at each time $t$ we determine the probability of the best path ending at each of the states $j=1,\ldots,N$. Finally, you compute the probability of the best global path $\displaystyle{\max_{j=1,\ldots,N}\nu_T(j)}$.
+
+```{r treillis-viterbi, echo = FALSE, fig.align="center", out.width="100%", fig.cap = "Graphical representation of the Viterbi algorithm with $\\phi = 0.8$ and $p = 0.6$. States are alive $z = 1$ or dead $z = 2$ and observations are non-detected $y = 1$ or detected $y = 2$. To be done properly w/ tikz."}
+knitr::include_graphics("images/treillis-viterbi.png")
+```
+
+### Implementation
+
+Let's write a R function to implement the Viterbi algorithm. As parameters, our function will take the transition and observation matrices, the vector of initial state probabilities and the observed sequence of detections and non-detections for which you aim to compute the sequence of states from which it was most likely generated:
+```{r}
+# getViterbi() returns sequence of states that most likely generated sequence of observations
+# adapted from https://github.com/vbehnam/viterbi
+getViterbi <- function(Omega, Gamma, delta, y) {
+# Omega: transition matrix
+# Gamma: observation matrix
+# delta: vector of initial state probabilities
+# y: observed sequence of detections and non-detections
+  
+# get number of states and sampling occasions
+N <- nrow(Gamma)
+T <- length(y)
+  
+# nu is the corresponding likelihood
+nu <- matrix(0, nrow = N, ncol = T)
+# zz contains the most likely states up until this point
+zz <- matrix(0, nrow = N, ncol = T)
+firstObs <- y[1]
+  
+# fill in first columns of both matrices
+#nu[,1] <- initial * emission[,firstObs]
+#zz[,1] <- 0
+nu[,1] <- c(1,0) # initial = (1, 0) * emission[,firstObs] = (1, 0)
+zz[,1] <- 1 # alive at first occasion
+
+for (i in 2:T) {
+    for (j in 1:N) {
+      obs <- y[i]
+      # initialize to -1, then overwritten by for loop coz all possible values are >= 0
+      nu[j,i] <- -1
+      # loop to find max and argmax for k
+      for (k in 1:N) {
+        value <- nu[k,i-1] * Gamma[k,j] * Omega[j,obs]
+        if (value > nu[j,i]) {
+          # maximizing for k
+          nu[j,i] <- value
+          # argmaximizing for k
+          zz[j,i] <- k
+        }
+      }
+    }
+  }
+  # mlp = most likely path
+  mlp <- numeric(T)
+  # argmax for stateSeq[,T]
+  am <- which.max(nu[,T])
+  mlp[T] <- zz[am,T]
+  
+  # backtrace using backpointers
+  for (i in T:2) {
+    zm <- which.max(nu[,i])
+    mlp[i-1] <- zz[zm,i]
+  }
+  return(mlp)
+}
+```
+
+Note that instead of writing your own R function, you could use a built-in function from an existing R package to implement the Viterbi algorithm^[For example, the `viterbi()` function from the HMM and depmixS4 packages.], and call it from NIMBLE as we have seen in Section \@ref(callrfninnimble). The difficulty is that HMM for capture-recapture data have specific features that make standard functions not adapted and requires coding your own Viterbi function. In particular, we have to deal with detection at first encounter, which is not estimated but is always one because an individual has to be captured to be marked and released for the first time. Also, our transition and observation matrices are not always homogeneous and may depend on time. 
 
 ```{r echo = FALSE, eval = FALSE}
 library(HMM)
@@ -1489,7 +1505,7 @@ viterbi <- viterbi(hmm, observations)
 viterbi
 ```
 
-Let's test the `getViterbi()` function with an example. In our simulated dataset, animal #15 has the encounter history (`r y[15,] + 1`) which was generated from the sequence of states (`r z[15,]`) with survival probability $\phi = 0.8$ and detection probability $p = 0.6$. Applying our function to that animal encounter history, we get:
+Let's test our `getViterbi()` function with our previous example. Remember animal #15 has the encounter history (`r y[15,] + 1`) which was generated from the sequence of states (`r z[15,]`). Applying our function to that animal encounter history, we get:
 ```{r}
 delta # Vector of initial states probabilities
 Gamma # Transition matrix
@@ -1500,7 +1516,7 @@ getViterbi(Omega = Omega,
            y = y[15,] + 1)
 ```
 
-The Viterbi algorithm does pretty well at recovering the latent states, despite falsely decoding a death in the second winter while individual #15 only dies in the third winter. 
+The Viterbi algorithm does pretty well at recovering the latent states, despite incorrectly decoding a death in the second winter while individual #15 only dies in the third winter. We obtained the same results by implementing the Viterbi algorithm by hand in Section \@ref(viterbi-theory). 
 
 Now that we have a function that implements the Viterbi algorithm, we can use it with our MCMC outputs. You have two options, either you apply Viterbi to each MCMC iteration then you compute the posterior median or mode path for each individual, or you compute the posterior mean or median of the transition and observation matrices then you apply Viterbi to each individual encounter history. 
 
@@ -1541,7 +1557,7 @@ for (i in 1:nrow(y)){
 ```
 
 You can compare the Viterbi decoding to the actual states $z$:
-```{r echo = FALSE}
+```{r viterbiaveragecompute, echo = FALSE, fig.cap = "Comparison of the actual sequences of states to the sequences of states decoded with Viterbi and the *average first, compute after* method."}
 df <- expand.grid(X = 1:nrow(z), Y = 1:ncol(z))
 df$Z <- as_factor(c(z - res))
 myPallette <- RColorBrewer::brewer.pal(name = "RdBu", n = 4)
@@ -1559,7 +1575,7 @@ df %>%
   theme_light()
 ```
 
-Decoding is on overall correct except that the alive actual state is often decoded as the dead state by the Viterbi algorithm. Note that here we compute the Viterbi paths after we run NIMBLE. You could write a NIMBLE function inspired by the R function `getViterbi()` and plug it in your model code to apply Viterbi. This does not make any difference except perhaps to increase MCMC computation times. 
+Decoding is correct except that the alive actual state is often decoded as the dead state by the Viterbi algorithm. Note that here we compute the Viterbi paths after we run NIMBLE. You could turn the R function `getViterbi()` into a NIMBLE function and plug it in your model code to apply Viterbi. This would not make any difference except perhaps to increase MCMC computation times. 
 
 ### Average first, compute after
 
@@ -1586,8 +1602,8 @@ for (i in 1:nrow(y)){
 }
 ```
 
-Again, you can compare the result of the Viterbi decoding to the actual states $z$:
-```{r echo = FALSE}
+Again, you can compare the result of the Viterbi decoding to the actual states we simulated and used to generate the observations:
+```{r viterbicomputeaverage, echo = FALSE, fig.cap = "Comparison of the actual sequences of states to the sequences of states decoded with Viterbi and the *compute first, average after* approach."}
 df <- expand.grid(X = 1:nrow(z), Y = 1:ncol(z))
 df$Z <- as_factor(c(z - res))
 myPallette <- RColorBrewer::brewer.pal(name = "RdBu", n = 4)
@@ -1605,7 +1621,7 @@ df %>%
   theme_light()
 ```
 
-The results are very similar to those we obtained in Section \@ref(compute-average). 
+The results are very similar to those we obtained in Section \@ref(compute-average), and Figure \@ref(fig:viterbicomputeaverage) is indisguishable from Figure \@ref(fig:viterbiaveragecompute).
 
 ## Summary
 
