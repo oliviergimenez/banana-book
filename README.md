@@ -11,4 +11,5 @@ People who sent feedback:
 -   Fitsum Abadi \@FitsumAG
 -   Cyril Milleret \@Milleret_Cyril
 -   Matthieu Paquet
+-   Matthew Silk \@mattjsilk
 -   
