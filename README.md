@@ -12,4 +12,4 @@ People who sent feedback:
 -   Cyril Milleret \@Milleret_Cyril
 -   Matthieu Paquet
 -   Matthew Silk \@mattjsilk
--   
+-   Maud Quéroué \@MaudQueroue
