@@ -13,3 +13,4 @@ People who sent feedback:
 -   Matthieu Paquet
 -   Matthew Silk \@mattjsilk
 -   Maud Quéroué \@MaudQueroue
+-   Chloé Nater \@ChloeRN
