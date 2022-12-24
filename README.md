@@ -2,7 +2,7 @@ This is a textbook on the analysis of capture-recapture data with hidden Markov 
 
 People who sent feedback:
 
--   Sarah Bauduin
+-   Sarah Bauduin \@SarahBauduin
 -   Patricia Rodrigues \@PatriRodrigs
 -   Benedick Schmidt \@Schmidt_Beni
 -   Mahdieh Tourani \@TouraniMa
@@ -12,4 +12,5 @@ People who sent feedback:
 -   Cyril Milleret \@Milleret_Cyril
 -   Matthieu Paquet
 -   Matthew Silk \@mattjsilk
--   
+-   Chloé Nater \@ChloeRN
+-   Joseph Hightower \@jhncsu

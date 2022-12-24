@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="" xml:lang="">
+<head>
+
+<meta charset="utf-8" />
+<meta name="generator" content="pandoc" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta property="og:title" content="1.5 Markov chain Monte Carlo (MCMC) | Bayesian Analysis of Capture-Recapture Data with Hidden Markov Models" />
+<meta property="og:type" content="book" />
+
+<meta property="og:description" content="This is a textbook on the analysis of capture-recapture data with hidden Markov models (HMM) implemented in the Bayesian framework with R." />
+<meta name="github-repo" content="oliviergimenez/banana-book" />
+
+<meta name="author" content="Olivier Gimenez" />
+
+<meta name="date" content="2022-12-23" />
+
+<script type="text/x-mathjax-config">
+MathJax.Hub.Config({
+  TeX: { equationNumbers: { autoNumber: "AMS" } }
+});
+</script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<meta name="description" content="This is a textbook on the analysis of capture-recapture data with hidden Markov models (HMM) implemented in the Bayesian framework with R.">
+
+<title>1.5 Markov chain Monte Carlo (MCMC) | Bayesian Analysis of Capture-Recapture Data with Hidden Markov Models</title>
+
+<script src="libs/jquery-3.6.0/jquery-3.6.0.min.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link href="libs/bootstrap-3.3.5/css/bootstrap.min.css" rel="stylesheet" />
+<script src="libs/bootstrap-3.3.5/js/bootstrap.min.js"></script>
+<script src="libs/bootstrap-3.3.5/shim/html5shiv.min.js"></script>
+<script src="libs/bootstrap-3.3.5/shim/respond.min.js"></script>
+<style>h1 {font-size: 34px;}
+       h1.title {font-size: 38px;}
+       h2 {font-size: 30px;}
+       h3 {font-size: 24px;}
+       h4 {font-size: 18px;}
+       h5 {font-size: 16px;}
+       h6 {font-size: 12px;}
+       code {color: inherit; background-color: rgba(0, 0, 0, 0.04);}
+       pre:not([class]) { background-color: white }</style>
+<script src="libs/navigation-1.1/tabsets.js"></script>
+
+
+<style type="text/css">code{white-space: pre;}</style>
+<style type="text/css">
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+    color: #aaaaaa;
+  }
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+code span.at { color: #7d9029; } /* Attribute */
+code span.bn { color: #40a070; } /* BaseN */
+code span.bu { color: #008000; } /* BuiltIn */
+code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+code span.ch { color: #4070a0; } /* Char */
+code span.cn { color: #880000; } /* Constant */
+code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+code span.dt { color: #902000; } /* DataType */
+code span.dv { color: #40a070; } /* DecVal */
+code span.er { color: #ff0000; font-weight: bold; } /* Error */
+code span.ex { } /* Extension */
+code span.fl { color: #40a070; } /* Float */
+code span.fu { color: #06287e; } /* Function */
+code span.im { color: #008000; font-weight: bold; } /* Import */
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+code span.op { color: #666666; } /* Operator */
+code span.ot { color: #007020; } /* Other */
+code span.pp { color: #bc7a00; } /* Preprocessor */
+code span.sc { color: #4070a0; } /* SpecialChar */
+code span.ss { color: #bb6688; } /* SpecialString */
+code span.st { color: #4070a0; } /* String */
+code span.va { color: #19177c; } /* Variable */
+code span.vs { color: #4070a0; } /* VerbatimString */
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+</style>
+<style type="text/css">
+  pre:not([class]) {
+    background-color: white;
+  }
+</style>
+
+
+<style type="text/css">
+/* Used with Pandoc 2.11+ new --citeproc when CSL is used */
+div.csl-bib-body { }
+div.csl-entry {
+  clear: both;
+}
+.hanging div.csl-entry {
+  margin-left:2em;
+  text-indent:-2em;
+}
+div.csl-left-margin {
+  min-width:2em;
+  float:left;
+}
+div.csl-right-inline {
+  margin-left:2em;
+  padding-left:1em;
+}
+div.csl-indent {
+  margin-left: 2em;
+}
+</style>
+
+<link rel="stylesheet" href="css/style.css" type="text/css" />
+<link rel="stylesheet" href="css/toc.css" type="text/css" />
+
+<style type = "text/css">
+.main-container {
+  max-width: 940px;
+  margin-left: auto;
+  margin-right: auto;
+}
+code {
+  color: inherit;
+  background-color: rgba(0, 0, 0, 0.04);
+}
+img {
+  max-width:100%;
+  height: auto;
+}
+/* show arrow before summary tag as in bootstrap
+TODO: remove if boostrap in updated in html_document (rmarkdown#1485) */
+details > summary {
+  display: list-item;
+  cursor: pointer;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container-fluid main-container">
+
+
+<div class="row">
+<div class="col-sm-12">
+<div id="TOC">
+<ul>
+<li class="has-sub"><a href="index.html#welcome" id="toc-welcome">Welcome</a>
+<ul>
+<li><a href="license.html#license" id="toc-license">License</a></li>
+</ul></li>
+<li class="has-sub"><a href="preface.html#preface" id="toc-preface">Preface</a>
+<ul>
+<li><a href="why-this-book.html#why-this-book" id="toc-why-this-book">Why this book?</a></li>
+<li><a href="who-should-read-this-book.html#who-should-read-this-book" id="toc-who-should-read-this-book">Who should read this book?</a></li>
+<li><a href="what-will-you-learn.html#what-will-you-learn" id="toc-what-will-you-learn">What will you learn?</a></li>
+<li><a href="what-wont-you-learn.html#what-wont-you-learn" id="toc-what-wont-you-learn">What won’t you learn?</a></li>
+<li><a href="prerequisites.html#prerequisites" id="toc-prerequisites">Prerequisites</a></li>
+<li><a href="acknowledgements.html#acknowledgements" id="toc-acknowledgements">Acknowledgements</a></li>
+<li><a href="how-this-book-was-written.html#how-this-book-was-written" id="toc-how-this-book-was-written">How this book was written</a></li>
+</ul></li>
+<li><a href="about-the-author.html#about-the-author" id="toc-about-the-author">About the author</a></li>
+<li class="part"><span><b>I I. Fundations</b></span></li>
+<li><a href="introduction.html#introduction" id="toc-introduction">Introduction</a></li>
+<li class="has-sub"><a href="1-crashcourse.html#crashcourse" id="toc-crashcourse"><span class="toc-section-number">1</span> Bayesian statistics &amp; MCMC</a>
+<ul>
+<li><a href="1.1-introduction-1.html#introduction-1" id="toc-introduction-1"><span class="toc-section-number">1.1</span> Introduction</a></li>
+<li><a href="1.2-bayes-theorem.html#bayes-theorem" id="toc-bayes-theorem"><span class="toc-section-number">1.2</span> Bayes’ theorem</a></li>
+<li><a href="1.3-what-is-the-bayesian-approach.html#what-is-the-bayesian-approach" id="toc-what-is-the-bayesian-approach"><span class="toc-section-number">1.3</span> What is the Bayesian approach?</a></li>
+<li><a href="1.4-numerical-approx.html#numerical-approx" id="toc-numerical-approx"><span class="toc-section-number">1.4</span> Approximating posteriors via numerical integration</a></li>
+<li class="has-sub"><a href="1.5-markov-chain-monte-carlo-mcmc.html#markov-chain-monte-carlo-mcmc" id="toc-markov-chain-monte-carlo-mcmc"><span class="toc-section-number">1.5</span> Markov chain Monte Carlo (MCMC)</a>
+<ul>
+<li><a href="1.5-markov-chain-monte-carlo-mcmc.html#monte-carlo-integration" id="toc-monte-carlo-integration"><span class="toc-section-number">1.5.1</span> Monte Carlo integration</a></li>
+<li><a href="1.5-markov-chain-monte-carlo-mcmc.html#markovmodelmcmc" id="toc-markovmodelmcmc"><span class="toc-section-number">1.5.2</span> Markov chains</a></li>
+<li><a href="1.5-markov-chain-monte-carlo-mcmc.html#metropolis-algorithm" id="toc-metropolis-algorithm"><span class="toc-section-number">1.5.3</span> Metropolis algorithm</a></li>
+</ul></li>
+<li class="has-sub"><a href="1.6-convergence-diag.html#convergence-diag" id="toc-convergence-diag"><span class="toc-section-number">1.6</span> Assessing convergence</a>
+<ul>
+<li><a href="1.6-convergence-diag.html#burn-in" id="toc-burn-in"><span class="toc-section-number">1.6.1</span> Burn-in</a></li>
+<li><a href="1.6-convergence-diag.html#chain-length" id="toc-chain-length"><span class="toc-section-number">1.6.2</span> Chain length</a></li>
+<li><a href="1.6-convergence-diag.html#what-if-you-have-issues-of-convergence" id="toc-what-if-you-have-issues-of-convergence"><span class="toc-section-number">1.6.3</span> What if you have issues of convergence?</a></li>
+</ul></li>
+<li><a href="1.7-summary.html#summary" id="toc-summary"><span class="toc-section-number">1.7</span> Summary</a></li>
+<li><a href="1.8-suggested-reading.html#suggested-reading" id="toc-suggested-reading"><span class="toc-section-number">1.8</span> Suggested reading</a></li>
+</ul></li>
+<li><a href="faq.html#faq" id="toc-faq">FAQ</a></li>
+<li><a href="references.html#references" id="toc-references">References</a></li>
+</ul>
+</div>
+</div>
+</div>
+<div class="row">
+<div class="col-sm-12">
+<div id="markov-chain-monte-carlo-mcmc" class="section level2" number="1.5">
+<h2><span class="header-section-number">1.5</span> Markov chain Monte Carlo (MCMC)</h2>
+<p>In the early 1990s, statisticians rediscovered work from the 1950’s in physics. In a famous paper that would lay the fundations of modern Bayesian statistics (Figure <a href="1.5-markov-chain-monte-carlo-mcmc.html#fig:mcmcpaper">1.7</a>), the authors use simulations to approximate posterior distributions with some precision by drawing large samples. This is a neat trick to avoid explicit calculation of the multi-dimensional integrals we struggle with when using Bayes’ theorem.</p>
+<div class="figure" style="text-align: center"><span style="display:block;" id="fig:mcmcpaper"></span>
+<img src="images/metropolis.png" alt="MCMC article cover. Source: [The Journal of Chemical Physics](https://aip.scitation.org/doi/10.1063/1.1699114)"  />
+<p class="caption">
+Figure 1.7: MCMC article cover. Source: <a href="https://aip.scitation.org/doi/10.1063/1.1699114">The Journal of Chemical Physics</a>
+</p>
+</div>
+<p>These simulation algorithms are called Markov chain Monte Carlo (MCMC), and they definitely gave a boost to Bayesian statistics. There are two parts in MCMC, Markov chain and Monte Carlo, let’s try and make sense of these terms.</p>
+<div id="monte-carlo-integration" class="section level3" number="1.5.1">
+<h3><span class="header-section-number">1.5.1</span> Monte Carlo integration</h3>
+<p>What does Monte Carlo stand for? Monte Carlo integration is a simulation technique to calculate integrals of any function <span class="math inline">\(f\)</span> of random variable <span class="math inline">\(X\)</span> with distribution <span class="math inline">\(\Pr(X)\)</span> say <span class="math inline">\(\int f(X) \Pr(X)dX\)</span>. You draw values <span class="math inline">\(X_1,\ldots,X_k\)</span> from <span class="math inline">\(\Pr(X)\)</span> the distribution of <span class="math inline">\(X\)</span>, apply function <span class="math inline">\(f\)</span> to these values, then calculate the mean of these new values <span class="math inline">\(\displaystyle{\frac{1}{k}}\sum_{i=1}^k{f(X_i)}\)</span> to approximate the integral. How is Monte Carlo integration used in a Bayesian context? The posterior distribution contains all the information we need about the parameter to be estimated. When dealing with many parameters however, you may want to summarise posterior results by calculating numerical summaries. The simplest numerical summary is the mean of the posterior distribution, <span class="math inline">\(E(\theta) = \int \theta \Pr(\theta|\text{data})\)</span>, where <span class="math inline">\(X\)</span> is <span class="math inline">\(\theta\)</span> now and <span class="math inline">\(f\)</span> is the identity function. Posterior mean can be calculated with Monte Carlo integration:</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="1.5-markov-chain-monte-carlo-mcmc.html#cb7-1" aria-hidden="true" tabindex="-1"></a>sample_from_posterior <span class="ot">&lt;-</span> <span class="fu">rbeta</span>(<span class="dv">1000</span>, <span class="dv">20</span>, <span class="dv">39</span>) <span class="co"># draw 1000 values from posterior survival beta(20,39)</span></span>
+<span id="cb7-2"><a href="1.5-markov-chain-monte-carlo-mcmc.html#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="fu">mean</span>(sample_from_posterior) <span class="co"># compute mean with Monte Carlo integration</span></span>
+<span id="cb7-3"><a href="1.5-markov-chain-monte-carlo-mcmc.html#cb7-3" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] 0.3372</span></span></code></pre></div>
+<p>You may check that the mean we have just calculated matches closely the expectation of a beta distribution<a href="#fn10" class="footnote-ref" id="fnref10"><sup>10</sup></a>:</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb8-1"><a href="1.5-markov-chain-monte-carlo-mcmc.html#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="dv">20</span><span class="sc">/</span>(<span class="dv">20</span><span class="sc">+</span><span class="dv">39</span>) <span class="co"># expectation of beta(20,39)</span></span>
+<span id="cb8-2"><a href="1.5-markov-chain-monte-carlo-mcmc.html#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] 0.339</span></span></code></pre></div>
+<p>Another useful numerical summary is the credible interval within which our parameter falls with some probability, usually 0.95 hence a 95<span class="math inline">\(\%\)</span> credible interval. Finding the bounds of a credible interval requires calculating quantiles, which in turn involves integrals and the use of Monte Carlo integration. A 95<span class="math inline">\(\%\)</span> credible interval for winter survival can be obtained in <code>R</code> with:</p>
+<div class="sourceCode" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb9-1"><a href="1.5-markov-chain-monte-carlo-mcmc.html#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="fu">quantile</span>(sample_from_posterior, <span class="at">probs =</span> <span class="fu">c</span>(<span class="fl">2.5</span><span class="sc">/</span><span class="dv">100</span>, <span class="fl">97.5</span><span class="sc">/</span><span class="dv">100</span>))</span>
+<span id="cb9-2"><a href="1.5-markov-chain-monte-carlo-mcmc.html#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="do">##   2.5%  97.5% </span></span>
+<span id="cb9-3"><a href="1.5-markov-chain-monte-carlo-mcmc.html#cb9-3" aria-hidden="true" tabindex="-1"></a><span class="do">## 0.2185 0.4562</span></span></code></pre></div>
+</div>
+<div id="markovmodelmcmc" class="section level3" number="1.5.2">
+<h3><span class="header-section-number">1.5.2</span> Markov chains</h3>
+<p>What is a Markov chain? A Markov chain is a random sequence of numbers, in which each number depends only on the previous number. An example is the weather in my home town in Southern France, Montpellier, in which a sunny day is most likely to be followed by another sunny day, say with probability 0.8, and a rainy day is rarely followed by another rainy day, say with probability 0.1. The dynamic of this Markov chain is captured by the transition matrix <span class="math inline">\(\mathbf{\Gamma}\)</span>:
+<span class="math display">\[
+\begin{matrix}
+&amp; \\
+\mathbf{\Gamma} =
+    \left ( \vphantom{ \begin{matrix} 12 \\ 12 \end{matrix} } \right .
+\end{matrix}
+\hspace{-1.2em}
+\begin{matrix}
+    \text{sunny tomorrow} &amp; \text{rainy tomorrow} \\
+0.8 &amp; 0.2 \\
+0.9 &amp; 0.1 \\
+\end{matrix}
+\hspace{-0.2em}
+\begin{matrix}
+&amp; \\
+\left . \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \end{matrix} } \right )
+    \begin{matrix}
+    \text{sunny today} \\ \text{rainy today}
+    \end{matrix}
+\end{matrix}
+\]</span>
+In rows the weather today, and in columns the weather tomorrow. The cells give the probability of a sunny or rainy day tomorrow, given the day is sunny or rainy today. Under certain conditions<a href="#fn11" class="footnote-ref" id="fnref11"><sup>11</sup></a>, a Markov chain will converge to a unique stationary distribution. In our weather example, let’s run the Markov chain for 20 steps:</p>
+<div class="sourceCode" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb10-1"><a href="1.5-markov-chain-monte-carlo-mcmc.html#cb10-1" aria-hidden="true" tabindex="-1"></a>weather <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="fu">c</span>(<span class="fl">0.8</span>, <span class="fl">0.2</span>, <span class="fl">0.9</span>, <span class="fl">0.1</span>), <span class="at">nrow =</span> <span class="dv">2</span>, <span class="at">byrow =</span> T) <span class="co"># transition matrix</span></span>
+<span id="cb10-2"><a href="1.5-markov-chain-monte-carlo-mcmc.html#cb10-2" aria-hidden="true" tabindex="-1"></a>steps <span class="ot">&lt;-</span> <span class="dv">20</span></span>
+<span id="cb10-3"><a href="1.5-markov-chain-monte-carlo-mcmc.html#cb10-3" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>steps){</span>
+<span id="cb10-4"><a href="1.5-markov-chain-monte-carlo-mcmc.html#cb10-4" aria-hidden="true" tabindex="-1"></a>  weather <span class="ot">&lt;-</span> weather <span class="sc">%*%</span> weather <span class="co"># matrix multiplication</span></span>
+<span id="cb10-5"><a href="1.5-markov-chain-monte-carlo-mcmc.html#cb10-5" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb10-6"><a href="1.5-markov-chain-monte-carlo-mcmc.html#cb10-6" aria-hidden="true" tabindex="-1"></a><span class="fu">round</span>(weather, <span class="dv">2</span>) <span class="co"># matrix product after 20 steps</span></span>
+<span id="cb10-7"><a href="1.5-markov-chain-monte-carlo-mcmc.html#cb10-7" aria-hidden="true" tabindex="-1"></a><span class="do">##      [,1] [,2]</span></span>
+<span id="cb10-8"><a href="1.5-markov-chain-monte-carlo-mcmc.html#cb10-8" aria-hidden="true" tabindex="-1"></a><span class="do">## [1,] 0.82 0.18</span></span>
+<span id="cb10-9"><a href="1.5-markov-chain-monte-carlo-mcmc.html#cb10-9" aria-hidden="true" tabindex="-1"></a><span class="do">## [2,] 0.82 0.18</span></span></code></pre></div>
+<p>Each row of the transition matrix converges to the same distribution <span class="math inline">\((0.82, 0.18)\)</span> as the number of steps increases. Convergence happens no matter which state you start in, and you always have probability 0.82 of the day being sunny and 0.18 of the day being rainy.</p>
+<p>Back to MCMC, the core idea is that you can build a Markov chain with a given stationary distribution set to be the desired posterior distribution.</p>
+
+<div class="rmdnote">
+Putting Monte Carlo and Markov chains together, MCMC allows us to generate a sample of values (Markov chain) whose distribution converges to the posterior distribution, and we can use this sample of values to calculate any posterior summaries (Monte Carlo), such as posterior means and credible intervals.
+</div>
+</div>
+<div id="metropolis-algorithm" class="section level3" number="1.5.3">
+<h3><span class="header-section-number">1.5.3</span> Metropolis algorithm</h3>
+<p>There are several ways of constructing Markov chains for Bayesian inference<a href="#fn12" class="footnote-ref" id="fnref12"><sup>12</sup></a>. Here I illustrate the Metropolis algorithm and how to implement it in practice<a href="#fn13" class="footnote-ref" id="fnref13"><sup>13</sup></a>.</p>
+<p>Let’s go back to our example on animal survival estimation. We illustrate sampling from survival posterior distribution. We write functions for likelihood, prior and posterior.</p>
+<div class="sourceCode" id="cb11"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb11-1"><a href="1.5-markov-chain-monte-carlo-mcmc.html#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="co"># 19 animals recaptured alive out of 57 captured, marked and released</span></span>
+<span id="cb11-2"><a href="1.5-markov-chain-monte-carlo-mcmc.html#cb11-2" aria-hidden="true" tabindex="-1"></a>survived <span class="ot">&lt;-</span> <span class="dv">19</span></span>
+<span id="cb11-3"><a href="1.5-markov-chain-monte-carlo-mcmc.html#cb11-3" aria-hidden="true" tabindex="-1"></a>released <span class="ot">&lt;-</span> <span class="dv">57</span></span>
+<span id="cb11-4"><a href="1.5-markov-chain-monte-carlo-mcmc.html#cb11-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-5"><a href="1.5-markov-chain-monte-carlo-mcmc.html#cb11-5" aria-hidden="true" tabindex="-1"></a><span class="co"># binomial log-likelihood function</span></span>
+<span id="cb11-6"><a href="1.5-markov-chain-monte-carlo-mcmc.html#cb11-6" aria-hidden="true" tabindex="-1"></a>loglikelihood <span class="ot">&lt;-</span> <span class="cf">function</span>(x, p){</span>
+<span id="cb11-7"><a href="1.5-markov-chain-monte-carlo-mcmc.html#cb11-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dbinom</span>(<span class="at">x =</span> x, <span class="at">size =</span> released, <span class="at">prob =</span> p, <span class="at">log =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb11-8"><a href="1.5-markov-chain-monte-carlo-mcmc.html#cb11-8" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb11-9"><a href="1.5-markov-chain-monte-carlo-mcmc.html#cb11-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-10"><a href="1.5-markov-chain-monte-carlo-mcmc.html#cb11-10" aria-hidden="true" tabindex="-1"></a><span class="co"># uniform prior density</span></span>
+<span id="cb11-11"><a href="1.5-markov-chain-monte-carlo-mcmc.html#cb11-11" aria-hidden="true" tabindex="-1"></a>logprior <span class="ot">&lt;-</span> <span class="cf">function</span>(p){</span>
+<span id="cb11-12"><a href="1.5-markov-chain-monte-carlo-mcmc.html#cb11-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dunif</span>(<span class="at">x =</span> p, <span class="at">min =</span> <span class="dv">0</span>, <span class="at">max =</span> <span class="dv">1</span>, <span class="at">log =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb11-13"><a href="1.5-markov-chain-monte-carlo-mcmc.html#cb11-13" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb11-14"><a href="1.5-markov-chain-monte-carlo-mcmc.html#cb11-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-15"><a href="1.5-markov-chain-monte-carlo-mcmc.html#cb11-15" aria-hidden="true" tabindex="-1"></a><span class="co"># posterior density function (log scale)</span></span>
+<span id="cb11-16"><a href="1.5-markov-chain-monte-carlo-mcmc.html#cb11-16" aria-hidden="true" tabindex="-1"></a>posterior <span class="ot">&lt;-</span> <span class="cf">function</span>(x, p){</span>
+<span id="cb11-17"><a href="1.5-markov-chain-monte-carlo-mcmc.html#cb11-17" aria-hidden="true" tabindex="-1"></a>  <span class="fu">loglikelihood</span>(x, p) <span class="sc">+</span> <span class="fu">logprior</span>(p) <span class="co"># - log(Pr(data))</span></span>
+<span id="cb11-18"><a href="1.5-markov-chain-monte-carlo-mcmc.html#cb11-18" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
+<p>The Metropolis algorithm works as follows:</p>
+<ol style="list-style-type: decimal">
+<li><p>We pick a value of the parameter to be estimated. This is where we start our Markov chain – this is a <em>starting</em> value.</p></li>
+<li><p>To decide where to go next, we propose to move away from the current value of the parameter – this is a <em>candidate</em> value. To do so, we add to the current value some random value from e.g. a normal distribution with some variance – this is a <em>proposal</em> distribution. The Metropolis algorithm is a particular case of the Metropolis-Hastings algorithm with symmetric proposals.</p></li>
+<li><p>We compute the ratio of the probabilities at the candidate and current locations <span class="math inline">\(R=\displaystyle{\frac{{\Pr(\text{candidate}|\text{data})}}{{\Pr(\text{current}|\text{data})}}}\)</span>. This is where the magic of MCMC happens, in that <span class="math inline">\(\Pr(\text{data})\)</span>, the denominator in the Bayes’ theorem, appears in both the numerator and the denominator in <span class="math inline">\(R\)</span> therefore cancels out and does not need to be calculated.</p></li>
+</ol>
+<!-- -- *the Hastings ratio* -->
+<ol start="4" style="list-style-type: decimal">
+<li><p>If the posterior at the candidate location <span class="math inline">\(\Pr(\text{candidate}|\text{data})\)</span> is higher than at the current location <span class="math inline">\(\Pr(\text{current}|\text{data})\)</span>, in other words when the candidate value is more plausible than the current value, we definitely accept the candidate value. If not, then we accept the candidate value with probability <span class="math inline">\(R\)</span> and reject with probability <span class="math inline">\(1-R\)</span>. For example, if the candidate value is ten times less plausible than the current value, then we accept with probability 0.1 and reject with probability 0.9. How does it work in practice? We use a continuous spinner that lands somewhere between 0 and 1 – call the random spin <span class="math inline">\(X\)</span>. If <span class="math inline">\(X\)</span> is smaller than <span class="math inline">\(R\)</span>, we move to the candidate location, otherwise we remain at the current location. We do not want to accept or reject too often. In practice, the Metropolis algorithm should have an acceptance probability between 0.2 and 0.4, which can be achieved by <em>tuning</em> the variance of the normal proposal distribution.</p></li>
+<li><p>We repeat 2-4 a number of times – or <em>steps</em>.</p></li>
+</ol>
+<p>Enough of the theory, let’s implement the Metropolis algorithm in <code>R</code>. Let’s start by setting the scene.</p>
+<div class="sourceCode" id="cb12"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb12-1"><a href="1.5-markov-chain-monte-carlo-mcmc.html#cb12-1" aria-hidden="true" tabindex="-1"></a>steps <span class="ot">&lt;-</span> <span class="dv">100</span> <span class="co"># number of steps</span></span>
+<span id="cb12-2"><a href="1.5-markov-chain-monte-carlo-mcmc.html#cb12-2" aria-hidden="true" tabindex="-1"></a>theta.post <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="cn">NA</span>, steps) <span class="co"># vector to store samples</span></span>
+<span id="cb12-3"><a href="1.5-markov-chain-monte-carlo-mcmc.html#cb12-3" aria-hidden="true" tabindex="-1"></a>accept <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="cn">NA</span>, steps) <span class="co"># keep track of accept/reject</span></span>
+<span id="cb12-4"><a href="1.5-markov-chain-monte-carlo-mcmc.html#cb12-4" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">1234</span>) <span class="co"># for reproducibility</span></span></code></pre></div>
+<p>Now follow the 5 steps we’ve just described. First, we pick a starting value, and store it (step 1).</p>
+<div class="sourceCode" id="cb13"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb13-1"><a href="1.5-markov-chain-monte-carlo-mcmc.html#cb13-1" aria-hidden="true" tabindex="-1"></a>inits <span class="ot">&lt;-</span> <span class="fl">0.5</span></span>
+<span id="cb13-2"><a href="1.5-markov-chain-monte-carlo-mcmc.html#cb13-2" aria-hidden="true" tabindex="-1"></a>theta.post[<span class="dv">1</span>] <span class="ot">&lt;-</span> inits</span>
+<span id="cb13-3"><a href="1.5-markov-chain-monte-carlo-mcmc.html#cb13-3" aria-hidden="true" tabindex="-1"></a>accept[<span class="dv">1</span>] <span class="ot">&lt;-</span> <span class="dv">1</span></span></code></pre></div>
+<p>Then, we need a function to propose a candidate value. We add a value taken from a normal distribution with mean zero and standard deviation we call <em>away</em>. We work on the logit scale to make sure the candidate value for survival lies between 0 and 1.</p>
+<div class="sourceCode" id="cb14"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb14-1"><a href="1.5-markov-chain-monte-carlo-mcmc.html#cb14-1" aria-hidden="true" tabindex="-1"></a>move <span class="ot">&lt;-</span> <span class="cf">function</span>(x, <span class="at">away =</span> <span class="dv">1</span>){ <span class="co"># by default, standard deviation of the proposal distribution is 1</span></span>
+<span id="cb14-2"><a href="1.5-markov-chain-monte-carlo-mcmc.html#cb14-2" aria-hidden="true" tabindex="-1"></a>  logitx <span class="ot">&lt;-</span> <span class="fu">log</span>(x <span class="sc">/</span> (<span class="dv">1</span> <span class="sc">-</span> x)) <span class="co"># apply logit transform (-infinity,+infinity)</span></span>
+<span id="cb14-3"><a href="1.5-markov-chain-monte-carlo-mcmc.html#cb14-3" aria-hidden="true" tabindex="-1"></a>  logit_candidate <span class="ot">&lt;-</span> logitx <span class="sc">+</span> <span class="fu">rnorm</span>(<span class="dv">1</span>, <span class="dv">0</span>, away) <span class="co"># add a value taken from N(0,sd=away) to current value</span></span>
+<span id="cb14-4"><a href="1.5-markov-chain-monte-carlo-mcmc.html#cb14-4" aria-hidden="true" tabindex="-1"></a>  candidate <span class="ot">&lt;-</span> <span class="fu">plogis</span>(logit_candidate) <span class="co"># back-transform (0,1)</span></span>
+<span id="cb14-5"><a href="1.5-markov-chain-monte-carlo-mcmc.html#cb14-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>(candidate)</span>
+<span id="cb14-6"><a href="1.5-markov-chain-monte-carlo-mcmc.html#cb14-6" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
+<p>Now we’re ready for steps 2, 3 and 4. We write a loop to take care of step 5. We start at initial value 0.5 and run the algorithm for 100 steps or iterations.</p>
+<div class="sourceCode" id="cb15"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb15-1"><a href="1.5-markov-chain-monte-carlo-mcmc.html#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (t <span class="cf">in</span> <span class="dv">2</span><span class="sc">:</span>steps){ <span class="co"># repeat steps 2-4 (step 5)</span></span>
+<span id="cb15-2"><a href="1.5-markov-chain-monte-carlo-mcmc.html#cb15-2" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb15-3"><a href="1.5-markov-chain-monte-carlo-mcmc.html#cb15-3" aria-hidden="true" tabindex="-1"></a>  <span class="co"># propose candidate value for survival (step 2)</span></span>
+<span id="cb15-4"><a href="1.5-markov-chain-monte-carlo-mcmc.html#cb15-4" aria-hidden="true" tabindex="-1"></a>  theta_star <span class="ot">&lt;-</span> <span class="fu">move</span>(theta.post[t<span class="dv">-1</span>])</span>
+<span id="cb15-5"><a href="1.5-markov-chain-monte-carlo-mcmc.html#cb15-5" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb15-6"><a href="1.5-markov-chain-monte-carlo-mcmc.html#cb15-6" aria-hidden="true" tabindex="-1"></a>  <span class="co"># calculate ratio R (step 3)</span></span>
+<span id="cb15-7"><a href="1.5-markov-chain-monte-carlo-mcmc.html#cb15-7" aria-hidden="true" tabindex="-1"></a>  pstar <span class="ot">&lt;-</span> <span class="fu">posterior</span>(survived, <span class="at">p =</span> theta_star)  </span>
+<span id="cb15-8"><a href="1.5-markov-chain-monte-carlo-mcmc.html#cb15-8" aria-hidden="true" tabindex="-1"></a>  pprev <span class="ot">&lt;-</span> <span class="fu">posterior</span>(survived, <span class="at">p =</span> theta.post[t<span class="dv">-1</span>])</span>
+<span id="cb15-9"><a href="1.5-markov-chain-monte-carlo-mcmc.html#cb15-9" aria-hidden="true" tabindex="-1"></a>  logR <span class="ot">&lt;-</span> pstar <span class="sc">-</span> pprev <span class="co"># likelihood and prior are on the log scale</span></span>
+<span id="cb15-10"><a href="1.5-markov-chain-monte-carlo-mcmc.html#cb15-10" aria-hidden="true" tabindex="-1"></a>  R <span class="ot">&lt;-</span> <span class="fu">exp</span>(logR)</span>
+<span id="cb15-11"><a href="1.5-markov-chain-monte-carlo-mcmc.html#cb15-11" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb15-12"><a href="1.5-markov-chain-monte-carlo-mcmc.html#cb15-12" aria-hidden="true" tabindex="-1"></a>  <span class="co"># accept candidate value or keep current value (step 4)</span></span>
+<span id="cb15-13"><a href="1.5-markov-chain-monte-carlo-mcmc.html#cb15-13" aria-hidden="true" tabindex="-1"></a>  X <span class="ot">&lt;-</span> <span class="fu">runif</span>(<span class="dv">1</span>, <span class="dv">0</span>, <span class="dv">1</span>) <span class="co"># spin continuous spinner</span></span>
+<span id="cb15-14"><a href="1.5-markov-chain-monte-carlo-mcmc.html#cb15-14" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (X <span class="sc">&lt;</span> R){</span>
+<span id="cb15-15"><a href="1.5-markov-chain-monte-carlo-mcmc.html#cb15-15" aria-hidden="true" tabindex="-1"></a>    theta.post[t] <span class="ot">&lt;-</span> theta_star <span class="co"># accept candidate value</span></span>
+<span id="cb15-16"><a href="1.5-markov-chain-monte-carlo-mcmc.html#cb15-16" aria-hidden="true" tabindex="-1"></a>    accept[t] <span class="ot">&lt;-</span> <span class="dv">1</span> <span class="co"># accept</span></span>
+<span id="cb15-17"><a href="1.5-markov-chain-monte-carlo-mcmc.html#cb15-17" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb15-18"><a href="1.5-markov-chain-monte-carlo-mcmc.html#cb15-18" aria-hidden="true" tabindex="-1"></a>  <span class="cf">else</span>{</span>
+<span id="cb15-19"><a href="1.5-markov-chain-monte-carlo-mcmc.html#cb15-19" aria-hidden="true" tabindex="-1"></a>    theta.post[t] <span class="ot">&lt;-</span> theta.post[t<span class="dv">-1</span>] <span class="co"># keep current value</span></span>
+<span id="cb15-20"><a href="1.5-markov-chain-monte-carlo-mcmc.html#cb15-20" aria-hidden="true" tabindex="-1"></a>    accept[t] <span class="ot">&lt;-</span> <span class="dv">0</span> <span class="co"># reject</span></span>
+<span id="cb15-21"><a href="1.5-markov-chain-monte-carlo-mcmc.html#cb15-21" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb15-22"><a href="1.5-markov-chain-monte-carlo-mcmc.html#cb15-22" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
+<p>We get the following values.</p>
+<div class="sourceCode" id="cb16"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb16-1"><a href="1.5-markov-chain-monte-carlo-mcmc.html#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(theta.post) <span class="co"># first values</span></span>
+<span id="cb16-2"><a href="1.5-markov-chain-monte-carlo-mcmc.html#cb16-2" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] 0.5000 0.2302 0.2906 0.2906 0.2980 0.2980</span></span>
+<span id="cb16-3"><a href="1.5-markov-chain-monte-carlo-mcmc.html#cb16-3" aria-hidden="true" tabindex="-1"></a><span class="fu">tail</span>(theta.post) <span class="co"># last values</span></span>
+<span id="cb16-4"><a href="1.5-markov-chain-monte-carlo-mcmc.html#cb16-4" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] 0.2622 0.2622 0.2622 0.3727 0.3232 0.3862</span></span></code></pre></div>
+Visually, you may look at the chain in Figure <a href="1.5-markov-chain-monte-carlo-mcmc.html#fig:chain">1.8</a> called a trace plot.
+<div class="figure" style="text-align: center"><span style="display:block;" id="fig:chain"></span>
+<img src="banana-book_files/figure-html/chain-1.png" alt="Visualisation of a Markov chain starting at value 0.5, with steps or iterations on the x-axis, and samples on the y-axis. This graphical representation is called a trace plot." width="672" />
+<p class="caption">
+Figure 1.8: Visualisation of a Markov chain starting at value 0.5, with steps or iterations on the x-axis, and samples on the y-axis. This graphical representation is called a trace plot.
+</p>
+</div>
+<p>The acceptance probability is the average number of times we accepted a candidated value, which is 0.44 and almost satisfying.</p>
+Can we run another chain and start at initial value 0.2 this time? Yes, just go through the same algorithm again, and visualise the results in Figure <a href="1.5-markov-chain-monte-carlo-mcmc.html#fig:twochains">1.9</a>.
+<div class="figure" style="text-align: center"><span style="display:block;" id="fig:twochains"></span>
+<img src="banana-book_files/figure-html/twochains-1.png" alt="Trace plot of survival for two chains starting at 0.2 (yellow) and 0.5 (blue) run for 100 steps." width="672" />
+<p class="caption">
+Figure 1.9: Trace plot of survival for two chains starting at 0.2 (yellow) and 0.5 (blue) run for 100 steps.
+</p>
+</div>
+Notice that we do not get the exact same results because the algorithm is stochastic. The question is to know whether we have reached the stationary distribution. Let’s increase the number of steps and run a chain with 5000 iterations as in Figure <a href="1.5-markov-chain-monte-carlo-mcmc.html#fig:longchain">1.10</a>.
+<div class="figure" style="text-align: center"><span style="display:block;" id="fig:longchain"></span>
+<img src="banana-book_files/figure-html/longchain-1.png" alt="Trace plot of survival for a chain starting at 0.5 and 1000 steps." width="672" />
+<p class="caption">
+Figure 1.10: Trace plot of survival for a chain starting at 0.5 and 1000 steps.
+</p>
+</div>
+<p>This is what we’re after, a trace plot that looks like a beautiful lawn, see Section <a href="1.6-convergence-diag.html#convergence-diag">1.6</a>. I find it informative to look at the animated version of Figure <a href="1.5-markov-chain-monte-carlo-mcmc.html#fig:longchain">1.10</a>, it helps understanding the stochastic behavior of the algorithm, and also to realise how the chains converge to their stationary distribution, see Figure <a href="1.5-markov-chain-monte-carlo-mcmc.html#fig:animlongchain">1.11</a>.</p>
+<div class="figure" style="text-align: center"><span style="display:block;" id="fig:animlongchain"></span>
+<img src="images/traceplotMCMC.gif" alt="Animated trace plot of survival with three chains starting at 0.2, 0.5 and 0.7 run for 1000 steps." width="100%" />
+<p class="caption">
+Figure 1.11: Animated trace plot of survival with three chains starting at 0.2, 0.5 and 0.7 run for 1000 steps.
+</p>
+</div>
+<p>Once the stationary distribution is reached, you may regard the realisations of the Markov chain as a sample from the posterior distribution, and obtain numerical summaries. In the next section, we consider several important implementation issues.</p>
+</div>
+</div>
+<h3>References</h3>
+<div id="refs" class="references csl-bib-body hanging-indent">
+<div id="ref-alberthu2019" class="csl-entry">
+Albert, Jim, and Jingchen Hu. 2019. <em>Probability and <span>Bayesian</span> <span>Modeling</span></em>. 1st edition. Chapman; Hall/CRC.
+</div>
+</div>
+<div class="footnotes">
+<hr />
+<ol start="10">
+<li id="fn10"><p>If <span class="math inline">\(X\)</span> is a random variable with distribution <span class="math inline">\(\text{beta}(a, b)\)</span>, then <span class="math inline">\(E(X) = \displaystyle{\frac{a}{a + b}}\)</span><a href="1.5-markov-chain-monte-carlo-mcmc.html#fnref10" class="footnote-back">↩︎</a></p></li>
+<li id="fn11"><p>The Markov chain is irreducible and aperiodic.<a href="1.5-markov-chain-monte-carlo-mcmc.html#fnref11" class="footnote-back">↩︎</a></p></li>
+<li id="fn12"><p>You might have heard about the Metropolis-Hastings or the Gibbs sampler. Have a look to <a href="https://github.com/chi-feng/mcmc-demo" class="uri">https://github.com/chi-feng/mcmc-demo</a> for an interactive gallery of MCMC algorithms.<a href="1.5-markov-chain-monte-carlo-mcmc.html#fnref12" class="footnote-back">↩︎</a></p></li>
+<li id="fn13"><p>This presentation is largely inspired by <span class="citation">Albert and Hu (<a href="#ref-alberthu2019" role="doc-biblioref">2019</a>)</span><a href="1.5-markov-chain-monte-carlo-mcmc.html#fnref13" class="footnote-back">↩︎</a></p></li>
+</ol>
+</div>
+<p style="text-align: center;">
+<a href="1.4-numerical-approx.html"><button class="btn btn-default">Previous</button></a>
+<a href="1.6-convergence-diag.html"><button class="btn btn-default">Next</button></a>
+</p>
+</div>
+</div>
+
+
+</div>
+
+<script>
+
+// add bootstrap table styles to pandoc tables
+$(document).ready(function () {
+  $('tr.header').parent('thead').parent('table').addClass('table table-condensed');
+});
+
+</script>
+
+</body>
+</html>

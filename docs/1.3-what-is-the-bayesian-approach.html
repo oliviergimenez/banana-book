@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="" xml:lang="">
+<head>
+
+<meta charset="utf-8" />
+<meta name="generator" content="pandoc" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta property="og:title" content="1.3 What is the Bayesian approach? | Bayesian Analysis of Capture-Recapture Data with Hidden Markov Models" />
+<meta property="og:type" content="book" />
+
+<meta property="og:description" content="This is a textbook on the analysis of capture-recapture data with hidden Markov models (HMM) implemented in the Bayesian framework with R." />
+<meta name="github-repo" content="oliviergimenez/banana-book" />
+
+<meta name="author" content="Olivier Gimenez" />
+
+<meta name="date" content="2022-12-23" />
+
+<script type="text/x-mathjax-config">
+MathJax.Hub.Config({
+  TeX: { equationNumbers: { autoNumber: "AMS" } }
+});
+</script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<meta name="description" content="This is a textbook on the analysis of capture-recapture data with hidden Markov models (HMM) implemented in the Bayesian framework with R.">
+
+<title>1.3 What is the Bayesian approach? | Bayesian Analysis of Capture-Recapture Data with Hidden Markov Models</title>
+
+<script src="libs/jquery-3.6.0/jquery-3.6.0.min.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link href="libs/bootstrap-3.3.5/css/bootstrap.min.css" rel="stylesheet" />
+<script src="libs/bootstrap-3.3.5/js/bootstrap.min.js"></script>
+<script src="libs/bootstrap-3.3.5/shim/html5shiv.min.js"></script>
+<script src="libs/bootstrap-3.3.5/shim/respond.min.js"></script>
+<style>h1 {font-size: 34px;}
+       h1.title {font-size: 38px;}
+       h2 {font-size: 30px;}
+       h3 {font-size: 24px;}
+       h4 {font-size: 18px;}
+       h5 {font-size: 16px;}
+       h6 {font-size: 12px;}
+       code {color: inherit; background-color: rgba(0, 0, 0, 0.04);}
+       pre:not([class]) { background-color: white }</style>
+<script src="libs/navigation-1.1/tabsets.js"></script>
+
+
+<style type="text/css">code{white-space: pre;}</style>
+<style type="text/css">
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+    color: #aaaaaa;
+  }
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+code span.at { color: #7d9029; } /* Attribute */
+code span.bn { color: #40a070; } /* BaseN */
+code span.bu { color: #008000; } /* BuiltIn */
+code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+code span.ch { color: #4070a0; } /* Char */
+code span.cn { color: #880000; } /* Constant */
+code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+code span.dt { color: #902000; } /* DataType */
+code span.dv { color: #40a070; } /* DecVal */
+code span.er { color: #ff0000; font-weight: bold; } /* Error */
+code span.ex { } /* Extension */
+code span.fl { color: #40a070; } /* Float */
+code span.fu { color: #06287e; } /* Function */
+code span.im { color: #008000; font-weight: bold; } /* Import */
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+code span.op { color: #666666; } /* Operator */
+code span.ot { color: #007020; } /* Other */
+code span.pp { color: #bc7a00; } /* Preprocessor */
+code span.sc { color: #4070a0; } /* SpecialChar */
+code span.ss { color: #bb6688; } /* SpecialString */
+code span.st { color: #4070a0; } /* String */
+code span.va { color: #19177c; } /* Variable */
+code span.vs { color: #4070a0; } /* VerbatimString */
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+</style>
+<style type="text/css">
+  pre:not([class]) {
+    background-color: white;
+  }
+</style>
+
+
+<style type="text/css">
+/* Used with Pandoc 2.11+ new --citeproc when CSL is used */
+div.csl-bib-body { }
+div.csl-entry {
+  clear: both;
+}
+.hanging div.csl-entry {
+  margin-left:2em;
+  text-indent:-2em;
+}
+div.csl-left-margin {
+  min-width:2em;
+  float:left;
+}
+div.csl-right-inline {
+  margin-left:2em;
+  padding-left:1em;
+}
+div.csl-indent {
+  margin-left: 2em;
+}
+</style>
+
+<link rel="stylesheet" href="css/style.css" type="text/css" />
+<link rel="stylesheet" href="css/toc.css" type="text/css" />
+
+<style type = "text/css">
+.main-container {
+  max-width: 940px;
+  margin-left: auto;
+  margin-right: auto;
+}
+code {
+  color: inherit;
+  background-color: rgba(0, 0, 0, 0.04);
+}
+img {
+  max-width:100%;
+  height: auto;
+}
+/* show arrow before summary tag as in bootstrap
+TODO: remove if boostrap in updated in html_document (rmarkdown#1485) */
+details > summary {
+  display: list-item;
+  cursor: pointer;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container-fluid main-container">
+
+
+<div class="row">
+<div class="col-sm-12">
+<div id="TOC">
+<ul>
+<li class="has-sub"><a href="index.html#welcome" id="toc-welcome">Welcome</a>
+<ul>
+<li><a href="license.html#license" id="toc-license">License</a></li>
+</ul></li>
+<li class="has-sub"><a href="preface.html#preface" id="toc-preface">Preface</a>
+<ul>
+<li><a href="why-this-book.html#why-this-book" id="toc-why-this-book">Why this book?</a></li>
+<li><a href="who-should-read-this-book.html#who-should-read-this-book" id="toc-who-should-read-this-book">Who should read this book?</a></li>
+<li><a href="what-will-you-learn.html#what-will-you-learn" id="toc-what-will-you-learn">What will you learn?</a></li>
+<li><a href="what-wont-you-learn.html#what-wont-you-learn" id="toc-what-wont-you-learn">What won’t you learn?</a></li>
+<li><a href="prerequisites.html#prerequisites" id="toc-prerequisites">Prerequisites</a></li>
+<li><a href="acknowledgements.html#acknowledgements" id="toc-acknowledgements">Acknowledgements</a></li>
+<li><a href="how-this-book-was-written.html#how-this-book-was-written" id="toc-how-this-book-was-written">How this book was written</a></li>
+</ul></li>
+<li><a href="about-the-author.html#about-the-author" id="toc-about-the-author">About the author</a></li>
+<li class="part"><span><b>I I. Fundations</b></span></li>
+<li><a href="introduction.html#introduction" id="toc-introduction">Introduction</a></li>
+<li class="has-sub"><a href="1-crashcourse.html#crashcourse" id="toc-crashcourse"><span class="toc-section-number">1</span> Bayesian statistics &amp; MCMC</a>
+<ul>
+<li><a href="1.1-introduction-1.html#introduction-1" id="toc-introduction-1"><span class="toc-section-number">1.1</span> Introduction</a></li>
+<li><a href="1.2-bayes-theorem.html#bayes-theorem" id="toc-bayes-theorem"><span class="toc-section-number">1.2</span> Bayes’ theorem</a></li>
+<li><a href="1.3-what-is-the-bayesian-approach.html#what-is-the-bayesian-approach" id="toc-what-is-the-bayesian-approach"><span class="toc-section-number">1.3</span> What is the Bayesian approach?</a></li>
+<li><a href="1.4-numerical-approx.html#numerical-approx" id="toc-numerical-approx"><span class="toc-section-number">1.4</span> Approximating posteriors via numerical integration</a></li>
+<li class="has-sub"><a href="1.5-markov-chain-monte-carlo-mcmc.html#markov-chain-monte-carlo-mcmc" id="toc-markov-chain-monte-carlo-mcmc"><span class="toc-section-number">1.5</span> Markov chain Monte Carlo (MCMC)</a>
+<ul>
+<li><a href="1.5-markov-chain-monte-carlo-mcmc.html#monte-carlo-integration" id="toc-monte-carlo-integration"><span class="toc-section-number">1.5.1</span> Monte Carlo integration</a></li>
+<li><a href="1.5-markov-chain-monte-carlo-mcmc.html#markovmodelmcmc" id="toc-markovmodelmcmc"><span class="toc-section-number">1.5.2</span> Markov chains</a></li>
+<li><a href="1.5-markov-chain-monte-carlo-mcmc.html#metropolis-algorithm" id="toc-metropolis-algorithm"><span class="toc-section-number">1.5.3</span> Metropolis algorithm</a></li>
+</ul></li>
+<li class="has-sub"><a href="1.6-convergence-diag.html#convergence-diag" id="toc-convergence-diag"><span class="toc-section-number">1.6</span> Assessing convergence</a>
+<ul>
+<li><a href="1.6-convergence-diag.html#burn-in" id="toc-burn-in"><span class="toc-section-number">1.6.1</span> Burn-in</a></li>
+<li><a href="1.6-convergence-diag.html#chain-length" id="toc-chain-length"><span class="toc-section-number">1.6.2</span> Chain length</a></li>
+<li><a href="1.6-convergence-diag.html#what-if-you-have-issues-of-convergence" id="toc-what-if-you-have-issues-of-convergence"><span class="toc-section-number">1.6.3</span> What if you have issues of convergence?</a></li>
+</ul></li>
+<li><a href="1.7-summary.html#summary" id="toc-summary"><span class="toc-section-number">1.7</span> Summary</a></li>
+<li><a href="1.8-suggested-reading.html#suggested-reading" id="toc-suggested-reading"><span class="toc-section-number">1.8</span> Suggested reading</a></li>
+</ul></li>
+<li><a href="faq.html#faq" id="toc-faq">FAQ</a></li>
+<li><a href="references.html#references" id="toc-references">References</a></li>
+</ul>
+</div>
+</div>
+</div>
+<div class="row">
+<div class="col-sm-12">
+<div id="what-is-the-bayesian-approach" class="section level2" number="1.3">
+<h2><span class="header-section-number">1.3</span> What is the Bayesian approach?</h2>
+<p>Typical statistical problems involve estimating a parameter (or several parameters) <span class="math inline">\(\theta\)</span> with available data. To do so, you might be more used to the frequentist rather than the Bayesian method. The frequentist approach, and in particular maximum likelihood estimation (MLE), assumes that the parameters are fixed, and have unknown values to be estimated. Therefore classical estimates are generally point estimates of the parameters of interest. In contrast, the Bayesian approach assumes that the parameters are not fixed, and have some unknown distribution<a href="#fn4" class="footnote-ref" id="fnref4"><sup>4</sup></a>.</p>
+<p>The Bayesian approach is based upon the idea that you, as an experimenter, begin with some prior beliefs about the system. Then you collect data and update your prior beliefs on the basis of observations. These observations might arise from field work, lab work or from expertise of your esteemed colleagues. This updating process is based upon Bayes’ theorem. Loosely, let’s say <span class="math inline">\(A = \theta\)</span> and <span class="math inline">\(B = \text{data}\)</span>, then Bayes’ theorem gives you a way to estimate parameter <span class="math inline">\(\theta\)</span> given the data you have:</p>
+<p><span class="math display">\[{\color{red}{\Pr(\theta \mid \text{data})}} = \frac{\color{blue}{\Pr(\text{data} \mid \theta)} \times \color{green}{\Pr(\theta)}}{\color{orange}{\Pr(\text{data})}}.\]</span>
+Let’s spend some time going through each quantity in this formula.</p>
+<p>On the left-hand side is the <span class="math inline">\(\color{red}{\text{posterior distribution}}\)</span>. It represents what you know after having seen the data. This is the basis for inference and clearly what you’re after, a distribution, possibly multivariate if you have more than one parameter.</p>
+<p>On the right-hand side, there is the <span class="math inline">\(\color{blue}{\text{likelihood}}\)</span>. This quantity is the same as in the MLE approach. Yes, the Bayesian and frequentist approaches have the same likelihood at their core, which mostly explains why results often do not differ much. The likelihood captures the information you have in your data, given a model parameterized with <span class="math inline">\(\theta\)</span>.</p>
+<p>Then we have the <span class="math inline">\(\color{green}{\text{prior distribution}}\)</span>. This quantity represents what you know before seeing the data. This is the source of much discussion about the Bayesian approach. It may be vague if you don’t know anything about <span class="math inline">\(\theta\)</span>. Usually however, you never start from scratch, and you’d like your prior to reflect the information you have<a href="#fn5" class="footnote-ref" id="fnref5"><sup>5</sup></a>.</p>
+<p>Last, we have <span class="math inline">\(\color{orange}{\Pr(\text{data})}\)</span> which is sometimes called the average likelihood because it is obtained by integrating the likelihood with respect to the prior <span class="math inline">\(\color{orange}{\Pr(\text{data}) = \int{L(\text{data} \mid \theta)\Pr(\theta) d\theta}}\)</span> so that the posterior is standardized, that is it integrates to one for the posterior to be a distribution. The average likelihood is an integral with dimension the number of parameters <span class="math inline">\(\theta\)</span> you need to estimate. This quantity is difficult, if not impossible, to calculate in general. This is one of the reasons why the Bayesian method wasn’t used until recently, and why we need algorithms to estimate posterior distributions as I illustrate in the next section.</p>
+</div>
+<div class="footnotes">
+<hr />
+<ol start="4">
+<li id="fn4"><p>A probability distribution is a mathematical expression that gives the probability for a random variable to take particular values. A probability distribution may be either discrete (e.g., the Bernoulli, Binomial or Poisson distribution) or continuous (e.g., the Gaussian distribution also known as the normal distribution)<a href="1.3-what-is-the-bayesian-approach.html#fnref4" class="footnote-back">↩︎</a></p></li>
+<li id="fn5"><p>Shall I include a section on sensitivity analyses in this chapter or later in the book? Cross-reference section in Survival chapter where prior elicitation is covered.<a href="1.3-what-is-the-bayesian-approach.html#fnref5" class="footnote-back">↩︎</a></p></li>
+</ol>
+</div>
+<p style="text-align: center;">
+<a href="1.2-bayes-theorem.html"><button class="btn btn-default">Previous</button></a>
+<a href="1.4-numerical-approx.html"><button class="btn btn-default">Next</button></a>
+</p>
+</div>
+</div>
+
+
+</div>
+
+<script>
+
+// add bootstrap table styles to pandoc tables
+$(document).ready(function () {
+  $('tr.header').parent('thead').parent('table').addClass('table table-condensed');
+});
+
+</script>
+
+</body>
+</html>

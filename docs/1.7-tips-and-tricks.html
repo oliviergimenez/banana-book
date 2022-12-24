@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="" xml:lang="">
+<head>
+
+<meta charset="utf-8" />
+<meta name="generator" content="pandoc" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta property="og:title" content="1.7 Tips and tricks | Bayesian Analysis of Capture-Recapture Data with Hidden Markov Models" />
+<meta property="og:type" content="book" />
+
+<meta property="og:description" content="This is a textbook on the analysis of capture-recapture data with hidden Markov models (HMM) implemented in the Bayesian framework with R." />
+<meta name="github-repo" content="oliviergimenez/banana-book" />
+
+<meta name="author" content="Olivier Gimenez" />
+
+<meta name="date" content="2022-12-23" />
+
+
+<meta name="description" content="This is a textbook on the analysis of capture-recapture data with hidden Markov models (HMM) implemented in the Bayesian framework with R.">
+
+<title>1.7 Tips and tricks | Bayesian Analysis of Capture-Recapture Data with Hidden Markov Models</title>
+
+<script src="libs/jquery-3.6.0/jquery-3.6.0.min.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link href="libs/bootstrap-3.3.5/css/bootstrap.min.css" rel="stylesheet" />
+<script src="libs/bootstrap-3.3.5/js/bootstrap.min.js"></script>
+<script src="libs/bootstrap-3.3.5/shim/html5shiv.min.js"></script>
+<script src="libs/bootstrap-3.3.5/shim/respond.min.js"></script>
+<style>h1 {font-size: 34px;}
+       h1.title {font-size: 38px;}
+       h2 {font-size: 30px;}
+       h3 {font-size: 24px;}
+       h4 {font-size: 18px;}
+       h5 {font-size: 16px;}
+       h6 {font-size: 12px;}
+       code {color: inherit; background-color: rgba(0, 0, 0, 0.04);}
+       pre:not([class]) { background-color: white }</style>
+<script src="libs/navigation-1.1/tabsets.js"></script>
+
+
+<style type="text/css">code{white-space: pre;}</style>
+<style type="text/css">
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+    color: #aaaaaa;
+  }
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+code span.at { color: #7d9029; } /* Attribute */
+code span.bn { color: #40a070; } /* BaseN */
+code span.bu { color: #008000; } /* BuiltIn */
+code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+code span.ch { color: #4070a0; } /* Char */
+code span.cn { color: #880000; } /* Constant */
+code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+code span.dt { color: #902000; } /* DataType */
+code span.dv { color: #40a070; } /* DecVal */
+code span.er { color: #ff0000; font-weight: bold; } /* Error */
+code span.ex { } /* Extension */
+code span.fl { color: #40a070; } /* Float */
+code span.fu { color: #06287e; } /* Function */
+code span.im { color: #008000; font-weight: bold; } /* Import */
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+code span.op { color: #666666; } /* Operator */
+code span.ot { color: #007020; } /* Other */
+code span.pp { color: #bc7a00; } /* Preprocessor */
+code span.sc { color: #4070a0; } /* SpecialChar */
+code span.ss { color: #bb6688; } /* SpecialString */
+code span.st { color: #4070a0; } /* String */
+code span.va { color: #19177c; } /* Variable */
+code span.vs { color: #4070a0; } /* VerbatimString */
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+</style>
+<style type="text/css">
+  pre:not([class]) {
+    background-color: white;
+  }
+</style>
+
+
+<style type="text/css">
+/* Used with Pandoc 2.11+ new --citeproc when CSL is used */
+div.csl-bib-body { }
+div.csl-entry {
+  clear: both;
+}
+.hanging div.csl-entry {
+  margin-left:2em;
+  text-indent:-2em;
+}
+div.csl-left-margin {
+  min-width:2em;
+  float:left;
+}
+div.csl-right-inline {
+  margin-left:2em;
+  padding-left:1em;
+}
+div.csl-indent {
+  margin-left: 2em;
+}
+</style>
+
+<link rel="stylesheet" href="css/style.css" type="text/css" />
+<link rel="stylesheet" href="css/toc.css" type="text/css" />
+
+<style type = "text/css">
+.main-container {
+  max-width: 940px;
+  margin-left: auto;
+  margin-right: auto;
+}
+code {
+  color: inherit;
+  background-color: rgba(0, 0, 0, 0.04);
+}
+img {
+  max-width:100%;
+  height: auto;
+}
+/* show arrow before summary tag as in bootstrap
+TODO: remove if boostrap in updated in html_document (rmarkdown#1485) */
+details > summary {
+  display: list-item;
+  cursor: pointer;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container-fluid main-container">
+
+
+<div class="row">
+<div class="col-sm-12">
+<div id="TOC">
+<ul>
+<li class="has-sub"><a href="index.html#welcome" id="toc-welcome">Welcome</a>
+<ul>
+<li><a href="license.html#license" id="toc-license">License</a></li>
+</ul></li>
+<li class="has-sub"><a href="preface.html#preface" id="toc-preface">Preface</a>
+<ul>
+<li><a href="why-this-book.html#why-this-book" id="toc-why-this-book">Why this book?</a></li>
+<li><a href="who-should-read-this-book.html#who-should-read-this-book" id="toc-who-should-read-this-book">Who should read this book?</a></li>
+<li><a href="what-will-you-learn.html#what-will-you-learn" id="toc-what-will-you-learn">What will you learn?</a></li>
+<li><a href="what-wont-you-learn.html#what-wont-you-learn" id="toc-what-wont-you-learn">What won’t you learn?</a></li>
+<li><a href="prerequisites.html#prerequisites" id="toc-prerequisites">Prerequisites</a></li>
+<li><a href="acknowledgements.html#acknowledgements" id="toc-acknowledgements">Acknowledgements</a></li>
+<li><a href="how-this-book-was-written.html#how-this-book-was-written" id="toc-how-this-book-was-written">How this book was written</a></li>
+</ul></li>
+<li><a href="about-the-author.html#about-the-author" id="toc-about-the-author">About the author</a></li>
+<li class="part"><span><b>I I. Fundations</b></span></li>
+<li><a href="introduction.html#introduction" id="toc-introduction">Introduction</a></li>
+<li class="has-sub"><a href="1-intronimble.html#intronimble" id="toc-intronimble"><span class="toc-section-number">1</span> NIMBLE tutorial</a>
+<ul>
+<li><a href="1.1-introduction-1.html#introduction-1" id="toc-introduction-1"><span class="toc-section-number">1.1</span> Introduction</a></li>
+<li><a href="1.2-what-is-nimble.html#what-is-nimble" id="toc-what-is-nimble"><span class="toc-section-number">1.2</span> What is NIMBLE?</a></li>
+<li><a href="1.3-start-nimble.html#start-nimble" id="toc-start-nimble"><span class="toc-section-number">1.3</span> Getting started</a></li>
+<li class="has-sub"><a href="1.4-functions-in-nimble.html#functions-in-nimble" id="toc-functions-in-nimble"><span class="toc-section-number">1.4</span> Programming</a>
+<ul>
+<li><a href="1.4-functions-in-nimble.html#nimble-functions" id="toc-nimble-functions"><span class="toc-section-number">1.4.1</span> NIMBLE functions</a></li>
+<li><a href="1.4-functions-in-nimble.html#callrfninnimble" id="toc-callrfninnimble"><span class="toc-section-number">1.4.2</span> Calling R/C++ functions</a></li>
+<li><a href="1.4-functions-in-nimble.html#user-defined-distributions" id="toc-user-defined-distributions"><span class="toc-section-number">1.4.3</span> User-defined distributions</a></li>
+</ul></li>
+<li><a href="1.5-under-the-hood.html#under-the-hood" id="toc-under-the-hood"><span class="toc-section-number">1.5</span> Under the hood</a></li>
+<li class="has-sub"><a href="1.6-mcmc-samplers.html#mcmc-samplers" id="toc-mcmc-samplers"><span class="toc-section-number">1.6</span> MCMC samplers</a>
+<ul>
+<li><a href="1.6-mcmc-samplers.html#change-sampler" id="toc-change-sampler"><span class="toc-section-number">1.6.1</span> Default samplers</a></li>
+<li><a href="1.6-mcmc-samplers.html#user-defined-samplers" id="toc-user-defined-samplers"><span class="toc-section-number">1.6.2</span> User-defined samplers</a></li>
+</ul></li>
+<li class="has-sub"><a href="1.7-tips-and-tricks.html#tips-and-tricks" id="toc-tips-and-tricks"><span class="toc-section-number">1.7</span> Tips and tricks</a>
+<ul>
+<li><a href="1.7-tips-and-tricks.html#precision-vs-standard-deviation" id="toc-precision-vs-standard-deviation"><span class="toc-section-number">1.7.1</span> Precision vs standard deviation</a></li>
+<li><a href="1.7-tips-and-tricks.html#indexing" id="toc-indexing"><span class="toc-section-number">1.7.2</span> Indexing</a></li>
+<li><a href="1.7-tips-and-tricks.html#faster-compilation" id="toc-faster-compilation"><span class="toc-section-number">1.7.3</span> Faster compilation</a></li>
+<li><a href="1.7-tips-and-tricks.html#updating-mcmc-chains" id="toc-updating-mcmc-chains"><span class="toc-section-number">1.7.4</span> Updating MCMC chains</a></li>
+<li><a href="1.7-tips-and-tricks.html#reproducibility" id="toc-reproducibility"><span class="toc-section-number">1.7.5</span> Reproducibility</a></li>
+<li><a href="1.7-tips-and-tricks.html#parallelization" id="toc-parallelization"><span class="toc-section-number">1.7.6</span> Parallelization</a></li>
+<li><a href="1.7-tips-and-tricks.html#incomplete-initialization" id="toc-incomplete-initialization"><span class="toc-section-number">1.7.7</span> Incomplete initialization</a></li>
+<li><a href="1.7-tips-and-tricks.html#vectorization" id="toc-vectorization"><span class="toc-section-number">1.7.8</span> Vectorization</a></li>
+</ul></li>
+<li><a href="1.8-summary.html#summary" id="toc-summary"><span class="toc-section-number">1.8</span> Summary</a></li>
+<li><a href="1.9-suggested-reading.html#suggested-reading" id="toc-suggested-reading"><span class="toc-section-number">1.9</span> Suggested reading</a></li>
+</ul></li>
+<li><a href="faq.html#faq" id="toc-faq">FAQ</a></li>
+<li><a href="references.html#references" id="toc-references">References</a></li>
+</ul>
+</div>
+</div>
+</div>
+<div class="row">
+<div class="col-sm-12">
+<div id="tips-and-tricks" class="section level2" number="1.7">
+<h2><span class="header-section-number">1.7</span> Tips and tricks</h2>
+<p>Before closing this chapter on NIMBLE, I thought it’d be useful to have a section gathering a few tips and tricks that would make your life easier. <strong>These are my tips and tricks, NIMBLE users, I’d be happy to hear yours: <a href="mailto:olivier.gimenez@cefe.cnrs.fr">email me</a>, <a href="https://github.com/oliviergimenez/banana-book/edit/master/nimble.Rmd">edit the chapter</a> or <a href="https://github.com/oliviergimenez/banana-book/issues">file an issue</a> on GitHub.</strong></p>
+<div id="precision-vs-standard-deviation" class="section level3" number="1.7.1">
+<h3><span class="header-section-number">1.7.1</span> Precision vs standard deviation</h3>
+<p>In other sotware like JAGS, the normal distribution is parameterized with mean <code>mu</code> and a parameter called precision, often denoted <code>tau</code>, the inverse of the variance you are used to. Say we use a normal prior on some parameter <code>epsilon</code> with <code>epsilon ~ dnorm(mu, tau)</code>. We’d like this prior to be vague, therefore <code>tau</code> should be small, say 0.01 so that the variance of the normal distribution is large, 1/0.01 = 100 here. This subtlety is the source of problems (and frustration) when you forget that the second parameter is precision and use <code>epsilon ~ dnorm(mu, 100)</code>, because then the variance is actually 1/100 = 0.01 and the prior is very informative, and peaked on <code>mu</code>. In NIMBLE you can use this parameterisation as well as the more natural parameterisation <code>epsilon ~ dnorm(mu, sd = 100)</code> which avoids confusion.</p>
+</div>
+<div id="indexing" class="section level3" number="1.7.2">
+<h3><span class="header-section-number">1.7.2</span> Indexing</h3>
+<p>NIMBLE does not guess the dimensions of objects. In other software like JAGS you can write <code>sum.x &lt;- sum(x[])</code> to calculate the sum over all components of <code>x</code>. In NIMBLE you need to write <code>sum.x &lt;- sum(x[1:n])</code> to sum the components of <code>x</code> from 1 up to n. Specifying dimensions can be annoying, but I find it useful as it forces me to think of what I am doing and to keep my code self-explaining.</p>
+</div>
+<div id="faster-compilation" class="section level3" number="1.7.3">
+<h3><span class="header-section-number">1.7.3</span> Faster compilation</h3>
+<p>You might have noticed that compilation in NIMBLE takes time. When you have large models (with lots of nodes), compilation can take forever. You can set <code>calculate = FALSE</code> in <code>nimbleModel()</code> to disable the calculation of all deterministic nodes and log-likelihood. You can also use <code>useConjugacy = FALSE</code> in <code>configureMCMC()</code> to disable the search for conjugate samplers. With the animal survival example, you would do:</p>
+<div class="sourceCode" id="cb63"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb63-1"><a href="1.7-tips-and-tricks.html#cb63-1" aria-hidden="true" tabindex="-1"></a>model <span class="ot">&lt;-</span> <span class="fu">nimbleCode</span>({</span>
+<span id="cb63-2"><a href="1.7-tips-and-tricks.html#cb63-2" aria-hidden="true" tabindex="-1"></a>  <span class="co"># likelihood</span></span>
+<span id="cb63-3"><a href="1.7-tips-and-tricks.html#cb63-3" aria-hidden="true" tabindex="-1"></a>  survived <span class="sc">~</span> <span class="fu">dbinom</span>(theta, released)</span>
+<span id="cb63-4"><a href="1.7-tips-and-tricks.html#cb63-4" aria-hidden="true" tabindex="-1"></a>  <span class="co"># prior</span></span>
+<span id="cb63-5"><a href="1.7-tips-and-tricks.html#cb63-5" aria-hidden="true" tabindex="-1"></a>  theta <span class="sc">~</span> <span class="fu">dunif</span>(<span class="dv">0</span>, <span class="dv">1</span>)</span>
+<span id="cb63-6"><a href="1.7-tips-and-tricks.html#cb63-6" aria-hidden="true" tabindex="-1"></a>})</span>
+<span id="cb63-7"><a href="1.7-tips-and-tricks.html#cb63-7" aria-hidden="true" tabindex="-1"></a>my.data <span class="ot">&lt;-</span> <span class="fu">list</span>(<span class="at">survived =</span> <span class="dv">19</span>, <span class="at">released =</span> <span class="dv">57</span>)</span>
+<span id="cb63-8"><a href="1.7-tips-and-tricks.html#cb63-8" aria-hidden="true" tabindex="-1"></a>initial.values <span class="ot">&lt;-</span> <span class="cf">function</span>() <span class="fu">list</span>(<span class="at">theta =</span> <span class="fu">runif</span>(<span class="dv">1</span>,<span class="dv">0</span>,<span class="dv">1</span>))</span>
+<span id="cb63-9"><a href="1.7-tips-and-tricks.html#cb63-9" aria-hidden="true" tabindex="-1"></a>survival <span class="ot">&lt;-</span> <span class="fu">nimbleModel</span>(<span class="at">code =</span> model, </span>
+<span id="cb63-10"><a href="1.7-tips-and-tricks.html#cb63-10" aria-hidden="true" tabindex="-1"></a>                        <span class="at">data =</span> my.data, </span>
+<span id="cb63-11"><a href="1.7-tips-and-tricks.html#cb63-11" aria-hidden="true" tabindex="-1"></a>                        <span class="at">inits =</span> <span class="fu">initial.values</span>(),</span>
+<span id="cb63-12"><a href="1.7-tips-and-tricks.html#cb63-12" aria-hidden="true" tabindex="-1"></a>                        <span class="at">calculate =</span> <span class="cn">FALSE</span>) <span class="co"># first tip</span></span>
+<span id="cb63-13"><a href="1.7-tips-and-tricks.html#cb63-13" aria-hidden="true" tabindex="-1"></a>Csurvival <span class="ot">&lt;-</span> <span class="fu">compileNimble</span>(survival)</span>
+<span id="cb63-14"><a href="1.7-tips-and-tricks.html#cb63-14" aria-hidden="true" tabindex="-1"></a>survivalConf <span class="ot">&lt;-</span> <span class="fu">configureMCMC</span>(survival)</span>
+<span id="cb63-15"><a href="1.7-tips-and-tricks.html#cb63-15" aria-hidden="true" tabindex="-1"></a><span class="do">## ===== Monitors =====</span></span>
+<span id="cb63-16"><a href="1.7-tips-and-tricks.html#cb63-16" aria-hidden="true" tabindex="-1"></a><span class="do">## thin = 1: theta</span></span>
+<span id="cb63-17"><a href="1.7-tips-and-tricks.html#cb63-17" aria-hidden="true" tabindex="-1"></a><span class="do">## ===== Samplers =====</span></span>
+<span id="cb63-18"><a href="1.7-tips-and-tricks.html#cb63-18" aria-hidden="true" tabindex="-1"></a><span class="do">## RW sampler (1)</span></span>
+<span id="cb63-19"><a href="1.7-tips-and-tricks.html#cb63-19" aria-hidden="true" tabindex="-1"></a><span class="do">##   - theta</span></span>
+<span id="cb63-20"><a href="1.7-tips-and-tricks.html#cb63-20" aria-hidden="true" tabindex="-1"></a>survivalMCMC <span class="ot">&lt;-</span> <span class="fu">buildMCMC</span>(survivalConf, <span class="at">useConjugacy =</span> <span class="cn">FALSE</span>) <span class="co"># second tip</span></span>
+<span id="cb63-21"><a href="1.7-tips-and-tricks.html#cb63-21" aria-hidden="true" tabindex="-1"></a>CsurvivalMCMC <span class="ot">&lt;-</span> <span class="fu">compileNimble</span>(survivalMCMC, </span>
+<span id="cb63-22"><a href="1.7-tips-and-tricks.html#cb63-22" aria-hidden="true" tabindex="-1"></a>                               <span class="at">project =</span> survival)</span>
+<span id="cb63-23"><a href="1.7-tips-and-tricks.html#cb63-23" aria-hidden="true" tabindex="-1"></a>samples <span class="ot">&lt;-</span> <span class="fu">runMCMC</span>(<span class="at">mcmc =</span> CsurvivalMCMC, </span>
+<span id="cb63-24"><a href="1.7-tips-and-tricks.html#cb63-24" aria-hidden="true" tabindex="-1"></a>                   <span class="at">niter =</span> <span class="dv">5000</span>, </span>
+<span id="cb63-25"><a href="1.7-tips-and-tricks.html#cb63-25" aria-hidden="true" tabindex="-1"></a>                   <span class="at">nburnin =</span> <span class="dv">1000</span>)</span>
+<span id="cb63-26"><a href="1.7-tips-and-tricks.html#cb63-26" aria-hidden="true" tabindex="-1"></a><span class="do">## |-------------|-------------|-------------|-------------|</span></span>
+<span id="cb63-27"><a href="1.7-tips-and-tricks.html#cb63-27" aria-hidden="true" tabindex="-1"></a><span class="do">## |-------------------------------------------------------|</span></span>
+<span id="cb63-28"><a href="1.7-tips-and-tricks.html#cb63-28" aria-hidden="true" tabindex="-1"></a><span class="fu">samplesSummary</span>(samples)</span>
+<span id="cb63-29"><a href="1.7-tips-and-tricks.html#cb63-29" aria-hidden="true" tabindex="-1"></a><span class="do">##         Mean Median St.Dev. 95%CI_low 95%CI_upp</span></span>
+<span id="cb63-30"><a href="1.7-tips-and-tricks.html#cb63-30" aria-hidden="true" tabindex="-1"></a><span class="do">## theta 0.3372 0.3351 0.05796    0.2298    0.4518</span></span></code></pre></div>
+</div>
+<div id="updating-mcmc-chains" class="section level3" number="1.7.4">
+<h3><span class="header-section-number">1.7.4</span> Updating MCMC chains</h3>
+<p>Sometimes it is useful to run your MCMC chains a little bit longer to improve convergence. Re-starting from the run in previous section, you can use:</p>
+<div class="sourceCode" id="cb64"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb64-1"><a href="1.7-tips-and-tricks.html#cb64-1" aria-hidden="true" tabindex="-1"></a>niter_ad <span class="ot">&lt;-</span> <span class="dv">6000</span></span>
+<span id="cb64-2"><a href="1.7-tips-and-tricks.html#cb64-2" aria-hidden="true" tabindex="-1"></a>CsurvivalMCMC<span class="sc">$</span><span class="fu">run</span>(niter_ad, <span class="at">reset =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb64-3"><a href="1.7-tips-and-tricks.html#cb64-3" aria-hidden="true" tabindex="-1"></a><span class="do">## |-------------|-------------|-------------|-------------|</span></span>
+<span id="cb64-4"><a href="1.7-tips-and-tricks.html#cb64-4" aria-hidden="true" tabindex="-1"></a><span class="do">## |-------------------------------------------------------|</span></span>
+<span id="cb64-5"><a href="1.7-tips-and-tricks.html#cb64-5" aria-hidden="true" tabindex="-1"></a><span class="do">## NULL</span></span></code></pre></div>
+<p>Then you can extract the matrix of previous MCMC samples augmented with new ones and obtain numerical summaries:</p>
+<div class="sourceCode" id="cb65"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb65-1"><a href="1.7-tips-and-tricks.html#cb65-1" aria-hidden="true" tabindex="-1"></a>more_samples <span class="ot">&lt;-</span> <span class="fu">as.matrix</span>(CsurvivalMCMC<span class="sc">$</span>mvSamples)</span>
+<span id="cb65-2"><a href="1.7-tips-and-tricks.html#cb65-2" aria-hidden="true" tabindex="-1"></a><span class="fu">samplesSummary</span>(more_samples)</span>
+<span id="cb65-3"><a href="1.7-tips-and-tricks.html#cb65-3" aria-hidden="true" tabindex="-1"></a><span class="do">##         Mean Median St.Dev. 95%CI_low 95%CI_upp</span></span>
+<span id="cb65-4"><a href="1.7-tips-and-tricks.html#cb65-4" aria-hidden="true" tabindex="-1"></a><span class="do">## theta 0.3411 0.3401 0.05953    0.2307    0.4592</span></span></code></pre></div>
+<p>You can check that <code>more_samples</code> contains 10000 samples, 4000 from the call to <code>runMCMC()</code> plus 6000 additional samples.</p>
+</div>
+<div id="reproducibility" class="section level3" number="1.7.5">
+<h3><span class="header-section-number">1.7.5</span> Reproducibility</h3>
+<p>If you want your results to be reproducible, you can control the state of R the random number generator with the <code>setSeed</code> argument in functions <code>nimbleMCMC()</code> and <code>runMCMC()</code>. Going back to the animal survival example, you can check that two calls to <code>nimbleMCMC()</code> give the same results when <code>setSeed</code> is set to the same value:</p>
+<div class="sourceCode" id="cb66"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb66-1"><a href="1.7-tips-and-tricks.html#cb66-1" aria-hidden="true" tabindex="-1"></a><span class="co"># first call to nimbleMCMC()</span></span>
+<span id="cb66-2"><a href="1.7-tips-and-tricks.html#cb66-2" aria-hidden="true" tabindex="-1"></a>mcmc.output1 <span class="ot">&lt;-</span> <span class="fu">nimbleMCMC</span>(<span class="at">code =</span> model,</span>
+<span id="cb66-3"><a href="1.7-tips-and-tricks.html#cb66-3" aria-hidden="true" tabindex="-1"></a>                           <span class="at">data =</span> my.data,</span>
+<span id="cb66-4"><a href="1.7-tips-and-tricks.html#cb66-4" aria-hidden="true" tabindex="-1"></a>                           <span class="at">inits =</span> initial.values,</span>
+<span id="cb66-5"><a href="1.7-tips-and-tricks.html#cb66-5" aria-hidden="true" tabindex="-1"></a>                           <span class="at">niter =</span> <span class="dv">5000</span>,</span>
+<span id="cb66-6"><a href="1.7-tips-and-tricks.html#cb66-6" aria-hidden="true" tabindex="-1"></a>                           <span class="at">nburnin =</span> <span class="dv">1000</span>,</span>
+<span id="cb66-7"><a href="1.7-tips-and-tricks.html#cb66-7" aria-hidden="true" tabindex="-1"></a>                           <span class="at">nchains =</span> <span class="dv">3</span>,</span>
+<span id="cb66-8"><a href="1.7-tips-and-tricks.html#cb66-8" aria-hidden="true" tabindex="-1"></a>                           <span class="at">summary =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb66-9"><a href="1.7-tips-and-tricks.html#cb66-9" aria-hidden="true" tabindex="-1"></a>                           <span class="at">setSeed =</span> <span class="dv">123</span>)</span>
+<span id="cb66-10"><a href="1.7-tips-and-tricks.html#cb66-10" aria-hidden="true" tabindex="-1"></a><span class="do">## |-------------|-------------|-------------|-------------|</span></span>
+<span id="cb66-11"><a href="1.7-tips-and-tricks.html#cb66-11" aria-hidden="true" tabindex="-1"></a><span class="do">## |-------------------------------------------------------|</span></span>
+<span id="cb66-12"><a href="1.7-tips-and-tricks.html#cb66-12" aria-hidden="true" tabindex="-1"></a><span class="do">## |-------------|-------------|-------------|-------------|</span></span>
+<span id="cb66-13"><a href="1.7-tips-and-tricks.html#cb66-13" aria-hidden="true" tabindex="-1"></a><span class="do">## |-------------------------------------------------------|</span></span>
+<span id="cb66-14"><a href="1.7-tips-and-tricks.html#cb66-14" aria-hidden="true" tabindex="-1"></a><span class="do">## |-------------|-------------|-------------|-------------|</span></span>
+<span id="cb66-15"><a href="1.7-tips-and-tricks.html#cb66-15" aria-hidden="true" tabindex="-1"></a><span class="do">## |-------------------------------------------------------|</span></span>
+<span id="cb66-16"><a href="1.7-tips-and-tricks.html#cb66-16" aria-hidden="true" tabindex="-1"></a><span class="co"># second call to nimbleMCMC()</span></span>
+<span id="cb66-17"><a href="1.7-tips-and-tricks.html#cb66-17" aria-hidden="true" tabindex="-1"></a>mcmc.output2 <span class="ot">&lt;-</span> <span class="fu">nimbleMCMC</span>(<span class="at">code =</span> model,</span>
+<span id="cb66-18"><a href="1.7-tips-and-tricks.html#cb66-18" aria-hidden="true" tabindex="-1"></a>                           <span class="at">data =</span> my.data,</span>
+<span id="cb66-19"><a href="1.7-tips-and-tricks.html#cb66-19" aria-hidden="true" tabindex="-1"></a>                           <span class="at">inits =</span> initial.values,</span>
+<span id="cb66-20"><a href="1.7-tips-and-tricks.html#cb66-20" aria-hidden="true" tabindex="-1"></a>                           <span class="at">niter =</span> <span class="dv">5000</span>,</span>
+<span id="cb66-21"><a href="1.7-tips-and-tricks.html#cb66-21" aria-hidden="true" tabindex="-1"></a>                           <span class="at">nburnin =</span> <span class="dv">1000</span>,</span>
+<span id="cb66-22"><a href="1.7-tips-and-tricks.html#cb66-22" aria-hidden="true" tabindex="-1"></a>                           <span class="at">nchains =</span> <span class="dv">3</span>,</span>
+<span id="cb66-23"><a href="1.7-tips-and-tricks.html#cb66-23" aria-hidden="true" tabindex="-1"></a>                           <span class="at">summary =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb66-24"><a href="1.7-tips-and-tricks.html#cb66-24" aria-hidden="true" tabindex="-1"></a>                           <span class="at">setSeed =</span> <span class="dv">123</span>)</span>
+<span id="cb66-25"><a href="1.7-tips-and-tricks.html#cb66-25" aria-hidden="true" tabindex="-1"></a><span class="do">## |-------------|-------------|-------------|-------------|</span></span>
+<span id="cb66-26"><a href="1.7-tips-and-tricks.html#cb66-26" aria-hidden="true" tabindex="-1"></a><span class="do">## |-------------------------------------------------------|</span></span>
+<span id="cb66-27"><a href="1.7-tips-and-tricks.html#cb66-27" aria-hidden="true" tabindex="-1"></a><span class="do">## |-------------|-------------|-------------|-------------|</span></span>
+<span id="cb66-28"><a href="1.7-tips-and-tricks.html#cb66-28" aria-hidden="true" tabindex="-1"></a><span class="do">## |-------------------------------------------------------|</span></span>
+<span id="cb66-29"><a href="1.7-tips-and-tricks.html#cb66-29" aria-hidden="true" tabindex="-1"></a><span class="do">## |-------------|-------------|-------------|-------------|</span></span>
+<span id="cb66-30"><a href="1.7-tips-and-tricks.html#cb66-30" aria-hidden="true" tabindex="-1"></a><span class="do">## |-------------------------------------------------------|</span></span>
+<span id="cb66-31"><a href="1.7-tips-and-tricks.html#cb66-31" aria-hidden="true" tabindex="-1"></a><span class="co"># outputs from both calls are the same</span></span>
+<span id="cb66-32"><a href="1.7-tips-and-tricks.html#cb66-32" aria-hidden="true" tabindex="-1"></a>mcmc.output1<span class="sc">$</span>summary<span class="sc">$</span>all.chains</span>
+<span id="cb66-33"><a href="1.7-tips-and-tricks.html#cb66-33" aria-hidden="true" tabindex="-1"></a><span class="do">##         Mean Median St.Dev. 95%CI_low 95%CI_upp</span></span>
+<span id="cb66-34"><a href="1.7-tips-and-tricks.html#cb66-34" aria-hidden="true" tabindex="-1"></a><span class="do">## theta 0.3387  0.336 0.05968    0.2282    0.4608</span></span>
+<span id="cb66-35"><a href="1.7-tips-and-tricks.html#cb66-35" aria-hidden="true" tabindex="-1"></a>mcmc.output2<span class="sc">$</span>summary<span class="sc">$</span>all.chains</span>
+<span id="cb66-36"><a href="1.7-tips-and-tricks.html#cb66-36" aria-hidden="true" tabindex="-1"></a><span class="do">##         Mean Median St.Dev. 95%CI_low 95%CI_upp</span></span>
+<span id="cb66-37"><a href="1.7-tips-and-tricks.html#cb66-37" aria-hidden="true" tabindex="-1"></a><span class="do">## theta 0.3387  0.336 0.05968    0.2282    0.4608</span></span></code></pre></div>
+</div>
+<div id="parallelization" class="section level3" number="1.7.6">
+<h3><span class="header-section-number">1.7.6</span> Parallelization</h3>
+<p>To speed up your analyses, you can run MCMC chains in parallel. This is what the package <code>jagsUI</code><a href="#fn7" class="footnote-ref" id="fnref7"><sup>7</sup></a> accomplishes for JAGS users. Here, we use the <code>parallel</code> package for parallel computation:</p>
+<div class="sourceCode" id="cb67"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb67-1"><a href="1.7-tips-and-tricks.html#cb67-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(parallel)</span></code></pre></div>
+<p>First you create a cluster using the total amount of cores you have but one to make sure your computer can go on working:</p>
+<div class="sourceCode" id="cb68"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb68-1"><a href="1.7-tips-and-tricks.html#cb68-1" aria-hidden="true" tabindex="-1"></a>nbcores <span class="ot">&lt;-</span> <span class="fu">detectCores</span>() <span class="sc">-</span> <span class="dv">1</span></span>
+<span id="cb68-2"><a href="1.7-tips-and-tricks.html#cb68-2" aria-hidden="true" tabindex="-1"></a>my_cluster <span class="ot">&lt;-</span> <span class="fu">makeCluster</span>(nbcores)</span></code></pre></div>
+<p>Then you wrap your workflow in a function to be run in parallel:</p>
+<div class="sourceCode" id="cb69"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb69-1"><a href="1.7-tips-and-tricks.html#cb69-1" aria-hidden="true" tabindex="-1"></a>workflow <span class="ot">&lt;-</span> <span class="cf">function</span>(seed, data) {</span>
+<span id="cb69-2"><a href="1.7-tips-and-tricks.html#cb69-2" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb69-3"><a href="1.7-tips-and-tricks.html#cb69-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">library</span>(nimble)</span>
+<span id="cb69-4"><a href="1.7-tips-and-tricks.html#cb69-4" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb69-5"><a href="1.7-tips-and-tricks.html#cb69-5" aria-hidden="true" tabindex="-1"></a>  model <span class="ot">&lt;-</span> <span class="fu">nimbleCode</span>({</span>
+<span id="cb69-6"><a href="1.7-tips-and-tricks.html#cb69-6" aria-hidden="true" tabindex="-1"></a>    <span class="co"># likelihood</span></span>
+<span id="cb69-7"><a href="1.7-tips-and-tricks.html#cb69-7" aria-hidden="true" tabindex="-1"></a>    survived <span class="sc">~</span> <span class="fu">dbinom</span>(theta, released)</span>
+<span id="cb69-8"><a href="1.7-tips-and-tricks.html#cb69-8" aria-hidden="true" tabindex="-1"></a>    <span class="co"># prior</span></span>
+<span id="cb69-9"><a href="1.7-tips-and-tricks.html#cb69-9" aria-hidden="true" tabindex="-1"></a>    theta <span class="sc">~</span> <span class="fu">dunif</span>(<span class="dv">0</span>, <span class="dv">1</span>)</span>
+<span id="cb69-10"><a href="1.7-tips-and-tricks.html#cb69-10" aria-hidden="true" tabindex="-1"></a>  })</span>
+<span id="cb69-11"><a href="1.7-tips-and-tricks.html#cb69-11" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb69-12"><a href="1.7-tips-and-tricks.html#cb69-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">set.seed</span>(<span class="dv">123</span>) <span class="co"># for reproducibility</span></span>
+<span id="cb69-13"><a href="1.7-tips-and-tricks.html#cb69-13" aria-hidden="true" tabindex="-1"></a>  initial.values <span class="ot">&lt;-</span> <span class="cf">function</span>() <span class="fu">list</span>(<span class="at">theta =</span> <span class="fu">runif</span>(<span class="dv">1</span>,<span class="dv">0</span>,<span class="dv">1</span>))</span>
+<span id="cb69-14"><a href="1.7-tips-and-tricks.html#cb69-14" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb69-15"><a href="1.7-tips-and-tricks.html#cb69-15" aria-hidden="true" tabindex="-1"></a>  survival <span class="ot">&lt;-</span> <span class="fu">nimbleModel</span>(<span class="at">code =</span> model, </span>
+<span id="cb69-16"><a href="1.7-tips-and-tricks.html#cb69-16" aria-hidden="true" tabindex="-1"></a>                          <span class="at">data =</span> data, </span>
+<span id="cb69-17"><a href="1.7-tips-and-tricks.html#cb69-17" aria-hidden="true" tabindex="-1"></a>                          <span class="at">inits =</span> <span class="fu">initial.values</span>())</span>
+<span id="cb69-18"><a href="1.7-tips-and-tricks.html#cb69-18" aria-hidden="true" tabindex="-1"></a>  Csurvival <span class="ot">&lt;-</span> <span class="fu">compileNimble</span>(survival)</span>
+<span id="cb69-19"><a href="1.7-tips-and-tricks.html#cb69-19" aria-hidden="true" tabindex="-1"></a>  survivalMCMC <span class="ot">&lt;-</span> <span class="fu">buildMCMC</span>(Csurvival)</span>
+<span id="cb69-20"><a href="1.7-tips-and-tricks.html#cb69-20" aria-hidden="true" tabindex="-1"></a>  CsurvivalMCMC <span class="ot">&lt;-</span> <span class="fu">compileNimble</span>(survivalMCMC)</span>
+<span id="cb69-21"><a href="1.7-tips-and-tricks.html#cb69-21" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb69-22"><a href="1.7-tips-and-tricks.html#cb69-22" aria-hidden="true" tabindex="-1"></a>  samples <span class="ot">&lt;-</span> <span class="fu">runMCMC</span>(<span class="at">mcmc =</span> CsurvivalMCMC, </span>
+<span id="cb69-23"><a href="1.7-tips-and-tricks.html#cb69-23" aria-hidden="true" tabindex="-1"></a>                     <span class="at">niter =</span> <span class="dv">5000</span>, </span>
+<span id="cb69-24"><a href="1.7-tips-and-tricks.html#cb69-24" aria-hidden="true" tabindex="-1"></a>                     <span class="at">nburnin =</span> <span class="dv">1000</span>,</span>
+<span id="cb69-25"><a href="1.7-tips-and-tricks.html#cb69-25" aria-hidden="true" tabindex="-1"></a>                     <span class="at">setSeed =</span> seed)</span>
+<span id="cb69-26"><a href="1.7-tips-and-tricks.html#cb69-26" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb69-27"><a href="1.7-tips-and-tricks.html#cb69-27" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>(samples)</span>
+<span id="cb69-28"><a href="1.7-tips-and-tricks.html#cb69-28" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
+<p>Now we run the code using <code>parLapply()</code>, which uses cluster nodes to execute our workflow:</p>
+<div class="sourceCode" id="cb70"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb70-1"><a href="1.7-tips-and-tricks.html#cb70-1" aria-hidden="true" tabindex="-1"></a>output <span class="ot">&lt;-</span> <span class="fu">parLapply</span>(<span class="at">cl =</span> my_cluster, </span>
+<span id="cb70-2"><a href="1.7-tips-and-tricks.html#cb70-2" aria-hidden="true" tabindex="-1"></a>                    <span class="at">X =</span> <span class="fu">c</span>(<span class="dv">2022</span>, <span class="dv">666</span>),</span>
+<span id="cb70-3"><a href="1.7-tips-and-tricks.html#cb70-3" aria-hidden="true" tabindex="-1"></a>                    <span class="at">fun =</span> workflow, </span>
+<span id="cb70-4"><a href="1.7-tips-and-tricks.html#cb70-4" aria-hidden="true" tabindex="-1"></a>                    <span class="at">data =</span> <span class="fu">list</span>(<span class="at">survived =</span> <span class="dv">19</span>, <span class="at">released =</span> <span class="dv">57</span>))</span></code></pre></div>
+<p>In the call to <code>parLapply</code>, we specify <code>X = c(2022, 666)</code> to ensure reproducibility. We use two alues 2022 and 666 to set the seed in <code>workflow()</code>, which means we run two instances of our workflow, or two MCMC chains. Note that we also have a line <code>set.seed(123)</code> in the <code>workflow()</code> function to ensure reproducibility while drawing randomly initial values.</p>
+<p>It’s good practice to close the cluster with <code>stopCluster()</code> so that processes do not continue to run in the background and slow down other processes:</p>
+<div class="sourceCode" id="cb71"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb71-1"><a href="1.7-tips-and-tricks.html#cb71-1" aria-hidden="true" tabindex="-1"></a><span class="fu">stopCluster</span>(my_cluster)</span></code></pre></div>
+<p>By inspecting the results, you can see that the object <code>output</code> is a list with two components, one for each MCMC chain:</p>
+<div class="sourceCode" id="cb72"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb72-1"><a href="1.7-tips-and-tricks.html#cb72-1" aria-hidden="true" tabindex="-1"></a><span class="fu">str</span>(output)</span>
+<span id="cb72-2"><a href="1.7-tips-and-tricks.html#cb72-2" aria-hidden="true" tabindex="-1"></a><span class="do">## List of 2</span></span>
+<span id="cb72-3"><a href="1.7-tips-and-tricks.html#cb72-3" aria-hidden="true" tabindex="-1"></a><span class="do">##  $ : num [1:4000, 1] 0.393 0.369 0.346 0.346 0.346 ...</span></span>
+<span id="cb72-4"><a href="1.7-tips-and-tricks.html#cb72-4" aria-hidden="true" tabindex="-1"></a><span class="do">##   ..- attr(*, &quot;dimnames&quot;)=List of 2</span></span>
+<span id="cb72-5"><a href="1.7-tips-and-tricks.html#cb72-5" aria-hidden="true" tabindex="-1"></a><span class="do">##   .. ..$ : NULL</span></span>
+<span id="cb72-6"><a href="1.7-tips-and-tricks.html#cb72-6" aria-hidden="true" tabindex="-1"></a><span class="do">##   .. ..$ : chr &quot;theta&quot;</span></span>
+<span id="cb72-7"><a href="1.7-tips-and-tricks.html#cb72-7" aria-hidden="true" tabindex="-1"></a><span class="do">##  $ : num [1:4000, 1] 0.435 0.435 0.435 0.435 0.243 ...</span></span>
+<span id="cb72-8"><a href="1.7-tips-and-tricks.html#cb72-8" aria-hidden="true" tabindex="-1"></a><span class="do">##   ..- attr(*, &quot;dimnames&quot;)=List of 2</span></span>
+<span id="cb72-9"><a href="1.7-tips-and-tricks.html#cb72-9" aria-hidden="true" tabindex="-1"></a><span class="do">##   .. ..$ : NULL</span></span>
+<span id="cb72-10"><a href="1.7-tips-and-tricks.html#cb72-10" aria-hidden="true" tabindex="-1"></a><span class="do">##   .. ..$ : chr &quot;theta&quot;</span></span></code></pre></div>
+<p>Eventually, you can obtain numerical summaries:</p>
+<div class="sourceCode" id="cb73"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb73-1"><a href="1.7-tips-and-tricks.html#cb73-1" aria-hidden="true" tabindex="-1"></a><span class="fu">MCMCsummary</span>(output)</span>
+<span id="cb73-2"><a href="1.7-tips-and-tricks.html#cb73-2" aria-hidden="true" tabindex="-1"></a><span class="do">##         mean      sd   2.5%    50%  97.5% Rhat n.eff</span></span>
+<span id="cb73-3"><a href="1.7-tips-and-tricks.html#cb73-3" aria-hidden="true" tabindex="-1"></a><span class="do">## theta 0.3361 0.06148 0.2215 0.3335 0.4594    1  1779</span></span></code></pre></div>
+</div>
+<div id="incomplete-initialization" class="section level3" number="1.7.7">
+<h3><span class="header-section-number">1.7.7</span> Incomplete initialization</h3>
+<p>When you run <code>nimbleMCMC()</code> or <code>nimbleModel()</code>, you may get warnings thrown at you by NIMBLE like ‘This model is not fully initialized’ or ‘value is NA or NaN even after trying to calculate’. This is not necessarily an error, but it ‘reflects missing values in model variables’ (incomplete initialization). In this situation, NIMBLE will initialize nodes with NAs by drawing from priors, and it will work or not. When possible, I try to initialize all nodes (full initialization). The process can be a bit of a headache, but it helps understanding the model structure better. Going back to our animal survival example, let’s purposedly forget to provide an initial value for <code>theta</code>:</p>
+<div class="sourceCode" id="cb74"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb74-1"><a href="1.7-tips-and-tricks.html#cb74-1" aria-hidden="true" tabindex="-1"></a>model <span class="ot">&lt;-</span> <span class="fu">nimbleCode</span>({</span>
+<span id="cb74-2"><a href="1.7-tips-and-tricks.html#cb74-2" aria-hidden="true" tabindex="-1"></a>  <span class="co"># likelihood</span></span>
+<span id="cb74-3"><a href="1.7-tips-and-tricks.html#cb74-3" aria-hidden="true" tabindex="-1"></a>  survived <span class="sc">~</span> <span class="fu">dbinom</span>(theta, released)</span>
+<span id="cb74-4"><a href="1.7-tips-and-tricks.html#cb74-4" aria-hidden="true" tabindex="-1"></a>  <span class="co"># prior</span></span>
+<span id="cb74-5"><a href="1.7-tips-and-tricks.html#cb74-5" aria-hidden="true" tabindex="-1"></a>  theta <span class="sc">~</span> <span class="fu">dunif</span>(<span class="dv">0</span>, <span class="dv">1</span>)</span>
+<span id="cb74-6"><a href="1.7-tips-and-tricks.html#cb74-6" aria-hidden="true" tabindex="-1"></a>})</span>
+<span id="cb74-7"><a href="1.7-tips-and-tricks.html#cb74-7" aria-hidden="true" tabindex="-1"></a><span class="co">#initial.values &lt;- list(theta = runif(1,0,1))</span></span>
+<span id="cb74-8"><a href="1.7-tips-and-tricks.html#cb74-8" aria-hidden="true" tabindex="-1"></a>survival <span class="ot">&lt;-</span> <span class="fu">nimbleModel</span>(<span class="at">code =</span> model, </span>
+<span id="cb74-9"><a href="1.7-tips-and-tricks.html#cb74-9" aria-hidden="true" tabindex="-1"></a>                        <span class="at">data =</span> <span class="fu">list</span>(<span class="at">survived =</span> <span class="dv">19</span>, <span class="at">released =</span> <span class="dv">57</span>))</span></code></pre></div>
+<p>To see which variables are not initialized, we use <code>initializeInfo()</code>:</p>
+<div class="sourceCode" id="cb75"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb75-1"><a href="1.7-tips-and-tricks.html#cb75-1" aria-hidden="true" tabindex="-1"></a><span class="co"># survival$calculate() # gives NA</span></span>
+<span id="cb75-2"><a href="1.7-tips-and-tricks.html#cb75-2" aria-hidden="true" tabindex="-1"></a>survival<span class="sc">$</span><span class="fu">initializeInfo</span>()</span></code></pre></div>
+<p>Now that we know <code>theta</code> was not initialized, we can fix the issue and resume our workflow:</p>
+<div class="sourceCode" id="cb76"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb76-1"><a href="1.7-tips-and-tricks.html#cb76-1" aria-hidden="true" tabindex="-1"></a>survival<span class="sc">$</span>theta <span class="ot">&lt;-</span> <span class="fl">0.5</span> <span class="co"># assign initial value to theta</span></span>
+<span id="cb76-2"><a href="1.7-tips-and-tricks.html#cb76-2" aria-hidden="true" tabindex="-1"></a>survival<span class="sc">$</span><span class="fu">calculate</span>() </span>
+<span id="cb76-3"><a href="1.7-tips-and-tricks.html#cb76-3" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] -5.422</span></span>
+<span id="cb76-4"><a href="1.7-tips-and-tricks.html#cb76-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb76-5"><a href="1.7-tips-and-tricks.html#cb76-5" aria-hidden="true" tabindex="-1"></a>Csurvival <span class="ot">&lt;-</span> <span class="fu">compileNimble</span>(survival)</span>
+<span id="cb76-6"><a href="1.7-tips-and-tricks.html#cb76-6" aria-hidden="true" tabindex="-1"></a>survivalMCMC <span class="ot">&lt;-</span> <span class="fu">buildMCMC</span>(Csurvival)</span>
+<span id="cb76-7"><a href="1.7-tips-and-tricks.html#cb76-7" aria-hidden="true" tabindex="-1"></a><span class="do">## ===== Monitors =====</span></span>
+<span id="cb76-8"><a href="1.7-tips-and-tricks.html#cb76-8" aria-hidden="true" tabindex="-1"></a><span class="do">## thin = 1: theta</span></span>
+<span id="cb76-9"><a href="1.7-tips-and-tricks.html#cb76-9" aria-hidden="true" tabindex="-1"></a><span class="do">## ===== Samplers =====</span></span>
+<span id="cb76-10"><a href="1.7-tips-and-tricks.html#cb76-10" aria-hidden="true" tabindex="-1"></a><span class="do">## RW sampler (1)</span></span>
+<span id="cb76-11"><a href="1.7-tips-and-tricks.html#cb76-11" aria-hidden="true" tabindex="-1"></a><span class="do">##   - theta</span></span>
+<span id="cb76-12"><a href="1.7-tips-and-tricks.html#cb76-12" aria-hidden="true" tabindex="-1"></a>CsurvivalMCMC <span class="ot">&lt;-</span> <span class="fu">compileNimble</span>(survivalMCMC)</span>
+<span id="cb76-13"><a href="1.7-tips-and-tricks.html#cb76-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb76-14"><a href="1.7-tips-and-tricks.html#cb76-14" aria-hidden="true" tabindex="-1"></a>samples <span class="ot">&lt;-</span> <span class="fu">runMCMC</span>(<span class="at">mcmc =</span> CsurvivalMCMC, </span>
+<span id="cb76-15"><a href="1.7-tips-and-tricks.html#cb76-15" aria-hidden="true" tabindex="-1"></a>                   <span class="at">niter =</span> <span class="dv">5000</span>, </span>
+<span id="cb76-16"><a href="1.7-tips-and-tricks.html#cb76-16" aria-hidden="true" tabindex="-1"></a>                   <span class="at">nburnin =</span> <span class="dv">1000</span>)</span>
+<span id="cb76-17"><a href="1.7-tips-and-tricks.html#cb76-17" aria-hidden="true" tabindex="-1"></a><span class="do">## |-------------|-------------|-------------|-------------|</span></span>
+<span id="cb76-18"><a href="1.7-tips-and-tricks.html#cb76-18" aria-hidden="true" tabindex="-1"></a><span class="do">## |-------------------------------------------------------|</span></span>
+<span id="cb76-19"><a href="1.7-tips-and-tricks.html#cb76-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb76-20"><a href="1.7-tips-and-tricks.html#cb76-20" aria-hidden="true" tabindex="-1"></a><span class="fu">samplesSummary</span>(samples)</span>
+<span id="cb76-21"><a href="1.7-tips-and-tricks.html#cb76-21" aria-hidden="true" tabindex="-1"></a><span class="do">##         Mean Median St.Dev. 95%CI_low 95%CI_upp</span></span>
+<span id="cb76-22"><a href="1.7-tips-and-tricks.html#cb76-22" aria-hidden="true" tabindex="-1"></a><span class="do">## theta 0.3359 0.3335 0.06088    0.2191    0.4602</span></span></code></pre></div>
+</div>
+<div id="vectorization" class="section level3" number="1.7.8">
+<h3><span class="header-section-number">1.7.8</span> Vectorization</h3>
+<p>Vectorization is the process of replacing a loop by a vector so that instead of processing a single value at a time, you process a set of values at once. As an example, instead of writing:</p>
+<div class="sourceCode" id="cb77"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb77-1"><a href="1.7-tips-and-tricks.html#cb77-1" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>n){ </span>
+<span id="cb77-2"><a href="1.7-tips-and-tricks.html#cb77-2" aria-hidden="true" tabindex="-1"></a>  x[i] <span class="ot">&lt;-</span> mu <span class="sc">+</span> epsilon[i] </span>
+<span id="cb77-3"><a href="1.7-tips-and-tricks.html#cb77-3" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
+<p>you would write:</p>
+<div class="sourceCode" id="cb78"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb78-1"><a href="1.7-tips-and-tricks.html#cb78-1" aria-hidden="true" tabindex="-1"></a>x[<span class="dv">1</span><span class="sc">:</span>n] <span class="ot">&lt;-</span> mu <span class="sc">+</span> epsilon[<span class="dv">1</span><span class="sc">:</span>n]</span></code></pre></div>
+<p>Vectorization can make your code more efficient by manipulating one vector node <code>x[1:n]</code> instead of <code>n</code> nodes <code>x[1]</code>, …, <code>x[n]</code>. <strong>Think of an example in relation to animal survival? Illustrate with vectorized Bernoulli or <a href="https://github.com/nimble-dev/nimbleSCR/blob/master/nimbleSCR/R/dbinom_vector.R">vectorized Binomial</a>?</strong></p>
+</div>
+</div>
+<div class="footnotes">
+<hr />
+<ol start="7">
+<li id="fn7"><p><a href="https://github.com/kenkellner/jagsUI" class="uri">https://github.com/kenkellner/jagsUI</a><a href="1.7-tips-and-tricks.html#fnref7" class="footnote-back">↩︎</a></p></li>
+</ol>
+</div>
+<p style="text-align: center;">
+<a href="1.6-mcmc-samplers.html"><button class="btn btn-default">Previous</button></a>
+<a href="1.8-summary.html"><button class="btn btn-default">Next</button></a>
+</p>
+</div>
+</div>
+
+
+</div>
+
+<script>
+
+// add bootstrap table styles to pandoc tables
+$(document).ready(function () {
+  $('tr.header').parent('thead').parent('table').addClass('table table-condensed');
+});
+
+</script>
+
+</body>
+</html>

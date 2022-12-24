@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="" xml:lang="">
+<head>
+
+<meta charset="utf-8" />
+<meta name="generator" content="pandoc" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta property="og:title" content="1.6 MCMC samplers | Bayesian Analysis of Capture-Recapture Data with Hidden Markov Models" />
+<meta property="og:type" content="book" />
+
+<meta property="og:description" content="This is a textbook on the analysis of capture-recapture data with hidden Markov models (HMM) implemented in the Bayesian framework with R." />
+<meta name="github-repo" content="oliviergimenez/banana-book" />
+
+<meta name="author" content="Olivier Gimenez" />
+
+<meta name="date" content="2022-12-23" />
+
+
+<meta name="description" content="This is a textbook on the analysis of capture-recapture data with hidden Markov models (HMM) implemented in the Bayesian framework with R.">
+
+<title>1.6 MCMC samplers | Bayesian Analysis of Capture-Recapture Data with Hidden Markov Models</title>
+
+<script src="libs/jquery-3.6.0/jquery-3.6.0.min.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link href="libs/bootstrap-3.3.5/css/bootstrap.min.css" rel="stylesheet" />
+<script src="libs/bootstrap-3.3.5/js/bootstrap.min.js"></script>
+<script src="libs/bootstrap-3.3.5/shim/html5shiv.min.js"></script>
+<script src="libs/bootstrap-3.3.5/shim/respond.min.js"></script>
+<style>h1 {font-size: 34px;}
+       h1.title {font-size: 38px;}
+       h2 {font-size: 30px;}
+       h3 {font-size: 24px;}
+       h4 {font-size: 18px;}
+       h5 {font-size: 16px;}
+       h6 {font-size: 12px;}
+       code {color: inherit; background-color: rgba(0, 0, 0, 0.04);}
+       pre:not([class]) { background-color: white }</style>
+<script src="libs/navigation-1.1/tabsets.js"></script>
+
+
+<style type="text/css">code{white-space: pre;}</style>
+<style type="text/css">
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+    color: #aaaaaa;
+  }
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+code span.at { color: #7d9029; } /* Attribute */
+code span.bn { color: #40a070; } /* BaseN */
+code span.bu { color: #008000; } /* BuiltIn */
+code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+code span.ch { color: #4070a0; } /* Char */
+code span.cn { color: #880000; } /* Constant */
+code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+code span.dt { color: #902000; } /* DataType */
+code span.dv { color: #40a070; } /* DecVal */
+code span.er { color: #ff0000; font-weight: bold; } /* Error */
+code span.ex { } /* Extension */
+code span.fl { color: #40a070; } /* Float */
+code span.fu { color: #06287e; } /* Function */
+code span.im { color: #008000; font-weight: bold; } /* Import */
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+code span.op { color: #666666; } /* Operator */
+code span.ot { color: #007020; } /* Other */
+code span.pp { color: #bc7a00; } /* Preprocessor */
+code span.sc { color: #4070a0; } /* SpecialChar */
+code span.ss { color: #bb6688; } /* SpecialString */
+code span.st { color: #4070a0; } /* String */
+code span.va { color: #19177c; } /* Variable */
+code span.vs { color: #4070a0; } /* VerbatimString */
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+</style>
+<style type="text/css">
+  pre:not([class]) {
+    background-color: white;
+  }
+</style>
+
+
+<style type="text/css">
+/* Used with Pandoc 2.11+ new --citeproc when CSL is used */
+div.csl-bib-body { }
+div.csl-entry {
+  clear: both;
+}
+.hanging div.csl-entry {
+  margin-left:2em;
+  text-indent:-2em;
+}
+div.csl-left-margin {
+  min-width:2em;
+  float:left;
+}
+div.csl-right-inline {
+  margin-left:2em;
+  padding-left:1em;
+}
+div.csl-indent {
+  margin-left: 2em;
+}
+</style>
+
+<link rel="stylesheet" href="css/style.css" type="text/css" />
+<link rel="stylesheet" href="css/toc.css" type="text/css" />
+
+<style type = "text/css">
+.main-container {
+  max-width: 940px;
+  margin-left: auto;
+  margin-right: auto;
+}
+code {
+  color: inherit;
+  background-color: rgba(0, 0, 0, 0.04);
+}
+img {
+  max-width:100%;
+  height: auto;
+}
+/* show arrow before summary tag as in bootstrap
+TODO: remove if boostrap in updated in html_document (rmarkdown#1485) */
+details > summary {
+  display: list-item;
+  cursor: pointer;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container-fluid main-container">
+
+
+<div class="row">
+<div class="col-sm-12">
+<div id="TOC">
+<ul>
+<li class="has-sub"><a href="index.html#welcome" id="toc-welcome">Welcome</a>
+<ul>
+<li><a href="license.html#license" id="toc-license">License</a></li>
+</ul></li>
+<li class="has-sub"><a href="preface.html#preface" id="toc-preface">Preface</a>
+<ul>
+<li><a href="why-this-book.html#why-this-book" id="toc-why-this-book">Why this book?</a></li>
+<li><a href="who-should-read-this-book.html#who-should-read-this-book" id="toc-who-should-read-this-book">Who should read this book?</a></li>
+<li><a href="what-will-you-learn.html#what-will-you-learn" id="toc-what-will-you-learn">What will you learn?</a></li>
+<li><a href="what-wont-you-learn.html#what-wont-you-learn" id="toc-what-wont-you-learn">What won’t you learn?</a></li>
+<li><a href="prerequisites.html#prerequisites" id="toc-prerequisites">Prerequisites</a></li>
+<li><a href="acknowledgements.html#acknowledgements" id="toc-acknowledgements">Acknowledgements</a></li>
+<li><a href="how-this-book-was-written.html#how-this-book-was-written" id="toc-how-this-book-was-written">How this book was written</a></li>
+</ul></li>
+<li><a href="about-the-author.html#about-the-author" id="toc-about-the-author">About the author</a></li>
+<li class="part"><span><b>I I. Fundations</b></span></li>
+<li><a href="introduction.html#introduction" id="toc-introduction">Introduction</a></li>
+<li class="has-sub"><a href="1-intronimble.html#intronimble" id="toc-intronimble"><span class="toc-section-number">1</span> NIMBLE tutorial</a>
+<ul>
+<li><a href="1.1-introduction-1.html#introduction-1" id="toc-introduction-1"><span class="toc-section-number">1.1</span> Introduction</a></li>
+<li><a href="1.2-what-is-nimble.html#what-is-nimble" id="toc-what-is-nimble"><span class="toc-section-number">1.2</span> What is NIMBLE?</a></li>
+<li><a href="1.3-start-nimble.html#start-nimble" id="toc-start-nimble"><span class="toc-section-number">1.3</span> Getting started</a></li>
+<li class="has-sub"><a href="1.4-functions-in-nimble.html#functions-in-nimble" id="toc-functions-in-nimble"><span class="toc-section-number">1.4</span> Programming</a>
+<ul>
+<li><a href="1.4-functions-in-nimble.html#nimble-functions" id="toc-nimble-functions"><span class="toc-section-number">1.4.1</span> NIMBLE functions</a></li>
+<li><a href="1.4-functions-in-nimble.html#callrfninnimble" id="toc-callrfninnimble"><span class="toc-section-number">1.4.2</span> Calling R/C++ functions</a></li>
+<li><a href="1.4-functions-in-nimble.html#user-defined-distributions" id="toc-user-defined-distributions"><span class="toc-section-number">1.4.3</span> User-defined distributions</a></li>
+</ul></li>
+<li><a href="1.5-under-the-hood.html#under-the-hood" id="toc-under-the-hood"><span class="toc-section-number">1.5</span> Under the hood</a></li>
+<li class="has-sub"><a href="1.6-mcmc-samplers.html#mcmc-samplers" id="toc-mcmc-samplers"><span class="toc-section-number">1.6</span> MCMC samplers</a>
+<ul>
+<li><a href="1.6-mcmc-samplers.html#change-sampler" id="toc-change-sampler"><span class="toc-section-number">1.6.1</span> Default samplers</a></li>
+<li><a href="1.6-mcmc-samplers.html#user-defined-samplers" id="toc-user-defined-samplers"><span class="toc-section-number">1.6.2</span> User-defined samplers</a></li>
+</ul></li>
+<li class="has-sub"><a href="1.7-tips-and-tricks.html#tips-and-tricks" id="toc-tips-and-tricks"><span class="toc-section-number">1.7</span> Tips and tricks</a>
+<ul>
+<li><a href="1.7-tips-and-tricks.html#precision-vs-standard-deviation" id="toc-precision-vs-standard-deviation"><span class="toc-section-number">1.7.1</span> Precision vs standard deviation</a></li>
+<li><a href="1.7-tips-and-tricks.html#indexing" id="toc-indexing"><span class="toc-section-number">1.7.2</span> Indexing</a></li>
+<li><a href="1.7-tips-and-tricks.html#faster-compilation" id="toc-faster-compilation"><span class="toc-section-number">1.7.3</span> Faster compilation</a></li>
+<li><a href="1.7-tips-and-tricks.html#updating-mcmc-chains" id="toc-updating-mcmc-chains"><span class="toc-section-number">1.7.4</span> Updating MCMC chains</a></li>
+<li><a href="1.7-tips-and-tricks.html#reproducibility" id="toc-reproducibility"><span class="toc-section-number">1.7.5</span> Reproducibility</a></li>
+<li><a href="1.7-tips-and-tricks.html#parallelization" id="toc-parallelization"><span class="toc-section-number">1.7.6</span> Parallelization</a></li>
+<li><a href="1.7-tips-and-tricks.html#incomplete-initialization" id="toc-incomplete-initialization"><span class="toc-section-number">1.7.7</span> Incomplete initialization</a></li>
+<li><a href="1.7-tips-and-tricks.html#vectorization" id="toc-vectorization"><span class="toc-section-number">1.7.8</span> Vectorization</a></li>
+</ul></li>
+<li><a href="1.8-summary.html#summary" id="toc-summary"><span class="toc-section-number">1.8</span> Summary</a></li>
+<li><a href="1.9-suggested-reading.html#suggested-reading" id="toc-suggested-reading"><span class="toc-section-number">1.9</span> Suggested reading</a></li>
+</ul></li>
+<li><a href="faq.html#faq" id="toc-faq">FAQ</a></li>
+<li><a href="references.html#references" id="toc-references">References</a></li>
+</ul>
+</div>
+</div>
+</div>
+<div class="row">
+<div class="col-sm-12">
+<div id="mcmc-samplers" class="section level2" number="1.6">
+<h2><span class="header-section-number">1.6</span> MCMC samplers</h2>
+<div id="change-sampler" class="section level3" number="1.6.1">
+<h3><span class="header-section-number">1.6.1</span> Default samplers</h3>
+<p>What is the default sampler used by NIMBLE in our example? You can answer this question by inspecting the MCMC configuration obtained with <code>configureMCMC()</code>:</p>
+<div class="sourceCode" id="cb55"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb55-1"><a href="1.6-mcmc-samplers.html#cb55-1" aria-hidden="true" tabindex="-1"></a><span class="co">#survivalConf &lt;- configureMCMC(survival)</span></span>
+<span id="cb55-2"><a href="1.6-mcmc-samplers.html#cb55-2" aria-hidden="true" tabindex="-1"></a>survivalConf<span class="sc">$</span><span class="fu">printSamplers</span>()</span>
+<span id="cb55-3"><a href="1.6-mcmc-samplers.html#cb55-3" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] RW sampler: theta</span></span></code></pre></div>
+<p>Now that we have control on the MCMC configuration, let’s mess it up. We start by removing the default sampler:</p>
+<div class="sourceCode" id="cb56"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb56-1"><a href="1.6-mcmc-samplers.html#cb56-1" aria-hidden="true" tabindex="-1"></a>survivalConf<span class="sc">$</span><span class="fu">removeSamplers</span>(<span class="fu">c</span>(<span class="st">&#39;theta&#39;</span>))</span>
+<span id="cb56-2"><a href="1.6-mcmc-samplers.html#cb56-2" aria-hidden="true" tabindex="-1"></a>survivalConf<span class="sc">$</span><span class="fu">printSamplers</span>()</span></code></pre></div>
+<p>And we change it for a slice sampler:</p>
+<div class="sourceCode" id="cb57"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb57-1"><a href="1.6-mcmc-samplers.html#cb57-1" aria-hidden="true" tabindex="-1"></a>survivalConf<span class="sc">$</span><span class="fu">addSampler</span>(<span class="at">target =</span> <span class="fu">c</span>(<span class="st">&#39;theta&#39;</span>),</span>
+<span id="cb57-2"><a href="1.6-mcmc-samplers.html#cb57-2" aria-hidden="true" tabindex="-1"></a>                        <span class="at">type =</span> <span class="st">&#39;slice&#39;</span>)</span>
+<span id="cb57-3"><a href="1.6-mcmc-samplers.html#cb57-3" aria-hidden="true" tabindex="-1"></a>survivalConf<span class="sc">$</span><span class="fu">printSamplers</span>()</span>
+<span id="cb57-4"><a href="1.6-mcmc-samplers.html#cb57-4" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] slice sampler: theta</span></span></code></pre></div>
+<p>Now you can resume the workflow:</p>
+<div class="sourceCode" id="cb58"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb58-1"><a href="1.6-mcmc-samplers.html#cb58-1" aria-hidden="true" tabindex="-1"></a><span class="co"># create a new MCMC function and compile it:</span></span>
+<span id="cb58-2"><a href="1.6-mcmc-samplers.html#cb58-2" aria-hidden="true" tabindex="-1"></a>survivalMCMC2 <span class="ot">&lt;-</span> <span class="fu">buildMCMC</span>(survivalConf)</span>
+<span id="cb58-3"><a href="1.6-mcmc-samplers.html#cb58-3" aria-hidden="true" tabindex="-1"></a>CsurvivalMCMC2 <span class="ot">&lt;-</span> <span class="fu">compileNimble</span>(survivalMCMC2, </span>
+<span id="cb58-4"><a href="1.6-mcmc-samplers.html#cb58-4" aria-hidden="true" tabindex="-1"></a>                                <span class="at">project =</span> survival,</span>
+<span id="cb58-5"><a href="1.6-mcmc-samplers.html#cb58-5" aria-hidden="true" tabindex="-1"></a>                                <span class="at">resetFunctions =</span> <span class="cn">TRUE</span>) <span class="co"># to compile new functions </span></span>
+<span id="cb58-6"><a href="1.6-mcmc-samplers.html#cb58-6" aria-hidden="true" tabindex="-1"></a>                                                       <span class="co"># into existing project, </span></span>
+<span id="cb58-7"><a href="1.6-mcmc-samplers.html#cb58-7" aria-hidden="true" tabindex="-1"></a>                                                       <span class="co"># need to reset nimbleFunctions</span></span>
+<span id="cb58-8"><a href="1.6-mcmc-samplers.html#cb58-8" aria-hidden="true" tabindex="-1"></a><span class="co"># run NIMBLE:</span></span>
+<span id="cb58-9"><a href="1.6-mcmc-samplers.html#cb58-9" aria-hidden="true" tabindex="-1"></a>samples2 <span class="ot">&lt;-</span> <span class="fu">runMCMC</span>(<span class="at">mcmc =</span> CsurvivalMCMC2, </span>
+<span id="cb58-10"><a href="1.6-mcmc-samplers.html#cb58-10" aria-hidden="true" tabindex="-1"></a>                    <span class="at">niter =</span> n.iter,</span>
+<span id="cb58-11"><a href="1.6-mcmc-samplers.html#cb58-11" aria-hidden="true" tabindex="-1"></a>                    <span class="at">nburnin =</span> n.burnin)</span>
+<span id="cb58-12"><a href="1.6-mcmc-samplers.html#cb58-12" aria-hidden="true" tabindex="-1"></a><span class="do">## |-------------|-------------|-------------|-------------|</span></span>
+<span id="cb58-13"><a href="1.6-mcmc-samplers.html#cb58-13" aria-hidden="true" tabindex="-1"></a><span class="do">## |-------------------------------------------------------|</span></span>
+<span id="cb58-14"><a href="1.6-mcmc-samplers.html#cb58-14" aria-hidden="true" tabindex="-1"></a><span class="co"># obtain numerical summaries:</span></span>
+<span id="cb58-15"><a href="1.6-mcmc-samplers.html#cb58-15" aria-hidden="true" tabindex="-1"></a><span class="fu">samplesSummary</span>(samples2)</span>
+<span id="cb58-16"><a href="1.6-mcmc-samplers.html#cb58-16" aria-hidden="true" tabindex="-1"></a><span class="do">##            Mean Median St.Dev. 95%CI_low 95%CI_upp</span></span>
+<span id="cb58-17"><a href="1.6-mcmc-samplers.html#cb58-17" aria-hidden="true" tabindex="-1"></a><span class="do">## lifespan 0.9391 0.9219 0.16464    0.6625    1.3076</span></span>
+<span id="cb58-18"><a href="1.6-mcmc-samplers.html#cb58-18" aria-hidden="true" tabindex="-1"></a><span class="do">## theta    0.3398 0.3380 0.06196    0.2211    0.4654</span></span></code></pre></div>
+<p>NIMBLE implements many samplers, and a list is available with <code>?samplers</code>. For example, high correlation in (regression) parameters can make independent samplers inefficient. In that situation, block sampling might help which consists in proposing candidate values from a multivariate distribution that acknowledges correlation between parameters. <strong>Say something on how default samplers are chosen by NIMBLE?</strong></p>
+</div>
+<div id="user-defined-samplers" class="section level3" number="1.6.2">
+<h3><span class="header-section-number">1.6.2</span> User-defined samplers</h3>
+<p>Allowing you to code your own sampler is another topic on which NIMBLE thrives. As an example, we focus on the Metropolis algorithm of Section <a href="#metropolis-algorithm"><strong>??</strong></a> which we coded in R. In this section, we make it a <code>nimbleFunction</code> so that we can use it within our model:</p>
+<div class="sourceCode" id="cb59"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb59-1"><a href="1.6-mcmc-samplers.html#cb59-1" aria-hidden="true" tabindex="-1"></a>my_metropolis <span class="ot">&lt;-</span> <span class="fu">nimbleFunction</span>(</span>
+<span id="cb59-2"><a href="1.6-mcmc-samplers.html#cb59-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">name =</span> <span class="st">&#39;my_metropolis&#39;</span>, <span class="co"># fancy name for our MCMC sampler</span></span>
+<span id="cb59-3"><a href="1.6-mcmc-samplers.html#cb59-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">contains =</span> sampler_BASE,</span>
+<span id="cb59-4"><a href="1.6-mcmc-samplers.html#cb59-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">setup =</span> <span class="cf">function</span>(model, mvSaved, target, control) {</span>
+<span id="cb59-5"><a href="1.6-mcmc-samplers.html#cb59-5" aria-hidden="true" tabindex="-1"></a>    <span class="co"># i) get dependencies for &#39;target&#39; in &#39;model&#39;</span></span>
+<span id="cb59-6"><a href="1.6-mcmc-samplers.html#cb59-6" aria-hidden="true" tabindex="-1"></a>    calcNodes <span class="ot">&lt;-</span> model<span class="sc">$</span><span class="fu">getDependencies</span>(target) </span>
+<span id="cb59-7"><a href="1.6-mcmc-samplers.html#cb59-7" aria-hidden="true" tabindex="-1"></a>    <span class="co"># ii) get sd of proposal distribution</span></span>
+<span id="cb59-8"><a href="1.6-mcmc-samplers.html#cb59-8" aria-hidden="true" tabindex="-1"></a>    scale <span class="ot">&lt;-</span> control<span class="sc">$</span>scale </span>
+<span id="cb59-9"><a href="1.6-mcmc-samplers.html#cb59-9" aria-hidden="true" tabindex="-1"></a>  },</span>
+<span id="cb59-10"><a href="1.6-mcmc-samplers.html#cb59-10" aria-hidden="true" tabindex="-1"></a>  <span class="at">run =</span> <span class="cf">function</span>() {</span>
+<span id="cb59-11"><a href="1.6-mcmc-samplers.html#cb59-11" aria-hidden="true" tabindex="-1"></a>    <span class="co"># (1) log-lik at current value</span></span>
+<span id="cb59-12"><a href="1.6-mcmc-samplers.html#cb59-12" aria-hidden="true" tabindex="-1"></a>    initialLP <span class="ot">&lt;-</span> model<span class="sc">$</span><span class="fu">getLogProb</span>(calcNodes) </span>
+<span id="cb59-13"><a href="1.6-mcmc-samplers.html#cb59-13" aria-hidden="true" tabindex="-1"></a>    <span class="co"># (2) current parameter value</span></span>
+<span id="cb59-14"><a href="1.6-mcmc-samplers.html#cb59-14" aria-hidden="true" tabindex="-1"></a>    current <span class="ot">&lt;-</span> model[[target]] </span>
+<span id="cb59-15"><a href="1.6-mcmc-samplers.html#cb59-15" aria-hidden="true" tabindex="-1"></a>    <span class="co"># (3) logit transform</span></span>
+<span id="cb59-16"><a href="1.6-mcmc-samplers.html#cb59-16" aria-hidden="true" tabindex="-1"></a>    lcurrent <span class="ot">&lt;-</span> <span class="fu">log</span>(current <span class="sc">/</span> (<span class="dv">1</span> <span class="sc">-</span> current))</span>
+<span id="cb59-17"><a href="1.6-mcmc-samplers.html#cb59-17" aria-hidden="true" tabindex="-1"></a>    <span class="co"># (4) propose candidate value</span></span>
+<span id="cb59-18"><a href="1.6-mcmc-samplers.html#cb59-18" aria-hidden="true" tabindex="-1"></a>    lproposal <span class="ot">&lt;-</span> lcurrent  <span class="sc">+</span> <span class="fu">rnorm</span>(<span class="dv">1</span>, <span class="at">mean =</span> <span class="dv">0</span>, scale) </span>
+<span id="cb59-19"><a href="1.6-mcmc-samplers.html#cb59-19" aria-hidden="true" tabindex="-1"></a>    <span class="co"># (5) back-transform</span></span>
+<span id="cb59-20"><a href="1.6-mcmc-samplers.html#cb59-20" aria-hidden="true" tabindex="-1"></a>    proposal <span class="ot">&lt;-</span> <span class="fu">plogis</span>(lproposal)</span>
+<span id="cb59-21"><a href="1.6-mcmc-samplers.html#cb59-21" aria-hidden="true" tabindex="-1"></a>    <span class="co"># (6) plug candidate value in model </span></span>
+<span id="cb59-22"><a href="1.6-mcmc-samplers.html#cb59-22" aria-hidden="true" tabindex="-1"></a>    model[[target]] <span class="ot">&lt;&lt;-</span> proposal </span>
+<span id="cb59-23"><a href="1.6-mcmc-samplers.html#cb59-23" aria-hidden="true" tabindex="-1"></a>    <span class="co"># (7) log-lik at candidate value</span></span>
+<span id="cb59-24"><a href="1.6-mcmc-samplers.html#cb59-24" aria-hidden="true" tabindex="-1"></a>    proposalLP <span class="ot">&lt;-</span> model<span class="sc">$</span><span class="fu">calculate</span>(calcNodes)</span>
+<span id="cb59-25"><a href="1.6-mcmc-samplers.html#cb59-25" aria-hidden="true" tabindex="-1"></a>    <span class="co"># (8) compute lik ratio on log scale</span></span>
+<span id="cb59-26"><a href="1.6-mcmc-samplers.html#cb59-26" aria-hidden="true" tabindex="-1"></a>    lMHR <span class="ot">&lt;-</span> proposalLP <span class="sc">-</span> initialLP </span>
+<span id="cb59-27"><a href="1.6-mcmc-samplers.html#cb59-27" aria-hidden="true" tabindex="-1"></a>    <span class="co"># (9) spin continuous spinner and compare to ratio</span></span>
+<span id="cb59-28"><a href="1.6-mcmc-samplers.html#cb59-28" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span>(<span class="fu">runif</span>(<span class="dv">1</span>,<span class="dv">0</span>,<span class="dv">1</span>) <span class="sc">&lt;</span> <span class="fu">exp</span>(lMHR)) { </span>
+<span id="cb59-29"><a href="1.6-mcmc-samplers.html#cb59-29" aria-hidden="true" tabindex="-1"></a>      <span class="co"># (10) if candidate value is accepted, update current value</span></span>
+<span id="cb59-30"><a href="1.6-mcmc-samplers.html#cb59-30" aria-hidden="true" tabindex="-1"></a>      <span class="fu">copy</span>(<span class="at">from =</span> model, <span class="at">to =</span> mvSaved, <span class="at">nodes =</span> calcNodes, <span class="at">logProb =</span> <span class="cn">TRUE</span>, <span class="at">row =</span> <span class="dv">1</span>)</span>
+<span id="cb59-31"><a href="1.6-mcmc-samplers.html#cb59-31" aria-hidden="true" tabindex="-1"></a>    } <span class="cf">else</span> {</span>
+<span id="cb59-32"><a href="1.6-mcmc-samplers.html#cb59-32" aria-hidden="true" tabindex="-1"></a>      <span class="do">## (11) if candidate value is accepted, keep current value</span></span>
+<span id="cb59-33"><a href="1.6-mcmc-samplers.html#cb59-33" aria-hidden="true" tabindex="-1"></a>      <span class="fu">copy</span>(<span class="at">from =</span> mvSaved, <span class="at">to =</span> model, <span class="at">nodes =</span> calcNodes, <span class="at">logProb =</span> <span class="cn">TRUE</span>, <span class="at">row =</span> <span class="dv">1</span>)</span>
+<span id="cb59-34"><a href="1.6-mcmc-samplers.html#cb59-34" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb59-35"><a href="1.6-mcmc-samplers.html#cb59-35" aria-hidden="true" tabindex="-1"></a>  },</span>
+<span id="cb59-36"><a href="1.6-mcmc-samplers.html#cb59-36" aria-hidden="true" tabindex="-1"></a>  <span class="at">methods =</span> <span class="fu">list</span>(</span>
+<span id="cb59-37"><a href="1.6-mcmc-samplers.html#cb59-37" aria-hidden="true" tabindex="-1"></a>    <span class="at">reset =</span> <span class="cf">function</span>() {}</span>
+<span id="cb59-38"><a href="1.6-mcmc-samplers.html#cb59-38" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb59-39"><a href="1.6-mcmc-samplers.html#cb59-39" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div>
+<p>Compared to <code>nimbleFunctions</code> we wrote earlier, <code>my_metropolis()</code> contains a <code>setup</code> function which i) gets the dependencies of the parameter to update in the <code>run</code> function with Metropolis, the target node, that would be <code>theta</code> in our example and ii) extracts control parameters, that would be <code>scale</code> the standard deviation of the proposal distribution in our example. Then the <code>run</code> function implements the steps of the Metropolis algorithm: (1) get the log-likelihood function evaluated at the current value, (2) get the current value, (3) apply the logit transform to it, (4) propose a candidate value by perturbing the current value with some normal noise controled by the standard deviation <code>scale</code>, (5) back-transform the candidate value and (6) plug it in the model, (7) calculate the log-likelihood function at the candidate value, (8) compute the Metropolis ratio on the log scale, (9) compare output of a spinner and the Metropolis ratio to decide whether to (10) accept the candidate value and copy from the model to <code>mvSaved</code> or (11) reject it and keep the current value by copying from <code>mvSaved</code> to the model. Because this <code>nimbleFunction</code> is to be used as a MCMC sampler, several constraints need to be respected like having a <code>contains = sampler_BASE</code> statement or using the four arguments <code>model</code>, <code>mvSaved</code>, <code>target</code> and <code>control</code> in the <code>setup</code> function. Of course, NIMBLE implements a more advanced and efficient version of the Metropolis algorithm, you can look into it at <a href="https://github.com/cran/nimble/blob/master/R/MCMC_samplers.R#L184" class="uri">https://github.com/cran/nimble/blob/master/R/MCMC_samplers.R#L184</a>.</p>
+<p>Now that we have our user-defined MCMC algorithm, we can change the default sampler for our new sampler as in Section <a href="1.6-mcmc-samplers.html#change-sampler">1.6.1</a>. We start from scratch:</p>
+<div class="sourceCode" id="cb60"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb60-1"><a href="1.6-mcmc-samplers.html#cb60-1" aria-hidden="true" tabindex="-1"></a>model <span class="ot">&lt;-</span> <span class="fu">nimbleCode</span>({</span>
+<span id="cb60-2"><a href="1.6-mcmc-samplers.html#cb60-2" aria-hidden="true" tabindex="-1"></a>  <span class="co"># likelihood</span></span>
+<span id="cb60-3"><a href="1.6-mcmc-samplers.html#cb60-3" aria-hidden="true" tabindex="-1"></a>  survived <span class="sc">~</span> <span class="fu">dbinom</span>(theta, released)</span>
+<span id="cb60-4"><a href="1.6-mcmc-samplers.html#cb60-4" aria-hidden="true" tabindex="-1"></a>  <span class="co"># prior</span></span>
+<span id="cb60-5"><a href="1.6-mcmc-samplers.html#cb60-5" aria-hidden="true" tabindex="-1"></a>  theta <span class="sc">~</span> <span class="fu">dunif</span>(<span class="dv">0</span>, <span class="dv">1</span>)</span>
+<span id="cb60-6"><a href="1.6-mcmc-samplers.html#cb60-6" aria-hidden="true" tabindex="-1"></a>})</span>
+<span id="cb60-7"><a href="1.6-mcmc-samplers.html#cb60-7" aria-hidden="true" tabindex="-1"></a>my.data <span class="ot">&lt;-</span> <span class="fu">list</span>(<span class="at">survived =</span> <span class="dv">19</span>, <span class="at">released =</span> <span class="dv">57</span>)</span>
+<span id="cb60-8"><a href="1.6-mcmc-samplers.html#cb60-8" aria-hidden="true" tabindex="-1"></a>initial.values <span class="ot">&lt;-</span> <span class="cf">function</span>() <span class="fu">list</span>(<span class="at">theta =</span> <span class="fu">runif</span>(<span class="dv">1</span>,<span class="dv">0</span>,<span class="dv">1</span>))</span>
+<span id="cb60-9"><a href="1.6-mcmc-samplers.html#cb60-9" aria-hidden="true" tabindex="-1"></a>survival <span class="ot">&lt;-</span> <span class="fu">nimbleModel</span>(<span class="at">code =</span> model, </span>
+<span id="cb60-10"><a href="1.6-mcmc-samplers.html#cb60-10" aria-hidden="true" tabindex="-1"></a>                        <span class="at">data =</span> my.data, </span>
+<span id="cb60-11"><a href="1.6-mcmc-samplers.html#cb60-11" aria-hidden="true" tabindex="-1"></a>                        <span class="at">inits =</span> <span class="fu">initial.values</span>())</span>
+<span id="cb60-12"><a href="1.6-mcmc-samplers.html#cb60-12" aria-hidden="true" tabindex="-1"></a>Csurvival <span class="ot">&lt;-</span> <span class="fu">compileNimble</span>(survival)</span>
+<span id="cb60-13"><a href="1.6-mcmc-samplers.html#cb60-13" aria-hidden="true" tabindex="-1"></a>survivalConf <span class="ot">&lt;-</span> <span class="fu">configureMCMC</span>(survival)</span>
+<span id="cb60-14"><a href="1.6-mcmc-samplers.html#cb60-14" aria-hidden="true" tabindex="-1"></a><span class="do">## ===== Monitors =====</span></span>
+<span id="cb60-15"><a href="1.6-mcmc-samplers.html#cb60-15" aria-hidden="true" tabindex="-1"></a><span class="do">## thin = 1: theta</span></span>
+<span id="cb60-16"><a href="1.6-mcmc-samplers.html#cb60-16" aria-hidden="true" tabindex="-1"></a><span class="do">## ===== Samplers =====</span></span>
+<span id="cb60-17"><a href="1.6-mcmc-samplers.html#cb60-17" aria-hidden="true" tabindex="-1"></a><span class="do">## RW sampler (1)</span></span>
+<span id="cb60-18"><a href="1.6-mcmc-samplers.html#cb60-18" aria-hidden="true" tabindex="-1"></a><span class="do">##   - theta</span></span></code></pre></div>
+<p>We print the samplers used by default, remove the default sampler for <code>theta</code>, replace it with our <code>my_metropolis()</code> sampler with the standard deviation of the proposal distribution set to 0.1, and print again to make sure NIMBLE now uses our new sampler:</p>
+<div class="sourceCode" id="cb61"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb61-1"><a href="1.6-mcmc-samplers.html#cb61-1" aria-hidden="true" tabindex="-1"></a>survivalConf<span class="sc">$</span><span class="fu">printSamplers</span>()</span>
+<span id="cb61-2"><a href="1.6-mcmc-samplers.html#cb61-2" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] RW sampler: theta</span></span>
+<span id="cb61-3"><a href="1.6-mcmc-samplers.html#cb61-3" aria-hidden="true" tabindex="-1"></a>survivalConf<span class="sc">$</span><span class="fu">removeSamplers</span>(<span class="fu">c</span>(<span class="st">&#39;theta&#39;</span>))</span>
+<span id="cb61-4"><a href="1.6-mcmc-samplers.html#cb61-4" aria-hidden="true" tabindex="-1"></a>survivalConf<span class="sc">$</span><span class="fu">addSampler</span>(<span class="at">target =</span> <span class="st">&#39;theta&#39;</span>, </span>
+<span id="cb61-5"><a href="1.6-mcmc-samplers.html#cb61-5" aria-hidden="true" tabindex="-1"></a>                        <span class="at">type =</span> <span class="st">&#39;my_metropolis&#39;</span>, </span>
+<span id="cb61-6"><a href="1.6-mcmc-samplers.html#cb61-6" aria-hidden="true" tabindex="-1"></a>                        <span class="at">control =</span> <span class="fu">list</span>(<span class="at">scale =</span> <span class="fl">0.1</span>)) <span class="co"># standard deviation</span></span>
+<span id="cb61-7"><a href="1.6-mcmc-samplers.html#cb61-7" aria-hidden="true" tabindex="-1"></a>                                                     <span class="co"># of proposal distribution</span></span>
+<span id="cb61-8"><a href="1.6-mcmc-samplers.html#cb61-8" aria-hidden="true" tabindex="-1"></a>survivalConf<span class="sc">$</span><span class="fu">printSamplers</span>()</span>
+<span id="cb61-9"><a href="1.6-mcmc-samplers.html#cb61-9" aria-hidden="true" tabindex="-1"></a><span class="do">## [1] my_metropolis sampler: theta,  scale: 0.10000000000000001</span></span></code></pre></div>
+<p>The rest of the workflow is unchanged:</p>
+<div class="sourceCode" id="cb62"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb62-1"><a href="1.6-mcmc-samplers.html#cb62-1" aria-hidden="true" tabindex="-1"></a>survivalMCMC <span class="ot">&lt;-</span> <span class="fu">buildMCMC</span>(survivalConf)</span>
+<span id="cb62-2"><a href="1.6-mcmc-samplers.html#cb62-2" aria-hidden="true" tabindex="-1"></a>CsurvivalMCMC <span class="ot">&lt;-</span> <span class="fu">compileNimble</span>(survivalMCMC, </span>
+<span id="cb62-3"><a href="1.6-mcmc-samplers.html#cb62-3" aria-hidden="true" tabindex="-1"></a>                               <span class="at">project =</span> survival)</span>
+<span id="cb62-4"><a href="1.6-mcmc-samplers.html#cb62-4" aria-hidden="true" tabindex="-1"></a>samples <span class="ot">&lt;-</span> <span class="fu">runMCMC</span>(<span class="at">mcmc =</span> CsurvivalMCMC, </span>
+<span id="cb62-5"><a href="1.6-mcmc-samplers.html#cb62-5" aria-hidden="true" tabindex="-1"></a>                   <span class="at">niter =</span> <span class="dv">5000</span>, </span>
+<span id="cb62-6"><a href="1.6-mcmc-samplers.html#cb62-6" aria-hidden="true" tabindex="-1"></a>                   <span class="at">nburnin =</span> <span class="dv">1000</span>)</span>
+<span id="cb62-7"><a href="1.6-mcmc-samplers.html#cb62-7" aria-hidden="true" tabindex="-1"></a><span class="do">## |-------------|-------------|-------------|-------------|</span></span>
+<span id="cb62-8"><a href="1.6-mcmc-samplers.html#cb62-8" aria-hidden="true" tabindex="-1"></a><span class="do">## |-------------------------------------------------------|</span></span>
+<span id="cb62-9"><a href="1.6-mcmc-samplers.html#cb62-9" aria-hidden="true" tabindex="-1"></a><span class="fu">samplesSummary</span>(samples)</span>
+<span id="cb62-10"><a href="1.6-mcmc-samplers.html#cb62-10" aria-hidden="true" tabindex="-1"></a><span class="do">##         Mean Median St.Dev. 95%CI_low 95%CI_upp</span></span>
+<span id="cb62-11"><a href="1.6-mcmc-samplers.html#cb62-11" aria-hidden="true" tabindex="-1"></a><span class="do">## theta 0.3459 0.3453 0.05624    0.2436    0.4594</span></span></code></pre></div>
+You can re-run the analysis by setting the standard deviation of the proposal to different values, say 1 and 10, and compare Figure <a href="1.6-mcmc-samplers.html#fig:traceown">1.3</a> to traceplots we obtained with our R implementation of the Metropolis algorithm in the previous chapter at Figure <a href="#fig:tracechainlength"><strong>??</strong></a>:
+<div class="figure" style="text-align: center"><span style="display:block;" id="fig:traceown"></span>
+<img src="banana-book_files/figure-html/traceown-1.png" alt="Trace plots for different values of the standard deviation (scale) of the proposal distribution." width="100%" />
+<p class="caption">
+Figure 1.3: Trace plots for different values of the standard deviation (scale) of the proposal distribution.
+</p>
+</div>
+</div>
+</div>
+<p style="text-align: center;">
+<a href="1.5-under-the-hood.html"><button class="btn btn-default">Previous</button></a>
+<a href="1.7-tips-and-tricks.html"><button class="btn btn-default">Next</button></a>
+</p>
+</div>
+</div>
+
+
+</div>
+
+<script>
+
+// add bootstrap table styles to pandoc tables
+$(document).ready(function () {
+  $('tr.header').parent('thead').parent('table').addClass('table table-condensed');
+});
+
+</script>
+
+</body>
+</html>
