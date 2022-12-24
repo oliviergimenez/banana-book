@@ -14,3 +14,4 @@ People who sent feedback:
 -   Matthew Silk \@mattjsilk
 -   Chloé Nater \@ChloeRN
 -   Joseph Hightower \@jhncsu
+-   Maud Quéroué \@MaudQueroue
