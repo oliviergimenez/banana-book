@@ -1,91 +1,91 @@
 # Model selection and validation {#model-selection}
 
-<!-- WAIC. RJMCMC for covariate selection, Lasso via Laplace prior. Papers by Conn, Hooten, etc sur model selection -->
+WAIC. RJMCMC for covariate selection, Lasso via Laplace prior. Papers by Conn, Hooten, etc sur model selection
 
-<!-- Ajouter section sur GOF avec R2ucare, derniers travaux de la thésarde de Roger Anita Jeyam. Posterior predictive checks.  -->
+Ajouter section sur GOF avec R2ucare, derniers travaux de la thésarde de Roger Anita Jeyam. Posterior predictive checks.
 
-<!-- Ajouter trap-dependence à la Pradel et Sanz quelque part. Et memory model.  -->
+Ajouter trap-dependence à la Pradel et Sanz quelque part. Et memory model.
 
-<!-- ## How to select a best model? Model selection -->
+## How to select a best model? Model selection
 
-<!-- + Which of the four models above is best supported by the data? -->
++ Which of the four models above is best supported by the data?
 
-<!-- + The proportion of explained variance $R^2$ is problematic, because the more variables you have, the bigger $R^2$ is. -->
++ The proportion of explained variance $R^2$ is problematic, because the more variables you have, the bigger $R^2$ is.
 
-<!-- + The idea is to penalize models with too many parameters. -->
++ The idea is to penalize models with too many parameters.
 
-<!-- ## Akaike information criterion (AIC) -->
+## Akaike information criterion (AIC)
 
-<!-- $$AIC = - 2 \log(L(\hat{\theta}_1,\ldots,\hat{\theta}_K)) + 2 K$$ -->
+$$AIC = - 2 \log(L(\hat{\theta}_1,\ldots,\hat{\theta}_K)) + 2 K$$
 
-<!-- with $L$ the likelihood and $K$ the number of parameters $\theta_i$. -->
+with $L$ the likelihood and $K$ the number of parameters $\theta_i$.
 
-<!-- $$\text{AIC} = {\color{purple}{- 2 \log(L(\hat{\theta}_1,\ldots,\hat{\theta}_K))}} + 2 K$$ -->
+$$\text{AIC} = {\color{purple}{- 2 \log(L(\hat{\theta}_1,\ldots,\hat{\theta}_K))}} + 2 K$$
 
-<!-- <span style="color: purple;">A measure of goodness-of-fit of the model to the data</span>: the more parameters you have, the smaller the deviance is (or the bigger the likelihood is). -->
+<span style="color: purple;">A measure of goodness-of-fit of the model to the data</span>: the more parameters you have, the smaller the deviance is (or the bigger the likelihood is).
 
-<!-- $$\text{AIC} = - 2 \log(L(\hat{\theta}_1,\ldots,\hat{\theta}_K)) + {\color{purple}{2 K}}$$ -->
+$$\text{AIC} = - 2 \log(L(\hat{\theta}_1,\ldots,\hat{\theta}_K)) + {\color{purple}{2 K}}$$
 
-<!-- <span style="color: purple;">A penalty</span>: twice the number of parameters $K$ -->
+<span style="color: purple;">A penalty</span>: twice the number of parameters $K$
 
-<!-- + AIC makes the balance between *quality of fit* and *complexity* of a model. -->
++ AIC makes the balance between *quality of fit* and *complexity* of a model.
 
-<!-- + Best model is the one with lowest AIC value. -->
++ Best model is the one with lowest AIC value.
 
-<!-- + Two models are difficult to distinguish if $\Delta \text{AIC} < 2$. -->
++ Two models are difficult to distinguish if $\Delta \text{AIC} < 2$.
 
-<!-- ## Bayesian version -->
+## Bayesian version
 
-<!-- + Watanabe-Akaike (Widely-Applicable) Information Criteria or WAIC: -->
++ Watanabe-Akaike (Widely-Applicable) Information Criteria or WAIC:
 
-<!-- $$\textrm{WAIC} = -2 \sum_{i = 1}^n \log E[\Pr(y_i \mid \theta)] +  -->
-<!--                   2 p_\text{WAIC}$$ -->
+$$\textrm{WAIC} = -2 \sum_{i = 1}^n \log E[\Pr(y_i \mid \theta)] +
+                  2 p_\text{WAIC}$$
 
-<!-- + where $E[p(y_i \mid \theta)]$ is the posterior mean of the likelihood evaluated pointwise at each $i$th observation. -->
++ where $E[p(y_i \mid \theta)]$ is the posterior mean of the likelihood evaluated pointwise at each $i$th observation.
 
-<!-- + $p_\text{WAIC}$ is a penalty computed using the posterior variance of the likelihood.  -->
++ $p_\text{WAIC}$ is a penalty computed using the posterior variance of the likelihood.
 
-<!-- + More in this video <https://www.youtube.com/watch?v=vSjL2Zc-gEQ> by R. McElreath. -->
++ More in this video <https://www.youtube.com/watch?v=vSjL2Zc-gEQ> by R. McElreath.
 
-<!-- + Nimble provides the conditional WAIC, where all parameters directly involved in the likelihood are considered. If you would want to calculate the marginal WAIC, integrating over latent variables, you could monitor the relevant nodes and carry out the calculations yourself based on the MCMC output. -->
++ Nimble provides the conditional WAIC, where all parameters directly involved in the likelihood are considered. If you would want to calculate the marginal WAIC, integrating over latent variables, you could monitor the relevant nodes and carry out the calculations yourself based on the MCMC output.
 
-<!-- ## How to compute WAIC in Nimble? -->
+## How to compute WAIC in Nimble?
 
-<!-- ```{r eval = FALSE} -->
-<!-- parameters.to.save <- c("phi", "p") -->
-<!-- mcmc.phitpt <- nimbleMCMC(code = hmm.phitpt,  -->
-<!--                           constants = my.constants, -->
-<!--                           data = my.data,               -->
-<!--                           inits = initial.values, -->
-<!--                           monitors = parameters.to.save, -->
-<!--                           niter = n.iter, -->
-<!--                           nburnin = n.burnin,  -->
-<!--                           nchains = n.chains) -->
-<!-- ``` -->
+```{r eval = FALSE}
+parameters.to.save <- c("phi", "p")
+mcmc.phitpt <- nimbleMCMC(code = hmm.phitpt,
+                          constants = my.constants,
+                          data = my.data,
+                          inits = initial.values,
+                          monitors = parameters.to.save,
+                          niter = n.iter,
+                          nburnin = n.burnin,
+                          nchains = n.chains)
+```
 
-<!-- ```{r eval = FALSE} -->
-<!-- parameters.to.save <- c("phi", "p", "z") #<< -->
-<!-- mcmc.phitpt <- nimbleMCMC(code = hmm.phitpt,  -->
-<!--                           constants = my.constants, -->
-<!--                           data = my.data,               -->
-<!--                           inits = initial.values, -->
-<!--                           monitors = parameters.to.save, -->
-<!--                           niter = n.iter, -->
-<!--                           nburnin = n.burnin,  -->
-<!--                           nchains = n.chains, -->
-<!--                           WAIC = TRUE) #<< -->
-<!-- ``` -->
+```{r eval = FALSE}
+parameters.to.save <- c("phi", "p", "z") #<<
+mcmc.phitpt <- nimbleMCMC(code = hmm.phitpt,
+                          constants = my.constants,
+                          data = my.data,
+                          inits = initial.values,
+                          monitors = parameters.to.save,
+                          niter = n.iter,
+                          nburnin = n.burnin,
+                          nchains = n.chains,
+                          WAIC = TRUE) #<<
+```
 
-<!-- ## Dipper example - continued -->
+## Dipper example - continued
 
-<!-- ```{r echo = FALSE} -->
-<!-- load(here::here("dat","dipper_waic.RData")) -->
-<!-- data.frame(model = c("(phi,p)", -->
-<!--                      "(phit,p)", -->
-<!--                      "(phi,pt)", -->
-<!--                      "(phit,pt)"), -->
-<!--            WAIC = c(mcmc.phip$WAIC,  -->
-<!--              mcmc.phitp$WAIC,  -->
-<!--              mcmc.phipt$WAIC,  -->
-<!--              mcmc.phitpt$WAIC)) -->
-<!-- ``` -->
+```{r echo = FALSE}
+load(here::here("dat","dipper_waic.RData"))
+data.frame(model = c("(phi,p)",
+                     "(phit,p)",
+                     "(phi,pt)",
+                     "(phit,pt)"),
+           WAIC = c(mcmc.phip$WAIC,
+             mcmc.phitp$WAIC,
+             mcmc.phipt$WAIC,
+             mcmc.phitpt$WAIC))
+```

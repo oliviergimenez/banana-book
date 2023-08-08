@@ -17,7 +17,7 @@
 <meta name="twitter:description" content="3.1 Introduction In this third chapter, you will learn the basics on Markov models and how to fit them to longitudinal data using NIMBLE. In real life however, individuals may go undetected and...">
 <!-- JS --><script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.6/clipboard.min.js" integrity="sha256-inc5kl9MA1hkeYUt+EC3BhlIgyp/2jDIyBLS6k3UxPI=" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/fuse.js/6.4.6/fuse.js" integrity="sha512-zv6Ywkjyktsohkbp9bb45V6tEMoWhzFzXis+LrMehmJZZSys19Yxf1dopHx7WzIKxr5tK2dVcYmaCk2uqdjF4A==" crossorigin="anonymous"></script><script src="https://kit.fontawesome.com/6ecbd6c532.js" crossorigin="anonymous"></script><script src="libs/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <link href="libs/bootstrap-4.6.0/bootstrap.min.css" rel="stylesheet">
-<script src="libs/bootstrap-4.6.0/bootstrap.bundle.min.js"></script><script src="libs/bs3compat-0.4.2/transition.js"></script><script src="libs/bs3compat-0.4.2/tabs.js"></script><script src="libs/bs3compat-0.4.2/bs3compat.js"></script><link href="libs/bs4_book-1.0.0/bs4_book.css" rel="stylesheet">
+<script src="libs/bootstrap-4.6.0/bootstrap.bundle.min.js"></script><script src="libs/bs3compat-0.5.0/transition.js"></script><script src="libs/bs3compat-0.5.0/tabs.js"></script><script src="libs/bs3compat-0.5.0/bs3compat.js"></script><link href="libs/bs4_book-1.0.0/bs4_book.css" rel="stylesheet">
 <script src="libs/bs4_book-1.0.0/bs4_book.js"></script><script src="libs/kePrint-0.0.1/kePrint.js"></script><link href="libs/lightable-0.0.1/lightable.css" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/autocomplete.js/0.38.0/autocomplete.jquery.min.js" integrity="sha512-GU9ayf+66Xx2TmpxqJpliWbT5PiGYxpaG8rfnBEk1LL8l1KGkRShhngwdXK1UgqhAzWpZHSiYPc09/NwDQIGyg==" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/mark.js/8.11.1/mark.min.js" integrity="sha512-5CYOlHXGh6QpOFA/TeTylKLWfB3ftPsde7AnmhuitiTX4K5SqCLBeKro6sPS8ilsz1Q4NRx3v8Ko2IBiszzdww==" crossorigin="anonymous"></script><!-- CSS --><style type="text/css">
     
@@ -79,11 +79,12 @@
 <li class="book-part">II. Transitions</li>
 <li><a class="" href="introduction-4.html">Introduction</a></li>
 <li><a class="" href="survival.html"><span class="header-section-number">4</span> Survival</a></li>
-<li class="book-part">III. States</li>
+<li><a class="" href="dispersal.html"><span class="header-section-number">5</span> Dispersal</a></li>
+<li><a class="" href="uncertainty.html"><span class="header-section-number">6</span> State uncertainty</a></li>
+<li class="book-part">III. Case studies</li>
 <li><a class="" href="introduction-6.html">Introduction</a></li>
-<li class="book-part">IV. Case studies</li>
+<li class="book-part">IV. Conclusions</li>
 <li><a class="" href="introduction-7.html">Introduction</a></li>
-<li class="book-part">V. Conclusion</li>
 <li><a class="" href="take-home-messages.html">Take-home messages</a></li>
 <li><a class="" href="references.html">References</a></li>
 </ul>
@@ -1482,21 +1483,21 @@ winter 5
 <span class="header-section-number">3.5</span> NIMBLE implementation<a class="anchor" aria-label="anchor" href="#nimble-implementation"><i class="fas fa-link"></i></a>
 </h2>
 <p>How to implement in NIMBLE the Markov model we just built? We need to put in place a few bricks before running our model. Let’s start with the prior on survival, the vector of initial state probabilities and the transition matrix:</p>
-<div class="sourceCode" id="cb96"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb96-1"><a href="hmmcapturerecapture.html#cb96-1" aria-hidden="true" tabindex="-1"></a>markov.survival <span class="ot">&lt;-</span> <span class="fu">nimbleCode</span>({</span>
-<span id="cb96-2"><a href="hmmcapturerecapture.html#cb96-2" aria-hidden="true" tabindex="-1"></a>  phi <span class="sc">~</span> <span class="fu">dunif</span>(<span class="dv">0</span>, <span class="dv">1</span>) <span class="co"># prior</span></span>
-<span id="cb96-3"><a href="hmmcapturerecapture.html#cb96-3" aria-hidden="true" tabindex="-1"></a>  delta[<span class="dv">1</span>] <span class="ot">&lt;-</span> <span class="dv">1</span>          <span class="co"># Pr(alive t = 1) = 1</span></span>
-<span id="cb96-4"><a href="hmmcapturerecapture.html#cb96-4" aria-hidden="true" tabindex="-1"></a>  delta[<span class="dv">2</span>] <span class="ot">&lt;-</span> <span class="dv">0</span>          <span class="co"># Pr(dead t = 1) = 0</span></span>
-<span id="cb96-5"><a href="hmmcapturerecapture.html#cb96-5" aria-hidden="true" tabindex="-1"></a>  gamma[<span class="dv">1</span>,<span class="dv">1</span>] <span class="ot">&lt;-</span> phi      <span class="co"># Pr(alive t -&gt; alive t+1)</span></span>
-<span id="cb96-6"><a href="hmmcapturerecapture.html#cb96-6" aria-hidden="true" tabindex="-1"></a>  gamma[<span class="dv">1</span>,<span class="dv">2</span>] <span class="ot">&lt;-</span> <span class="dv">1</span> <span class="sc">-</span> phi  <span class="co"># Pr(alive t -&gt; dead t+1)</span></span>
-<span id="cb96-7"><a href="hmmcapturerecapture.html#cb96-7" aria-hidden="true" tabindex="-1"></a>  gamma[<span class="dv">2</span>,<span class="dv">1</span>] <span class="ot">&lt;-</span> <span class="dv">0</span>        <span class="co"># Pr(dead t -&gt; alive t+1)</span></span>
-<span id="cb96-8"><a href="hmmcapturerecapture.html#cb96-8" aria-hidden="true" tabindex="-1"></a>  gamma[<span class="dv">2</span>,<span class="dv">2</span>] <span class="ot">&lt;-</span> <span class="dv">1</span>        <span class="co"># Pr(dead t -&gt; dead t+1)</span></span>
-<span id="cb96-9"><a href="hmmcapturerecapture.html#cb96-9" aria-hidden="true" tabindex="-1"></a>...</span></code></pre></div>
+<div class="sourceCode" id="cb96"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb96-1"><a href="hmmcapturerecapture.html#cb96-1" tabindex="-1"></a>markov.survival <span class="ot">&lt;-</span> <span class="fu">nimbleCode</span>({</span>
+<span id="cb96-2"><a href="hmmcapturerecapture.html#cb96-2" tabindex="-1"></a>  phi <span class="sc">~</span> <span class="fu">dunif</span>(<span class="dv">0</span>, <span class="dv">1</span>) <span class="co"># prior</span></span>
+<span id="cb96-3"><a href="hmmcapturerecapture.html#cb96-3" tabindex="-1"></a>  delta[<span class="dv">1</span>] <span class="ot">&lt;-</span> <span class="dv">1</span>          <span class="co"># Pr(alive t = 1) = 1</span></span>
+<span id="cb96-4"><a href="hmmcapturerecapture.html#cb96-4" tabindex="-1"></a>  delta[<span class="dv">2</span>] <span class="ot">&lt;-</span> <span class="dv">0</span>          <span class="co"># Pr(dead t = 1) = 0</span></span>
+<span id="cb96-5"><a href="hmmcapturerecapture.html#cb96-5" tabindex="-1"></a>  gamma[<span class="dv">1</span>,<span class="dv">1</span>] <span class="ot">&lt;-</span> phi      <span class="co"># Pr(alive t -&gt; alive t+1)</span></span>
+<span id="cb96-6"><a href="hmmcapturerecapture.html#cb96-6" tabindex="-1"></a>  gamma[<span class="dv">1</span>,<span class="dv">2</span>] <span class="ot">&lt;-</span> <span class="dv">1</span> <span class="sc">-</span> phi  <span class="co"># Pr(alive t -&gt; dead t+1)</span></span>
+<span id="cb96-7"><a href="hmmcapturerecapture.html#cb96-7" tabindex="-1"></a>  gamma[<span class="dv">2</span>,<span class="dv">1</span>] <span class="ot">&lt;-</span> <span class="dv">0</span>        <span class="co"># Pr(dead t -&gt; alive t+1)</span></span>
+<span id="cb96-8"><a href="hmmcapturerecapture.html#cb96-8" tabindex="-1"></a>  gamma[<span class="dv">2</span>,<span class="dv">2</span>] <span class="ot">&lt;-</span> <span class="dv">1</span>        <span class="co"># Pr(dead t -&gt; dead t+1)</span></span>
+<span id="cb96-9"><a href="hmmcapturerecapture.html#cb96-9" tabindex="-1"></a>...</span></code></pre></div>
 <p>Alternatively, you can define vectors and matrices in NIMBLE like you would do it in R. You can write:</p>
-<div class="sourceCode" id="cb97"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb97-1"><a href="hmmcapturerecapture.html#cb97-1" aria-hidden="true" tabindex="-1"></a>markov.survival <span class="ot">&lt;-</span> <span class="fu">nimbleCode</span>({</span>
-<span id="cb97-2"><a href="hmmcapturerecapture.html#cb97-2" aria-hidden="true" tabindex="-1"></a>  phi <span class="sc">~</span> <span class="fu">dunif</span>(<span class="dv">0</span>, <span class="dv">1</span>) <span class="co"># prior</span></span>
-<span id="cb97-3"><a href="hmmcapturerecapture.html#cb97-3" aria-hidden="true" tabindex="-1"></a>  delta[<span class="dv">1</span><span class="sc">:</span><span class="dv">2</span>] <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">0</span>) <span class="co"># vector of initial state probabilities</span></span>
-<span id="cb97-4"><a href="hmmcapturerecapture.html#cb97-4" aria-hidden="true" tabindex="-1"></a>  gamma[<span class="dv">1</span><span class="sc">:</span><span class="dv">2</span>,<span class="dv">1</span><span class="sc">:</span><span class="dv">2</span>] <span class="ot">&lt;-</span> <span class="fu">matrix</span>( <span class="fu">c</span>(phi, <span class="dv">0</span>, <span class="dv">1</span> <span class="sc">-</span> phi, <span class="dv">1</span>), <span class="at">nrow =</span> <span class="dv">2</span>) <span class="co"># transition matrix</span></span>
-<span id="cb97-5"><a href="hmmcapturerecapture.html#cb97-5" aria-hidden="true" tabindex="-1"></a>...</span></code></pre></div>
+<div class="sourceCode" id="cb97"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb97-1"><a href="hmmcapturerecapture.html#cb97-1" tabindex="-1"></a>markov.survival <span class="ot">&lt;-</span> <span class="fu">nimbleCode</span>({</span>
+<span id="cb97-2"><a href="hmmcapturerecapture.html#cb97-2" tabindex="-1"></a>  phi <span class="sc">~</span> <span class="fu">dunif</span>(<span class="dv">0</span>, <span class="dv">1</span>) <span class="co"># prior</span></span>
+<span id="cb97-3"><a href="hmmcapturerecapture.html#cb97-3" tabindex="-1"></a>  delta[<span class="dv">1</span><span class="sc">:</span><span class="dv">2</span>] <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">0</span>) <span class="co"># vector of initial state probabilities</span></span>
+<span id="cb97-4"><a href="hmmcapturerecapture.html#cb97-4" tabindex="-1"></a>  gamma[<span class="dv">1</span><span class="sc">:</span><span class="dv">2</span>,<span class="dv">1</span><span class="sc">:</span><span class="dv">2</span>] <span class="ot">&lt;-</span> <span class="fu">matrix</span>( <span class="fu">c</span>(phi, <span class="dv">0</span>, <span class="dv">1</span> <span class="sc">-</span> phi, <span class="dv">1</span>), <span class="at">nrow =</span> <span class="dv">2</span>) <span class="co"># transition matrix</span></span>
+<span id="cb97-5"><a href="hmmcapturerecapture.html#cb97-5" tabindex="-1"></a>...</span></code></pre></div>
 <p>Now there are two important dimensions to our model, along which we need to repeat tasks, namely individual and time. As for time, we describe the successive events of survival using the categorical distribution <code><a href="https://rdrr.io/pkg/nimble/man/Categorical.html">dcat()</a></code>, say for individual <span class="math inline">\(i\)</span>:</p>
 <div class="sourceCode" id="cb98"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">z</span><span class="op">[</span><span class="va">i</span>,<span class="fl">1</span><span class="op">]</span> <span class="op">~</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/Categorical.html">dcat</a></span><span class="op">(</span><span class="va">delta</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">2</span><span class="op">]</span><span class="op">)</span>           <span class="co"># t = 1</span></span>
@@ -5245,10 +5246,10 @@ A hidden Markov model is just two time series running in parallel. One for the s
 \end{align*}\]</span></p>
 <p>It has an observation layer for the <span class="math inline">\(y\)</span>’s, conditional on the <span class="math inline">\(z\)</span>’s. We also consider uniform priors for the detection and survival probabilities. How to implement this model in NIMBLE?</p>
 <p>We start with priors for survival and detection probabilities:</p>
-<div class="sourceCode" id="cb109"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb109-1"><a href="hmmcapturerecapture.html#cb109-1" aria-hidden="true" tabindex="-1"></a>hmm.survival <span class="ot">&lt;-</span> <span class="fu">nimbleCode</span>({</span>
-<span id="cb109-2"><a href="hmmcapturerecapture.html#cb109-2" aria-hidden="true" tabindex="-1"></a>  phi <span class="sc">~</span> <span class="fu">dunif</span>(<span class="dv">0</span>, <span class="dv">1</span>) <span class="co"># prior survival</span></span>
-<span id="cb109-3"><a href="hmmcapturerecapture.html#cb109-3" aria-hidden="true" tabindex="-1"></a>  p <span class="sc">~</span> <span class="fu">dunif</span>(<span class="dv">0</span>, <span class="dv">1</span>) <span class="co"># prior detection</span></span>
-<span id="cb109-4"><a href="hmmcapturerecapture.html#cb109-4" aria-hidden="true" tabindex="-1"></a>...</span></code></pre></div>
+<div class="sourceCode" id="cb109"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb109-1"><a href="hmmcapturerecapture.html#cb109-1" tabindex="-1"></a>hmm.survival <span class="ot">&lt;-</span> <span class="fu">nimbleCode</span>({</span>
+<span id="cb109-2"><a href="hmmcapturerecapture.html#cb109-2" tabindex="-1"></a>  phi <span class="sc">~</span> <span class="fu">dunif</span>(<span class="dv">0</span>, <span class="dv">1</span>) <span class="co"># prior survival</span></span>
+<span id="cb109-3"><a href="hmmcapturerecapture.html#cb109-3" tabindex="-1"></a>  p <span class="sc">~</span> <span class="fu">dunif</span>(<span class="dv">0</span>, <span class="dv">1</span>) <span class="co"># prior detection</span></span>
+<span id="cb109-4"><a href="hmmcapturerecapture.html#cb109-4" tabindex="-1"></a>...</span></code></pre></div>
 <p>Then we define initial states, transition and observation matrices:</p>
 <div class="sourceCode" id="cb110"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">...</span></span>
@@ -5265,16 +5266,16 @@ A hidden Markov model is just two time series running in parallel. One for the s
 <span>  <span class="va">omega</span><span class="op">[</span><span class="fl">2</span>,<span class="fl">2</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0</span>        <span class="co"># Pr(dead t -&gt; detected t)</span></span>
 <span><span class="va">...</span></span></code></pre></div>
 <p>Then the likelihood:</p>
-<div class="sourceCode" id="cb111"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb111-1"><a href="hmmcapturerecapture.html#cb111-1" aria-hidden="true" tabindex="-1"></a>...</span>
-<span id="cb111-2"><a href="hmmcapturerecapture.html#cb111-2" aria-hidden="true" tabindex="-1"></a>    <span class="co"># likelihood</span></span>
-<span id="cb111-3"><a href="hmmcapturerecapture.html#cb111-3" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> (i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>N){</span>
-<span id="cb111-4"><a href="hmmcapturerecapture.html#cb111-4" aria-hidden="true" tabindex="-1"></a>    z[i,<span class="dv">1</span>] <span class="sc">~</span> <span class="fu">dcat</span>(delta[<span class="dv">1</span><span class="sc">:</span><span class="dv">2</span>])</span>
-<span id="cb111-5"><a href="hmmcapturerecapture.html#cb111-5" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> (j <span class="cf">in</span> <span class="dv">2</span><span class="sc">:</span>T){</span>
-<span id="cb111-6"><a href="hmmcapturerecapture.html#cb111-6" aria-hidden="true" tabindex="-1"></a>      z[i,j] <span class="sc">~</span> <span class="fu">dcat</span>(gamma[z[i,j<span class="dv">-1</span>], <span class="dv">1</span><span class="sc">:</span><span class="dv">2</span>])</span>
-<span id="cb111-7"><a href="hmmcapturerecapture.html#cb111-7" aria-hidden="true" tabindex="-1"></a>      y[i,j] <span class="sc">~</span> <span class="fu">dcat</span>(omega[z[i,j], <span class="dv">1</span><span class="sc">:</span><span class="dv">2</span>])</span>
-<span id="cb111-8"><a href="hmmcapturerecapture.html#cb111-8" aria-hidden="true" tabindex="-1"></a>    }</span>
-<span id="cb111-9"><a href="hmmcapturerecapture.html#cb111-9" aria-hidden="true" tabindex="-1"></a>  }</span>
-<span id="cb111-10"><a href="hmmcapturerecapture.html#cb111-10" aria-hidden="true" tabindex="-1"></a><span class="er">})</span></span></code></pre></div>
+<div class="sourceCode" id="cb111"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb111-1"><a href="hmmcapturerecapture.html#cb111-1" tabindex="-1"></a>...</span>
+<span id="cb111-2"><a href="hmmcapturerecapture.html#cb111-2" tabindex="-1"></a>    <span class="co"># likelihood</span></span>
+<span id="cb111-3"><a href="hmmcapturerecapture.html#cb111-3" tabindex="-1"></a>    <span class="cf">for</span> (i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>N){</span>
+<span id="cb111-4"><a href="hmmcapturerecapture.html#cb111-4" tabindex="-1"></a>    z[i,<span class="dv">1</span>] <span class="sc">~</span> <span class="fu">dcat</span>(delta[<span class="dv">1</span><span class="sc">:</span><span class="dv">2</span>])</span>
+<span id="cb111-5"><a href="hmmcapturerecapture.html#cb111-5" tabindex="-1"></a>    <span class="cf">for</span> (j <span class="cf">in</span> <span class="dv">2</span><span class="sc">:</span>T){</span>
+<span id="cb111-6"><a href="hmmcapturerecapture.html#cb111-6" tabindex="-1"></a>      z[i,j] <span class="sc">~</span> <span class="fu">dcat</span>(gamma[z[i,j<span class="dv">-1</span>], <span class="dv">1</span><span class="sc">:</span><span class="dv">2</span>])</span>
+<span id="cb111-7"><a href="hmmcapturerecapture.html#cb111-7" tabindex="-1"></a>      y[i,j] <span class="sc">~</span> <span class="fu">dcat</span>(omega[z[i,j], <span class="dv">1</span><span class="sc">:</span><span class="dv">2</span>])</span>
+<span id="cb111-8"><a href="hmmcapturerecapture.html#cb111-8" tabindex="-1"></a>    }</span>
+<span id="cb111-9"><a href="hmmcapturerecapture.html#cb111-9" tabindex="-1"></a>  }</span>
+<span id="cb111-10"><a href="hmmcapturerecapture.html#cb111-10" tabindex="-1"></a><span class="er">})</span></span></code></pre></div>
 <p>Overall, the code looks like:</p>
 <div class="sourceCode" id="cb112"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">hmm.survival</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimbleCode.html">nimbleCode</a></span><span class="op">(</span><span class="op">{</span></span>
@@ -5341,7 +5342,7 @@ A hidden Markov model is just two time series running in parallel. One for the s
 <span>                          nchains <span class="op">=</span> <span class="va">n.chains</span><span class="op">)</span></span>
 <span><span class="va">end_time</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Sys.time.html">Sys.time</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="va">end_time</span> <span class="op">-</span> <span class="va">start_time</span></span></code></pre></div>
-<pre><code>## Time difference of 19.43 secs</code></pre>
+<pre><code>## Time difference of 20.06 secs</code></pre>
 <p>We can have a look to numerical summaries:</p>
 <div class="sourceCode" id="cb120"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/pkg/MCMCvis/man/MCMCsummary.html">MCMCsummary</a></span><span class="op">(</span><span class="va">mcmc.output</span>, round <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span>
@@ -5623,7 +5624,7 @@ First we write the density function:</p>
 <span><span class="co">## |-------------------------------------------------------|</span></span>
 <span><span class="va">end_time</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Sys.time.html">Sys.time</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="va">end_time</span> <span class="op">-</span> <span class="va">start_time</span></span>
-<span><span class="co">## Time difference of 17.76 secs</span></span></code></pre></div>
+<span><span class="co">## Time difference of 18.08 secs</span></span></code></pre></div>
 <p>The numerical summaries are similar to those we obtained with the complete likelihood, and effective samples sizes are larger denoting better mixing:</p>
 <div class="sourceCode" id="cb127"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/pkg/MCMCvis/man/MCMCsummary.html">MCMCsummary</a></span><span class="op">(</span><span class="va">mcmc.output</span>, round <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span>
@@ -5759,7 +5760,7 @@ First we write the density function:</p>
 <span><span class="co">## |-------------------------------------------------------|</span></span>
 <span><span class="va">end_time</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Sys.time.html">Sys.time</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="va">end_time</span> <span class="op">-</span> <span class="va">start_time</span></span>
-<span><span class="co">## Time difference of 17.92 secs</span></span>
+<span><span class="co">## Time difference of 18.21 secs</span></span>
 <span><span class="fu"><a href="https://rdrr.io/pkg/MCMCvis/man/MCMCsummary.html">MCMCsummary</a></span><span class="op">(</span><span class="va">mcmc.output</span>, round <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span>
 <span><span class="co">##     mean   sd 2.5%  50% 97.5% Rhat n.eff</span></span>
 <span><span class="co">## p   0.61 0.06 0.49 0.61  0.72    1  1453</span></span>
@@ -6097,7 +6098,7 @@ Figure 3.3: Comparison of the actual sequences of states to the sequences of sta
 <footer class="bg-primary text-light mt-5"><div class="container"><div class="row">
 
   <div class="col-12 col-md-6 mt-3">
-    <p>"<strong>Bayesian Analysis of Capture-Recapture Data with Hidden Markov Models</strong>: Theory and Case Studies in R" was written by Olivier Gimenez. It was last built on 2023-04-26.</p>
+    <p>"<strong>Bayesian Analysis of Capture-Recapture Data with Hidden Markov Models</strong>: Theory and Case Studies in R" was written by Olivier Gimenez. It was last built on 2023-08-08.</p>
   </div>
 
   <div class="col-12 col-md-6 mt-3">
