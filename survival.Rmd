@@ -304,6 +304,16 @@ We're left with four models. Different ecological hypotheses. What to do from he
 
 ## Model selection via WAIC
 
+Because of this, various authors have recommended methods to evaluate different hypotheses by using data to assess their relative merits (Hilborn & Mangel 1997; Burnham & Anderson 2002). Such analyses are usually achieved by using information theoretic approaches and likelihood-based frequentist methods to select the best model (or set of models). The selection is based on assessing the trade-off between the fit and complexity of the models (Hilborn & Mangel 1997; Burnham & Anderson 2002), with the aim of finding the most parsimonious.
+
+One of the difficulties of implementing information theoretic approaches in ecology is that we rarely have precise hypotheses to be evaluated. At best, expected values of most parameters can only be specified as probability distributions rather than as precise values. This may be why hypotheses of no effect or no difference are evaluated so frequently, because it is difficult to decide on any particular non-nil hypothesis. Likelihood-based methods require precise hypotheses that rarely exist in ecology. In contrast, Bayesian methods can accommodate imprecise hypotheses if they can be expressed probabilistically.
+
+In Bayesian statistics, the relative parsimony of the models can be compared using the deviance information criterion (DIC; Spiegelhalter et al. 2002). DIC is a measure of the fit of the model to the data that is penalized for the model's complexity. The measure of fit is based on the likelihood of obtaining the observed data given the means of the posterior distribution of the parameters. Parameter values provide a better fit if they are more likely to have produced the observed data. The complexity of the model is measured by the effective number of estimated parameters. In Bayesian models, the effective number of estimated parameters and model complexity are reduced when informative prior distributions are used (Spiegelhalter et al. 2002). When this prior information does not reduce the fit of the model, the DIC value will improve.
+
+Models with smaller DIC values represent more parsimonious descriptions of the data than models with larger DIC values. The relative parsimony of the models can be assessed by comparing the difference in the DIC values. The DIC is a Bayesian equivalent of Akaike's information criterion (AIC; Akaike 1973; Hilborn & Mangel 1997; Burnham & Anderson 2002) and the rules of thumb suggested by Burnham & Anderson (2002) for comparing models with AIC seem to apply for DIC (Spiegelhalter et al. 2002). Therefore, differences of less than 2 indicate that the two models are indistinguishable, differences of 4–7 that the poorer model has considerably less support, and differences of more than 10 that the poorer model has essentially no support (Burnham & Anderson 2002).
+
+DIC values are easily calculated for Bayesian models using Markov chain Monte Carlo (MCMC) methods (Gilks, Richardson & Spiegelhalter 1996; Spiegelhalter et al. 2002; Spiegelhalter et al. 2003). MCMC works by randomly sampling parameter values of the specified model from their joint posterior distribution. A precise estimate of a posterior distribution can be obtained by taking numerous samples. It may be necessary to discard the first few thousand samples as a ‘burn-in’ because it can take some time before the MCMC algorithm begins to sample from the posterior distribution (the stationary distribution). 
+
 How to select a best model? Model selection. Which of the four models above is best supported by the data? The idea is to penalize models with too many parameters. 
 
 In Frequentist, Akaike information criterion (AIC) with $AIC = - 2 \log(L(\hat{\theta}_1,\ldots,\hat{\theta}_K)) + 2 K$ where $L$ the likelihood and $K$ the number of parameters $\theta_i$. First term is a measure of goodness-of-fit of the model to the data: the more parameters you have, the smaller the deviance is (or the bigger the likelihood is). Second term is a penalty: twice the number of parameters $K$. AIC makes the balance between *quality of fit* and *complexity* of a model. Best model is the one with lowest AIC value.
@@ -343,8 +353,9 @@ data.frame(model = c("(phi,p)",
 
 ## Why Bayes? Incorporate prior information
 
-So far, we have assumed a vague prior $\phi_{prior} \sim \text{Beta}(1,1) = \text{Uniform}(0,1)$. With a vague prior, mean posterior survival is $\phi_{posterior} = 0.56$, with credible interval $[0.52,0.62]$
+### Allometric relationship
 
+So far, we have assumed a non-informative prior on survival $\text{Beta}(1,1) = \text{Uniform}(0,1)$. With this prior, mean posterior survival is $\phi = 0.56$ with credible interval $[0.52,0.62]$. Graphically we may represent the posterior distribution of survival obtained with two chains with different colors, and our prior in gray dashed line:
 ```{r, echo = FALSE}
 load(here::here("dat","dipper.RData"))
 PR <- runif(1500, 0, 1)
@@ -368,15 +379,9 @@ MCMCtrace(mcmc.phip,
           xlab_den = "survival")
 ```
 
-Posterior distribution of survival in color (two chains), prior in gray dashed line.
+The thing is that we know a lot about passerines and it is a shame not to be able to use this information and act as if we have to start from scratch and know nothing. We illustrate how to incorporate prior information by acknowledging that species with similar body masses have similar survival. By gathering information on several other European passerines than the dipper, and we build a regression of survival vs. body mass (allometric relationship). Knowing dippers weigh on average 59.8g, we're in the position to build a prior for the survival probability of dipper by predicting its value using the regression. We obtain a mean of 0.57 and a standard deviation of 0.075. Using an informative prior $\text{Normal}(0.57, sd = 0.073)$ in NIMBLE, we get a mean posterior of $0.56$ with credible interval $[0.52, 0.61]$, barely no difference with the non-informative prior, quite a disappointment. 
 
-How to incorporate prior information? Using information on body mass and annual survival of 27 European passerines, we can predict survival of European dippers using only body mass.
-
-For dippers, body mass is 59.8g, therefore $\phi = 0.57$ with $\text{sd} = 0.073$. Assuming an informative prior $\phi_{prior} \sim \text{Normal}(0.57,0.073^2)$. Mean posterior $\phi_{posterior} = 0.56$ with credible interval $[0.52, 0.61]$. No increase of precision in posterior inference. Disapointment. 
-
-Now if you had only the three first years of data, what would have happened? Width of credible interval is 0.53 (vague prior) vs. 0.24 (informative prior). Huge increase of precision in posterior inference, a $120\%$ gain!
-
-Compare survival posterior with and without informative prior
+Now let's assume that we had only the three first years of data, what would have happened? By fitting the model with constant parameters with both the non-informative and informative priors to the dataset from which we deleted the final 4 years of data, the benefit of using the prior information becomes clear as the credible interval when prior information is ignored has a width of 0.53, which is more than twice as much as when prior information is used (0.24), illustrating the increased precision provided by the prior. We may assess visually this gain in precision by comparing the survival posterior distributions with and without informative prior:
 ```{r, echo = FALSE}
 load(here::here("dat","phip3y.RData"))
 phinoprior <- c(mcmc.phip$chain1[,"phi"], mcmc.phip$chain2[,"phi"])
@@ -396,21 +401,24 @@ df %>%
   scale_fill_manual(values = wesanderson::wes_palette("Royal1")[2:1])
 ```
 
-The prior $\phi_{prior} \sim \text{Normal}(0.57,0.073^2)$ is not entirely satisfying. Use of normal distribution for prior. Problem. Can we do better? Prior elicitation via moment matching. 
+Using prior information derived from body mass is an inexpensive way of adding precision to the study relative to conducting further data collection. In our example, the prior information was worth 4 years of field data. Of course, this is assuming that the ecological question remains the same whether you have 3 or 7 years of data, which is unlikely to be the case, as with long-term data, there is so much we can ask, more than "just" what annual survival probability is. 
 
-Remember the Beta distribution. Recall that the Beta distribution is a continuous distribution with values between 0 and 1. Useful for modelling survival or detection probabilities. If $X \sim Beta(\alpha,\beta)$, then the first and second moments of $X$ are $\mu = \text{E}(X) = \frac{\alpha}{\alpha + \beta}$ and $\sigma^2 = \text{Var}(X) = \frac{\alpha\beta}{(\alpha + \beta)^2 (\alpha + \beta + 1)}$. 
+### Prior elicitation via moment matching
+
+The prior $\text{Normal}(0.57, sd = 0.073)$ is not entirely satisfying because it is not constrained to be positive or less than one, which is the minimum for a probability (of survival) to be well defined. In our specific example, the prior distribution is centered on positive values far from 0, and the sandard deviation is small enough so that the chances to get values smaller than 0 or higher than 1 are null (to convince yourself, `hist(rnorm(1000, mean = 0.57, sd = 0.073))`). Can we do better? The answer is yes. 
+
+Remember the Beta distribution? Recall that the Beta distribution is a continuous distribution with values between 0 and 1. It is therefore convenient to specify priors for survival and detection probabilities. Plus we know everything about the Beta distribution, in particular its moments. If $X \sim Beta(\alpha,\beta)$, then the first (mean) and second moments (variance) of $X$ are $\mu = \text{E}(X) = \frac{\alpha}{\alpha + \beta}$ and $\sigma^2 = \text{Var}(X) = \frac{\alpha\beta}{(\alpha + \beta)^2 (\alpha + \beta + 1)}$. 
 
 In the capture-recapture example, we know a priori that the mean of the probability we're interested in is $\mu = 0.57$ and its variance is $\sigma^2 = 0.073^2$. Parameters $\mu$ and $\sigma^2$ are seen as the moments of a $Beta(\alpha,\beta)$ distribution. Now we look for values of $\alpha$ and $\beta$ that match the observed moments of the Beta distribution $\mu$ and $\sigma^2$. We need another set of equations:
 $$\alpha = \bigg(\frac{1-\mu}{\sigma^2}- \frac{1}{\mu} \bigg)\mu^2$$
 $$\beta = \alpha \bigg(\frac{1}{\mu}-1\bigg)$$
 For our model, that means:
-
 ```{r echo = TRUE}
 (alpha <- ( (1 - 0.57)/(0.073*0.073) - (1/0.57) )*0.57^2)
 (beta <- alpha * ( (1/0.57) - 1))
 ```
 
-Now use $\phi_{prior} \sim \text{Beta}(\alpha = 25.6,\beta = 19.3)$ instead of $\phi_{prior} \sim \text{Normal}(0.57,0.073^2)$. 
+Now we simply have to use $\text{Beta}(\alpha = 25.6,\beta = 19.3)$ as a prior instead of our $\text{Normal}(0.57, sd = 0.073)$. 
 
 ## Capture-recapture model assumptions
 
