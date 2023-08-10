@@ -8698,7 +8698,7 @@ F
 <h2>
 <span class="header-section-number">1.4</span> Fitting the CJS model to the dipper data with NIMBLE<a class="anchor" aria-label="anchor" href="#fitting-the-cjs-model-to-the-dipper-data-with-nimble"><i class="fas fa-link"></i></a>
 </h2>
-<p>To write the NIMBLE code corresponding to the CJS model, we only need to make a few adjustments to the NIMBLE code for the model with constant parameters from the previous chapter. The main modification concerns the observation and transitions matrices which we need to be time-varying and therefore become arrays and inherit a third dimension besides that for rows and columns. Also we need priors for all time-varying survival and detection probabilities. We get:</p>
+<p>To write the NIMBLE code corresponding to the CJS model, we only need to make a few adjustments to the NIMBLE code for the model with constant parameters from the previous chapter. The main modification concerns the observation and transitions matrices which we need to be time-varying and therefore become arrays and inherit a third dimension besides that for rows and columns. Also we need priors for all time-varying survival and detection probabilities. <strong>insist on first and several cohort vs single cohort in previous chapter</strong> We get:</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">...</span></span>
 <span><span class="co"># parameters</span></span>
@@ -8930,11 +8930,10 @@ F
 <h2>
 <span class="header-section-number">1.6</span> Model selection via WAIC<a class="anchor" aria-label="anchor" href="#model-selection-via-waic"><i class="fas fa-link"></i></a>
 </h2>
-<p>Which of the four models above is best supported by the data? In the Frequentist framework, we classically evaluate different ecological hypotheses by using information theoretic approaches to select the best model. This selection is based on assessing the trade-off between the fit and complexity of the models, with the aim to find the most parsimonious model of set of models. This is what the Akaike information criterion (AIC) is trying to achieve, with <span class="math inline">\(AIC = - 2 \log(L(\hat{\theta}_1,\ldots,\hat{\theta}_K)) + 2 K\)</span> where <span class="math inline">\(L\)</span> the likelihood and <span class="math inline">\(K\)</span> the number of parameters <span class="math inline">\(\theta_i\)</span>. First term is a measure of goodness-of-fit of the model to the data: the more parameters you have, the smaller the deviance is (or the bigger the likelihood is). Second term is a penalty: twice the number of parameters <span class="math inline">\(K\)</span>. AIC makes the balance between <em>quality of fit</em> and <em>complexity</em> of a model. Best model is the one with lowest AIC value.</p>
-<p>In Bayesian statistics, the relative parsimony of the models can be compared using the deviance information criterion (DIC). DIC is a measure of the fit of the model to the data that is penalized for the model’s complexity. The measure of fit is based on the likelihood of obtaining the observed data given the means of the posterior distribution of the parameters. Parameter values provide a better fit if they are more likely to have produced the observed data. The complexity of the model is measured by the effective number of estimated parameters. <strong>difference between AIC and DIC, and problems with DIC.</strong></p>
-<p>Bayesian version exists with Watanabe-Akaike (Widely-Applicable) Information Criteria or WAIC (Widely Applicable Information Criterion) given by <span class="math inline">\(\textrm{WAIC} = -2 \sum_{i = 1}^n \log E[\Pr(y_i \mid \theta)] + 2 p_\text{WAIC}\)</span> where <span class="math inline">\(E[p(y_i \mid \theta)]\)</span> is the posterior mean of the likelihood evaluated pointwise at each <span class="math inline">\(i\)</span>th observation, and <span class="math inline">\(p_\text{WAIC}\)</span> is a penalty computed using the posterior variance of the likelihood.</p>
-<p>NIMBLE provides the conditional WAIC, where all parameters directly involved in the likelihood are considered. If you would want to calculate the marginal WAIC, integrating over latent variables, you could monitor the relevant nodes and carry out the calculations yourself based on the MCMC output.</p>
-<p>How to compute WAIC in NIMBLE? E.g. for model from previous chapter. <strong>explain</strong></p>
+<p>Which of the four models above is best supported by the data? To answer this question, we need to bear in mind that we used all the observed data to fit these models, and how close to the truth these models will perform when predicting for future data – or predictive accuracy – should be assessed. A natural candidate measure for predictive accuracy is the the likelihood which will be referred in this context as predictive density. However, we know neither the true process, nor the future data, and we can only estimate the predictive density with some bias.</p>
+<p>You may have heard about the Akaike Information Criterion (AIC) in the Feequentist framework, and the Deviance Information Criterion (DIC) in the Bayesian framework. We will consider here the Widely Applicable Information Criterion or Watanabe Information Criterion (WAIC). AIC, DIC and WAIC each aim to provide an approximation of predictive accuracy.</p>
+<p>While AIC is the predictive measure of choice in the Frequentist framework for ecologists, DIC has been around for some time for Bayesian applications due to its availability in population BUGS pieces of software. However, these methods only utilize a point estimate of the unknown parameters. Also, various difficulties have been noted with DIC which may give nonsensical results when the posterior distribution is not well summarized by its mean. For a more fully Bayesian approach we would like to use the entire posterior distribution to evaluate the predictive performance, which is exaclty what WAIC does.</p>
+<p>Conveniently, NIMBLE calculates WAIC for you. E.g. for model from previous chapter. <strong>explain</strong></p>
 <div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">parameters.to.save</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"phi"</span>, <span class="st">"p"</span>, <span class="st">"z"</span><span class="op">)</span> </span>
 <span><span class="va">mcmc.phitpt</span> <span class="op">&lt;-</span> <span class="fu">nimbleMCMC</span><span class="op">(</span>code <span class="op">=</span> <span class="va">hmm.phitpt</span>,</span>
@@ -8952,35 +8951,7 @@ F
 ## 2  (phit,p) 277.6
 ## 3  (phi,pt) 270.2
 ## 4 (phit,pt) 308.8</code></pre>
-<p>Even if all of the models being considered have mismatches with the
-data, it can be informative to evaluate their predictive accuracy, compare them, and consider where
-to go next. The challenge then is to estimate predictive model accuracy, correcting for the bias
-inherent in evaluating a model’s predictions of the data that were used to fit it.</p>
-<p>A natural way to estimate out-of-sample prediction error is cross-validation (see Geisser and
-Eddy, 1979, and Vehtari and Lampinen, 2002, for a Bayesian perspective), but researchers have
-always sought alternative measures, as cross-validation requires repeated model fits and can run
-into trouble with sparse data. For practical reasons alone, there remains a place for simple bias
-corrections such as AIC (Akaike, 1973), DIC (Spiegelhalter et al., 2002, van der Linde, 2005), and,
-more recently, WAIC (Watanabe, 2010), and all these can be viewed as approximations to different
-versions of cross-validation (Stone, 1977).</p>
-<p>At the present time, DIC appears to be the predictive measure of choice in Bayesian applications,
-in part because of its incorporation in the popular BUGS package (Spiegelhalter et al., 1994, 2003).</p>
-<p>Various difficulties have been noted with DIC (see Celeux et al., 2006, Plummer, 2008, and much
-of the discussion of Spiegelhalter et al., 2002) but there has been no consensus on an alternative. DIC gives nonsensical results when the posterior distribution is not well
-summarized by its mean,</p>
-<p>A more general summary of predictive fit is the log predictive density, log p(y|), which is proportional to the mean squared error if the model is normal with constant variance. The log predictive density is also sometimes called the log-likelihood. The log predictive density has an important role in statistical model comparison because of its connection to the Kullback-Leibler information measure (see Burnham and Anderson, 2002, and Robert, 1996).
-In the limit of large sample sizes, the model with the lowest Kullback-Leibler information—and
-thus, the highest expected log predictive density—will have the highest posterior probability. Thus, it seems reasonable to use expected log predictive density as a measure of overall model fit.</p>
-<p>The ideal measure of a model’s fit would be its out-of-sample predictive performance for new data
-produced from the true data-generating process. We do not know either the true process, nor the future data, so elpd for expected log predictive density for a new data point.</p>
-<p>All the different measures discussed above are based on adjusting the log predictive density of the
-observed data by subtracting an approximate bias correction. The measures differ both in their
-starting points and in their adjustments.
-AIC starts with the log predictive density of the data conditional on the maximum likelihood
-estimate, DIC conditions on the posterior mean E(|y), and WAIC starts with the log predictive
-density, averaging over ppost() = p(|y). Of these three approaches, only WAIC is fully Bayesian
-and so it is our preference when using a bias correction formula.</p>
-<p>Lower values of AIC/DIC/WAIC imply higher predictive accuracy.</p>
+<p>Lower values of WAIC imply higher predictive accuracy. So we would favor model with constant parameters.</p>
 </div>
 <div id="why-bayes-incorporate-prior-information" class="section level2" number="1.7">
 <h2>
@@ -9015,15 +8986,68 @@ For our model, that means:</p>
 <p>Now we simply have to use <span class="math inline">\(\text{Beta}(\alpha = 25.6,\beta = 19.3)\)</span> as a prior instead of our <span class="math inline">\(\text{Normal}(0.57, sd = 0.073)\)</span>.</p>
 </div>
 </div>
-<div id="capture-recapture-model-assumptions" class="section level2" number="1.8">
+<div id="model-assumptions" class="section level2" number="1.8">
 <h2>
-<span class="header-section-number">1.8</span> Capture-recapture model assumptions<a class="anchor" aria-label="anchor" href="#capture-recapture-model-assumptions"><i class="fas fa-link"></i></a>
+<span class="header-section-number">1.8</span> Model assumptions<a class="anchor" aria-label="anchor" href="#model-assumptions"><i class="fas fa-link"></i></a>
 </h2>
-<p>Models rely on assumptions.</p>
+<p>Statistical models rely on assumptions, and the CJS model makes no exception.</p>
+<p>In the Bayesian framework, posterior predictive checks. Explain principle. However omnibus, test all directions departure from good fit of the CJS to data. Also need to figure out distance, and summary statistics, not easy w/ HMM.</p>
+<p>Good think is that we have tests.</p>
 <p>Design: No mark lost, Identity of individuals recorded without error (no false positives), Captured individuals are a random sample.</p>
 <p>Model: Homogeneity of survival and recapture probabilities, Independence between individuals (overdispersion).</p>
 <p>Test validity of assumptions: These assumptions should be valid, whatever inferential framework, Use goodness-of-fit tests <span>—</span> Pradel et al. (2005), <code>R</code> implementation with <a href="https://besjournals.onlinelibrary.wiley.com/doi/full/10.1111/2041-210X.13014">package <code>R2ucare</code></a>. Posterior predictive checks can also be used (<a href="https://arxiv.org/pdf/2011.01808.pdf">Gelman et al. 2020</a>). Make distinction between omnibus vs. directional tests (two-sided vs one-sided).</p>
-<p>What does survival actually mean in capture-recapture ? Survival refers to the study area. Mortality and permanent emigration are confounded. Therefore we estimate apparent survival, not true survival. Apparent survival probability = true survival × study area fidelity. Consequently, apparent survival &lt; true survival unless study area fidelity = 1. Use caution with interpretation.</p>
+<p>Example on CJS w/ Dipper. We will see ways to account for transience and trap-dependence. Gof for this model obtained easily by sustracting. I am aware that I’m mixing Bayesian and Frequentist frameworks, information theoretic and null hypothesis testing, and some colleagues might not like it, but best of the two worlds, and just dismiss the amount of research done on gof testing?!</p>
+<p>To close this section on model assumptions, I should stress out that survival refers to the study area, and so we need to think carefully about what survival does actually mean in capture-recapture. More precisely, mortality and permanent emigration are confounded. Therefore we estimate apparent survival, not true survival. Apparent survival probability is the product of true survival and study area fidelity. Consequently, apparent survival is always lower than true survival unless study area fidelity is exactly 1. Use caution with interpretation.</p>
+<div class="sourceCode" id="cb24"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/oliviergimenez/R2ucare">R2ucare</a></span><span class="op">)</span></span></code></pre></div>
+<p>Get encounter histories, counts and groups:</p>
+<div class="sourceCode" id="cb25"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">dipper</span> <span class="op">&lt;-</span> <span class="fu">read_csv</span><span class="op">(</span><span class="fu">here</span><span class="fu">::</span><span class="fu"><a href="https://here.r-lib.org//reference/here.html">here</a></span><span class="op">(</span><span class="st">"dat"</span>, <span class="st">"dipper.csv"</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">dip.hist</span> <span class="op">&lt;-</span> <span class="va">dipper</span> <span class="op">%&gt;%</span></span>
+<span>  <span class="fu">select</span><span class="op">(</span><span class="va">year_1981</span><span class="op">:</span><span class="va">year_1987</span><span class="op">)</span> <span class="op">%&gt;%</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/matrix.html">as.matrix</a></span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="va">dip.freq</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html">rep</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html">nrow</a></span><span class="op">(</span><span class="va">dip.hist</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">dip.group</span> <span class="op">&lt;-</span> <span class="va">dipper</span><span class="op">$</span><span class="va">sex</span></span></code></pre></div>
+<p>Consider females only::</p>
+<div class="sourceCode" id="cb26"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">mask</span> <span class="op">&lt;-</span> <span class="op">(</span><span class="va">dip.group</span> <span class="op">==</span> <span class="st">'F'</span><span class="op">)</span></span>
+<span><span class="va">dip.fem.hist</span> <span class="op">&lt;-</span> <span class="va">dip.hist</span><span class="op">[</span><span class="va">mask</span>,<span class="op">]</span></span>
+<span><span class="va">dip.fem.freq</span> <span class="op">&lt;-</span> <span class="va">dip.freq</span><span class="op">[</span><span class="va">mask</span><span class="op">]</span></span></code></pre></div>
+<p>Overall test:</p>
+<div class="sourceCode" id="cb27"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/pkg/R2ucare/man/overall_CJS.html">overall_CJS</a></span><span class="op">(</span><span class="va">dip.fem.hist</span>, <span class="va">dip.fem.freq</span><span class="op">)</span></span>
+<span><span class="co">##                          chi2 degree_of_freedom p_value</span></span>
+<span><span class="co">## Gof test for CJS model: 10.28                12   0.592</span></span></code></pre></div>
+<p>Or perform Test.3Sr for transience Test3.Sm:</p>
+<div class="sourceCode" id="cb28"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">test3sr</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/R2ucare/man/test3sr.html">test3sr</a></span><span class="op">(</span><span class="va">dip.fem.hist</span>, <span class="va">dip.fem.freq</span><span class="op">)</span></span>
+<span><span class="va">test3sr</span></span>
+<span><span class="co">## $test3sr</span></span>
+<span><span class="co">##      stat        df     p_val sign_test </span></span>
+<span><span class="co">##     4.985     5.000     0.418     1.428 </span></span>
+<span><span class="co">## </span></span>
+<span><span class="co">## $details</span></span>
+<span><span class="co">##   component  stat p_val signed_test  test_perf</span></span>
+<span><span class="co">## 1         2 0.858 0.354       0.926 Chi-square</span></span>
+<span><span class="co">## 2         3 3.586 0.058       1.894 Chi-square</span></span>
+<span><span class="co">## 3         4 0.437 0.509       0.661 Chi-square</span></span>
+<span><span class="co">## 4         5 0.103 0.748      -0.321 Chi-square</span></span>
+<span><span class="co">## 5         6 0.001 0.982       0.032 Chi-square</span></span></code></pre></div>
+<p>Or Test2.Ct for trap-dep</p>
+<div class="sourceCode" id="cb29"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">test2ct</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/R2ucare/man/test2ct.html">test2ct</a></span><span class="op">(</span><span class="va">dip.fem.hist</span>, <span class="va">dip.fem.freq</span><span class="op">)</span></span>
+<span><span class="va">test2ct</span></span>
+<span><span class="co">## $test2ct</span></span>
+<span><span class="co">##      stat        df     p_val sign_test </span></span>
+<span><span class="co">##     3.250     4.000     0.517    -0.901 </span></span>
+<span><span class="co">## </span></span>
+<span><span class="co">## $details</span></span>
+<span><span class="co">##   component dof stat p_val signed_test test_perf</span></span>
+<span><span class="co">## 1         2   1    0     1           0    Fisher</span></span>
+<span><span class="co">## 2         3   1    0     1           0    Fisher</span></span>
+<span><span class="co">## 3         4   1    0     1           0    Fisher</span></span>
+<span><span class="co">## 4         5   1 3.25 0.071      -1.803    Fisher</span></span></code></pre></div>
+<p>What to do if these tests are significant? If you detect a transient effect, then 2 age classes should be considered on the survival probability to account for this issue (fast forward covariate section below). If trap dependence is significant, Cooch and White (2017) illustrate how to use a time-varying individual covariate to account for this effect (fast forward section on covariate below), and Pradel and Sanz (2012) recommend multievent models (fast forward case study).</p>
 </div>
 <div id="covariates" class="section level2" number="1.9">
 <h2>
@@ -9040,7 +9064,7 @@ For our model, that means:</p>
 <li><p><span class="math inline">\(\text{logit}(\phi_t) = \beta_1 + \beta_2 x_t\)</span>.</p></li>
 <li><p>Let’s investigate the effect of water flow on dipper survival (<a href="https://doi.org/10.2307/3802934">Marzolin 2002</a>).</p></li>
 </ul>
-<div class="sourceCode" id="cb24"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb30"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">hmm.phiflowp</span> <span class="op">&lt;-</span> <span class="fu">nimbleCode</span><span class="op">(</span><span class="op">{</span></span>
 <span>  <span class="va">delta</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span>          <span class="co"># Pr(alive t = 1) = 1</span></span>
 <span>  <span class="va">delta</span><span class="op">[</span><span class="fl">2</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0</span>          <span class="co"># Pr(dead t = 1) = 0</span></span>
@@ -9067,12 +9091,12 @@ For our model, that means:</p>
 <span>    <span class="op">}</span></span>
 <span>  <span class="op">}</span></span>
 <span><span class="op">}</span><span class="op">)</span></span></code></pre></div>
-<div class="sourceCode" id="cb25"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb31"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># water flow in L/s</span></span>
 <span><span class="va">water_flow</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="fl">443</span>, <span class="fl">1114</span>, <span class="fl">529</span>, <span class="fl">434</span>, <span class="fl">627</span>, <span class="fl">466</span><span class="op">)</span> <span class="co"># 1981, 1982, ..., 1987</span></span>
 <span><span class="va">water_flow_st</span> <span class="op">&lt;-</span> <span class="op">(</span><span class="va">water_flow</span> <span class="op">-</span> <span class="fu"><a href="https://rdrr.io/r/base/mean.html">mean</a></span><span class="op">(</span><span class="va">water_flow</span><span class="op">)</span><span class="op">)</span><span class="op">/</span><span class="fu"><a href="https://rdrr.io/r/stats/sd.html">sd</a></span><span class="op">(</span><span class="va">water_flow</span><span class="op">)</span> <span class="co">#&lt;&lt;</span></span></code></pre></div>
 <p>]</p>
-<div class="sourceCode" id="cb26"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb32"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">my.constants</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>N <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html">nrow</a></span><span class="op">(</span><span class="va">y</span><span class="op">)</span>,</span>
 <span>                     T <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html">ncol</a></span><span class="op">(</span><span class="va">y</span><span class="op">)</span>,</span>
 <span>                     first <span class="op">=</span> <span class="va">first</span>,</span>
@@ -9084,9 +9108,9 @@ For our model, that means:</p>
 <span></span>
 <span><span class="va">parameters.to.save</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"beta"</span>, <span class="st">"p"</span>, <span class="st">"phi"</span><span class="op">)</span></span></code></pre></div>
 <p>Regression intercept and slope</p>
-<div class="inline-figure"><img src="banana-book_files/figure-html/unnamed-chunk-41-1.png" width="672"></div>
+<div class="inline-figure"><img src="banana-book_files/figure-html/unnamed-chunk-47-1.png" width="672"></div>
 <p>Time-dependent (covariate constrained) survival probability estimates</p>
-<div class="inline-figure"><img src="banana-book_files/figure-html/unnamed-chunk-42-1.png" width="672"></div>
+<div class="inline-figure"><img src="banana-book_files/figure-html/unnamed-chunk-48-1.png" width="672"></div>
 </div>
 <div id="embrace-heterogeneity" class="section level3" number="1.9.2">
 <h3>
@@ -9098,14 +9122,14 @@ For our model, that means:</p>
 <li><p>If temporal variation not fully explained by covariates, add random effects</p></li>
 <li><p><span class="math inline">\(\text{logit}(\phi_t) = \beta_1 + \beta_2 x_t + \varepsilon_t, \; \varepsilon_t \sim N(0,\sigma^2)\)</span></p></li>
 </ul>
-<div class="sourceCode" id="cb27"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb27-1"><a href="survival.html#cb27-1" tabindex="-1"></a>hmm.phiflowREp <span class="ot">&lt;-</span> <span class="fu">nimbleCode</span>({</span>
-<span id="cb27-2"><a href="survival.html#cb27-2" tabindex="-1"></a>  <span class="cf">for</span> (t <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>(T<span class="dv">-1</span>)){</span>
-<span id="cb27-3"><a href="survival.html#cb27-3" tabindex="-1"></a>    <span class="fu">logit</span>(phi[t]) <span class="ot">&lt;-</span> beta[<span class="dv">1</span>] <span class="sc">+</span> beta[<span class="dv">2</span>] <span class="sc">*</span> flow[t] <span class="sc">+</span> eps[t]</span>
-<span id="cb27-4"><a href="survival.html#cb27-4" tabindex="-1"></a>    eps[t] <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>, <span class="at">sd =</span> sdeps)</span>
-<span id="cb27-5"><a href="survival.html#cb27-5" tabindex="-1"></a>    ...</span>
-<span id="cb27-6"><a href="survival.html#cb27-6" tabindex="-1"></a>  }</span>
-<span id="cb27-7"><a href="survival.html#cb27-7" tabindex="-1"></a>  sdeps <span class="sc">~</span> <span class="fu">dunif</span>(<span class="dv">0</span>,<span class="dv">10</span>)</span>
-<span id="cb27-8"><a href="survival.html#cb27-8" tabindex="-1"></a>  ...</span></code></pre></div>
+<div class="sourceCode" id="cb33"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb33-1"><a href="survival.html#cb33-1" tabindex="-1"></a>hmm.phiflowREp <span class="ot">&lt;-</span> <span class="fu">nimbleCode</span>({</span>
+<span id="cb33-2"><a href="survival.html#cb33-2" tabindex="-1"></a>  <span class="cf">for</span> (t <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>(T<span class="dv">-1</span>)){</span>
+<span id="cb33-3"><a href="survival.html#cb33-3" tabindex="-1"></a>    <span class="fu">logit</span>(phi[t]) <span class="ot">&lt;-</span> beta[<span class="dv">1</span>] <span class="sc">+</span> beta[<span class="dv">2</span>] <span class="sc">*</span> flow[t] <span class="sc">+</span> eps[t]</span>
+<span id="cb33-4"><a href="survival.html#cb33-4" tabindex="-1"></a>    eps[t] <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>, <span class="at">sd =</span> sdeps)</span>
+<span id="cb33-5"><a href="survival.html#cb33-5" tabindex="-1"></a>    ...</span>
+<span id="cb33-6"><a href="survival.html#cb33-6" tabindex="-1"></a>  }</span>
+<span id="cb33-7"><a href="survival.html#cb33-7" tabindex="-1"></a>  sdeps <span class="sc">~</span> <span class="fu">dunif</span>(<span class="dv">0</span>,<span class="dv">10</span>)</span>
+<span id="cb33-8"><a href="survival.html#cb33-8" tabindex="-1"></a>  ...</span></code></pre></div>
 </div>
 <div id="what-about-individual-heterogeneity" class="section level3" number="1.9.3">
 <h3>
@@ -17689,7 +17713,7 @@ F
 </ul>
 <p><span class="math display">\[\text{logit}(\phi_i) = \beta_1 + \beta_2\]</span></p>
 <p>Nimble implementation with sex as a covariate</p>
-<div class="sourceCode" id="cb28"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb34"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">hmm.phisexp</span> <span class="op">&lt;-</span> <span class="fu">nimbleCode</span><span class="op">(</span><span class="op">{</span></span>
 <span><span class="va">...</span></span>
 <span>  <span class="kw">for</span> <span class="op">(</span><span class="va">i</span> <span class="kw">in</span> <span class="fl">1</span><span class="op">:</span><span class="va">N</span><span class="op">)</span><span class="op">{</span> <span class="co">#&lt;&lt;</span></span>
@@ -17723,7 +17747,7 @@ F
 <ul>
 <li>Let’s use a covariate <span class="math inline">\(\text{sex}\)</span> that contains 1s and 2s, indicating the sex of each individual: 1 if male, and 2 if female</li>
 </ul>
-<div class="sourceCode" id="cb30"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb36"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">...</span></span>
 <span><span class="kw">for</span> <span class="op">(</span><span class="va">i</span> <span class="kw">in</span> <span class="fl">1</span><span class="op">:</span><span class="va">N</span><span class="op">)</span><span class="op">{</span></span>
 <span>  <span class="va">phi</span><span class="op">[</span><span class="va">i</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="va">beta</span><span class="op">[</span><span class="va">sex</span><span class="op">[</span><span class="va">i</span><span class="op">]</span><span class="op">]</span> <span class="co">#&lt;&lt;</span></span>
@@ -17743,7 +17767,7 @@ F
 ## beta[2] 0.55 0.03 0.48 0.55  0.62 1.02   657
 ## p       0.90 0.03 0.83 0.90  0.95 1.10   229</code></pre>
 <p>What about wing length?</p>
-<div class="sourceCode" id="cb32"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb38"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">...</span></span>
 <span>  <span class="kw">for</span> <span class="op">(</span><span class="va">i</span> <span class="kw">in</span> <span class="fl">1</span><span class="op">:</span><span class="va">N</span><span class="op">)</span><span class="op">{</span> <span class="co">#&lt;&lt;</span></span>
 <span>    <span class="fu">logit</span><span class="op">(</span><span class="va">phi</span><span class="op">[</span><span class="va">i</span><span class="op">]</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="va">beta</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span> <span class="op">+</span> <span class="va">beta</span><span class="op">[</span><span class="fl">2</span><span class="op">]</span> <span class="op">*</span> <span class="va">winglength</span><span class="op">[</span><span class="va">i</span><span class="op">]</span> <span class="co">#&lt;&lt;</span></span>
@@ -17756,7 +17780,7 @@ F
 <span>  <span class="va">beta</span><span class="op">[</span><span class="fl">2</span><span class="op">]</span> <span class="op">~</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html">dnorm</a></span><span class="op">(</span>mean <span class="op">=</span> <span class="fl">0</span>, sd <span class="op">=</span> <span class="fl">1.5</span><span class="op">)</span> <span class="co"># slope #&lt;&lt;</span></span>
 <span><span class="va">...</span></span></code></pre></div>
 <p>Wing length</p>
-<div class="inline-figure"><img src="banana-book_files/figure-html/unnamed-chunk-50-1.png" width="672"></div>
+<div class="inline-figure"><img src="banana-book_files/figure-html/unnamed-chunk-56-1.png" width="672"></div>
 <ul>
 <li>You may test an effect of both sex and wing length, see exercise in Worksheets.</li>
 </ul>
@@ -17790,6 +17814,7 @@ F
 <ul>
 <li><p>A bit of history about the CJS model and the people involved in its developements by <a href="https://research-repository.st-andrews.ac.uk/handle/10023/8869">S.T. Buckland (2016)</a>.</p></li>
 <li><p>CJS state-space formulation <a href="https://oliviergimenez.github.io/pubs/Gimenezetal2007EcologicalModelling.pdf">Gimenez et al. (2007)</a> and <a href="https://onlinelibrary.wiley.com/doi/10.1111/j.1541-0420.2007.00891.x">Royle (2008)</a>.</p></li>
+<li><p>Also read Lebreton et al. 1992, long monography, but a gem, w/ introduction to AIC, model assumptions, etc.</p></li>
 <li><p>About WAIC, more in this video <a href="https://www.youtube.com/watch?v=vSjL2Zc-gEQ" class="uri">https://www.youtube.com/watch?v=vSjL2Zc-gEQ</a> by R. McElreath. Cite relevant papers in particular paper by Gelman et al. 2014 Understanding predictive information criteria for Bayesian models.</p></li>
 <li><p>Work on missing values by <a href="https://onlinelibrary.wiley.com/doi/abs/10.1111/j.1541-0420.2005.00399.x">Bonner et al. (2006)</a> and <a href="https://projecteuclid.org/journals/annals-of-applied-statistics/volume-7/issue-3/Maximum-likelihood-estimation-of-markrecapturerecovery-models-in-the-presence-of/10.1214/13-AOAS644.full">Langrock and King (2013)</a> and <a href="https://link.springer.com/article/10.1007/s13253-014-0184-z">Worthington et al. (2015)</a>.</p></li>
 <li><p>The example on how to incorporate prior information is in <a href="https://besjournals.onlinelibrary.wiley.com/doi/abs/10.1111/j.1365-2664.2005.01101.x">McCarthy and Masters (2005)</a>.</p></li>
@@ -17817,7 +17842,7 @@ F
 <li><a class="nav-link" href="#moment-matching"><span class="header-section-number">1.7.2</span> Moment matching</a></li>
 </ul>
 </li>
-<li><a class="nav-link" href="#capture-recapture-model-assumptions"><span class="header-section-number">1.8</span> Capture-recapture model assumptions</a></li>
+<li><a class="nav-link" href="#model-assumptions"><span class="header-section-number">1.8</span> Model assumptions</a></li>
 <li>
 <a class="nav-link" href="#covariates"><span class="header-section-number">1.9</span> Covariates</a><ul class="nav navbar-nav">
 <li><a class="nav-link" href="#can-we-explain-time-variation-embrace-heterogeneity"><span class="header-section-number">1.9.1</span> Can we explain time variation? Embrace heterogeneity</a></li>

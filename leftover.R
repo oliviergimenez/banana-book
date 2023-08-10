@@ -215,6 +215,96 @@ of 4–7 that the poorer model has considerably less support, and differences of
 more than 10 that the poorer model 
 has essentially no support (Burnham & Anderson 2002).
 
+The effective number of parameterŝ pwaic can be used as measure of 
+complexity of the model, but it should not be overinterpreted, as the 
+original goal is to estimate the difference between lpd and elpd.
+
+This selection is based on assessing the trade-off between the fit and 
+complexity of the models, with the aim to find the most parsimonious model 
+of set of models. This is what the Akaike information criterion (AIC) is 
+trying to achieve, with $AIC = - 2 \log(L(\hat{\theta}_1,\ldots,\hat{\theta}_K)) 
++ 2 K$ where $L$ the likelihood and $K$ the number of parameters $\theta_i$. 
+First term is a measure of goodness-of-fit of the model to the data: the more 
+parameters you have, the smaller the deviance is (or the bigger the likelihood is). 
+Second term is a penalty: twice the number of parameters $K$. AIC makes the 
+balance between *quality of fit* and *complexity* of a model. Best model is 
+the one with lowest AIC value.
+
+In Bayesian statistics, the relative parsimony of the models can be compared 
+using the deviance information criterion (DIC). DIC is a measure of the fit of 
+the model to the data that is penalized for the model's complexity. The measure 
+of fit is based on the likelihood of obtaining the observed data given the means 
+of the posterior distribution of the parameters. Parameter values provide a better 
+fit if they are more likely to have produced the observed data. The complexity 
+of the model is measured by the effective number of estimated parameters. 
+**difference between AIC and DIC, and problems with DIC.**
+  
+  Bayesian version exists with Watanabe-Akaike (Widely-Applicable) Information 
+Criteria or WAIC (Widely Applicable Information Criterion) given by 
+$\textrm{WAIC} = -2 \sum_{i = 1}^n \log E[\Pr(y_i \mid \theta)] + 2 p_\text{WAIC}$ 
+  where $E[p(y_i \mid \theta)]$ is the posterior mean of the likelihood evaluated 
+pointwise at each $i$th observation, and $p_\text{WAIC}$ is a penalty computed 
+using the posterior variance of the likelihood.
+
+
+Even if all of the models being considered have mismatches with the data 
+(forward reference to gof section, say relative fit vs absolute fit), it can 
+be informative to evaluate their predictive accuracy, compare them, and consider 
+where to go next. The challenge then is to estimate predictive model accuracy, 
+correcting for the bias inherent in evaluating a model’s predictions of the data 
+that were used to fit it.
+
+A more general summary of predictive fit is the log predictive density, log p(y|), 
+which is proportional to the mean squared error if the model is normal with constant 
+variance. The log predictive density is also sometimes called the log-likelihood. 
+The log predictive density has an important role in statistical model comparison 
+because of its connection to the Kullback-Leibler information measure (see Burnham 
+and Anderson, 2002, and Robert, 1996).
+
+In the limit of large sample sizes, the model with the lowest Kullback-Leibler 
+information—and thus, the highest expected log predictive density—will have the 
+highest posterior probability. Thus, it seems reasonable to use expected log 
+predictive density as a measure of overall model fit.
+
+AIC uses the maximum likelihood as a measure of goodness-of-fit, and the number 
+of free parameters as a measure of flexibility, with more parameters resulting in 
+harsher penalties. DIC uses the average log-likelihood over the posterior distribution 
+as a measure of goodness-of-fit, and the difference between this average and the 
+log-likelihood at some fixed, central point of the posterior as a measure of 
+flexibility, with greater differences resulting in harsher penalties. Although 
+the mean of the parameter values over the joint posterior is often used as the 
+point estimate in this calculation (Spiegelhalter et al., 2002), I instead use 
+the point of minimum deviance in the posterior for the point estimate (also 
+recommended by Spiegelhalter et al., 2002), as the use of the mean results in 
+the strong assumption that the joint posterior distribution is a multivariate 
+normal, and can result in negative estimates of flexibility when this assumption 
+is violated (Vehtari et al., 2017). WAIC uses a similar measure of goodness-of-fit 
+as DIC, being the log of the average posterior likelihood for each data point, 
+but uses the variance in log-likelihood over the posterior distribution as a 
+measure of flexibility, with greater variances resulting in harsher penalties.
+
+A natural way to estimate out-of-sample prediction error is cross-validation (see Geisser and
+Eddy, 1979, and Vehtari and Lampinen, 2002, for a Bayesian perspective), but researchers have
+always sought alternative measures, as cross-validation requires repeated model fits and can run
+into trouble with sparse data. For practical reasons alone, there remains a place for simple bias
+corrections such as AIC (Akaike, 1973), DIC (Spiegelhalter et al., 2002, van der Linde, 2005), and,
+more recently, WAIC (Watanabe, 2010), and all these can be viewed as approximations to different
+versions of cross-validation (Stone, 1977).
+
+All the different measures discussed above are based on adjusting the log predictive density of the
+observed data by subtracting an approximate bias correction. The measures differ both in their
+starting points and in their adjustments.
+
+These methods penalize models for overfitting, as over-fitting will 
+result in poor prediction of future data.
+
+In addition to varying in computational tractability, these methods vary on their 
+theoretical basis for selecting between models. AIC, DIC, and WAIC all attempt 
+to find the model with the best “predictive accuracy”, which is the model that 
+is able to best predict future empirical data, given some fixed set of parameter 
+values or distributions (Akaike, 1974; Spiegelhalter et al., 2002; Vehtari et al., 2017).  
+
+
 
 #------------------------------------------ model validation
 

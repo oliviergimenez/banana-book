@@ -79,7 +79,7 @@ The seven first columns are years in which Gilbert went on the field and capture
 
 ## Fitting the CJS model to the dipper data with NIMBLE
 
-To write the NIMBLE code corresponding to the CJS model, we only need to make a few adjustments to the NIMBLE code for the model with constant parameters from the previous chapter. The main modification concerns the observation and transitions matrices which we need to be time-varying and therefore become arrays and inherit a third dimension besides that for rows and columns. Also we need priors for all time-varying survival and detection probabilities. We get:
+To write the NIMBLE code corresponding to the CJS model, we only need to make a few adjustments to the NIMBLE code for the model with constant parameters from the previous chapter. The main modification concerns the observation and transitions matrices which we need to be time-varying and therefore become arrays and inherit a third dimension besides that for rows and columns. Also we need priors for all time-varying survival and detection probabilities. **insist on first and several cohort vs single cohort in previous chapter** We get:
 
 ```{r eval=FALSE}
 ...
@@ -304,15 +304,13 @@ We're left with four models. Different ecological hypotheses. What to do from he
 
 ## Model selection via WAIC
 
-Which of the four models above is best supported by the data? In the Frequentist framework, we classically evaluate different ecological hypotheses by using information theoretic approaches to select the best model. This selection is based on assessing the trade-off between the fit and complexity of the models, with the aim to find the most parsimonious model of set of models. This is what the Akaike information criterion (AIC) is trying to achieve, with $AIC = - 2 \log(L(\hat{\theta}_1,\ldots,\hat{\theta}_K)) + 2 K$ where $L$ the likelihood and $K$ the number of parameters $\theta_i$. First term is a measure of goodness-of-fit of the model to the data: the more parameters you have, the smaller the deviance is (or the bigger the likelihood is). Second term is a penalty: twice the number of parameters $K$. AIC makes the balance between *quality of fit* and *complexity* of a model. Best model is the one with lowest AIC value.
+Which of the four models above is best supported by the data? To answer this question, we need to bear in mind that we used all the observed data to fit these models, and how close to the truth these models will perform when predicting for future data -- or predictive accuracy -- should be assessed. A natural candidate measure for predictive accuracy is the the likelihood which will be referred in this context as predictive density. However, we know neither the true process, nor the future data, and we can only estimate the predictive density with some bias. 
 
-In Bayesian statistics, the relative parsimony of the models can be compared using the deviance information criterion (DIC). DIC is a measure of the fit of the model to the data that is penalized for the model's complexity. The measure of fit is based on the likelihood of obtaining the observed data given the means of the posterior distribution of the parameters. Parameter values provide a better fit if they are more likely to have produced the observed data. The complexity of the model is measured by the effective number of estimated parameters. **difference between AIC and DIC, and problems with DIC.**
+You may have heard about the Akaike Information Criterion (AIC) in the Feequentist framework, and the Deviance Information Criterion (DIC) in the Bayesian framework. We will consider here the Widely Applicable Information Criterion or Watanabe Information Criterion (WAIC). AIC, DIC and WAIC each aim to provide an approximation of predictive accuracy. 
 
-Bayesian version exists with Watanabe-Akaike (Widely-Applicable) Information Criteria or WAIC (Widely Applicable Information Criterion) given by $\textrm{WAIC} = -2 \sum_{i = 1}^n \log E[\Pr(y_i \mid \theta)] + 2 p_\text{WAIC}$ where $E[p(y_i \mid \theta)]$ is the posterior mean of the likelihood evaluated pointwise at each $i$th observation, and $p_\text{WAIC}$ is a penalty computed using the posterior variance of the likelihood.
+While AIC is the predictive measure of choice in the Frequentist framework for ecologists, DIC has been around for some time for Bayesian applications due to its availability in population BUGS pieces of software. However, these methods only utilize a point estimate of the unknown parameters. Also, various difficulties have been noted with DIC which may give nonsensical results when the posterior distribution is not well summarized by its mean. For a more fully Bayesian approach we would like to use the entire posterior distribution to evaluate the predictive performance, which is exaclty what WAIC does. 
 
-NIMBLE provides the conditional WAIC, where all parameters directly involved in the likelihood are considered. If you would want to calculate the marginal WAIC, integrating over latent variables, you could monitor the relevant nodes and carry out the calculations yourself based on the MCMC output.
-
-How to compute WAIC in NIMBLE? E.g. for model from previous chapter. **explain**
+Conveniently, NIMBLE calculates WAIC for you. E.g. for model from previous chapter. **explain**
 ```{r eval = FALSE}
 parameters.to.save <- c("phi", "p", "z") 
 mcmc.phitpt <- nimbleMCMC(code = hmm.phitpt,
@@ -340,54 +338,7 @@ data.frame(model = c("(phi,p)",
              mcmc.phitpt$WAIC))
 ```
 
-Even if all of the models being considered have mismatches with the
-data, it can be informative to evaluate their predictive accuracy, compare them, and consider where
-to go next. The challenge then is to estimate predictive model accuracy, correcting for the bias
-inherent in evaluating a model’s predictions of the data that were used to fit it.
-
-A natural way to estimate out-of-sample prediction error is cross-validation (see Geisser and
-Eddy, 1979, and Vehtari and Lampinen, 2002, for a Bayesian perspective), but researchers have
-always sought alternative measures, as cross-validation requires repeated model fits and can run
-into trouble with sparse data. For practical reasons alone, there remains a place for simple bias
-corrections such as AIC (Akaike, 1973), DIC (Spiegelhalter et al., 2002, van der Linde, 2005), and,
-more recently, WAIC (Watanabe, 2010), and all these can be viewed as approximations to different
-versions of cross-validation (Stone, 1977).
-
-At the present time, DIC appears to be the predictive measure of choice in Bayesian applications,
-in part because of its incorporation in the popular BUGS package (Spiegelhalter et al., 1994, 2003).
-
-Various difficulties have been noted with DIC (see Celeux et al., 2006, Plummer, 2008, and much
-of the discussion of Spiegelhalter et al., 2002) but there has been no consensus on an alternative. DIC gives nonsensical results when the posterior distribution is not well
-summarized by its mean,
-
-A more general summary of predictive fit is the log predictive density, log p(y|), which is proportional to the mean squared error if the model is normal with constant variance. The log predictive density is also sometimes called the log-likelihood. The log predictive density has an important role in statistical model comparison because of its connection to the Kullback-Leibler information measure (see Burnham and Anderson, 2002, and Robert, 1996).
-In the limit of large sample sizes, the model with the lowest Kullback-Leibler information—and
-thus, the highest expected log predictive density—will have the highest posterior probability. Thus, it seems reasonable to use expected log predictive density as a measure of overall model fit.
-
-The ideal measure of a model’s fit would be its out-of-sample predictive performance for new data
-produced from the true data-generating process. We do not know either the true process, nor the future data, so elpd for expected log predictive density for a new data point.
-
-All the different measures discussed above are based on adjusting the log predictive density of the
-observed data by subtracting an approximate bias correction. The measures differ both in their
-starting points and in their adjustments.
-AIC starts with the log predictive density of the data conditional on the maximum likelihood
-estimate, DIC conditions on the posterior mean E(|y), and WAIC starts with the log predictive
-density, averaging over ppost() = p(|y). Of these three approaches, only WAIC is fully Bayesian
-and so it is our preference when using a bias correction formula.
-
-Lower values of AIC/DIC/WAIC imply higher predictive accuracy.
-
-Methods such as AIC (Akaike, 1992) and DIC (Spiegelhalter et al., 2002) exist as al-
-ternatives to WAIC to approximate the elpd. However, these methods only utilize a point
-estimate of the unknown parameters. For a more fully Bayesian approach we use the entire
-posterior distribution to evaluate the predictive performance. Certain asymptotic properties
-of AIC only hold for regular statistical models. WAIC on the other hand extends useful
-asymptotic properties to singular (non-regular) statistical models, which generally include
-hierarchical models (see Watanabe, 2010, for mathematical rigour).
-
-The effective number of parameterŝ pwaic can be used as measure of complexity of the model,
-but it should not be overinterpreted, as the original goal is to estimate the difference between lpd
-and elpd.
+Lower values of WAIC imply higher predictive accuracy. So we would favor model with constant parameters.
 
 ## Why Bayes? Incorporate prior information
 
@@ -459,17 +410,63 @@ For our model, that means:
 
 Now we simply have to use $\text{Beta}(\alpha = 25.6,\beta = 19.3)$ as a prior instead of our $\text{Normal}(0.57, sd = 0.073)$. 
 
-## Capture-recapture model assumptions
+## Model assumptions
 
-Models rely on assumptions.
+Statistical models rely on assumptions, and the CJS model makes no exception. 
+
+In the Bayesian framework, posterior predictive checks. Explain principle. However omnibus, test all directions departure from good fit of the CJS to data. Also need to figure out distance, and summary statistics, not easy w/ HMM. 
+
+Good think is that we have tests. 
 
 Design: No mark lost, Identity of individuals recorded without error (no false positives), Captured individuals are a random sample.
 
 Model: Homogeneity of survival and recapture probabilities, Independence between individuals (overdispersion).
 
-Test validity of assumptions: These assumptions should be valid, whatever inferential framework, Use goodness-of-fit tests <span>&#8212;</span> Pradel et al. (2005), `R` implementation with [package `R2ucare`](https://besjournals.onlinelibrary.wiley.com/doi/full/10.1111/2041-210X.13014). Posterior predictive checks can also be used ([Gelman et al. 2020](https://arxiv.org/pdf/2011.01808.pdf)). Make distinction between omnibus vs. directional tests (two-sided vs one-sided). 
+Test validity of assumptions: These assumptions should be valid, whatever inferential framework, Use goodness-of-fit tests <span>&#8212;</span> Pradel et al. (2005), `R` implementation with [package `R2ucare`](https://besjournals.onlinelibrary.wiley.com/doi/full/10.1111/2041-210X.13014). Posterior predictive checks can also be used ([Gelman et al. 2020](https://arxiv.org/pdf/2011.01808.pdf)). Make distinction between omnibus vs. directional tests (two-sided vs one-sided).
 
-What does survival actually mean in capture-recapture ? Survival refers to the study area. Mortality and permanent emigration are confounded. Therefore we estimate apparent survival, not true survival. Apparent survival probability = true survival × study area fidelity. Consequently, apparent survival < true survival unless study area fidelity = 1. Use caution with interpretation. 
+Example on CJS w/ Dipper. We will see ways to account for transience and trap-dependence. Gof for this model obtained easily by sustracting. I am aware that I'm mixing Bayesian and Frequentist frameworks, information theoretic and null hypothesis testing, and some colleagues might not like it, but best of the two worlds, and just dismiss the amount of research done on gof testing?!
+
+To close this section on model assumptions, I should stress out that survival refers to the study area, and so we need to think carefully about what survival does actually mean in capture-recapture. More precisely, mortality and permanent emigration are confounded. Therefore we estimate apparent survival, not true survival. Apparent survival probability is the product of true survival and study area fidelity. Consequently, apparent survival is always lower than true survival unless study area fidelity is exactly 1. Use caution with interpretation.
+
+```{r}
+library(R2ucare)
+```
+
+Get encounter histories, counts and groups:
+```{r}
+dipper <- read_csv(here::here("dat", "dipper.csv"))
+dip.hist <- dipper %>%
+  select(year_1981:year_1987) %>%
+  as.matrix()
+dip.freq <- rep(1, nrow(dip.hist))
+dip.group <- dipper$sex
+```
+
+Consider females only::
+```{r}
+mask <- (dip.group == 'F')
+dip.fem.hist <- dip.hist[mask,]
+dip.fem.freq <- dip.freq[mask]
+```
+
+Overall test:
+```{r}
+overall_CJS(dip.fem.hist, dip.fem.freq)
+```
+
+Or perform Test.3Sr for transience Test3.Sm:
+```{r}
+test3sr <- test3sr(dip.fem.hist, dip.fem.freq)
+test3sr
+```
+
+Or Test2.Ct for trap-dep
+```{r}
+test2ct <- test2ct(dip.fem.hist, dip.fem.freq)
+test2ct
+```
+
+What to do if these tests are significant? If you detect a transient effect, then 2 age classes should be considered on the survival probability to account for this issue (fast forward covariate section below). If trap dependence is significant, Cooch and White (2017) illustrate how to use a time-varying individual covariate to account for this effect (fast forward section on covariate below), and Pradel and Sanz (2012) recommend multievent models (fast forward case study).
 
 ## Covariates
 
@@ -728,7 +725,9 @@ df %>%
 
 + A bit of history about the CJS model and the people involved in its developements by [S.T. Buckland (2016)](https://research-repository.st-andrews.ac.uk/handle/10023/8869).
 
-+ CJS state-space formulation [Gimenez et al. (2007)](https://oliviergimenez.github.io/pubs/Gimenezetal2007EcologicalModelling.pdf) and [Royle (2008)](https://onlinelibrary.wiley.com/doi/10.1111/j.1541-0420.2007.00891.x).
++ CJS state-space formulation [Gimenez et al. (2007)](https://oliviergimenez.github.io/pubs/Gimenezetal2007EcologicalModelling.pdf) and [Royle (2008)](https://onlinelibrary.wiley.com/doi/10.1111/j.1541-0420.2007.00891.x). 
+
++ Also read Lebreton et al. 1992, long monography, but a gem, w/ introduction to AIC, model assumptions, etc.
 
 + About WAIC, more in this video <https://www.youtube.com/watch?v=vSjL2Zc-gEQ> by R. McElreath. Cite relevant papers in particular paper by Gelman et al. 2014 Understanding predictive information criteria for Bayesian models.
 
