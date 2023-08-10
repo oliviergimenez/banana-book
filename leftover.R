@@ -198,3 +198,26 @@ MCMCtrace(mcmc.phitpt,
           sz_main_txt = 1.8)
 
 ```
+
+
+
+#----------------------------------------------------- WAIC
+
+Models with smaller DIC values represent more parsimonious descriptions 
+of the data than models with larger DIC values. The relative parsimony 
+of the models can be assessed by comparing the difference in the DIC values. 
+The DIC is a Bayesian equivalent of Akaike's information criterion (AIC; 
+Akaike 1973; Hilborn & Mangel 1997; Burnham & Anderson 2002) and the rules 
+of thumb suggested by Burnham & Anderson (2002) for comparing models with 
+AIC seem to apply for DIC (Spiegelhalter et al. 2002). Therefore, differences 
+of less than 2 indicate that the two models are indistinguishable, differences 
+of 4–7 that the poorer model has considerably less support, and differences of 
+more than 10 that the poorer model 
+has essentially no support (Burnham & Anderson 2002).
+
+
+#------------------------------------------ model validation
+
+The fit of model to data can be assessed using posterior predictive checks (Rubin,
+1984), prior predictive checks (when evaluating potential replications involving new parameter
+values)

@@ -304,21 +304,11 @@ We're left with four models. Different ecological hypotheses. What to do from he
 
 ## Model selection via WAIC
 
-Because of this, various authors have recommended methods to evaluate different hypotheses by using data to assess their relative merits (Hilborn & Mangel 1997; Burnham & Anderson 2002). Such analyses are usually achieved by using information theoretic approaches and likelihood-based frequentist methods to select the best model (or set of models). The selection is based on assessing the trade-off between the fit and complexity of the models (Hilborn & Mangel 1997; Burnham & Anderson 2002), with the aim of finding the most parsimonious.
+Which of the four models above is best supported by the data? In the Frequentist framework, we classically evaluate different ecological hypotheses by using information theoretic approaches to select the best model. This selection is based on assessing the trade-off between the fit and complexity of the models, with the aim to find the most parsimonious model of set of models. This is what the Akaike information criterion (AIC) is trying to achieve, with $AIC = - 2 \log(L(\hat{\theta}_1,\ldots,\hat{\theta}_K)) + 2 K$ where $L$ the likelihood and $K$ the number of parameters $\theta_i$. First term is a measure of goodness-of-fit of the model to the data: the more parameters you have, the smaller the deviance is (or the bigger the likelihood is). Second term is a penalty: twice the number of parameters $K$. AIC makes the balance between *quality of fit* and *complexity* of a model. Best model is the one with lowest AIC value.
 
-One of the difficulties of implementing information theoretic approaches in ecology is that we rarely have precise hypotheses to be evaluated. At best, expected values of most parameters can only be specified as probability distributions rather than as precise values. This may be why hypotheses of no effect or no difference are evaluated so frequently, because it is difficult to decide on any particular non-nil hypothesis. Likelihood-based methods require precise hypotheses that rarely exist in ecology. In contrast, Bayesian methods can accommodate imprecise hypotheses if they can be expressed probabilistically.
+In Bayesian statistics, the relative parsimony of the models can be compared using the deviance information criterion (DIC). DIC is a measure of the fit of the model to the data that is penalized for the model's complexity. The measure of fit is based on the likelihood of obtaining the observed data given the means of the posterior distribution of the parameters. Parameter values provide a better fit if they are more likely to have produced the observed data. The complexity of the model is measured by the effective number of estimated parameters. **difference between AIC and DIC, and problems with DIC.**
 
-In Bayesian statistics, the relative parsimony of the models can be compared using the deviance information criterion (DIC; Spiegelhalter et al. 2002). DIC is a measure of the fit of the model to the data that is penalized for the model's complexity. The measure of fit is based on the likelihood of obtaining the observed data given the means of the posterior distribution of the parameters. Parameter values provide a better fit if they are more likely to have produced the observed data. The complexity of the model is measured by the effective number of estimated parameters. In Bayesian models, the effective number of estimated parameters and model complexity are reduced when informative prior distributions are used (Spiegelhalter et al. 2002). When this prior information does not reduce the fit of the model, the DIC value will improve.
-
-Models with smaller DIC values represent more parsimonious descriptions of the data than models with larger DIC values. The relative parsimony of the models can be assessed by comparing the difference in the DIC values. The DIC is a Bayesian equivalent of Akaike's information criterion (AIC; Akaike 1973; Hilborn & Mangel 1997; Burnham & Anderson 2002) and the rules of thumb suggested by Burnham & Anderson (2002) for comparing models with AIC seem to apply for DIC (Spiegelhalter et al. 2002). Therefore, differences of less than 2 indicate that the two models are indistinguishable, differences of 4–7 that the poorer model has considerably less support, and differences of more than 10 that the poorer model has essentially no support (Burnham & Anderson 2002).
-
-DIC values are easily calculated for Bayesian models using Markov chain Monte Carlo (MCMC) methods (Gilks, Richardson & Spiegelhalter 1996; Spiegelhalter et al. 2002; Spiegelhalter et al. 2003). MCMC works by randomly sampling parameter values of the specified model from their joint posterior distribution. A precise estimate of a posterior distribution can be obtained by taking numerous samples. It may be necessary to discard the first few thousand samples as a ‘burn-in’ because it can take some time before the MCMC algorithm begins to sample from the posterior distribution (the stationary distribution). 
-
-How to select a best model? Model selection. Which of the four models above is best supported by the data? The idea is to penalize models with too many parameters. 
-
-In Frequentist, Akaike information criterion (AIC) with $AIC = - 2 \log(L(\hat{\theta}_1,\ldots,\hat{\theta}_K)) + 2 K$ where $L$ the likelihood and $K$ the number of parameters $\theta_i$. First term is a measure of goodness-of-fit of the model to the data: the more parameters you have, the smaller the deviance is (or the bigger the likelihood is). Second term is a penalty: twice the number of parameters $K$. AIC makes the balance between *quality of fit* and *complexity* of a model. Best model is the one with lowest AIC value.
-
-Bayesian version exists with Watanabe-Akaike (Widely-Applicable) Information Criteria or WAIC given by $\textrm{WAIC} = -2 \sum_{i = 1}^n \log E[\Pr(y_i \mid \theta)] + 2 p_\text{WAIC}$ where $E[p(y_i \mid \theta)]$ is the posterior mean of the likelihood evaluated pointwise at each $i$th observation, and $p_\text{WAIC}$ is a penalty computed using the posterior variance of the likelihood.
+Bayesian version exists with Watanabe-Akaike (Widely-Applicable) Information Criteria or WAIC (Widely Applicable Information Criterion) given by $\textrm{WAIC} = -2 \sum_{i = 1}^n \log E[\Pr(y_i \mid \theta)] + 2 p_\text{WAIC}$ where $E[p(y_i \mid \theta)]$ is the posterior mean of the likelihood evaluated pointwise at each $i$th observation, and $p_\text{WAIC}$ is a penalty computed using the posterior variance of the likelihood.
 
 NIMBLE provides the conditional WAIC, where all parameters directly involved in the likelihood are considered. If you would want to calculate the marginal WAIC, integrating over latent variables, you could monitor the relevant nodes and carry out the calculations yourself based on the MCMC output.
 
@@ -350,10 +340,44 @@ data.frame(model = c("(phi,p)",
              mcmc.phitpt$WAIC))
 ```
 
+Even if all of the models being considered have mismatches with the
+data, it can be informative to evaluate their predictive accuracy, compare them, and consider where
+to go next. The challenge then is to estimate predictive model accuracy, correcting for the bias
+inherent in evaluating a model’s predictions of the data that were used to fit it.
+
+A natural way to estimate out-of-sample prediction error is cross-validation (see Geisser and
+Eddy, 1979, and Vehtari and Lampinen, 2002, for a Bayesian perspective), but researchers have
+always sought alternative measures, as cross-validation requires repeated model fits and can run
+into trouble with sparse data. For practical reasons alone, there remains a place for simple bias
+corrections such as AIC (Akaike, 1973), DIC (Spiegelhalter et al., 2002, van der Linde, 2005), and,
+more recently, WAIC (Watanabe, 2010), and all these can be viewed as approximations to different
+versions of cross-validation (Stone, 1977).
+
+At the present time, DIC appears to be the predictive measure of choice in Bayesian applications,
+in part because of its incorporation in the popular BUGS package (Spiegelhalter et al., 1994, 2003).
+
+Various difficulties have been noted with DIC (see Celeux et al., 2006, Plummer, 2008, and much
+of the discussion of Spiegelhalter et al., 2002) but there has been no consensus on an alternative. DIC gives nonsensical results when the posterior distribution is not well
+summarized by its mean,
+
+A more general summary of predictive fit is the log predictive density, log p(y|), which is proportional to the mean squared error if the model is normal with constant variance. The log predictive density is also sometimes called the log-likelihood. The log predictive density has an important role in statistical model comparison because of its connection to the Kullback-Leibler information measure (see Burnham and Anderson, 2002, and Robert, 1996).
+In the limit of large sample sizes, the model with the lowest Kullback-Leibler information—and
+thus, the highest expected log predictive density—will have the highest posterior probability. Thus, it seems reasonable to use expected log predictive density as a measure of overall model fit.
+
+The ideal measure of a model’s fit would be its out-of-sample predictive performance for new data
+produced from the true data-generating process. We do not know either the true process, nor the future data, so elpd for expected log predictive density for a new data point.
+
+All the different measures discussed above are based on adjusting the log predictive density of the
+observed data by subtracting an approximate bias correction. The measures differ both in their
+starting points and in their adjustments.
+AIC starts with the log predictive density of the data conditional on the maximum likelihood
+estimate, DIC conditions on the posterior mean E(|y), and WAIC starts with the log predictive
+density, averaging over ppost() = p(|y). Of these three approaches, only WAIC is fully Bayesian
+and so it is our preference when using a bias correction formula.
+
+Lower values of AIC/DIC/WAIC imply higher predictive accuracy.
 
 ## Why Bayes? Incorporate prior information
-
-### Allometric relationship
 
 So far, we have assumed a non-informative prior on survival $\text{Beta}(1,1) = \text{Uniform}(0,1)$. With this prior, mean posterior survival is $\phi = 0.56$ with credible interval $[0.52,0.62]$. Graphically we may represent the posterior distribution of survival obtained with two chains with different colors, and our prior in gray dashed line:
 ```{r, echo = FALSE}
@@ -379,9 +403,12 @@ MCMCtrace(mcmc.phip,
           xlab_den = "survival")
 ```
 
-The thing is that we know a lot about passerines and it is a shame not to be able to use this information and act as if we have to start from scratch and know nothing. We illustrate how to incorporate prior information by acknowledging that species with similar body masses have similar survival. By gathering information on several other European passerines than the dipper, and we build a regression of survival vs. body mass (allometric relationship). Knowing dippers weigh on average 59.8g, we're in the position to build a prior for the survival probability of dipper by predicting its value using the regression. We obtain a mean of 0.57 and a standard deviation of 0.075. Using an informative prior $\text{Normal}(0.57, sd = 0.073)$ in NIMBLE, we get a mean posterior of $0.56$ with credible interval $[0.52, 0.61]$, barely no difference with the non-informative prior, quite a disappointment. 
+### Prior elicitation
 
-Now let's assume that we had only the three first years of data, what would have happened? By fitting the model with constant parameters with both the non-informative and informative priors to the dataset from which we deleted the final 4 years of data, the benefit of using the prior information becomes clear as the credible interval when prior information is ignored has a width of 0.53, which is more than twice as much as when prior information is used (0.24), illustrating the increased precision provided by the prior. We may assess visually this gain in precision by comparing the survival posterior distributions with and without informative prior:
+The thing is that we know a lot about passerines and it is a shame not to be able to use this information and act as if we have to start from scratch and know nothing. We illustrate how to incorporate prior information by acknowledging that species with similar body masses have similar survival. By gathering information on several other European passerines than the dipper, let's assume we have built a regression of survival vs. body mass -- allometric relationship. Knowing dippers weigh on average 59.8g, we're now in the position to build a prior for dipper survival probability by predicting its value using the regression. We obtain a predicted survival of 0.57 and a standard deviation of 0.075. Using an informative prior $\text{Normal}(0.57, sd = 0.073)$ in NIMBLE, we get a mean posterior of $0.56$ with credible interval $[0.52, 0.61]$. There's barely no difference with the non-informative prior, quite a disappointment. 
+
+Now let's assume that we had only the three first years of data, what would have happened? We fit the model with constant parameters with both the non-informative and informative priors to the dataset from which we delete the final 4 years of data. Now the benefit of using the prior information becomes clear as the credible interval when prior information is ignored has a width of 0.53, which is more than twice as much as when prior information is used (0.24), illustrating the increased precision provided by the prior. We may assess visually this gain in precision by comparing the survival posterior distributions with and without informative prior:
+
 ```{r, echo = FALSE}
 load(here::here("dat","phip3y.RData"))
 phinoprior <- c(mcmc.phip$chain1[,"phi"], mcmc.phip$chain2[,"phi"])
@@ -401,9 +428,9 @@ df %>%
   scale_fill_manual(values = wesanderson::wes_palette("Royal1")[2:1])
 ```
 
-Using prior information derived from body mass is an inexpensive way of adding precision to the study relative to conducting further data collection. In our example, the prior information was worth 4 years of field data. Of course, this is assuming that the ecological question remains the same whether you have 3 or 7 years of data, which is unlikely to be the case, as with long-term data, there is so much we can ask, more than "just" what annual survival probability is. 
+In brief, if the aim is to get an estimate of survival, Gilbert did not have to conduct further data collection after 3 years, and he could have reached the same precision as with 7 years of data by using prior information derived from body mass. In brief, the prior information was worth 4 years of field data. Of course, this is assuming that the ecological question remains the same whether you have 3 or 7 years of data, which is unlikely to be the case, as with long-term data, there is so much we can ask, more than "just" what annual survival probability is. 
 
-### Prior elicitation via moment matching
+### Moment matching
 
 The prior $\text{Normal}(0.57, sd = 0.073)$ is not entirely satisfying because it is not constrained to be positive or less than one, which is the minimum for a probability (of survival) to be well defined. In our specific example, the prior distribution is centered on positive values far from 0, and the sandard deviation is small enough so that the chances to get values smaller than 0 or higher than 1 are null (to convince yourself, `hist(rnorm(1000, mean = 0.57, sd = 0.073))`). Can we do better? The answer is yes. 
 
