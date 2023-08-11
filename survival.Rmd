@@ -469,24 +469,20 @@ Now we simply have to use $\text{Beta}(\alpha = 25.6,\beta = 19.3)$ as a prior i
 
 ## Covariates
 
-Proportion of variance explained. Path analyses, structural equation models. Splines (more about spatial stats? CAR model?). Imputation and multistate models to account for missing data. Explain basics of parametric statistical modeling (linear models, GLMs and random effects).
+**Blabla sur le pourquoi des covariables.**
 
-Talk about ANODEV?
+### Temporal covariates
 
-### Can we explain time variation? Embrace heterogeneity
+#### Discrete
 
-+ Include temporal covariates, say $x_t$.
-
-+ $\text{logit}(\phi_t) = \beta_1 + \beta_2 x_t$.
-
-+ Let's investigate the effect of water flow on dipper survival ([Marzolin 2002](https://doi.org/10.2307/3802934)).
+Also consider flood effect discrete cov. A major flood occurred during the 1983 breeding season. Because captures during the breding season occurred well before and after the flood, survival in the two years 1982-1983 and 1983-1984 were likely to be affected. Indeed survival of a species living along and feeding in the river in these two flood years was most likely lower than in nonflood years. 
 
 ```{r eval = FALSE}
-hmm.phiflowp <- nimbleCode({
+hmm.phifloodp <- nimbleCode({
   delta[1] <- 1          # Pr(alive t = 1) = 1
   delta[2] <- 0          # Pr(dead t = 1) = 0
   for (t in 1:(T-1)){
-    logit(phi[t]) <- beta[1] + beta[2] * flow[t] #<<
+    logit(phi[t]) <- beta[1] + beta[2] * flood[t]
     gamma[1,1,t] <- phi[t]      # Pr(alive t -> alive t+1)
     gamma[1,2,t] <- 1 - phi[t]  # Pr(alive t -> dead t+1)
     gamma[2,1,t] <- 0        # Pr(dead t -> alive t+1)
@@ -497,8 +493,8 @@ hmm.phiflowp <- nimbleCode({
   omega[1,2] <- p        # Pr(alive t -> detected t)
   omega[2,1] <- 1        # Pr(dead t -> non-detected t)
   omega[2,2] <- 0        # Pr(dead t -> detected t)
-  beta[1] ~ dnorm(0, 1.5) # prior intercept #<<
-  beta[2] ~ dnorm(0, 1.5) # prior slope #<<
+  beta[1] ~ dnorm(0, 1.5) # prior intercept
+  beta[2] ~ dnorm(0, 1.5) # prior slope
   # likelihood
   for (i in 1:N){
     z[i,first[i]] ~ dcat(delta[1:2])
@@ -510,64 +506,218 @@ hmm.phiflowp <- nimbleCode({
 })
 ```
 
+Flood / nonflood year covariate:
 ```{r eval = FALSE}
-# water flow in L/s
-water_flow <- c(443, 1114, 529, 434, 627, 466) # 1981, 1982, ..., 1987
-water_flow_st <- (water_flow - mean(water_flow))/sd(water_flow) #<<
+flood <- c(0, 1, 1, 0, 0, 0) # 1981-1982, 1982-1983, 1983-1984, 1984-1985, ...
 ```
 
-Also consider flood effect discrete cov. 
-
-
+Constants in a list. 
 ```{r eval = FALSE}
 my.constants <- list(N = nrow(y),
                      T = ncol(y),
                      first = first,
-                     flow = water_flow_st) #<<
+                     flood = flood)
+```
 
+Initial values. 
+```{r eval = FALSE}
 initial.values <- function() list(beta = rnorm(2,0,1),
                                   p = runif(1,0,1),
                                   z = zinits)
+```
 
+Parameters to be monitored. 
+```{r eval = FALSE}
+parameters.to.save <- c("beta", "p", "phi", "z")
+```
+
+Run nimble. 
+```{r eval = FALSE}
+mcmc.phifloodp <- nimbleMCMC(code = hmm.phifloodp, 
+                          constants = my.constants,
+                          data = my.data,              
+                          inits = initial.values,
+                          monitors = parameters.to.save,
+                          niter = n.iter,
+                          nburnin = n.burnin, 
+                          nchains = n.chains,
+                          WAIC = TRUE)
+```
+
+Regression intercept and slope. Caterpillar plot of the regression parameters. The posterior distribution of the slope is centered on negative values, suggesting the as water flow increases, survival decreases. 
+```{r, echo = FALSE}
+load(here::here("dat/phifloodp.RData"))
+beta1 <- c(mcmc.phifloodp$samples$chain1[,'beta[1]'],mcmc.phifloodp$samples$chain2[,'beta[1]'])
+beta2 <- c(mcmc.phifloodp$samples$chain1[,'beta[2]'],mcmc.phifloodp$samples$chain2[,'beta[2]'])
+```
+
+Which gives survival in nonflood years (inv logit of $\beta_1$) `r round(mean(plogis(beta1)),2)` (`r round(quantile(plogis(beta1), probs = c(2.5, 97.5)/100),2)`) and in flood year (in logit of $\beta_1+\beta_2$) `r round(mean(plogis(beta2+beta1)),2)` (`r round(quantile(plogis(beta1+beta2), probs = c(2.5, 97.5)/100),2)`).
+
+WAIC is `mcmc.phifloodp$WAIC$WAIC`. Survival in flood years lower than in nonflood years. 
+
+Let's use a covariate $\text{flood}$ that contains 1s and 2s, indicating whether we are in a flood or nonflood year for each year: 1 if nonflood year, and 2 if flood year. E.g. for year $t = 2$, `beta[flood[t]]` gives `beta[flood[2]]` which will be `beta[1]` or `beta[2]` depending on whether flood[2] is 1 or 2.
+
+Flood / nonflood year covariate:
+```{r eval = FALSE}
+flood <- c(1, 2, 2, 1, 1, 1) # 1981-1982, 1982-1983, 1983-1984, 1984-1985, ...
+```
+
+```{r eval = FALSE}
+hmm.phifloodp <- nimbleCode({
+  delta[1] <- 1          # Pr(alive t = 1) = 1
+  delta[2] <- 0          # Pr(dead t = 1) = 0
+  for (t in 1:(T-1)){
+    phi[t] <- beta[flood[t]]
+    gamma[1,1,t] <- phi[t]      # Pr(alive t -> alive t+1)
+    gamma[1,2,t] <- 1 - phi[t]  # Pr(alive t -> dead t+1)
+    gamma[2,1,t] <- 0        # Pr(dead t -> alive t+1)
+    gamma[2,2,t] <- 1        # Pr(dead t -> dead t+1)
+  }
+  p ~ dunif(0, 1) # prior detection
+  omega[1,1] <- 1 - p    # Pr(alive t -> non-detected t)
+  omega[1,2] <- p        # Pr(alive t -> detected t)
+  omega[2,1] <- 1        # Pr(dead t -> non-detected t)
+  omega[2,2] <- 0        # Pr(dead t -> detected t)
+  beta[1] ~ dunif(0, 1) # prior intercept
+  beta[2] ~ dunif(0, 1) # prior slope
+  # likelihood
+  for (i in 1:N){
+    z[i,first[i]] ~ dcat(delta[1:2])
+    for (j in (first[i]+1):T){
+      z[i,j] ~ dcat(gamma[z[i,j-1], 1:2, j-1])
+      y[i,j] ~ dcat(omega[z[i,j], 1:2])
+    }
+  }
+})
+```
+
+Constants in a list. 
+```{r eval = FALSE}
+my.constants <- list(N = nrow(y),
+                     T = ncol(y),
+                     first = first,
+                     flood = flood)
+```
+
+Initial values. 
+```{r eval = FALSE}
+initial.values <- function() list(beta = runif(2,0,1),
+                                  p = runif(1,0,1),
+                                  z = zinits)
+```
+
+Parameters to be monitored. 
+```{r eval = FALSE}
+parameters.to.save <- c("beta", "p", "phi", "z")
+```
+
+Run nimble. 
+```{r eval = FALSE}
+mcmc.phifloodp <- nimbleMCMC(code = hmm.phifloodp, 
+                             constants = my.constants,
+                             data = my.data,              
+                             inits = initial.values,
+                             monitors = parameters.to.save,
+                             niter = n.iter,
+                             nburnin = n.burnin, 
+                             nchains = n.chains,
+                             WAIC = TRUE)
+```
+
+Regression intercept and slope. Caterpillar plot of the regression parameters. The posterior distribution of the slope is centered on negative values, suggesting the as water flow increases, survival decreases. 
+```{r, echo = FALSE}
+load(here::here("dat/phifloodpni.RData"))
+beta1 <- c(mcmc.phifloodp$samples$chain1[,'beta[1]'],mcmc.phifloodp$samples$chain2[,'beta[1]'])
+beta2 <- c(mcmc.phifloodp$samples$chain1[,'beta[2]'],mcmc.phifloodp$samples$chain2[,'beta[2]'])
+```
+
+Which gives survival in flood years `r round(mean(beta1),2)` (`r round(quantile(beta1, probs = c(2.5, 97.5)/100),2)`) and in nonflood year `r round(mean(beta2),2)` (`r round(quantile(beta2, probs = c(2.5, 97.5)/100),2)`).
+
+WAIC is `mcmc.phifloodp$WAIC$WAIC`. Survival in flood years lower than in nonflood years. 
+
+#### Continuous
+
+Include temporal covariates, say $x_t$, through $\text{logit}(\phi_t) = \beta_1 + \beta_2 x_t$. **explain logit link function** **a bit of caution with priors**. Let's investigate the effect of water flow on dipper survival ([Marzolin 2002](https://doi.org/10.2307/3802934)). Now we'd like to add a temporal covariate to try and explain annual variation in survival. We pick water flow in river. We specify the relationship on the logit scale. 
+```{r eval = FALSE}
+hmm.phiflowp <- nimbleCode({
+  delta[1] <- 1          # Pr(alive t = 1) = 1
+  delta[2] <- 0          # Pr(dead t = 1) = 0
+  for (t in 1:(T-1)){
+    logit(phi[t]) <- beta[1] + beta[2] * flow[t] 
+    gamma[1,1,t] <- phi[t]      # Pr(alive t -> alive t+1)
+    gamma[1,2,t] <- 1 - phi[t]  # Pr(alive t -> dead t+1)
+    gamma[2,1,t] <- 0        # Pr(dead t -> alive t+1)
+    gamma[2,2,t] <- 1        # Pr(dead t -> dead t+1)
+  }
+  p ~ dunif(0, 1) # prior detection
+  omega[1,1] <- 1 - p    # Pr(alive t -> non-detected t)
+  omega[1,2] <- p        # Pr(alive t -> detected t)
+  omega[2,1] <- 1        # Pr(dead t -> non-detected t)
+  omega[2,2] <- 0        # Pr(dead t -> detected t)
+  beta[1] ~ dnorm(0, 1.5) # prior intercept
+  beta[2] ~ dnorm(0, 1.5) # prior slope
+  # likelihood
+  for (i in 1:N){
+    z[i,first[i]] ~ dcat(delta[1:2])
+    for (j in (first[i]+1):T){
+      z[i,j] ~ dcat(gamma[z[i,j-1], 1:2, j-1])
+      y[i,j] ~ dcat(omega[z[i,j], 1:2])
+    }
+  }
+})
+```
+
+We only take the values we need, and standardize the covariate. Insist on think of when covariate operates on time interval.
+```{r eval = FALSE}
+# water flow in L/s
+water_flow <- c(443, 1114, 529, 434, 627, 466) # 1981, 1982, ..., 1987
+water_flow_st <- (water_flow - mean(water_flow))/sd(water_flow)
+```
+
+Constants in a list. 
+```{r eval = FALSE}
+my.constants <- list(N = nrow(y),
+                     T = ncol(y),
+                     first = first,
+                     flow = water_flow_st)
+```
+
+Initial values. 
+```{r eval = FALSE}
+initial.values <- function() list(beta = rnorm(2,0,1),
+                                  p = runif(1,0,1),
+                                  z = zinits)
+```
+
+Parameters to be monitored. 
+```{r eval = FALSE}
 parameters.to.save <- c("beta", "p", "phi")
 ```
 
-Regression intercept and slope
+Run nimble. 
+```{r eval = FALSE}
+mcmc.phiflowp <- nimbleMCMC(code = hmm.phiflowp, 
+                          constants = my.constants,
+                          data = my.data,              
+                          inits = initial.values,
+                          monitors = parameters.to.save,
+                          niter = n.iter,
+                          nburnin = n.burnin, 
+                          nchains = n.chains)
+```
 
+Regression intercept and slope. Caterpillar plot of the regression parameters. The posterior distribution of the slope is centered on negative values, suggesting the as water flow increases, survival decreases. 
 ```{r, echo = FALSE}
 load(here::here("dat/dipperflow.RData"))
 MCMCplot(object = mcmc.phiflowp, params = "beta", ISB = TRUE)
 ```
-
-Time-dependent (covariate constrained) survival probability estimates
-
+Time-dependent (covariate constrained) survival probability estimates. Caterpillar plot of the survival estimates. Survival between 1982 and 1983 seems to have been affected highly by a huge water flow compared to the other years. Coherent with previous section with flood effect. 
 ```{r, echo = FALSE}
 load(here::here("dat/dipperflow.RData"))
 MCMCplot(object = mcmc.phiflowp, params = "phi", ISB = TRUE)
 ```
 
-### Embrace heterogeneity
-
-+ Include temporal covariates, say $x_t$
-
-+ $\text{logit}(\phi_t) = \beta_1 + \beta_2 x_t$
-
-+ If temporal variation not fully explained by covariates, add random effects
-
-+ $\text{logit}(\phi_t) = \beta_1 + \beta_2 x_t + \varepsilon_t, \; \varepsilon_t \sim N(0,\sigma^2)$
-
-```{r eval = FALSE}
-hmm.phiflowREp <- nimbleCode({
-  for (t in 1:(T-1)){
-    logit(phi[t]) <- beta[1] + beta[2] * flow[t] + eps[t]
-    eps[t] ~ dnorm(0, sd = sdeps)
-    ...
-  }
-  sdeps ~ dunif(0,10)
-  ...
-```
-
-### What about individual heterogeneity?
+### Individual covariates
 
 + Discrete covariate like, e.g., sex
 
@@ -580,6 +730,8 @@ dipper %>%
   kableExtra::kable() %>%
   kableExtra::scroll_box(width = "100%", height = "400px")
 ```
+
+#### Discrete
 
 Sex effect
 
@@ -601,22 +753,22 @@ Nimble implementation with sex as a covariate
 hmm.phisexp <- nimbleCode({
 ...
   for (i in 1:N){ #<<
-    logit(phi[i]) <- beta[1] + beta[2] * sex[i] #<<
+    logit(phi[i]) <- beta[1] + beta[2] * sex[i]
     gamma[1,1,i] <- phi[i]      # Pr(alive t -> alive t+1)
     gamma[1,2,i] <- 1 - phi[i]  # Pr(alive t -> dead t+1)
     gamma[2,1,i] <- 0        # Pr(dead t -> alive t+1)
     gamma[2,2,i] <- 1        # Pr(dead t -> dead t+1)
   } #<<
-  beta[1] ~ dnorm(mean = 0, sd = 1.5) #<<
-  beta[2] ~ dnorm(mean = 0, sd = 1.5) #<<
-  phi_male <- 1/(1+exp(-beta[1])) #<<
-  phi_female <- 1/(1+exp(-(beta[1]+beta[2]))) #<<
+  beta[1] ~ dnorm(mean = 0, sd = 1.5)
+  beta[2] ~ dnorm(mean = 0, sd = 1.5)
+  phi_male <- 1/(1+exp(-beta[1]))
+  phi_female <- 1/(1+exp(-(beta[1]+beta[2])))
 ...
   # likelihood
   for (i in 1:N){
     z[i,first[i]] ~ dcat(delta[1:2])
     for (j in (first[i]+1):T){
-      z[i,j] ~ dcat(gamma[z[i,j-1], 1:2, i]) #<<
+      z[i,j] ~ dcat(gamma[z[i,j-1], 1:2, i])
       y[i,j] ~ dcat(omega[z[i,j], 1:2])
     }
   }
@@ -628,15 +780,14 @@ load(here::here("dat/phisexp.RData"))
 MCMCsummary(object = mcmc.phisexp, round = 2)
 ```
 
-
-Nimble implementation with nested indexing
+NIMBLE implementation with nested indexing
 
 + Let's use a covariate $\text{sex}$ that contains 1s and 2s, indicating the sex of each individual: 1 if male, and 2 if female
 
 ```{r eval = FALSE}
 ...
 for (i in 1:N){
-  phi[i] <- beta[sex[i]] #<<
+  phi[i] <- beta[sex[i]]
   gamma[1,1,i] <- phi[i]      # Pr(alive t -> alive t+1)
   gamma[1,2,i] <- 1 - phi[i]  # Pr(alive t -> dead t+1)
   gamma[2,1,i] <- 0           # Pr(dead t -> alive t+1)
@@ -654,7 +805,7 @@ load(here::here("dat/phisexpni.RData"))
 MCMCsummary(object = mcmc.phisexp.ni, round = 2)
 ```
 
-What about wing length?
+#### Continuous 
 
 ```{r eval = FALSE}
 ...
@@ -670,9 +821,123 @@ What about wing length?
 ...
 ```
 
+```{r}
+dipper <- read_csv("dat/dipper.csv")
+y <- dipper %>%
+  select(year_1981:year_1987) %>%
+  as.matrix()
+```
+
+Besides discrete individual covariates, you might want to have continuous individual covariates, e.g. wing length in the dipper case study. Note that we're considering an individual trait that takes the same value whatever the occasion. If we were to have time-varying individual covariate in the model, we would have to do something about missing values of the covariate when an individual is not recaptured. The easiest way to cope with time-varying individual covariate is to discretize and treat levels of the covariates as states. More in the next live demo. Back to wing length. We first standardize the covariate. 
+```{r}
+wing.length.st <- as.vector(scale(dipper$wing_length))
+head(wing.length.st)
+```
+
+Now we write the model. Basically we replace sex by wing length in the first method we used in the previous section. Easy. 
+```{r}
+hmm.phiwlp <- nimbleCode({
+    p ~ dunif(0, 1) # prior detection
+    omega[1,1] <- 1 - p    # Pr(alive t -> non-detected t)
+    omega[1,2] <- p        # Pr(alive t -> detected t)
+    omega[2,1] <- 1        # Pr(dead t -> non-detected t)
+    omega[2,2] <- 0        # Pr(dead t -> detected t)
+  for (i in 1:N){
+    logit(phi[i]) <- beta[1] + beta[2] * winglength[i]
+    gamma[1,1,i] <- phi[i]      # Pr(alive t -> alive t+1)
+    gamma[1,2,i] <- 1 - phi[i]  # Pr(alive t -> dead t+1)
+    gamma[2,1,i] <- 0           # Pr(dead t -> alive t+1)
+    gamma[2,2,i] <- 1           # Pr(dead t -> dead t+1)
+  }
+  beta[1] ~ dnorm(mean = 0, sd = 1.5)
+  beta[2] ~ dnorm(mean = 0, sd = 1.5)
+  delta[1] <- 1          # Pr(alive t = 1) = 1
+  delta[2] <- 0          # Pr(dead t = 1) = 0
+  # likelihood
+  for (i in 1:N){
+    z[i,first[i]] ~ dcat(delta[1:2])
+    for (j in (first[i]+1):T){
+      z[i,j] ~ dcat(gamma[z[i,j-1], 1:2, i])
+      y[i,j] ~ dcat(omega[z[i,j], 1:2])
+    }
+  }
+})
+```
+
+Constants in a list. 
+```{r}
+my.constants <- list(N = nrow(y), 
+                     T = ncol(y), 
+                     first = first,
+                     winglength = wing.length.st)
+```
+
+Initial values.
+```{r}
+initial.values <- function() list(beta = rnorm(2,0,1),
+                                  p = runif(1,0,1),
+                                  z = zinits)
+```
+
+Run nimble.
+```{r}
+mcmc.phiwlp <- nimbleMCMC(code = hmm.phiwlp, 
+                          constants = my.constants,
+                          data = my.data,              
+                          inits = initial.values,
+                          monitors = parameters.to.save,
+                          niter = n.iter,
+                          nburnin = n.burnin, 
+                          nchains = n.chains)
+```
+
+Numerical summaries. Wing length does not seem to explain much individual-to-individual variation in survival. See corresponding slope param. 
+```{r}
+load(here::here("dat/phiwlp.RData"))
+MCMCsummary(mcmc.phiwlp, params = "beta", round = 2)
+```
+
+Let's plot the relationship. First, we gather the values generated from the posterior distribution of the regression parameters in the two chains. 
+```{r}
+beta1 <- c(mcmc.phiwlp$chain1[,'beta[1]'], mcmc.phiwlp$chain2[,'beta[1]'])
+beta2 <- c(mcmc.phiwlp$chain1[,'beta[2]'], mcmc.phiwlp$chain2[,'beta[2]'])
+```
+
+Then we define a grid of values for wing length, and predict survival for each MCMC iteration. 
+```{r}
+predicted_survival <- matrix(NA, nrow = length(beta1), ncol = length(my.constants$winglength))
+for (i in 1:length(beta1)){
+  for (j in 1:length(my.constants$winglength)){
+    predicted_survival[i,j] <- plogis(beta1[i] + beta2[i] * my.constants$winglength[j])
+  }
+}
+```
+
+Now we calculate posterior mean and the credible interval. Note the ordering.
+```{r}
+mean_survival <- apply(predicted_survival, 2, mean)
+lci <- apply(predicted_survival, 2, quantile, prob = 2.5/100)
+uci <- apply(predicted_survival, 2, quantile, prob = 97.5/100)
+ord <- order(my.constants$winglength)
+df <- data.frame(wing_length = my.constants$winglength[ord],
+                 survival = mean_survival[ord],
+                 lci = lci[ord],
+                 uci = uci[ord])
+```
+
+Now time to visualize. 
+```{r}
+df %>%
+  ggplot() + 
+  aes(x = wing_length, y = survival) + 
+  geom_line() + 
+  geom_ribbon(aes(ymin = lci, ymax = uci), fill = "grey70", alpha = 0.5) + 
+  ylim(0,1) + 
+  labs(x = "wing length", y = "estimated survival")
+```
 Wing length
 
-```{r, echo = FALSE}
+```{r, echo = FALSE, eval = FALSE}
 load(here::here("dat/phiwingp.RData"))
 beta1 <- c(mcmc.phiwlp$chain1[,'beta[1]'], mcmc.phiwlp$chain2[,'beta[1]'])
 beta2 <- c(mcmc.phiwlp$chain1[,'beta[2]'], mcmc.phiwlp$chain2[,'beta[2]'])
@@ -702,21 +967,575 @@ df %>%
   labs(x = "wing length", y = "estimated survival")
 ```
 
-+ You may test an effect of both sex and wing length, see exercise in Worksheets.
+### Additive and interaction
+
+You may test an effect of both sex and wing length. Write the model. We use nested indexing with the sex index that contains 1 if the bird is a male, and 2 otherwise. We have $\logit(\phi_i) = \beta_1 + \beta_3 * \text{winglength}_i$ for males, and $\logit(\phi_i) = \beta_2 + \beta_3 * \text{winglength}_i$ for females. 
+```{r eval = FALSE}
+hmm.phisexwlp <- nimbleCode({
+  p ~ dunif(0, 1) # prior detection
+  omega[1,1] <- 1 - p    # Pr(alive t -> non-detected t)
+  omega[1,2] <- p        # Pr(alive t -> detected t)
+  omega[2,1] <- 1        # Pr(dead t -> non-detected t)
+  omega[2,2] <- 0        # Pr(dead t -> detected t)
+  for (i in 1:N){
+    logit(phi[i]) <- beta[sex[i]] + beta[3] * winglength[i]
+    gamma[1,1,i] <- phi[i]      # Pr(alive t -> alive t+1)
+    gamma[1,2,i] <- 1 - phi[i]  # Pr(alive t -> dead t+1)
+    gamma[2,1,i] <- 0           # Pr(dead t -> alive t+1)
+    gamma[2,2,i] <- 1           # Pr(dead t -> dead t+1)
+  }
+  beta[1] ~ dnorm(mean = 0, sd = 1.5) # intercept male
+  beta[2] ~ dnorm(mean = 0, sd = 1.5) # intercept female
+  beta[3] ~ dnorm(mean = 0, sd = 1.5) # slope wing length
+  delta[1] <- 1          # Pr(alive t = 1) = 1
+  delta[2] <- 0          # Pr(dead t = 1) = 0
+  # likelihood
+  for (i in 1:N){
+    z[i,first[i]] ~ dcat(delta[1:2])
+    for (j in (first[i]+1):T){
+      z[i,j] ~ dcat(gamma[z[i,j-1], 1:2, i])
+      y[i,j] ~ dcat(omega[z[i,j], 1:2])
+    }
+  }
+})
+```
+
+Constants in a list. Note we standardise wing length. 
+```{r eval = FALSE}
+first <- apply(y, 1, function(x) min(which(x !=0)))
+wing.length.st <- as.vector(scale(dipper$wing_length))
+my.constants <- list(N = nrow(y), 
+                     T = ncol(y), 
+                     first = first,
+                     winglength = wing.length.st,
+                     sex = if_else(dipper$sex == "M", 1, 2))
+my.data <- list(y = y + 1)
+```
+
+Data in a list. 
+```{r eval = FALSE}
+my.data <- list(y = y + 1)
+```
+
+Initial values. 
+```{r eval = FALSE}
+zinits <- y
+zinits[zinits == 0] <- 1
+initial.values <- function() list(beta = rnorm(3,0,5),
+                                  p = runif(1,0,1),
+                                  z = zinits)
+```
+
+Parameters to be monitored. 
+```{r eval = FALSE}
+parameters.to.save <- c("beta", "p")
+```
+
+MCMC details.
+```{r eval = FALSE}
+n.iter <- 5000
+n.burnin <- 2500
+n.chains <- 2
+```
+
+Run nimble.
+```{r eval = FALSE}
+mcmc.phisexwlp <- nimbleMCMC(code = hmm.phisexwlp, 
+                             constants = my.constants,
+                             data = my.data,              
+                             inits = initial.values,
+                             monitors = parameters.to.save,
+                             niter = n.iter,
+                             nburnin = n.burnin, 
+                             nchains = n.chains)
+```
+
+Display results. 
+```{r echo = FALSE}
+load(here::here("dat/phisexwlp.RData"))
+MCMCsummary(mcmc.phisexwlp, round = 2)
+```
+
+Let's visualise survival as a function of wing length for both sexes. 
+
+First we put together the values from the two chains we generated in the posterior distributions of the regression parameters. 
+```{r}
+beta1 <- c(mcmc.phisexwlp$chain1[,'beta[1]'], mcmc.phisexwlp$chain2[,'beta[1]'])
+beta2 <- c(mcmc.phisexwlp$chain1[,'beta[2]'], mcmc.phisexwlp$chain2[,'beta[2]'])
+beta3 <- c(mcmc.phisexwlp$chain1[,'beta[3]'], mcmc.phisexwlp$chain2[,'beta[3]'])
+```
+
+We get survival estimates for each MCMC iteration. 
+```{r}
+predicted_survivalM <- matrix(NA, nrow = length(beta1), ncol = length(my.constants$winglength))
+predicted_survivalF <- matrix(NA, nrow = length(beta1), ncol = length(my.constants$winglength))
+for (i in 1:length(beta1)){
+  for (j in 1:length(my.constants$winglength)){
+    predicted_survivalM[i,j] <- plogis(beta1[i] + beta3[i] * my.constants$winglength[j]) # males
+    predicted_survivalF[i,j] <- plogis(beta2[i] + beta3[i] * my.constants$winglength[j]) # females
+  }
+}
+```
+
+From here, we may calculate posterior mean and credible intervals. 
+```{r}
+mean_survivalM <- apply(predicted_survivalM, 2, mean)
+lciM <- apply(predicted_survivalM, 2, quantile, prob = 2.5/100)
+uciM <- apply(predicted_survivalM, 2, quantile, prob = 97.5/100)
+mean_survivalF <- apply(predicted_survivalF, 2, mean)
+lciF <- apply(predicted_survivalF, 2, quantile, prob = 2.5/100)
+uciF <- apply(predicted_survivalF, 2, quantile, prob = 97.5/100)
+ord <- order(my.constants$winglength)
+df <- data.frame(wing_length = c(my.constants$winglength[ord], my.constants$winglength[ord]),
+                 survival = c(mean_survivalM[ord], mean_survivalF[ord]),
+                 lci = c(lciM[ord],lciF[ord]),
+                 uci = c(uciM[ord],uciF[ord]),
+                 sex = c(rep("male", length(mean_survivalM)), rep("female", length(mean_survivalF))))
+```
+
+Now on a plot. 
+```{r}
+df %>%
+  ggplot() + 
+  aes(x = wing_length, y = survival, color = sex) + 
+  geom_line() + 
+  geom_ribbon(aes(ymin = lci, ymax = uci, fill = sex), alpha = 0.5) + 
+  ylim(0,1) + 
+  labs(x = "wing length", y = "estimated survival", color = "", fill = "")
+```
+
+### Random effects
+
+#### Temporal
+
+Include temporal covariates, say $x_t$ with $\text{logit}(\phi_t) = \beta_1 + \beta_2 x_t$. If temporal variation not fully explained by covariates, add random effects $\text{logit}(\phi_t) = \beta_1 + \beta_2 x_t + \varepsilon_t, \; \varepsilon_t \sim N(0,\sigma^2)$. We may wish to allow for extra variation in the survival vs. water flow relationship. To do so, we consider a yearly random effect. The prior on the standard deviation of the random effect is uniform between 0 and 10. 
+```{r eval = FALSE}
+hmm.phiflowREpt <- nimbleCode({
+  delta[1] <- 1          # Pr(alive t = 1) = 1
+  delta[2] <- 0          # Pr(dead t = 1) = 0
+  for (t in 1:(T-1)){
+    logit(phi[t]) <- beta[1] + beta[2] * flow[t] + eps[t] # eps is random effect
+    eps[t] ~ dnorm(0, sd = sdeps) 
+    gamma[1,1,t] <- phi[t]      # Pr(alive t -> alive t+1)
+    gamma[1,2,t] <- 1 - phi[t]  # Pr(alive t -> dead t+1)
+    gamma[2,1,t] <- 0           # Pr(dead t -> alive t+1)
+    gamma[2,2,t] <- 1           # Pr(dead t -> dead t+1)
+    p[t] ~ dunif(0, 1)          # prior detection
+    omega[1,1,t] <- 1 - p[t]    # Pr(alive t -> non-detected t)
+    omega[1,2,t] <- p[t]        # Pr(alive t -> detected t)
+    omega[2,1,t] <- 1           # Pr(dead t -> non-detected t)
+    omega[2,2,t] <- 0           # Pr(dead t -> detected t)
+  }
+  beta[1] ~ dnorm(0, 1.5) # prior intercept
+  beta[2] ~ dnorm(0, 1.5) # prior slope
+  sdeps ~ dunif(0,10)
+  # likelihood
+  for (i in 1:N){
+    z[i,first[i]] ~ dcat(delta[1:2])
+    for (j in (first[i]+1):T){
+      z[i,j] ~ dcat(gamma[z[i,j-1], 1:2, j-1])
+      y[i,j] ~ dcat(omega[z[i,j], 1:2, j-1])
+    }
+  }
+})
+```
+
+Initial values. 
+```{r eval = FALSE}
+initial.values <- function() list(beta = rnorm(2,0,1),
+                                  p = runif(my.constants$T-1,0,1),
+                                  sdeps = runif(1,0,3),
+                                  z = zinits)
+```
+
+Parameters to be monitored. 
+```{r eval = FALSE}
+parameters.to.save <- c("beta", "p", "phi", "sdeps")
+```
+
+MCMC details. Note that we've increased the number of iterations and the length of the burn-in period.
+```{r eval = FALSE}
+n.iter <- 10000
+n.burnin <- 5000
+n.chains <- 2
+```
+
+Run nimble. 
+```{r eval = FALSE}
+mcmc.phiflowREpt <- nimbleMCMC(code = hmm.phiflowREpt, 
+                             constants = my.constants,
+                             data = my.data,              
+                             inits = initial.values,
+                             monitors = parameters.to.save,
+                             niter = n.iter,
+                             nburnin = n.burnin, 
+                             nchains = n.chains)
+```
+
+Display outputs. Seems that the water flow effect is not so important anymore. 
+```{r}
+load(here::here("dat/phiflowREpt.RData"))
+MCMCsummary(object = mcmc.phiflowREpt, round = 2)
+```
+
+Trace plots for the standard deviation of the random effect.
+```{r}
+MCMCtrace(object = mcmc.phiflowREpt, params = "sdeps", pdf = FALSE)
+```
+
+#### Individual
+
+We add an individual random effect. 
+```{r eval = FALSE}
+hmm.phiwlrep <- nimbleCode({
+    p ~ dunif(0, 1) # prior detection
+    omega[1,1] <- 1 - p    # Pr(alive t -> non-detected t)
+    omega[1,2] <- p        # Pr(alive t -> detected t)
+    omega[2,1] <- 1        # Pr(dead t -> non-detected t)
+    omega[2,2] <- 0        # Pr(dead t -> detected t)
+  for (i in 1:N){
+    logit(phi[i]) <- beta[1] + beta[2] * winglength[i] + eps[i]
+    eps[i] ~ dnorm(mean = 0, sd = sdeps)
+    gamma[1,1,i] <- phi[i]      # Pr(alive t -> alive t+1)
+    gamma[1,2,i] <- 1 - phi[i]  # Pr(alive t -> dead t+1)
+    gamma[2,1,i] <- 0           # Pr(dead t -> alive t+1)
+    gamma[2,2,i] <- 1           # Pr(dead t -> dead t+1)
+  }
+  beta[1] ~ dnorm(mean = 0, sd = 1.5)
+  beta[2] ~ dnorm(mean = 0, sd = 1.5)
+  sdeps ~ dunif(0, 10)
+  delta[1] <- 1          # Pr(alive t = 1) = 1
+  delta[2] <- 0          # Pr(dead t = 1) = 0
+  # likelihood
+  for (i in 1:N){
+    z[i,first[i]] ~ dcat(delta[1:2])
+    for (j in (first[i]+1):T){
+      z[i,j] ~ dcat(gamma[z[i,j-1], 1:2, i])
+      y[i,j] ~ dcat(omega[z[i,j], 1:2])
+    }
+  }
+})
+```
+
+Initial values.
+```{r eval = FALSE}
+initial.values <- function() list(beta = rnorm(2,0,1.5),
+                                  sdeps = runif(1,0,3),
+                                  p = runif(1,0,1),
+                                  z = zinits)
+```
+
+Parameters to be monitored. 
+```{r eval = FALSE}
+parameters.to.save <- c("beta", "sdeps", "p")
+```
+
+MCMC details. Note that we increase the number of iterations and the length of the burn-in period.
+```{r eval = FALSE}
+n.iter <- 10000
+n.burnin <- 5000
+n.chains <- 2
+```
+
+Run nimble. 
+```{r eval = FALSE}
+mcmc.phiwlrep <- nimbleMCMC(code = hmm.phiwlrep, 
+                            constants = my.constants,
+                            data = my.data,              
+                            inits = initial.values,
+                            monitors = parameters.to.save,
+                            niter = n.iter,
+                            nburnin = n.burnin, 
+                            nchains = n.chains)
+```
+
+Numerical summaries. 
+```{r echo = FALSE}
+load(here::here("dat/phiwlrep.RData"))
+MCMCsummary(mcmc.phiwlrep, round = 2)
+```
+
+Effective sample size for SD very low. Let's try something else. We reparameterize by non-centering. 
+```{r eval = FALSE}
+hmm.phiwlrep <- nimbleCode({
+    p ~ dunif(0, 1) # prior detection
+    omega[1,1] <- 1 - p    # Pr(alive t -> non-detected t)
+    omega[1,2] <- p        # Pr(alive t -> detected t)
+    omega[2,1] <- 1        # Pr(dead t -> non-detected t)
+    omega[2,2] <- 0        # Pr(dead t -> detected t)
+  for (i in 1:N){
+    logit(phi[i]) <- beta[1] + beta[2] * winglength[i] + sdeps * eps[i]
+    eps[i] ~ dnorm(mean = 0, sd = 1)
+    gamma[1,1,i] <- phi[i]      # Pr(alive t -> alive t+1)
+    gamma[1,2,i] <- 1 - phi[i]  # Pr(alive t -> dead t+1)
+    gamma[2,1,i] <- 0           # Pr(dead t -> alive t+1)
+    gamma[2,2,i] <- 1           # Pr(dead t -> dead t+1)
+  }
+  beta[1] ~ dnorm(mean = 0, sd = 1.5)
+  beta[2] ~ dnorm(mean = 0, sd = 1.5)
+  sdeps ~ dunif(0, 10)
+  delta[1] <- 1          # Pr(alive t = 1) = 1
+  delta[2] <- 0          # Pr(dead t = 1) = 0
+  # likelihood
+  for (i in 1:N){
+    z[i,first[i]] ~ dcat(delta[1:2])
+    for (j in (first[i]+1):T){
+      z[i,j] ~ dcat(gamma[z[i,j-1], 1:2, i])
+      y[i,j] ~ dcat(omega[z[i,j], 1:2])
+    }
+  }
+})
+```
+
+Initial values.
+```{r eval = FALSE}
+initial.values <- function() list(beta = rnorm(2,0,1.5),
+                                  sdeps = runif(1,0,3),
+                                  p = runif(1,0,1),
+                                  z = zinits)
+```
+
+Parameters to be monitored. 
+```{r eval = FALSE}
+parameters.to.save <- c("beta", "sdeps", "p")
+```
+
+MCMC details. Note that we increase the number of iterations and the length of the burn-in period.
+```{r eval = FALSE}
+n.iter <- 10000
+n.burnin <- 5000
+n.chains <- 2
+```
+
+Run nimble. 
+```{r eval = FALSE}
+mcmc.phiwlrep <- nimbleMCMC(code = hmm.phiwlrep, 
+                            constants = my.constants,
+                            data = my.data,              
+                            inits = initial.values,
+                            monitors = parameters.to.save,
+                            niter = n.iter,
+                            nburnin = n.burnin, 
+                            nchains = n.chains)
+```
+
+Numerical summaries. Much better. 
+```{r echo = FALSE}
+load(here::here("dat/phiwlrep.RData"))
+MCMCsummary(mcmc.phiwlrep, round = 2)
+```
+
+Let's plot the posterior distribution of the standard deviation of the individual random effect. 
+```{r}
+sdeps <- c(mcmc.phiwlrep$chain1[,"sdeps"], mcmc.phiwlrep$chain2[,"sdeps"])
+sdeps %>%
+  as_tibble() %>%
+  ggplot() + 
+  aes(x = value) + 
+  geom_histogram(color = "white", binwidth = .03, fill = "gray70") + 
+  geom_density(aes(y = .03 * ..count..))
+```
 
 ### What if covariates vary with individual and time?
 
-+ Think of age for example (see exercises in Worksheets); covariate or nested indexing works fine.
+#### Age
 
-+ Add example for trap-dependence w/ time individual covariate. 
+Think of age for example (see exercises in Worksheets); covariate or nested indexing works fine.
 
-+ Now, think of body size across life.
+Age in capture-recapture has a particular meaning in capture-recapture analyses. It is the time elapsed since first encounter, which is a proxy of true age obviously, but not true age. Of course, if age is known at first encounter, then it is the true age. 
 
-+ Problem is we cannot record size when animal is non-detected.
+Another important remark is that age is an individual covariate, but in contrast with the wing length covariate we considered in the previous examples, age varies over time. The cool thing is that it has no missing value as age at $t+1$ is just age at $t$ to which we add 1. This suggests a way to code the age effect in nimble as follows. 
 
-+ Discretize in small, medium and large and treat as a state <span>&#8212;</span> more later.
+```{r eval = FALSE}
+hmm.phiage.in <- nimbleCode({
+  p ~ dunif(0, 1) # prior detection
+  omega[1,1] <- 1 - p    # Pr(alive t -> non-detected t)
+  omega[1,2] <- p        # Pr(alive t -> detected t)
+  omega[2,1] <- 1        # Pr(dead t -> non-detected t)
+  omega[2,2] <- 0        # Pr(dead t -> detected t)
+  for (i in 1:N){
+    for (t in first[i]:(T-1)){
+    logit(phi[i,t]) <- beta[1] + beta[2] * equals(t, first[i]) # phi1 = beta1 + beta2 and phi1+ = beta1
+    gamma[1,1,i,t] <- phi[i,t]      # Pr(alive t -> alive t+1)
+    gamma[1,2,i,t] <- 1 - phi[i,t]  # Pr(alive t -> dead t+1)
+    gamma[2,1,i,t] <- 0           # Pr(dead t -> alive t+1)
+    gamma[2,2,i,t] <- 1           # Pr(dead t -> dead t+1)
+    }
+  }
+  beta[1] ~ dnorm(mean = 0, sd = 1.5) # phi1+
+  beta[2] ~ dnorm(mean = 0, sd = 1.5) # phi1 - phi1+
+  phi1plus <- plogis(beta[1])         # phi1+
+  phi1 <- plogis(beta[1] + beta[2])   # phi1
+  delta[1] <- 1          # Pr(alive t = 1) = 1
+  delta[2] <- 0          # Pr(dead t = 1) = 0
+  # likelihood
+  for (i in 1:N){
+    z[i,first[i]] ~ dcat(delta[1:2])
+    for (j in (first[i]+1):T){
+      z[i,j] ~ dcat(gamma[z[i,j-1], 1:2, i, j-1])
+      y[i,j] ~ dcat(omega[z[i,j], 1:2])
+    }
+  }
+})
+```
 
-+ Assume a model for covariate and fill in missing values (imputation).
+Constants in a list.
+```{r eval = FALSE}
+first <- apply(y, 1, function(x) min(which(x !=0)))
+my.constants <- list(N = nrow(y), 
+                     T = ncol(y), 
+                     first = first)
+```
+
+Data in a list. 
+```{r eval = FALSE}
+my.data <- list(y = y + 1)
+```
+
+Initial values. 
+```{r eval = FALSE}
+zinits <- y
+zinits[zinits == 0] <- 1
+initial.values <- function() list(beta = rnorm(2,0,5),
+                                  p = runif(1,0,1),
+                                  z = zinits)
+```
+
+Parameters to be monitored. 
+```{r eval = FALSE}
+parameters.to.save <- c("phi1", "phi1plus", "p")
+```
+
+MCMC details.
+```{r eval = FALSE}
+n.iter <- 5000
+n.burnin <- 2500
+n.chains <- 2
+```
+
+Run nimble.
+```{r eval = FALSE}
+mcmc.phi.age.in <- nimbleMCMC(code = hmm.phiage.in, 
+                             constants = my.constants,
+                             data = my.data,              
+                             inits = initial.values,
+                             monitors = parameters.to.save,
+                             niter = n.iter,
+                             nburnin = n.burnin, 
+                             nchains = n.chains)
+```
+
+Display results. 
+```{r echo = FALSE}
+load(here::here("dat/phiagein.RData"))
+MCMCsummary(mcmc.phi.age.in, round = 2)
+```
+
+Another method to include an age effect is to create an individual by time covariate and use nested indexing (as in the previous example) to distinguish survival after first detection from survival afterwards. 
+```{r eval = FALSE}
+age <- matrix(NA, nrow = nrow(y), ncol = ncol(y) - 1)
+for (i in 1:nrow(age)){
+  for (j in 1:ncol(age)){
+    if (j == first[i]) age[i,j] <- 1
+    if (j > first[i]) age[i,j] <- 2
+  }
+}
+```
+
+The model. Careful, now survival is no longer defined on the logit scale as in the previous model, so we use uniform priors.  
+```{r eval = FALSE}
+hmm.phiage.out <- nimbleCode({
+  p ~ dunif(0, 1) # prior detection
+  omega[1,1] <- 1 - p    # Pr(alive t -> non-detected t)
+  omega[1,2] <- p        # Pr(alive t -> detected t)
+  omega[2,1] <- 1        # Pr(dead t -> non-detected t)
+  omega[2,2] <- 0        # Pr(dead t -> detected t)
+  for (i in 1:N){
+    for (t in first[i]:(T-1)){
+    phi[i,t] <- beta[age[i,t]] # beta1 = phi1, beta2 = phi1+
+    gamma[1,1,i,t] <- phi[i,t]      # Pr(alive t -> alive t+1)
+    gamma[1,2,i,t] <- 1 - phi[i,t]  # Pr(alive t -> dead t+1)
+    gamma[2,1,i,t] <- 0           # Pr(dead t -> alive t+1)
+    gamma[2,2,i,t] <- 1           # Pr(dead t -> dead t+1)
+    }
+  }
+  beta[1] ~ dunif(0, 1) # phi1
+  beta[2] ~ dunif(0, 1) # phi1+
+  phi1 <- beta[1]
+  phi1plus <- beta[2]
+  delta[1] <- 1          # Pr(alive t = 1) = 1
+  delta[2] <- 0          # Pr(dead t = 1) = 0
+  # likelihood
+  for (i in 1:N){
+    z[i,first[i]] ~ dcat(delta[1:2])
+    for (j in (first[i]+1):T){
+      z[i,j] ~ dcat(gamma[z[i,j-1], 1:2, i, j-1])
+      y[i,j] ~ dcat(omega[z[i,j], 1:2])
+    }
+  }
+})
+```
+
+Constants in a list, inculding the age matrix covariate.
+```{r eval = FALSE}
+first <- apply(y, 1, function(x) min(which(x !=0)))
+my.constants <- list(N = nrow(y), 
+                     T = ncol(y), 
+                     first = first,
+                     age = age)
+```
+
+Data in a list. 
+```{r eval = FALSE}
+my.data <- list(y = y + 1)
+```
+
+Initial values. 
+```{r eval = FALSE}
+zinits <- y
+zinits[zinits == 0] <- 1
+initial.values <- function() list(beta = runif(2,0,1),
+                                  p = runif(1,0,1),
+                                  z = zinits)
+```
+
+Parameters to be monitored. 
+```{r eval = FALSE}
+parameters.to.save <- c("phi1", "phi1plus", "p")
+```
+
+MCMC details.
+```{r eval = FALSE}
+n.iter <- 5000
+n.burnin <- 2500
+n.chains <- 2
+```
+
+Run nimble.
+```{r eval = FALSE}
+mcmc.phi.age.out <- nimbleMCMC(code = hmm.phiage.out, 
+                               constants = my.constants,
+                               data = my.data,              
+                               inits = initial.values,
+                               monitors = parameters.to.save,
+                               niter = n.iter,
+                               nburnin = n.burnin, 
+                               nchains = n.chains)
+```
+
+Display results. 
+```{r}
+load(here::here("dat/phiageout.RData"))
+MCMCsummary(mcmc.phi.age.out, round = 2)
+```
+
+#### Trap-dependence
+
+Add example for trap-dependence w/ time individual covariate. Move it to case study w/ multievent. 
+
+#### Missing values
+
+Now, think of body size across life. Problem is we cannot record size when animal is non-detected. Discretize in small, medium and large and treat as a state. More later. Assume a model for covariate and fill in missing values (imputation).
 
 ## Summary
 

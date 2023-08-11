@@ -311,3 +311,14 @@ values or distributions (Akaike, 1974; Spiegelhalter et al., 2002; Vehtari et al
 The fit of model to data can be assessed using posterior predictive checks (Rubin,
 1984), prior predictive checks (when evaluating potential replications involving new parameter
 values)
+
+
+#------------------------------------------- covariates
+
+Proportion of variance explained. Path analyses, structural equation
+models. Splines (more about spatial stats? CAR model?). Imputation 
+and multistate models to account for missing data. Explain basics 
+of parametric statistical modeling (linear models, GLMs and random effects).
+
+Talk about ANODEV?
+  

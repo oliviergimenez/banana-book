@@ -9054,23 +9054,22 @@ For our model, that means:</p>
 <h2>
 <span class="header-section-number">1.9</span> Covariates<a class="anchor" aria-label="anchor" href="#covariates"><i class="fas fa-link"></i></a>
 </h2>
-<p>Proportion of variance explained. Path analyses, structural equation models. Splines (more about spatial stats? CAR model?). Imputation and multistate models to account for missing data. Explain basics of parametric statistical modeling (linear models, GLMs and random effects).</p>
-<p>Talk about ANODEV?</p>
-<div id="can-we-explain-time-variation-embrace-heterogeneity" class="section level3" number="1.9.1">
+<p><strong>Blabla sur le pourquoi des covariables.</strong></p>
+<div id="temporal-covariates" class="section level3" number="1.9.1">
 <h3>
-<span class="header-section-number">1.9.1</span> Can we explain time variation? Embrace heterogeneity<a class="anchor" aria-label="anchor" href="#can-we-explain-time-variation-embrace-heterogeneity"><i class="fas fa-link"></i></a>
+<span class="header-section-number">1.9.1</span> Temporal covariates<a class="anchor" aria-label="anchor" href="#temporal-covariates"><i class="fas fa-link"></i></a>
 </h3>
-<ul>
-<li><p>Include temporal covariates, say <span class="math inline">\(x_t\)</span>.</p></li>
-<li><p><span class="math inline">\(\text{logit}(\phi_t) = \beta_1 + \beta_2 x_t\)</span>.</p></li>
-<li><p>Let’s investigate the effect of water flow on dipper survival (<a href="https://doi.org/10.2307/3802934">Marzolin 2002</a>).</p></li>
-</ul>
+<div id="discrete" class="section level4" number="1.9.1.1">
+<h4>
+<span class="header-section-number">1.9.1.1</span> Discrete<a class="anchor" aria-label="anchor" href="#discrete"><i class="fas fa-link"></i></a>
+</h4>
+<p>Also consider flood effect discrete cov. A major flood occurred during the 1983 breeding season. Because captures during the breding season occurred well before and after the flood, survival in the two years 1982-1983 and 1983-1984 were likely to be affected. Indeed survival of a species living along and feeding in the river in these two flood years was most likely lower than in nonflood years.</p>
 <div class="sourceCode" id="cb30"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">hmm.phiflowp</span> <span class="op">&lt;-</span> <span class="fu">nimbleCode</span><span class="op">(</span><span class="op">{</span></span>
+<code class="sourceCode R"><span><span class="va">hmm.phifloodp</span> <span class="op">&lt;-</span> <span class="fu">nimbleCode</span><span class="op">(</span><span class="op">{</span></span>
 <span>  <span class="va">delta</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span>          <span class="co"># Pr(alive t = 1) = 1</span></span>
 <span>  <span class="va">delta</span><span class="op">[</span><span class="fl">2</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0</span>          <span class="co"># Pr(dead t = 1) = 0</span></span>
 <span>  <span class="kw">for</span> <span class="op">(</span><span class="va">t</span> <span class="kw">in</span> <span class="fl">1</span><span class="op">:</span><span class="op">(</span><span class="cn">T</span><span class="op">-</span><span class="fl">1</span><span class="op">)</span><span class="op">)</span><span class="op">{</span></span>
-<span>    <span class="fu">logit</span><span class="op">(</span><span class="va">phi</span><span class="op">[</span><span class="va">t</span><span class="op">]</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="va">beta</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span> <span class="op">+</span> <span class="va">beta</span><span class="op">[</span><span class="fl">2</span><span class="op">]</span> <span class="op">*</span> <span class="va">flow</span><span class="op">[</span><span class="va">t</span><span class="op">]</span> <span class="co">#&lt;&lt;</span></span>
+<span>    <span class="fu">logit</span><span class="op">(</span><span class="va">phi</span><span class="op">[</span><span class="va">t</span><span class="op">]</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="va">beta</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span> <span class="op">+</span> <span class="va">beta</span><span class="op">[</span><span class="fl">2</span><span class="op">]</span> <span class="op">*</span> <span class="va">flood</span><span class="op">[</span><span class="va">t</span><span class="op">]</span></span>
 <span>    <span class="va">gamma</span><span class="op">[</span><span class="fl">1</span>,<span class="fl">1</span>,<span class="va">t</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="va">phi</span><span class="op">[</span><span class="va">t</span><span class="op">]</span>      <span class="co"># Pr(alive t -&gt; alive t+1)</span></span>
 <span>    <span class="va">gamma</span><span class="op">[</span><span class="fl">1</span>,<span class="fl">2</span>,<span class="va">t</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span> <span class="op">-</span> <span class="va">phi</span><span class="op">[</span><span class="va">t</span><span class="op">]</span>  <span class="co"># Pr(alive t -&gt; dead t+1)</span></span>
 <span>    <span class="va">gamma</span><span class="op">[</span><span class="fl">2</span>,<span class="fl">1</span>,<span class="va">t</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0</span>        <span class="co"># Pr(dead t -&gt; alive t+1)</span></span>
@@ -9081,8 +9080,8 @@ For our model, that means:</p>
 <span>  <span class="va">omega</span><span class="op">[</span><span class="fl">1</span>,<span class="fl">2</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="va">p</span>        <span class="co"># Pr(alive t -&gt; detected t)</span></span>
 <span>  <span class="va">omega</span><span class="op">[</span><span class="fl">2</span>,<span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span>        <span class="co"># Pr(dead t -&gt; non-detected t)</span></span>
 <span>  <span class="va">omega</span><span class="op">[</span><span class="fl">2</span>,<span class="fl">2</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0</span>        <span class="co"># Pr(dead t -&gt; detected t)</span></span>
-<span>  <span class="va">beta</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span> <span class="op">~</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html">dnorm</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1.5</span><span class="op">)</span> <span class="co"># prior intercept #&lt;&lt;</span></span>
-<span>  <span class="va">beta</span><span class="op">[</span><span class="fl">2</span><span class="op">]</span> <span class="op">~</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html">dnorm</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1.5</span><span class="op">)</span> <span class="co"># prior slope #&lt;&lt;</span></span>
+<span>  <span class="va">beta</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span> <span class="op">~</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html">dnorm</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1.5</span><span class="op">)</span> <span class="co"># prior intercept</span></span>
+<span>  <span class="va">beta</span><span class="op">[</span><span class="fl">2</span><span class="op">]</span> <span class="op">~</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html">dnorm</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1.5</span><span class="op">)</span> <span class="co"># prior slope</span></span>
 <span>  <span class="co"># likelihood</span></span>
 <span>  <span class="kw">for</span> <span class="op">(</span><span class="va">i</span> <span class="kw">in</span> <span class="fl">1</span><span class="op">:</span><span class="va">N</span><span class="op">)</span><span class="op">{</span></span>
 <span>    <span class="va">z</span><span class="op">[</span><span class="va">i</span>,<span class="va">first</span><span class="op">[</span><span class="va">i</span><span class="op">]</span><span class="op">]</span> <span class="op">~</span> <span class="fu">dcat</span><span class="op">(</span><span class="va">delta</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">2</span><span class="op">]</span><span class="op">)</span></span>
@@ -9092,49 +9091,167 @@ For our model, that means:</p>
 <span>    <span class="op">}</span></span>
 <span>  <span class="op">}</span></span>
 <span><span class="op">}</span><span class="op">)</span></span></code></pre></div>
+<p>Flood / nonflood year covariate:</p>
 <div class="sourceCode" id="cb31"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># water flow in L/s</span></span>
-<span><span class="va">water_flow</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="fl">443</span>, <span class="fl">1114</span>, <span class="fl">529</span>, <span class="fl">434</span>, <span class="fl">627</span>, <span class="fl">466</span><span class="op">)</span> <span class="co"># 1981, 1982, ..., 1987</span></span>
-<span><span class="va">water_flow_st</span> <span class="op">&lt;-</span> <span class="op">(</span><span class="va">water_flow</span> <span class="op">-</span> <span class="fu"><a href="https://rdrr.io/r/base/mean.html">mean</a></span><span class="op">(</span><span class="va">water_flow</span><span class="op">)</span><span class="op">)</span><span class="op">/</span><span class="fu"><a href="https://rdrr.io/r/stats/sd.html">sd</a></span><span class="op">(</span><span class="va">water_flow</span><span class="op">)</span> <span class="co">#&lt;&lt;</span></span></code></pre></div>
-<p>Also consider flood effect discrete cov.</p>
+<code class="sourceCode R"><span><span class="va">flood</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1</span>, <span class="fl">1</span>, <span class="fl">0</span>, <span class="fl">0</span>, <span class="fl">0</span><span class="op">)</span> <span class="co"># 1981-1982, 1982-1983, 1983-1984, 1984-1985, ...</span></span></code></pre></div>
+<p>Constants in a list.</p>
 <div class="sourceCode" id="cb32"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">my.constants</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>N <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html">nrow</a></span><span class="op">(</span><span class="va">y</span><span class="op">)</span>,</span>
 <span>                     T <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html">ncol</a></span><span class="op">(</span><span class="va">y</span><span class="op">)</span>,</span>
 <span>                     first <span class="op">=</span> <span class="va">first</span>,</span>
-<span>                     flow <span class="op">=</span> <span class="va">water_flow_st</span><span class="op">)</span> <span class="co">#&lt;&lt;</span></span>
-<span></span>
-<span><span class="va">initial.values</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>beta <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html">rnorm</a></span><span class="op">(</span><span class="fl">2</span>,<span class="fl">0</span>,<span class="fl">1</span><span class="op">)</span>,</span>
+<span>                     flood <span class="op">=</span> <span class="va">flood</span><span class="op">)</span></span></code></pre></div>
+<p>Initial values.</p>
+<div class="sourceCode" id="cb33"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">initial.values</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>beta <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html">rnorm</a></span><span class="op">(</span><span class="fl">2</span>,<span class="fl">0</span>,<span class="fl">1</span><span class="op">)</span>,</span>
 <span>                                  p <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html">runif</a></span><span class="op">(</span><span class="fl">1</span>,<span class="fl">0</span>,<span class="fl">1</span><span class="op">)</span>,</span>
-<span>                                  z <span class="op">=</span> <span class="va">zinits</span><span class="op">)</span></span>
-<span></span>
-<span><span class="va">parameters.to.save</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"beta"</span>, <span class="st">"p"</span>, <span class="st">"phi"</span><span class="op">)</span></span></code></pre></div>
-<p>Regression intercept and slope</p>
-<div class="inline-figure"><img src="banana-book_files/figure-html/unnamed-chunk-47-1.png" width="672"></div>
-<p>Time-dependent (covariate constrained) survival probability estimates</p>
-<div class="inline-figure"><img src="banana-book_files/figure-html/unnamed-chunk-48-1.png" width="672"></div>
+<span>                                  z <span class="op">=</span> <span class="va">zinits</span><span class="op">)</span></span></code></pre></div>
+<p>Parameters to be monitored.</p>
+<div class="sourceCode" id="cb34"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">parameters.to.save</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"beta"</span>, <span class="st">"p"</span>, <span class="st">"phi"</span>, <span class="st">"z"</span><span class="op">)</span></span></code></pre></div>
+<p>Run nimble.</p>
+<div class="sourceCode" id="cb35"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">mcmc.phifloodp</span> <span class="op">&lt;-</span> <span class="fu">nimbleMCMC</span><span class="op">(</span>code <span class="op">=</span> <span class="va">hmm.phifloodp</span>, </span>
+<span>                          constants <span class="op">=</span> <span class="va">my.constants</span>,</span>
+<span>                          data <span class="op">=</span> <span class="va">my.data</span>,              </span>
+<span>                          inits <span class="op">=</span> <span class="va">initial.values</span>,</span>
+<span>                          monitors <span class="op">=</span> <span class="va">parameters.to.save</span>,</span>
+<span>                          niter <span class="op">=</span> <span class="va">n.iter</span>,</span>
+<span>                          nburnin <span class="op">=</span> <span class="va">n.burnin</span>, </span>
+<span>                          nchains <span class="op">=</span> <span class="va">n.chains</span>,</span>
+<span>                          WAIC <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
+<p>Regression intercept and slope. Caterpillar plot of the regression parameters. The posterior distribution of the slope is centered on negative values, suggesting the as water flow increases, survival decreases.</p>
+<p>Which gives survival in nonflood years (inv logit of <span class="math inline">\(\beta_1\)</span>) 0.61 (0.54, 0.66) and in flood year (in logit of <span class="math inline">\(\beta_1+\beta_2\)</span>) 0.48 (0.4, 0.56).</p>
+<p>WAIC is <code>mcmc.phifloodp$WAIC$WAIC</code>. Survival in flood years lower than in nonflood years.</p>
+<p>Let’s use a covariate <span class="math inline">\(\text{flood}\)</span> that contains 1s and 2s, indicating whether we are in a flood or nonflood year for each year: 1 if nonflood year, and 2 if flood year. E.g. for year <span class="math inline">\(t = 2\)</span>, <code>beta[flood[t]]</code> gives <code>beta[flood[2]]</code> which will be <code>beta[1]</code> or <code>beta[2]</code> depending on whether flood[2] is 1 or 2.</p>
+<p>Flood / nonflood year covariate:</p>
+<div class="sourceCode" id="cb36"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">flood</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">2</span>, <span class="fl">2</span>, <span class="fl">1</span>, <span class="fl">1</span>, <span class="fl">1</span><span class="op">)</span> <span class="co"># 1981-1982, 1982-1983, 1983-1984, 1984-1985, ...</span></span></code></pre></div>
+<div class="sourceCode" id="cb37"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">hmm.phifloodp</span> <span class="op">&lt;-</span> <span class="fu">nimbleCode</span><span class="op">(</span><span class="op">{</span></span>
+<span>  <span class="va">delta</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span>          <span class="co"># Pr(alive t = 1) = 1</span></span>
+<span>  <span class="va">delta</span><span class="op">[</span><span class="fl">2</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0</span>          <span class="co"># Pr(dead t = 1) = 0</span></span>
+<span>  <span class="kw">for</span> <span class="op">(</span><span class="va">t</span> <span class="kw">in</span> <span class="fl">1</span><span class="op">:</span><span class="op">(</span><span class="cn">T</span><span class="op">-</span><span class="fl">1</span><span class="op">)</span><span class="op">)</span><span class="op">{</span></span>
+<span>    <span class="va">phi</span><span class="op">[</span><span class="va">t</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="va">beta</span><span class="op">[</span><span class="va">flood</span><span class="op">[</span><span class="va">t</span><span class="op">]</span><span class="op">]</span></span>
+<span>    <span class="va">gamma</span><span class="op">[</span><span class="fl">1</span>,<span class="fl">1</span>,<span class="va">t</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="va">phi</span><span class="op">[</span><span class="va">t</span><span class="op">]</span>      <span class="co"># Pr(alive t -&gt; alive t+1)</span></span>
+<span>    <span class="va">gamma</span><span class="op">[</span><span class="fl">1</span>,<span class="fl">2</span>,<span class="va">t</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span> <span class="op">-</span> <span class="va">phi</span><span class="op">[</span><span class="va">t</span><span class="op">]</span>  <span class="co"># Pr(alive t -&gt; dead t+1)</span></span>
+<span>    <span class="va">gamma</span><span class="op">[</span><span class="fl">2</span>,<span class="fl">1</span>,<span class="va">t</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0</span>        <span class="co"># Pr(dead t -&gt; alive t+1)</span></span>
+<span>    <span class="va">gamma</span><span class="op">[</span><span class="fl">2</span>,<span class="fl">2</span>,<span class="va">t</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span>        <span class="co"># Pr(dead t -&gt; dead t+1)</span></span>
+<span>  <span class="op">}</span></span>
+<span>  <span class="va">p</span> <span class="op">~</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html">dunif</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1</span><span class="op">)</span> <span class="co"># prior detection</span></span>
+<span>  <span class="va">omega</span><span class="op">[</span><span class="fl">1</span>,<span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span> <span class="op">-</span> <span class="va">p</span>    <span class="co"># Pr(alive t -&gt; non-detected t)</span></span>
+<span>  <span class="va">omega</span><span class="op">[</span><span class="fl">1</span>,<span class="fl">2</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="va">p</span>        <span class="co"># Pr(alive t -&gt; detected t)</span></span>
+<span>  <span class="va">omega</span><span class="op">[</span><span class="fl">2</span>,<span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span>        <span class="co"># Pr(dead t -&gt; non-detected t)</span></span>
+<span>  <span class="va">omega</span><span class="op">[</span><span class="fl">2</span>,<span class="fl">2</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0</span>        <span class="co"># Pr(dead t -&gt; detected t)</span></span>
+<span>  <span class="va">beta</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span> <span class="op">~</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html">dunif</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1</span><span class="op">)</span> <span class="co"># prior intercept</span></span>
+<span>  <span class="va">beta</span><span class="op">[</span><span class="fl">2</span><span class="op">]</span> <span class="op">~</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html">dunif</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1</span><span class="op">)</span> <span class="co"># prior slope</span></span>
+<span>  <span class="co"># likelihood</span></span>
+<span>  <span class="kw">for</span> <span class="op">(</span><span class="va">i</span> <span class="kw">in</span> <span class="fl">1</span><span class="op">:</span><span class="va">N</span><span class="op">)</span><span class="op">{</span></span>
+<span>    <span class="va">z</span><span class="op">[</span><span class="va">i</span>,<span class="va">first</span><span class="op">[</span><span class="va">i</span><span class="op">]</span><span class="op">]</span> <span class="op">~</span> <span class="fu">dcat</span><span class="op">(</span><span class="va">delta</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">2</span><span class="op">]</span><span class="op">)</span></span>
+<span>    <span class="kw">for</span> <span class="op">(</span><span class="va">j</span> <span class="kw">in</span> <span class="op">(</span><span class="va">first</span><span class="op">[</span><span class="va">i</span><span class="op">]</span><span class="op">+</span><span class="fl">1</span><span class="op">)</span><span class="op">:</span><span class="cn">T</span><span class="op">)</span><span class="op">{</span></span>
+<span>      <span class="va">z</span><span class="op">[</span><span class="va">i</span>,<span class="va">j</span><span class="op">]</span> <span class="op">~</span> <span class="fu">dcat</span><span class="op">(</span><span class="va">gamma</span><span class="op">[</span><span class="va">z</span><span class="op">[</span><span class="va">i</span>,<span class="va">j</span><span class="op">-</span><span class="fl">1</span><span class="op">]</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">2</span>, <span class="va">j</span><span class="op">-</span><span class="fl">1</span><span class="op">]</span><span class="op">)</span></span>
+<span>      <span class="va">y</span><span class="op">[</span><span class="va">i</span>,<span class="va">j</span><span class="op">]</span> <span class="op">~</span> <span class="fu">dcat</span><span class="op">(</span><span class="va">omega</span><span class="op">[</span><span class="va">z</span><span class="op">[</span><span class="va">i</span>,<span class="va">j</span><span class="op">]</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">2</span><span class="op">]</span><span class="op">)</span></span>
+<span>    <span class="op">}</span></span>
+<span>  <span class="op">}</span></span>
+<span><span class="op">}</span><span class="op">)</span></span></code></pre></div>
+<p>Constants in a list.</p>
+<div class="sourceCode" id="cb38"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">my.constants</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>N <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html">nrow</a></span><span class="op">(</span><span class="va">y</span><span class="op">)</span>,</span>
+<span>                     T <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html">ncol</a></span><span class="op">(</span><span class="va">y</span><span class="op">)</span>,</span>
+<span>                     first <span class="op">=</span> <span class="va">first</span>,</span>
+<span>                     flood <span class="op">=</span> <span class="va">flood</span><span class="op">)</span></span></code></pre></div>
+<p>Initial values.</p>
+<div class="sourceCode" id="cb39"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">initial.values</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>beta <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html">runif</a></span><span class="op">(</span><span class="fl">2</span>,<span class="fl">0</span>,<span class="fl">1</span><span class="op">)</span>,</span>
+<span>                                  p <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html">runif</a></span><span class="op">(</span><span class="fl">1</span>,<span class="fl">0</span>,<span class="fl">1</span><span class="op">)</span>,</span>
+<span>                                  z <span class="op">=</span> <span class="va">zinits</span><span class="op">)</span></span></code></pre></div>
+<p>Parameters to be monitored.</p>
+<div class="sourceCode" id="cb40"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">parameters.to.save</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"beta"</span>, <span class="st">"p"</span>, <span class="st">"phi"</span>, <span class="st">"z"</span><span class="op">)</span></span></code></pre></div>
+<p>Run nimble.</p>
+<div class="sourceCode" id="cb41"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">mcmc.phifloodp</span> <span class="op">&lt;-</span> <span class="fu">nimbleMCMC</span><span class="op">(</span>code <span class="op">=</span> <span class="va">hmm.phifloodp</span>, </span>
+<span>                             constants <span class="op">=</span> <span class="va">my.constants</span>,</span>
+<span>                             data <span class="op">=</span> <span class="va">my.data</span>,              </span>
+<span>                             inits <span class="op">=</span> <span class="va">initial.values</span>,</span>
+<span>                             monitors <span class="op">=</span> <span class="va">parameters.to.save</span>,</span>
+<span>                             niter <span class="op">=</span> <span class="va">n.iter</span>,</span>
+<span>                             nburnin <span class="op">=</span> <span class="va">n.burnin</span>, </span>
+<span>                             nchains <span class="op">=</span> <span class="va">n.chains</span>,</span>
+<span>                             WAIC <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
+<p>Regression intercept and slope. Caterpillar plot of the regression parameters. The posterior distribution of the slope is centered on negative values, suggesting the as water flow increases, survival decreases.</p>
+<p>Which gives survival in flood years 0.61 (0.55, 0.67) and in nonflood year 0.47 (0.39, 0.55).</p>
+<p>WAIC is <code>mcmc.phifloodp$WAIC$WAIC</code>. Survival in flood years lower than in nonflood years.</p>
 </div>
-<div id="embrace-heterogeneity" class="section level3" number="1.9.2">
-<h3>
-<span class="header-section-number">1.9.2</span> Embrace heterogeneity<a class="anchor" aria-label="anchor" href="#embrace-heterogeneity"><i class="fas fa-link"></i></a>
-</h3>
-<ul>
-<li><p>Include temporal covariates, say <span class="math inline">\(x_t\)</span></p></li>
-<li><p><span class="math inline">\(\text{logit}(\phi_t) = \beta_1 + \beta_2 x_t\)</span></p></li>
-<li><p>If temporal variation not fully explained by covariates, add random effects</p></li>
-<li><p><span class="math inline">\(\text{logit}(\phi_t) = \beta_1 + \beta_2 x_t + \varepsilon_t, \; \varepsilon_t \sim N(0,\sigma^2)\)</span></p></li>
-</ul>
-<div class="sourceCode" id="cb33"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb33-1"><a href="survival.html#cb33-1" tabindex="-1"></a>hmm.phiflowREp <span class="ot">&lt;-</span> <span class="fu">nimbleCode</span>({</span>
-<span id="cb33-2"><a href="survival.html#cb33-2" tabindex="-1"></a>  <span class="cf">for</span> (t <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>(T<span class="dv">-1</span>)){</span>
-<span id="cb33-3"><a href="survival.html#cb33-3" tabindex="-1"></a>    <span class="fu">logit</span>(phi[t]) <span class="ot">&lt;-</span> beta[<span class="dv">1</span>] <span class="sc">+</span> beta[<span class="dv">2</span>] <span class="sc">*</span> flow[t] <span class="sc">+</span> eps[t]</span>
-<span id="cb33-4"><a href="survival.html#cb33-4" tabindex="-1"></a>    eps[t] <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>, <span class="at">sd =</span> sdeps)</span>
-<span id="cb33-5"><a href="survival.html#cb33-5" tabindex="-1"></a>    ...</span>
-<span id="cb33-6"><a href="survival.html#cb33-6" tabindex="-1"></a>  }</span>
-<span id="cb33-7"><a href="survival.html#cb33-7" tabindex="-1"></a>  sdeps <span class="sc">~</span> <span class="fu">dunif</span>(<span class="dv">0</span>,<span class="dv">10</span>)</span>
-<span id="cb33-8"><a href="survival.html#cb33-8" tabindex="-1"></a>  ...</span></code></pre></div>
+<div id="continuous" class="section level4" number="1.9.1.2">
+<h4>
+<span class="header-section-number">1.9.1.2</span> Continuous<a class="anchor" aria-label="anchor" href="#continuous"><i class="fas fa-link"></i></a>
+</h4>
+<p>Include temporal covariates, say <span class="math inline">\(x_t\)</span>, through <span class="math inline">\(\text{logit}(\phi_t) = \beta_1 + \beta_2 x_t\)</span>. <strong>explain logit link function</strong> <strong>a bit of caution with priors</strong>. Let’s investigate the effect of water flow on dipper survival (<a href="https://doi.org/10.2307/3802934">Marzolin 2002</a>). Now we’d like to add a temporal covariate to try and explain annual variation in survival. We pick water flow in river. We specify the relationship on the logit scale.</p>
+<div class="sourceCode" id="cb42"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">hmm.phiflowp</span> <span class="op">&lt;-</span> <span class="fu">nimbleCode</span><span class="op">(</span><span class="op">{</span></span>
+<span>  <span class="va">delta</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span>          <span class="co"># Pr(alive t = 1) = 1</span></span>
+<span>  <span class="va">delta</span><span class="op">[</span><span class="fl">2</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0</span>          <span class="co"># Pr(dead t = 1) = 0</span></span>
+<span>  <span class="kw">for</span> <span class="op">(</span><span class="va">t</span> <span class="kw">in</span> <span class="fl">1</span><span class="op">:</span><span class="op">(</span><span class="cn">T</span><span class="op">-</span><span class="fl">1</span><span class="op">)</span><span class="op">)</span><span class="op">{</span></span>
+<span>    <span class="fu">logit</span><span class="op">(</span><span class="va">phi</span><span class="op">[</span><span class="va">t</span><span class="op">]</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="va">beta</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span> <span class="op">+</span> <span class="va">beta</span><span class="op">[</span><span class="fl">2</span><span class="op">]</span> <span class="op">*</span> <span class="va">flow</span><span class="op">[</span><span class="va">t</span><span class="op">]</span> </span>
+<span>    <span class="va">gamma</span><span class="op">[</span><span class="fl">1</span>,<span class="fl">1</span>,<span class="va">t</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="va">phi</span><span class="op">[</span><span class="va">t</span><span class="op">]</span>      <span class="co"># Pr(alive t -&gt; alive t+1)</span></span>
+<span>    <span class="va">gamma</span><span class="op">[</span><span class="fl">1</span>,<span class="fl">2</span>,<span class="va">t</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span> <span class="op">-</span> <span class="va">phi</span><span class="op">[</span><span class="va">t</span><span class="op">]</span>  <span class="co"># Pr(alive t -&gt; dead t+1)</span></span>
+<span>    <span class="va">gamma</span><span class="op">[</span><span class="fl">2</span>,<span class="fl">1</span>,<span class="va">t</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0</span>        <span class="co"># Pr(dead t -&gt; alive t+1)</span></span>
+<span>    <span class="va">gamma</span><span class="op">[</span><span class="fl">2</span>,<span class="fl">2</span>,<span class="va">t</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span>        <span class="co"># Pr(dead t -&gt; dead t+1)</span></span>
+<span>  <span class="op">}</span></span>
+<span>  <span class="va">p</span> <span class="op">~</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html">dunif</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1</span><span class="op">)</span> <span class="co"># prior detection</span></span>
+<span>  <span class="va">omega</span><span class="op">[</span><span class="fl">1</span>,<span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span> <span class="op">-</span> <span class="va">p</span>    <span class="co"># Pr(alive t -&gt; non-detected t)</span></span>
+<span>  <span class="va">omega</span><span class="op">[</span><span class="fl">1</span>,<span class="fl">2</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="va">p</span>        <span class="co"># Pr(alive t -&gt; detected t)</span></span>
+<span>  <span class="va">omega</span><span class="op">[</span><span class="fl">2</span>,<span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span>        <span class="co"># Pr(dead t -&gt; non-detected t)</span></span>
+<span>  <span class="va">omega</span><span class="op">[</span><span class="fl">2</span>,<span class="fl">2</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0</span>        <span class="co"># Pr(dead t -&gt; detected t)</span></span>
+<span>  <span class="va">beta</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span> <span class="op">~</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html">dnorm</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1.5</span><span class="op">)</span> <span class="co"># prior intercept</span></span>
+<span>  <span class="va">beta</span><span class="op">[</span><span class="fl">2</span><span class="op">]</span> <span class="op">~</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html">dnorm</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1.5</span><span class="op">)</span> <span class="co"># prior slope</span></span>
+<span>  <span class="co"># likelihood</span></span>
+<span>  <span class="kw">for</span> <span class="op">(</span><span class="va">i</span> <span class="kw">in</span> <span class="fl">1</span><span class="op">:</span><span class="va">N</span><span class="op">)</span><span class="op">{</span></span>
+<span>    <span class="va">z</span><span class="op">[</span><span class="va">i</span>,<span class="va">first</span><span class="op">[</span><span class="va">i</span><span class="op">]</span><span class="op">]</span> <span class="op">~</span> <span class="fu">dcat</span><span class="op">(</span><span class="va">delta</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">2</span><span class="op">]</span><span class="op">)</span></span>
+<span>    <span class="kw">for</span> <span class="op">(</span><span class="va">j</span> <span class="kw">in</span> <span class="op">(</span><span class="va">first</span><span class="op">[</span><span class="va">i</span><span class="op">]</span><span class="op">+</span><span class="fl">1</span><span class="op">)</span><span class="op">:</span><span class="cn">T</span><span class="op">)</span><span class="op">{</span></span>
+<span>      <span class="va">z</span><span class="op">[</span><span class="va">i</span>,<span class="va">j</span><span class="op">]</span> <span class="op">~</span> <span class="fu">dcat</span><span class="op">(</span><span class="va">gamma</span><span class="op">[</span><span class="va">z</span><span class="op">[</span><span class="va">i</span>,<span class="va">j</span><span class="op">-</span><span class="fl">1</span><span class="op">]</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">2</span>, <span class="va">j</span><span class="op">-</span><span class="fl">1</span><span class="op">]</span><span class="op">)</span></span>
+<span>      <span class="va">y</span><span class="op">[</span><span class="va">i</span>,<span class="va">j</span><span class="op">]</span> <span class="op">~</span> <span class="fu">dcat</span><span class="op">(</span><span class="va">omega</span><span class="op">[</span><span class="va">z</span><span class="op">[</span><span class="va">i</span>,<span class="va">j</span><span class="op">]</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">2</span><span class="op">]</span><span class="op">)</span></span>
+<span>    <span class="op">}</span></span>
+<span>  <span class="op">}</span></span>
+<span><span class="op">}</span><span class="op">)</span></span></code></pre></div>
+<p>We only take the values we need, and standardize the covariate. Insist on think of when covariate operates on time interval.</p>
+<div class="sourceCode" id="cb43"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># water flow in L/s</span></span>
+<span><span class="va">water_flow</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="fl">443</span>, <span class="fl">1114</span>, <span class="fl">529</span>, <span class="fl">434</span>, <span class="fl">627</span>, <span class="fl">466</span><span class="op">)</span> <span class="co"># 1981, 1982, ..., 1987</span></span>
+<span><span class="va">water_flow_st</span> <span class="op">&lt;-</span> <span class="op">(</span><span class="va">water_flow</span> <span class="op">-</span> <span class="fu"><a href="https://rdrr.io/r/base/mean.html">mean</a></span><span class="op">(</span><span class="va">water_flow</span><span class="op">)</span><span class="op">)</span><span class="op">/</span><span class="fu"><a href="https://rdrr.io/r/stats/sd.html">sd</a></span><span class="op">(</span><span class="va">water_flow</span><span class="op">)</span></span></code></pre></div>
+<p>Constants in a list.</p>
+<div class="sourceCode" id="cb44"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">my.constants</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>N <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html">nrow</a></span><span class="op">(</span><span class="va">y</span><span class="op">)</span>,</span>
+<span>                     T <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html">ncol</a></span><span class="op">(</span><span class="va">y</span><span class="op">)</span>,</span>
+<span>                     first <span class="op">=</span> <span class="va">first</span>,</span>
+<span>                     flow <span class="op">=</span> <span class="va">water_flow_st</span><span class="op">)</span></span></code></pre></div>
+<p>Initial values.</p>
+<div class="sourceCode" id="cb45"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">initial.values</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>beta <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html">rnorm</a></span><span class="op">(</span><span class="fl">2</span>,<span class="fl">0</span>,<span class="fl">1</span><span class="op">)</span>,</span>
+<span>                                  p <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html">runif</a></span><span class="op">(</span><span class="fl">1</span>,<span class="fl">0</span>,<span class="fl">1</span><span class="op">)</span>,</span>
+<span>                                  z <span class="op">=</span> <span class="va">zinits</span><span class="op">)</span></span></code></pre></div>
+<p>Parameters to be monitored.</p>
+<div class="sourceCode" id="cb46"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">parameters.to.save</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"beta"</span>, <span class="st">"p"</span>, <span class="st">"phi"</span><span class="op">)</span></span></code></pre></div>
+<p>Run nimble.</p>
+<div class="sourceCode" id="cb47"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">mcmc.phiflowp</span> <span class="op">&lt;-</span> <span class="fu">nimbleMCMC</span><span class="op">(</span>code <span class="op">=</span> <span class="va">hmm.phiflowp</span>, </span>
+<span>                          constants <span class="op">=</span> <span class="va">my.constants</span>,</span>
+<span>                          data <span class="op">=</span> <span class="va">my.data</span>,              </span>
+<span>                          inits <span class="op">=</span> <span class="va">initial.values</span>,</span>
+<span>                          monitors <span class="op">=</span> <span class="va">parameters.to.save</span>,</span>
+<span>                          niter <span class="op">=</span> <span class="va">n.iter</span>,</span>
+<span>                          nburnin <span class="op">=</span> <span class="va">n.burnin</span>, </span>
+<span>                          nchains <span class="op">=</span> <span class="va">n.chains</span><span class="op">)</span></span></code></pre></div>
+<p>Regression intercept and slope. Caterpillar plot of the regression parameters. The posterior distribution of the slope is centered on negative values, suggesting the as water flow increases, survival decreases.
+<img src="banana-book_files/figure-html/unnamed-chunk-64-1.png" width="672">
+Time-dependent (covariate constrained) survival probability estimates. Caterpillar plot of the survival estimates. Survival between 1982 and 1983 seems to have been affected highly by a huge water flow compared to the other years. Coherent with previous section with flood effect.
+<img src="banana-book_files/figure-html/unnamed-chunk-65-1.png" width="672"></p>
 </div>
-<div id="what-about-individual-heterogeneity" class="section level3" number="1.9.3">
+</div>
+<div id="individual-covariates" class="section level3" number="1.9.2">
 <h3>
-<span class="header-section-number">1.9.3</span> What about individual heterogeneity?<a class="anchor" aria-label="anchor" href="#what-about-individual-heterogeneity"><i class="fas fa-link"></i></a>
+<span class="header-section-number">1.9.2</span> Individual covariates<a class="anchor" aria-label="anchor" href="#individual-covariates"><i class="fas fa-link"></i></a>
 </h3>
 <ul>
 <li><p>Discrete covariate like, e.g., sex</p></li>
@@ -17702,6 +17819,10 @@ F
 </tbody>
 </table></div>
 </div>
+<div id="discrete-1" class="section level4" number="1.9.2.1">
+<h4>
+<span class="header-section-number">1.9.2.1</span> Discrete<a class="anchor" aria-label="anchor" href="#discrete-1"><i class="fas fa-link"></i></a>
+</h4>
 <p>Sex effect</p>
 <ul>
 <li><p>Let’s use a covariate <span class="math inline">\(\text{sex}\)</span> that takes value 0 if male, and 1 if female</p></li>
@@ -17714,26 +17835,26 @@ F
 </ul>
 <p><span class="math display">\[\text{logit}(\phi_i) = \beta_1 + \beta_2\]</span></p>
 <p>Nimble implementation with sex as a covariate</p>
-<div class="sourceCode" id="cb34"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb48"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">hmm.phisexp</span> <span class="op">&lt;-</span> <span class="fu">nimbleCode</span><span class="op">(</span><span class="op">{</span></span>
 <span><span class="va">...</span></span>
 <span>  <span class="kw">for</span> <span class="op">(</span><span class="va">i</span> <span class="kw">in</span> <span class="fl">1</span><span class="op">:</span><span class="va">N</span><span class="op">)</span><span class="op">{</span> <span class="co">#&lt;&lt;</span></span>
-<span>    <span class="fu">logit</span><span class="op">(</span><span class="va">phi</span><span class="op">[</span><span class="va">i</span><span class="op">]</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="va">beta</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span> <span class="op">+</span> <span class="va">beta</span><span class="op">[</span><span class="fl">2</span><span class="op">]</span> <span class="op">*</span> <span class="va">sex</span><span class="op">[</span><span class="va">i</span><span class="op">]</span> <span class="co">#&lt;&lt;</span></span>
+<span>    <span class="fu">logit</span><span class="op">(</span><span class="va">phi</span><span class="op">[</span><span class="va">i</span><span class="op">]</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="va">beta</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span> <span class="op">+</span> <span class="va">beta</span><span class="op">[</span><span class="fl">2</span><span class="op">]</span> <span class="op">*</span> <span class="va">sex</span><span class="op">[</span><span class="va">i</span><span class="op">]</span></span>
 <span>    <span class="va">gamma</span><span class="op">[</span><span class="fl">1</span>,<span class="fl">1</span>,<span class="va">i</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="va">phi</span><span class="op">[</span><span class="va">i</span><span class="op">]</span>      <span class="co"># Pr(alive t -&gt; alive t+1)</span></span>
 <span>    <span class="va">gamma</span><span class="op">[</span><span class="fl">1</span>,<span class="fl">2</span>,<span class="va">i</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span> <span class="op">-</span> <span class="va">phi</span><span class="op">[</span><span class="va">i</span><span class="op">]</span>  <span class="co"># Pr(alive t -&gt; dead t+1)</span></span>
 <span>    <span class="va">gamma</span><span class="op">[</span><span class="fl">2</span>,<span class="fl">1</span>,<span class="va">i</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0</span>        <span class="co"># Pr(dead t -&gt; alive t+1)</span></span>
 <span>    <span class="va">gamma</span><span class="op">[</span><span class="fl">2</span>,<span class="fl">2</span>,<span class="va">i</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span>        <span class="co"># Pr(dead t -&gt; dead t+1)</span></span>
 <span>  <span class="op">}</span> <span class="co">#&lt;&lt;</span></span>
-<span>  <span class="va">beta</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span> <span class="op">~</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html">dnorm</a></span><span class="op">(</span>mean <span class="op">=</span> <span class="fl">0</span>, sd <span class="op">=</span> <span class="fl">1.5</span><span class="op">)</span> <span class="co">#&lt;&lt;</span></span>
-<span>  <span class="va">beta</span><span class="op">[</span><span class="fl">2</span><span class="op">]</span> <span class="op">~</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html">dnorm</a></span><span class="op">(</span>mean <span class="op">=</span> <span class="fl">0</span>, sd <span class="op">=</span> <span class="fl">1.5</span><span class="op">)</span> <span class="co">#&lt;&lt;</span></span>
-<span>  <span class="va">phi_male</span> <span class="op">&lt;-</span> <span class="fl">1</span><span class="op">/</span><span class="op">(</span><span class="fl">1</span><span class="op">+</span><span class="fu"><a href="https://rdrr.io/r/base/Log.html">exp</a></span><span class="op">(</span><span class="op">-</span><span class="va">beta</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span><span class="op">)</span><span class="op">)</span> <span class="co">#&lt;&lt;</span></span>
-<span>  <span class="va">phi_female</span> <span class="op">&lt;-</span> <span class="fl">1</span><span class="op">/</span><span class="op">(</span><span class="fl">1</span><span class="op">+</span><span class="fu"><a href="https://rdrr.io/r/base/Log.html">exp</a></span><span class="op">(</span><span class="op">-</span><span class="op">(</span><span class="va">beta</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span><span class="op">+</span><span class="va">beta</span><span class="op">[</span><span class="fl">2</span><span class="op">]</span><span class="op">)</span><span class="op">)</span><span class="op">)</span> <span class="co">#&lt;&lt;</span></span>
+<span>  <span class="va">beta</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span> <span class="op">~</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html">dnorm</a></span><span class="op">(</span>mean <span class="op">=</span> <span class="fl">0</span>, sd <span class="op">=</span> <span class="fl">1.5</span><span class="op">)</span></span>
+<span>  <span class="va">beta</span><span class="op">[</span><span class="fl">2</span><span class="op">]</span> <span class="op">~</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html">dnorm</a></span><span class="op">(</span>mean <span class="op">=</span> <span class="fl">0</span>, sd <span class="op">=</span> <span class="fl">1.5</span><span class="op">)</span></span>
+<span>  <span class="va">phi_male</span> <span class="op">&lt;-</span> <span class="fl">1</span><span class="op">/</span><span class="op">(</span><span class="fl">1</span><span class="op">+</span><span class="fu"><a href="https://rdrr.io/r/base/Log.html">exp</a></span><span class="op">(</span><span class="op">-</span><span class="va">beta</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span><span class="op">)</span><span class="op">)</span></span>
+<span>  <span class="va">phi_female</span> <span class="op">&lt;-</span> <span class="fl">1</span><span class="op">/</span><span class="op">(</span><span class="fl">1</span><span class="op">+</span><span class="fu"><a href="https://rdrr.io/r/base/Log.html">exp</a></span><span class="op">(</span><span class="op">-</span><span class="op">(</span><span class="va">beta</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span><span class="op">+</span><span class="va">beta</span><span class="op">[</span><span class="fl">2</span><span class="op">]</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="va">...</span></span>
 <span>  <span class="co"># likelihood</span></span>
 <span>  <span class="kw">for</span> <span class="op">(</span><span class="va">i</span> <span class="kw">in</span> <span class="fl">1</span><span class="op">:</span><span class="va">N</span><span class="op">)</span><span class="op">{</span></span>
 <span>    <span class="va">z</span><span class="op">[</span><span class="va">i</span>,<span class="va">first</span><span class="op">[</span><span class="va">i</span><span class="op">]</span><span class="op">]</span> <span class="op">~</span> <span class="fu">dcat</span><span class="op">(</span><span class="va">delta</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">2</span><span class="op">]</span><span class="op">)</span></span>
 <span>    <span class="kw">for</span> <span class="op">(</span><span class="va">j</span> <span class="kw">in</span> <span class="op">(</span><span class="va">first</span><span class="op">[</span><span class="va">i</span><span class="op">]</span><span class="op">+</span><span class="fl">1</span><span class="op">)</span><span class="op">:</span><span class="cn">T</span><span class="op">)</span><span class="op">{</span></span>
-<span>      <span class="va">z</span><span class="op">[</span><span class="va">i</span>,<span class="va">j</span><span class="op">]</span> <span class="op">~</span> <span class="fu">dcat</span><span class="op">(</span><span class="va">gamma</span><span class="op">[</span><span class="va">z</span><span class="op">[</span><span class="va">i</span>,<span class="va">j</span><span class="op">-</span><span class="fl">1</span><span class="op">]</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">2</span>, <span class="va">i</span><span class="op">]</span><span class="op">)</span> <span class="co">#&lt;&lt;</span></span>
+<span>      <span class="va">z</span><span class="op">[</span><span class="va">i</span>,<span class="va">j</span><span class="op">]</span> <span class="op">~</span> <span class="fu">dcat</span><span class="op">(</span><span class="va">gamma</span><span class="op">[</span><span class="va">z</span><span class="op">[</span><span class="va">i</span>,<span class="va">j</span><span class="op">-</span><span class="fl">1</span><span class="op">]</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">2</span>, <span class="va">i</span><span class="op">]</span><span class="op">)</span></span>
 <span>      <span class="va">y</span><span class="op">[</span><span class="va">i</span>,<span class="va">j</span><span class="op">]</span> <span class="op">~</span> <span class="fu">dcat</span><span class="op">(</span><span class="va">omega</span><span class="op">[</span><span class="va">z</span><span class="op">[</span><span class="va">i</span>,<span class="va">j</span><span class="op">]</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">2</span><span class="op">]</span><span class="op">)</span></span>
 <span>    <span class="op">}</span></span>
 <span>  <span class="op">}</span></span>
@@ -17744,14 +17865,14 @@ F
 ## p           0.90 0.03  0.83  0.90  0.95 1.02   253
 ## phi_female  0.55 0.04  0.48  0.55  0.62 1.02   698
 ## phi_male    0.57 0.03  0.50  0.57  0.64 1.01   237</code></pre>
-<p>Nimble implementation with nested indexing</p>
+<p>NIMBLE implementation with nested indexing</p>
 <ul>
 <li>Let’s use a covariate <span class="math inline">\(\text{sex}\)</span> that contains 1s and 2s, indicating the sex of each individual: 1 if male, and 2 if female</li>
 </ul>
-<div class="sourceCode" id="cb36"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb50"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">...</span></span>
 <span><span class="kw">for</span> <span class="op">(</span><span class="va">i</span> <span class="kw">in</span> <span class="fl">1</span><span class="op">:</span><span class="va">N</span><span class="op">)</span><span class="op">{</span></span>
-<span>  <span class="va">phi</span><span class="op">[</span><span class="va">i</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="va">beta</span><span class="op">[</span><span class="va">sex</span><span class="op">[</span><span class="va">i</span><span class="op">]</span><span class="op">]</span> <span class="co">#&lt;&lt;</span></span>
+<span>  <span class="va">phi</span><span class="op">[</span><span class="va">i</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="va">beta</span><span class="op">[</span><span class="va">sex</span><span class="op">[</span><span class="va">i</span><span class="op">]</span><span class="op">]</span></span>
 <span>  <span class="va">gamma</span><span class="op">[</span><span class="fl">1</span>,<span class="fl">1</span>,<span class="va">i</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="va">phi</span><span class="op">[</span><span class="va">i</span><span class="op">]</span>      <span class="co"># Pr(alive t -&gt; alive t+1)</span></span>
 <span>  <span class="va">gamma</span><span class="op">[</span><span class="fl">1</span>,<span class="fl">2</span>,<span class="va">i</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span> <span class="op">-</span> <span class="va">phi</span><span class="op">[</span><span class="va">i</span><span class="op">]</span>  <span class="co"># Pr(alive t -&gt; dead t+1)</span></span>
 <span>  <span class="va">gamma</span><span class="op">[</span><span class="fl">2</span>,<span class="fl">1</span>,<span class="va">i</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0</span>           <span class="co"># Pr(dead t -&gt; alive t+1)</span></span>
@@ -17767,8 +17888,12 @@ F
 ## beta[1] 0.57 0.03 0.50 0.57  0.63 1.00   616
 ## beta[2] 0.55 0.03 0.48 0.55  0.62 1.02   657
 ## p       0.90 0.03 0.83 0.90  0.95 1.10   229</code></pre>
-<p>What about wing length?</p>
-<div class="sourceCode" id="cb38"><pre class="downlit sourceCode r">
+</div>
+<div id="continuous-1" class="section level4" number="1.9.2.2">
+<h4>
+<span class="header-section-number">1.9.2.2</span> Continuous<a class="anchor" aria-label="anchor" href="#continuous-1"><i class="fas fa-link"></i></a>
+</h4>
+<div class="sourceCode" id="cb52"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">...</span></span>
 <span>  <span class="kw">for</span> <span class="op">(</span><span class="va">i</span> <span class="kw">in</span> <span class="fl">1</span><span class="op">:</span><span class="va">N</span><span class="op">)</span><span class="op">{</span> <span class="co">#&lt;&lt;</span></span>
 <span>    <span class="fu">logit</span><span class="op">(</span><span class="va">phi</span><span class="op">[</span><span class="va">i</span><span class="op">]</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="va">beta</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span> <span class="op">+</span> <span class="va">beta</span><span class="op">[</span><span class="fl">2</span><span class="op">]</span> <span class="op">*</span> <span class="va">winglength</span><span class="op">[</span><span class="va">i</span><span class="op">]</span> <span class="co">#&lt;&lt;</span></span>
@@ -17780,24 +17905,631 @@ F
 <span>  <span class="va">beta</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span> <span class="op">~</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html">dnorm</a></span><span class="op">(</span>mean <span class="op">=</span> <span class="fl">0</span>, sd <span class="op">=</span> <span class="fl">1.5</span><span class="op">)</span> <span class="co"># intercept #&lt;&lt;</span></span>
 <span>  <span class="va">beta</span><span class="op">[</span><span class="fl">2</span><span class="op">]</span> <span class="op">~</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html">dnorm</a></span><span class="op">(</span>mean <span class="op">=</span> <span class="fl">0</span>, sd <span class="op">=</span> <span class="fl">1.5</span><span class="op">)</span> <span class="co"># slope #&lt;&lt;</span></span>
 <span><span class="va">...</span></span></code></pre></div>
-<p>Wing length</p>
-<div class="inline-figure"><img src="banana-book_files/figure-html/unnamed-chunk-56-1.png" width="672"></div>
-<ul>
-<li>You may test an effect of both sex and wing length, see exercise in Worksheets.</li>
-</ul>
+<div class="sourceCode" id="cb53"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">dipper</span> <span class="op">&lt;-</span> <span class="fu">read_csv</span><span class="op">(</span><span class="st">"dat/dipper.csv"</span><span class="op">)</span></span>
+<span><span class="va">y</span> <span class="op">&lt;-</span> <span class="va">dipper</span> <span class="op">%&gt;%</span></span>
+<span>  <span class="fu">select</span><span class="op">(</span><span class="va">year_1981</span><span class="op">:</span><span class="va">year_1987</span><span class="op">)</span> <span class="op">%&gt;%</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/matrix.html">as.matrix</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
+<p>Besides discrete individual covariates, you might want to have continuous individual covariates, e.g. wing length in the dipper case study. Note that we’re considering an individual trait that takes the same value whatever the occasion. If we were to have time-varying individual covariate in the model, we would have to do something about missing values of the covariate when an individual is not recaptured. The easiest way to cope with time-varying individual covariate is to discretize and treat levels of the covariates as states. More in the next live demo. Back to wing length. We first standardize the covariate.</p>
+<div class="sourceCode" id="cb54"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">wing.length.st</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/vector.html">as.vector</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/scale.html">scale</a></span><span class="op">(</span><span class="va">dipper</span><span class="op">$</span><span class="va">wing_length</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/head.html">head</a></span><span class="op">(</span><span class="va">wing.length.st</span><span class="op">)</span></span>
+<span><span class="co">## [1]  0.7581 -0.8671  0.5260 -1.5637 -1.3315  1.2225</span></span></code></pre></div>
+<p>Now we write the model. Basically we replace sex by wing length in the first method we used in the previous section. Easy.</p>
+<div class="sourceCode" id="cb55"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">hmm.phiwlp</span> <span class="op">&lt;-</span> <span class="fu">nimbleCode</span><span class="op">(</span><span class="op">{</span></span>
+<span>    <span class="va">p</span> <span class="op">~</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html">dunif</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1</span><span class="op">)</span> <span class="co"># prior detection</span></span>
+<span>    <span class="va">omega</span><span class="op">[</span><span class="fl">1</span>,<span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span> <span class="op">-</span> <span class="va">p</span>    <span class="co"># Pr(alive t -&gt; non-detected t)</span></span>
+<span>    <span class="va">omega</span><span class="op">[</span><span class="fl">1</span>,<span class="fl">2</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="va">p</span>        <span class="co"># Pr(alive t -&gt; detected t)</span></span>
+<span>    <span class="va">omega</span><span class="op">[</span><span class="fl">2</span>,<span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span>        <span class="co"># Pr(dead t -&gt; non-detected t)</span></span>
+<span>    <span class="va">omega</span><span class="op">[</span><span class="fl">2</span>,<span class="fl">2</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0</span>        <span class="co"># Pr(dead t -&gt; detected t)</span></span>
+<span>  <span class="kw">for</span> <span class="op">(</span><span class="va">i</span> <span class="kw">in</span> <span class="fl">1</span><span class="op">:</span><span class="va">N</span><span class="op">)</span><span class="op">{</span></span>
+<span>    <span class="fu">logit</span><span class="op">(</span><span class="va">phi</span><span class="op">[</span><span class="va">i</span><span class="op">]</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="va">beta</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span> <span class="op">+</span> <span class="va">beta</span><span class="op">[</span><span class="fl">2</span><span class="op">]</span> <span class="op">*</span> <span class="va">winglength</span><span class="op">[</span><span class="va">i</span><span class="op">]</span></span>
+<span>    <span class="va">gamma</span><span class="op">[</span><span class="fl">1</span>,<span class="fl">1</span>,<span class="va">i</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="va">phi</span><span class="op">[</span><span class="va">i</span><span class="op">]</span>      <span class="co"># Pr(alive t -&gt; alive t+1)</span></span>
+<span>    <span class="va">gamma</span><span class="op">[</span><span class="fl">1</span>,<span class="fl">2</span>,<span class="va">i</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span> <span class="op">-</span> <span class="va">phi</span><span class="op">[</span><span class="va">i</span><span class="op">]</span>  <span class="co"># Pr(alive t -&gt; dead t+1)</span></span>
+<span>    <span class="va">gamma</span><span class="op">[</span><span class="fl">2</span>,<span class="fl">1</span>,<span class="va">i</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0</span>           <span class="co"># Pr(dead t -&gt; alive t+1)</span></span>
+<span>    <span class="va">gamma</span><span class="op">[</span><span class="fl">2</span>,<span class="fl">2</span>,<span class="va">i</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span>           <span class="co"># Pr(dead t -&gt; dead t+1)</span></span>
+<span>  <span class="op">}</span></span>
+<span>  <span class="va">beta</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span> <span class="op">~</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html">dnorm</a></span><span class="op">(</span>mean <span class="op">=</span> <span class="fl">0</span>, sd <span class="op">=</span> <span class="fl">1.5</span><span class="op">)</span></span>
+<span>  <span class="va">beta</span><span class="op">[</span><span class="fl">2</span><span class="op">]</span> <span class="op">~</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html">dnorm</a></span><span class="op">(</span>mean <span class="op">=</span> <span class="fl">0</span>, sd <span class="op">=</span> <span class="fl">1.5</span><span class="op">)</span></span>
+<span>  <span class="va">delta</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span>          <span class="co"># Pr(alive t = 1) = 1</span></span>
+<span>  <span class="va">delta</span><span class="op">[</span><span class="fl">2</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0</span>          <span class="co"># Pr(dead t = 1) = 0</span></span>
+<span>  <span class="co"># likelihood</span></span>
+<span>  <span class="kw">for</span> <span class="op">(</span><span class="va">i</span> <span class="kw">in</span> <span class="fl">1</span><span class="op">:</span><span class="va">N</span><span class="op">)</span><span class="op">{</span></span>
+<span>    <span class="va">z</span><span class="op">[</span><span class="va">i</span>,<span class="va">first</span><span class="op">[</span><span class="va">i</span><span class="op">]</span><span class="op">]</span> <span class="op">~</span> <span class="fu">dcat</span><span class="op">(</span><span class="va">delta</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">2</span><span class="op">]</span><span class="op">)</span></span>
+<span>    <span class="kw">for</span> <span class="op">(</span><span class="va">j</span> <span class="kw">in</span> <span class="op">(</span><span class="va">first</span><span class="op">[</span><span class="va">i</span><span class="op">]</span><span class="op">+</span><span class="fl">1</span><span class="op">)</span><span class="op">:</span><span class="cn">T</span><span class="op">)</span><span class="op">{</span></span>
+<span>      <span class="va">z</span><span class="op">[</span><span class="va">i</span>,<span class="va">j</span><span class="op">]</span> <span class="op">~</span> <span class="fu">dcat</span><span class="op">(</span><span class="va">gamma</span><span class="op">[</span><span class="va">z</span><span class="op">[</span><span class="va">i</span>,<span class="va">j</span><span class="op">-</span><span class="fl">1</span><span class="op">]</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">2</span>, <span class="va">i</span><span class="op">]</span><span class="op">)</span></span>
+<span>      <span class="va">y</span><span class="op">[</span><span class="va">i</span>,<span class="va">j</span><span class="op">]</span> <span class="op">~</span> <span class="fu">dcat</span><span class="op">(</span><span class="va">omega</span><span class="op">[</span><span class="va">z</span><span class="op">[</span><span class="va">i</span>,<span class="va">j</span><span class="op">]</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">2</span><span class="op">]</span><span class="op">)</span></span>
+<span>    <span class="op">}</span></span>
+<span>  <span class="op">}</span></span>
+<span><span class="op">}</span><span class="op">)</span></span></code></pre></div>
+<p>Constants in a list.</p>
+<div class="sourceCode" id="cb56"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">my.constants</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>N <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html">nrow</a></span><span class="op">(</span><span class="va">y</span><span class="op">)</span>, </span>
+<span>                     T <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html">ncol</a></span><span class="op">(</span><span class="va">y</span><span class="op">)</span>, </span>
+<span>                     first <span class="op">=</span> <span class="va">first</span>,</span>
+<span>                     winglength <span class="op">=</span> <span class="va">wing.length.st</span><span class="op">)</span></span></code></pre></div>
+<p>Initial values.</p>
+<div class="sourceCode" id="cb57"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">initial.values</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>beta <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html">rnorm</a></span><span class="op">(</span><span class="fl">2</span>,<span class="fl">0</span>,<span class="fl">1</span><span class="op">)</span>,</span>
+<span>                                  p <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html">runif</a></span><span class="op">(</span><span class="fl">1</span>,<span class="fl">0</span>,<span class="fl">1</span><span class="op">)</span>,</span>
+<span>                                  z <span class="op">=</span> <span class="va">zinits</span><span class="op">)</span></span></code></pre></div>
+<p>Run nimble.</p>
+<div class="sourceCode" id="cb58"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">mcmc.phiwlp</span> <span class="op">&lt;-</span> <span class="fu">nimbleMCMC</span><span class="op">(</span>code <span class="op">=</span> <span class="va">hmm.phiwlp</span>, </span>
+<span>                          constants <span class="op">=</span> <span class="va">my.constants</span>,</span>
+<span>                          data <span class="op">=</span> <span class="va">my.data</span>,              </span>
+<span>                          inits <span class="op">=</span> <span class="va">initial.values</span>,</span>
+<span>                          monitors <span class="op">=</span> <span class="va">parameters.to.save</span>,</span>
+<span>                          niter <span class="op">=</span> <span class="va">n.iter</span>,</span>
+<span>                          nburnin <span class="op">=</span> <span class="va">n.burnin</span>, </span>
+<span>                          nchains <span class="op">=</span> <span class="va">n.chains</span><span class="op">)</span></span>
+<span><span class="co">## |-------------|-------------|-------------|-------------|</span></span>
+<span><span class="co">## |-------------------------------------------------------|</span></span>
+<span><span class="co">## |-------------|-------------|-------------|-------------|</span></span>
+<span><span class="co">## |-------------------------------------------------------|</span></span></code></pre></div>
+<p>Numerical summaries. Wing length does not seem to explain much individual-to-individual variation in survival. See corresponding slope param.</p>
+<div class="sourceCode" id="cb59"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/load.html">load</a></span><span class="op">(</span><span class="fu">here</span><span class="fu">::</span><span class="fu"><a href="https://here.r-lib.org//reference/here.html">here</a></span><span class="op">(</span><span class="st">"dat/phiwlp.RData"</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu">MCMCsummary</span><span class="op">(</span><span class="va">mcmc.phiwlp</span>, params <span class="op">=</span> <span class="st">"beta"</span>, round <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span>
+<span><span class="co">##          mean   sd  2.5%   50% 97.5% Rhat n.eff</span></span>
+<span><span class="co">## beta[1]  0.25 0.10  0.04  0.25  0.45    1  1472</span></span>
+<span><span class="co">## beta[2] -0.02 0.09 -0.20 -0.02  0.17    1  1555</span></span></code></pre></div>
+<p>Let’s plot the relationship. First, we gather the values generated from the posterior distribution of the regression parameters in the two chains.</p>
+<div class="sourceCode" id="cb60"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">beta1</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="va">mcmc.phiwlp</span><span class="op">$</span><span class="va">chain1</span><span class="op">[</span>,<span class="st">'beta[1]'</span><span class="op">]</span>, <span class="va">mcmc.phiwlp</span><span class="op">$</span><span class="va">chain2</span><span class="op">[</span>,<span class="st">'beta[1]'</span><span class="op">]</span><span class="op">)</span></span>
+<span><span class="va">beta2</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="va">mcmc.phiwlp</span><span class="op">$</span><span class="va">chain1</span><span class="op">[</span>,<span class="st">'beta[2]'</span><span class="op">]</span>, <span class="va">mcmc.phiwlp</span><span class="op">$</span><span class="va">chain2</span><span class="op">[</span>,<span class="st">'beta[2]'</span><span class="op">]</span><span class="op">)</span></span></code></pre></div>
+<p>Then we define a grid of values for wing length, and predict survival for each MCMC iteration.</p>
+<div class="sourceCode" id="cb61"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">predicted_survival</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html">matrix</a></span><span class="op">(</span><span class="cn">NA</span>, nrow <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/length.html">length</a></span><span class="op">(</span><span class="va">beta1</span><span class="op">)</span>, ncol <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/length.html">length</a></span><span class="op">(</span><span class="va">my.constants</span><span class="op">$</span><span class="va">winglength</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="kw">for</span> <span class="op">(</span><span class="va">i</span> <span class="kw">in</span> <span class="fl">1</span><span class="op">:</span><span class="fu"><a href="https://rdrr.io/r/base/length.html">length</a></span><span class="op">(</span><span class="va">beta1</span><span class="op">)</span><span class="op">)</span><span class="op">{</span></span>
+<span>  <span class="kw">for</span> <span class="op">(</span><span class="va">j</span> <span class="kw">in</span> <span class="fl">1</span><span class="op">:</span><span class="fu"><a href="https://rdrr.io/r/base/length.html">length</a></span><span class="op">(</span><span class="va">my.constants</span><span class="op">$</span><span class="va">winglength</span><span class="op">)</span><span class="op">)</span><span class="op">{</span></span>
+<span>    <span class="va">predicted_survival</span><span class="op">[</span><span class="va">i</span>,<span class="va">j</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/Logistic.html">plogis</a></span><span class="op">(</span><span class="va">beta1</span><span class="op">[</span><span class="va">i</span><span class="op">]</span> <span class="op">+</span> <span class="va">beta2</span><span class="op">[</span><span class="va">i</span><span class="op">]</span> <span class="op">*</span> <span class="va">my.constants</span><span class="op">$</span><span class="va">winglength</span><span class="op">[</span><span class="va">j</span><span class="op">]</span><span class="op">)</span></span>
+<span>  <span class="op">}</span></span>
+<span><span class="op">}</span></span></code></pre></div>
+<p>Now we calculate posterior mean and the credible interval. Note the ordering.</p>
+<div class="sourceCode" id="cb62"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">mean_survival</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/apply.html">apply</a></span><span class="op">(</span><span class="va">predicted_survival</span>, <span class="fl">2</span>, <span class="va">mean</span><span class="op">)</span></span>
+<span><span class="va">lci</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/apply.html">apply</a></span><span class="op">(</span><span class="va">predicted_survival</span>, <span class="fl">2</span>, <span class="va">quantile</span>, prob <span class="op">=</span> <span class="fl">2.5</span><span class="op">/</span><span class="fl">100</span><span class="op">)</span></span>
+<span><span class="va">uci</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/apply.html">apply</a></span><span class="op">(</span><span class="va">predicted_survival</span>, <span class="fl">2</span>, <span class="va">quantile</span>, prob <span class="op">=</span> <span class="fl">97.5</span><span class="op">/</span><span class="fl">100</span><span class="op">)</span></span>
+<span><span class="va">ord</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/order.html">order</a></span><span class="op">(</span><span class="va">my.constants</span><span class="op">$</span><span class="va">winglength</span><span class="op">)</span></span>
+<span><span class="va">df</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html">data.frame</a></span><span class="op">(</span>wing_length <span class="op">=</span> <span class="va">my.constants</span><span class="op">$</span><span class="va">winglength</span><span class="op">[</span><span class="va">ord</span><span class="op">]</span>,</span>
+<span>                 survival <span class="op">=</span> <span class="va">mean_survival</span><span class="op">[</span><span class="va">ord</span><span class="op">]</span>,</span>
+<span>                 lci <span class="op">=</span> <span class="va">lci</span><span class="op">[</span><span class="va">ord</span><span class="op">]</span>,</span>
+<span>                 uci <span class="op">=</span> <span class="va">uci</span><span class="op">[</span><span class="va">ord</span><span class="op">]</span><span class="op">)</span></span></code></pre></div>
+<p>Now time to visualize.</p>
+<div class="sourceCode" id="cb63"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">df</span> <span class="op">%&gt;%</span></span>
+<span>  <span class="fu">ggplot</span><span class="op">(</span><span class="op">)</span> <span class="op">+</span> </span>
+<span>  <span class="fu">aes</span><span class="op">(</span>x <span class="op">=</span> <span class="va">wing_length</span>, y <span class="op">=</span> <span class="va">survival</span><span class="op">)</span> <span class="op">+</span> </span>
+<span>  <span class="fu">geom_line</span><span class="op">(</span><span class="op">)</span> <span class="op">+</span> </span>
+<span>  <span class="fu">geom_ribbon</span><span class="op">(</span><span class="fu">aes</span><span class="op">(</span>ymin <span class="op">=</span> <span class="va">lci</span>, ymax <span class="op">=</span> <span class="va">uci</span><span class="op">)</span>, fill <span class="op">=</span> <span class="st">"grey70"</span>, alpha <span class="op">=</span> <span class="fl">0.5</span><span class="op">)</span> <span class="op">+</span> </span>
+<span>  <span class="fu">ylim</span><span class="op">(</span><span class="fl">0</span>,<span class="fl">1</span><span class="op">)</span> <span class="op">+</span> </span>
+<span>  <span class="fu">labs</span><span class="op">(</span>x <span class="op">=</span> <span class="st">"wing length"</span>, y <span class="op">=</span> <span class="st">"estimated survival"</span><span class="op">)</span></span></code></pre></div>
+<div class="inline-figure">
+<img src="banana-book_files/figure-html/unnamed-chunk-82-1.png" width="672">
+Wing length</div>
 </div>
-<div id="what-if-covariates-vary-with-individual-and-time" class="section level3" number="1.9.4">
+</div>
+<div id="additive-and-interaction" class="section level3" number="1.9.3">
 <h3>
-<span class="header-section-number">1.9.4</span> What if covariates vary with individual and time?<a class="anchor" aria-label="anchor" href="#what-if-covariates-vary-with-individual-and-time"><i class="fas fa-link"></i></a>
+<span class="header-section-number">1.9.3</span> Additive and interaction<a class="anchor" aria-label="anchor" href="#additive-and-interaction"><i class="fas fa-link"></i></a>
 </h3>
-<ul>
-<li><p>Think of age for example (see exercises in Worksheets); covariate or nested indexing works fine.</p></li>
-<li><p>Add example for trap-dependence w/ time individual covariate.</p></li>
-<li><p>Now, think of body size across life.</p></li>
-<li><p>Problem is we cannot record size when animal is non-detected.</p></li>
-<li><p>Discretize in small, medium and large and treat as a state <span>—</span> more later.</p></li>
-<li><p>Assume a model for covariate and fill in missing values (imputation).</p></li>
-</ul>
+<p>You may test an effect of both sex and wing length. Write the model. We use nested indexing with the sex index that contains 1 if the bird is a male, and 2 otherwise. We have <span class="math inline">\(\logit(\phi_i) = \beta_1 + \beta_3 * \text{winglength}_i\)</span> for males, and <span class="math inline">\(\logit(\phi_i) = \beta_2 + \beta_3 * \text{winglength}_i\)</span> for females.</p>
+<div class="sourceCode" id="cb64"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">hmm.phisexwlp</span> <span class="op">&lt;-</span> <span class="fu">nimbleCode</span><span class="op">(</span><span class="op">{</span></span>
+<span>  <span class="va">p</span> <span class="op">~</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html">dunif</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1</span><span class="op">)</span> <span class="co"># prior detection</span></span>
+<span>  <span class="va">omega</span><span class="op">[</span><span class="fl">1</span>,<span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span> <span class="op">-</span> <span class="va">p</span>    <span class="co"># Pr(alive t -&gt; non-detected t)</span></span>
+<span>  <span class="va">omega</span><span class="op">[</span><span class="fl">1</span>,<span class="fl">2</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="va">p</span>        <span class="co"># Pr(alive t -&gt; detected t)</span></span>
+<span>  <span class="va">omega</span><span class="op">[</span><span class="fl">2</span>,<span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span>        <span class="co"># Pr(dead t -&gt; non-detected t)</span></span>
+<span>  <span class="va">omega</span><span class="op">[</span><span class="fl">2</span>,<span class="fl">2</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0</span>        <span class="co"># Pr(dead t -&gt; detected t)</span></span>
+<span>  <span class="kw">for</span> <span class="op">(</span><span class="va">i</span> <span class="kw">in</span> <span class="fl">1</span><span class="op">:</span><span class="va">N</span><span class="op">)</span><span class="op">{</span></span>
+<span>    <span class="fu">logit</span><span class="op">(</span><span class="va">phi</span><span class="op">[</span><span class="va">i</span><span class="op">]</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="va">beta</span><span class="op">[</span><span class="va">sex</span><span class="op">[</span><span class="va">i</span><span class="op">]</span><span class="op">]</span> <span class="op">+</span> <span class="va">beta</span><span class="op">[</span><span class="fl">3</span><span class="op">]</span> <span class="op">*</span> <span class="va">winglength</span><span class="op">[</span><span class="va">i</span><span class="op">]</span></span>
+<span>    <span class="va">gamma</span><span class="op">[</span><span class="fl">1</span>,<span class="fl">1</span>,<span class="va">i</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="va">phi</span><span class="op">[</span><span class="va">i</span><span class="op">]</span>      <span class="co"># Pr(alive t -&gt; alive t+1)</span></span>
+<span>    <span class="va">gamma</span><span class="op">[</span><span class="fl">1</span>,<span class="fl">2</span>,<span class="va">i</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span> <span class="op">-</span> <span class="va">phi</span><span class="op">[</span><span class="va">i</span><span class="op">]</span>  <span class="co"># Pr(alive t -&gt; dead t+1)</span></span>
+<span>    <span class="va">gamma</span><span class="op">[</span><span class="fl">2</span>,<span class="fl">1</span>,<span class="va">i</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0</span>           <span class="co"># Pr(dead t -&gt; alive t+1)</span></span>
+<span>    <span class="va">gamma</span><span class="op">[</span><span class="fl">2</span>,<span class="fl">2</span>,<span class="va">i</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span>           <span class="co"># Pr(dead t -&gt; dead t+1)</span></span>
+<span>  <span class="op">}</span></span>
+<span>  <span class="va">beta</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span> <span class="op">~</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html">dnorm</a></span><span class="op">(</span>mean <span class="op">=</span> <span class="fl">0</span>, sd <span class="op">=</span> <span class="fl">1.5</span><span class="op">)</span> <span class="co"># intercept male</span></span>
+<span>  <span class="va">beta</span><span class="op">[</span><span class="fl">2</span><span class="op">]</span> <span class="op">~</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html">dnorm</a></span><span class="op">(</span>mean <span class="op">=</span> <span class="fl">0</span>, sd <span class="op">=</span> <span class="fl">1.5</span><span class="op">)</span> <span class="co"># intercept female</span></span>
+<span>  <span class="va">beta</span><span class="op">[</span><span class="fl">3</span><span class="op">]</span> <span class="op">~</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html">dnorm</a></span><span class="op">(</span>mean <span class="op">=</span> <span class="fl">0</span>, sd <span class="op">=</span> <span class="fl">1.5</span><span class="op">)</span> <span class="co"># slope wing length</span></span>
+<span>  <span class="va">delta</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span>          <span class="co"># Pr(alive t = 1) = 1</span></span>
+<span>  <span class="va">delta</span><span class="op">[</span><span class="fl">2</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0</span>          <span class="co"># Pr(dead t = 1) = 0</span></span>
+<span>  <span class="co"># likelihood</span></span>
+<span>  <span class="kw">for</span> <span class="op">(</span><span class="va">i</span> <span class="kw">in</span> <span class="fl">1</span><span class="op">:</span><span class="va">N</span><span class="op">)</span><span class="op">{</span></span>
+<span>    <span class="va">z</span><span class="op">[</span><span class="va">i</span>,<span class="va">first</span><span class="op">[</span><span class="va">i</span><span class="op">]</span><span class="op">]</span> <span class="op">~</span> <span class="fu">dcat</span><span class="op">(</span><span class="va">delta</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">2</span><span class="op">]</span><span class="op">)</span></span>
+<span>    <span class="kw">for</span> <span class="op">(</span><span class="va">j</span> <span class="kw">in</span> <span class="op">(</span><span class="va">first</span><span class="op">[</span><span class="va">i</span><span class="op">]</span><span class="op">+</span><span class="fl">1</span><span class="op">)</span><span class="op">:</span><span class="cn">T</span><span class="op">)</span><span class="op">{</span></span>
+<span>      <span class="va">z</span><span class="op">[</span><span class="va">i</span>,<span class="va">j</span><span class="op">]</span> <span class="op">~</span> <span class="fu">dcat</span><span class="op">(</span><span class="va">gamma</span><span class="op">[</span><span class="va">z</span><span class="op">[</span><span class="va">i</span>,<span class="va">j</span><span class="op">-</span><span class="fl">1</span><span class="op">]</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">2</span>, <span class="va">i</span><span class="op">]</span><span class="op">)</span></span>
+<span>      <span class="va">y</span><span class="op">[</span><span class="va">i</span>,<span class="va">j</span><span class="op">]</span> <span class="op">~</span> <span class="fu">dcat</span><span class="op">(</span><span class="va">omega</span><span class="op">[</span><span class="va">z</span><span class="op">[</span><span class="va">i</span>,<span class="va">j</span><span class="op">]</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">2</span><span class="op">]</span><span class="op">)</span></span>
+<span>    <span class="op">}</span></span>
+<span>  <span class="op">}</span></span>
+<span><span class="op">}</span><span class="op">)</span></span></code></pre></div>
+<p>Constants in a list. Note we standardise wing length.</p>
+<div class="sourceCode" id="cb65"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">first</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/apply.html">apply</a></span><span class="op">(</span><span class="va">y</span>, <span class="fl">1</span>, <span class="kw">function</span><span class="op">(</span><span class="va">x</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/Extremes.html">min</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/which.html">which</a></span><span class="op">(</span><span class="va">x</span> <span class="op">!=</span><span class="fl">0</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">wing.length.st</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/vector.html">as.vector</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/scale.html">scale</a></span><span class="op">(</span><span class="va">dipper</span><span class="op">$</span><span class="va">wing_length</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">my.constants</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>N <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html">nrow</a></span><span class="op">(</span><span class="va">y</span><span class="op">)</span>, </span>
+<span>                     T <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html">ncol</a></span><span class="op">(</span><span class="va">y</span><span class="op">)</span>, </span>
+<span>                     first <span class="op">=</span> <span class="va">first</span>,</span>
+<span>                     winglength <span class="op">=</span> <span class="va">wing.length.st</span>,</span>
+<span>                     sex <span class="op">=</span> <span class="fu">if_else</span><span class="op">(</span><span class="va">dipper</span><span class="op">$</span><span class="va">sex</span> <span class="op">==</span> <span class="st">"M"</span>, <span class="fl">1</span>, <span class="fl">2</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">my.data</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>y <span class="op">=</span> <span class="va">y</span> <span class="op">+</span> <span class="fl">1</span><span class="op">)</span></span></code></pre></div>
+<p>Data in a list.</p>
+<div class="sourceCode" id="cb66"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">my.data</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>y <span class="op">=</span> <span class="va">y</span> <span class="op">+</span> <span class="fl">1</span><span class="op">)</span></span></code></pre></div>
+<p>Initial values.</p>
+<div class="sourceCode" id="cb67"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">zinits</span> <span class="op">&lt;-</span> <span class="va">y</span></span>
+<span><span class="va">zinits</span><span class="op">[</span><span class="va">zinits</span> <span class="op">==</span> <span class="fl">0</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span></span>
+<span><span class="va">initial.values</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>beta <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html">rnorm</a></span><span class="op">(</span><span class="fl">3</span>,<span class="fl">0</span>,<span class="fl">5</span><span class="op">)</span>,</span>
+<span>                                  p <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html">runif</a></span><span class="op">(</span><span class="fl">1</span>,<span class="fl">0</span>,<span class="fl">1</span><span class="op">)</span>,</span>
+<span>                                  z <span class="op">=</span> <span class="va">zinits</span><span class="op">)</span></span></code></pre></div>
+<p>Parameters to be monitored.</p>
+<div class="sourceCode" id="cb68"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">parameters.to.save</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"beta"</span>, <span class="st">"p"</span><span class="op">)</span></span></code></pre></div>
+<p>MCMC details.</p>
+<div class="sourceCode" id="cb69"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">n.iter</span> <span class="op">&lt;-</span> <span class="fl">5000</span></span>
+<span><span class="va">n.burnin</span> <span class="op">&lt;-</span> <span class="fl">2500</span></span>
+<span><span class="va">n.chains</span> <span class="op">&lt;-</span> <span class="fl">2</span></span></code></pre></div>
+<p>Run nimble.</p>
+<div class="sourceCode" id="cb70"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">mcmc.phisexwlp</span> <span class="op">&lt;-</span> <span class="fu">nimbleMCMC</span><span class="op">(</span>code <span class="op">=</span> <span class="va">hmm.phisexwlp</span>, </span>
+<span>                             constants <span class="op">=</span> <span class="va">my.constants</span>,</span>
+<span>                             data <span class="op">=</span> <span class="va">my.data</span>,              </span>
+<span>                             inits <span class="op">=</span> <span class="va">initial.values</span>,</span>
+<span>                             monitors <span class="op">=</span> <span class="va">parameters.to.save</span>,</span>
+<span>                             niter <span class="op">=</span> <span class="va">n.iter</span>,</span>
+<span>                             nburnin <span class="op">=</span> <span class="va">n.burnin</span>, </span>
+<span>                             nchains <span class="op">=</span> <span class="va">n.chains</span><span class="op">)</span></span></code></pre></div>
+<p>Display results.</p>
+<pre><code>##          mean   sd  2.5%   50% 97.5% Rhat n.eff
+## beta[1]  0.52 0.23  0.07  0.53  0.96 1.01   223
+## beta[2] -0.02 0.22 -0.47 -0.02  0.42 1.02   199
+## beta[3] -0.25 0.19 -0.61 -0.25  0.14 1.02   144
+## p        0.90 0.03  0.83  0.90  0.95 1.02   466</code></pre>
+<p>Let’s visualise survival as a function of wing length for both sexes.</p>
+<p>First we put together the values from the two chains we generated in the posterior distributions of the regression parameters.</p>
+<div class="sourceCode" id="cb72"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">beta1</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="va">mcmc.phisexwlp</span><span class="op">$</span><span class="va">chain1</span><span class="op">[</span>,<span class="st">'beta[1]'</span><span class="op">]</span>, <span class="va">mcmc.phisexwlp</span><span class="op">$</span><span class="va">chain2</span><span class="op">[</span>,<span class="st">'beta[1]'</span><span class="op">]</span><span class="op">)</span></span>
+<span><span class="va">beta2</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="va">mcmc.phisexwlp</span><span class="op">$</span><span class="va">chain1</span><span class="op">[</span>,<span class="st">'beta[2]'</span><span class="op">]</span>, <span class="va">mcmc.phisexwlp</span><span class="op">$</span><span class="va">chain2</span><span class="op">[</span>,<span class="st">'beta[2]'</span><span class="op">]</span><span class="op">)</span></span>
+<span><span class="va">beta3</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="va">mcmc.phisexwlp</span><span class="op">$</span><span class="va">chain1</span><span class="op">[</span>,<span class="st">'beta[3]'</span><span class="op">]</span>, <span class="va">mcmc.phisexwlp</span><span class="op">$</span><span class="va">chain2</span><span class="op">[</span>,<span class="st">'beta[3]'</span><span class="op">]</span><span class="op">)</span></span></code></pre></div>
+<p>We get survival estimates for each MCMC iteration.</p>
+<div class="sourceCode" id="cb73"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">predicted_survivalM</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html">matrix</a></span><span class="op">(</span><span class="cn">NA</span>, nrow <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/length.html">length</a></span><span class="op">(</span><span class="va">beta1</span><span class="op">)</span>, ncol <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/length.html">length</a></span><span class="op">(</span><span class="va">my.constants</span><span class="op">$</span><span class="va">winglength</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">predicted_survivalF</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html">matrix</a></span><span class="op">(</span><span class="cn">NA</span>, nrow <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/length.html">length</a></span><span class="op">(</span><span class="va">beta1</span><span class="op">)</span>, ncol <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/length.html">length</a></span><span class="op">(</span><span class="va">my.constants</span><span class="op">$</span><span class="va">winglength</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="kw">for</span> <span class="op">(</span><span class="va">i</span> <span class="kw">in</span> <span class="fl">1</span><span class="op">:</span><span class="fu"><a href="https://rdrr.io/r/base/length.html">length</a></span><span class="op">(</span><span class="va">beta1</span><span class="op">)</span><span class="op">)</span><span class="op">{</span></span>
+<span>  <span class="kw">for</span> <span class="op">(</span><span class="va">j</span> <span class="kw">in</span> <span class="fl">1</span><span class="op">:</span><span class="fu"><a href="https://rdrr.io/r/base/length.html">length</a></span><span class="op">(</span><span class="va">my.constants</span><span class="op">$</span><span class="va">winglength</span><span class="op">)</span><span class="op">)</span><span class="op">{</span></span>
+<span>    <span class="va">predicted_survivalM</span><span class="op">[</span><span class="va">i</span>,<span class="va">j</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/Logistic.html">plogis</a></span><span class="op">(</span><span class="va">beta1</span><span class="op">[</span><span class="va">i</span><span class="op">]</span> <span class="op">+</span> <span class="va">beta3</span><span class="op">[</span><span class="va">i</span><span class="op">]</span> <span class="op">*</span> <span class="va">my.constants</span><span class="op">$</span><span class="va">winglength</span><span class="op">[</span><span class="va">j</span><span class="op">]</span><span class="op">)</span> <span class="co"># males</span></span>
+<span>    <span class="va">predicted_survivalF</span><span class="op">[</span><span class="va">i</span>,<span class="va">j</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/Logistic.html">plogis</a></span><span class="op">(</span><span class="va">beta2</span><span class="op">[</span><span class="va">i</span><span class="op">]</span> <span class="op">+</span> <span class="va">beta3</span><span class="op">[</span><span class="va">i</span><span class="op">]</span> <span class="op">*</span> <span class="va">my.constants</span><span class="op">$</span><span class="va">winglength</span><span class="op">[</span><span class="va">j</span><span class="op">]</span><span class="op">)</span> <span class="co"># females</span></span>
+<span>  <span class="op">}</span></span>
+<span><span class="op">}</span></span></code></pre></div>
+<p>From here, we may calculate posterior mean and credible intervals.</p>
+<div class="sourceCode" id="cb74"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">mean_survivalM</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/apply.html">apply</a></span><span class="op">(</span><span class="va">predicted_survivalM</span>, <span class="fl">2</span>, <span class="va">mean</span><span class="op">)</span></span>
+<span><span class="va">lciM</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/apply.html">apply</a></span><span class="op">(</span><span class="va">predicted_survivalM</span>, <span class="fl">2</span>, <span class="va">quantile</span>, prob <span class="op">=</span> <span class="fl">2.5</span><span class="op">/</span><span class="fl">100</span><span class="op">)</span></span>
+<span><span class="va">uciM</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/apply.html">apply</a></span><span class="op">(</span><span class="va">predicted_survivalM</span>, <span class="fl">2</span>, <span class="va">quantile</span>, prob <span class="op">=</span> <span class="fl">97.5</span><span class="op">/</span><span class="fl">100</span><span class="op">)</span></span>
+<span><span class="va">mean_survivalF</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/apply.html">apply</a></span><span class="op">(</span><span class="va">predicted_survivalF</span>, <span class="fl">2</span>, <span class="va">mean</span><span class="op">)</span></span>
+<span><span class="va">lciF</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/apply.html">apply</a></span><span class="op">(</span><span class="va">predicted_survivalF</span>, <span class="fl">2</span>, <span class="va">quantile</span>, prob <span class="op">=</span> <span class="fl">2.5</span><span class="op">/</span><span class="fl">100</span><span class="op">)</span></span>
+<span><span class="va">uciF</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/apply.html">apply</a></span><span class="op">(</span><span class="va">predicted_survivalF</span>, <span class="fl">2</span>, <span class="va">quantile</span>, prob <span class="op">=</span> <span class="fl">97.5</span><span class="op">/</span><span class="fl">100</span><span class="op">)</span></span>
+<span><span class="va">ord</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/order.html">order</a></span><span class="op">(</span><span class="va">my.constants</span><span class="op">$</span><span class="va">winglength</span><span class="op">)</span></span>
+<span><span class="va">df</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html">data.frame</a></span><span class="op">(</span>wing_length <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="va">my.constants</span><span class="op">$</span><span class="va">winglength</span><span class="op">[</span><span class="va">ord</span><span class="op">]</span>, <span class="va">my.constants</span><span class="op">$</span><span class="va">winglength</span><span class="op">[</span><span class="va">ord</span><span class="op">]</span><span class="op">)</span>,</span>
+<span>                 survival <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="va">mean_survivalM</span><span class="op">[</span><span class="va">ord</span><span class="op">]</span>, <span class="va">mean_survivalF</span><span class="op">[</span><span class="va">ord</span><span class="op">]</span><span class="op">)</span>,</span>
+<span>                 lci <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="va">lciM</span><span class="op">[</span><span class="va">ord</span><span class="op">]</span>,<span class="va">lciF</span><span class="op">[</span><span class="va">ord</span><span class="op">]</span><span class="op">)</span>,</span>
+<span>                 uci <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="va">uciM</span><span class="op">[</span><span class="va">ord</span><span class="op">]</span>,<span class="va">uciF</span><span class="op">[</span><span class="va">ord</span><span class="op">]</span><span class="op">)</span>,</span>
+<span>                 sex <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/rep.html">rep</a></span><span class="op">(</span><span class="st">"male"</span>, <span class="fu"><a href="https://rdrr.io/r/base/length.html">length</a></span><span class="op">(</span><span class="va">mean_survivalM</span><span class="op">)</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/rep.html">rep</a></span><span class="op">(</span><span class="st">"female"</span>, <span class="fu"><a href="https://rdrr.io/r/base/length.html">length</a></span><span class="op">(</span><span class="va">mean_survivalF</span><span class="op">)</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<p>Now on a plot.</p>
+<div class="sourceCode" id="cb75"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">df</span> <span class="op">%&gt;%</span></span>
+<span>  <span class="fu">ggplot</span><span class="op">(</span><span class="op">)</span> <span class="op">+</span> </span>
+<span>  <span class="fu">aes</span><span class="op">(</span>x <span class="op">=</span> <span class="va">wing_length</span>, y <span class="op">=</span> <span class="va">survival</span>, color <span class="op">=</span> <span class="va">sex</span><span class="op">)</span> <span class="op">+</span> </span>
+<span>  <span class="fu">geom_line</span><span class="op">(</span><span class="op">)</span> <span class="op">+</span> </span>
+<span>  <span class="fu">geom_ribbon</span><span class="op">(</span><span class="fu">aes</span><span class="op">(</span>ymin <span class="op">=</span> <span class="va">lci</span>, ymax <span class="op">=</span> <span class="va">uci</span>, fill <span class="op">=</span> <span class="va">sex</span><span class="op">)</span>, alpha <span class="op">=</span> <span class="fl">0.5</span><span class="op">)</span> <span class="op">+</span> </span>
+<span>  <span class="fu">ylim</span><span class="op">(</span><span class="fl">0</span>,<span class="fl">1</span><span class="op">)</span> <span class="op">+</span> </span>
+<span>  <span class="fu">labs</span><span class="op">(</span>x <span class="op">=</span> <span class="st">"wing length"</span>, y <span class="op">=</span> <span class="st">"estimated survival"</span>, color <span class="op">=</span> <span class="st">""</span>, fill <span class="op">=</span> <span class="st">""</span><span class="op">)</span></span></code></pre></div>
+<div class="inline-figure"><img src="banana-book_files/figure-html/unnamed-chunk-95-1.png" width="672"></div>
+</div>
+<div id="random-effects" class="section level3" number="1.9.4">
+<h3>
+<span class="header-section-number">1.9.4</span> Random effects<a class="anchor" aria-label="anchor" href="#random-effects"><i class="fas fa-link"></i></a>
+</h3>
+<div id="temporal" class="section level4" number="1.9.4.1">
+<h4>
+<span class="header-section-number">1.9.4.1</span> Temporal<a class="anchor" aria-label="anchor" href="#temporal"><i class="fas fa-link"></i></a>
+</h4>
+<p>Include temporal covariates, say <span class="math inline">\(x_t\)</span> with <span class="math inline">\(\text{logit}(\phi_t) = \beta_1 + \beta_2 x_t\)</span>. If temporal variation not fully explained by covariates, add random effects <span class="math inline">\(\text{logit}(\phi_t) = \beta_1 + \beta_2 x_t + \varepsilon_t, \; \varepsilon_t \sim N(0,\sigma^2)\)</span>. We may wish to allow for extra variation in the survival vs. water flow relationship. To do so, we consider a yearly random effect. The prior on the standard deviation of the random effect is uniform between 0 and 10.</p>
+<div class="sourceCode" id="cb76"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">hmm.phiflowREpt</span> <span class="op">&lt;-</span> <span class="fu">nimbleCode</span><span class="op">(</span><span class="op">{</span></span>
+<span>  <span class="va">delta</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span>          <span class="co"># Pr(alive t = 1) = 1</span></span>
+<span>  <span class="va">delta</span><span class="op">[</span><span class="fl">2</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0</span>          <span class="co"># Pr(dead t = 1) = 0</span></span>
+<span>  <span class="kw">for</span> <span class="op">(</span><span class="va">t</span> <span class="kw">in</span> <span class="fl">1</span><span class="op">:</span><span class="op">(</span><span class="cn">T</span><span class="op">-</span><span class="fl">1</span><span class="op">)</span><span class="op">)</span><span class="op">{</span></span>
+<span>    <span class="fu">logit</span><span class="op">(</span><span class="va">phi</span><span class="op">[</span><span class="va">t</span><span class="op">]</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="va">beta</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span> <span class="op">+</span> <span class="va">beta</span><span class="op">[</span><span class="fl">2</span><span class="op">]</span> <span class="op">*</span> <span class="va">flow</span><span class="op">[</span><span class="va">t</span><span class="op">]</span> <span class="op">+</span> <span class="va">eps</span><span class="op">[</span><span class="va">t</span><span class="op">]</span> <span class="co"># eps is random effect</span></span>
+<span>    <span class="va">eps</span><span class="op">[</span><span class="va">t</span><span class="op">]</span> <span class="op">~</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html">dnorm</a></span><span class="op">(</span><span class="fl">0</span>, sd <span class="op">=</span> <span class="va">sdeps</span><span class="op">)</span> </span>
+<span>    <span class="va">gamma</span><span class="op">[</span><span class="fl">1</span>,<span class="fl">1</span>,<span class="va">t</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="va">phi</span><span class="op">[</span><span class="va">t</span><span class="op">]</span>      <span class="co"># Pr(alive t -&gt; alive t+1)</span></span>
+<span>    <span class="va">gamma</span><span class="op">[</span><span class="fl">1</span>,<span class="fl">2</span>,<span class="va">t</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span> <span class="op">-</span> <span class="va">phi</span><span class="op">[</span><span class="va">t</span><span class="op">]</span>  <span class="co"># Pr(alive t -&gt; dead t+1)</span></span>
+<span>    <span class="va">gamma</span><span class="op">[</span><span class="fl">2</span>,<span class="fl">1</span>,<span class="va">t</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0</span>           <span class="co"># Pr(dead t -&gt; alive t+1)</span></span>
+<span>    <span class="va">gamma</span><span class="op">[</span><span class="fl">2</span>,<span class="fl">2</span>,<span class="va">t</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span>           <span class="co"># Pr(dead t -&gt; dead t+1)</span></span>
+<span>    <span class="va">p</span><span class="op">[</span><span class="va">t</span><span class="op">]</span> <span class="op">~</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html">dunif</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1</span><span class="op">)</span>          <span class="co"># prior detection</span></span>
+<span>    <span class="va">omega</span><span class="op">[</span><span class="fl">1</span>,<span class="fl">1</span>,<span class="va">t</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span> <span class="op">-</span> <span class="va">p</span><span class="op">[</span><span class="va">t</span><span class="op">]</span>    <span class="co"># Pr(alive t -&gt; non-detected t)</span></span>
+<span>    <span class="va">omega</span><span class="op">[</span><span class="fl">1</span>,<span class="fl">2</span>,<span class="va">t</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="va">p</span><span class="op">[</span><span class="va">t</span><span class="op">]</span>        <span class="co"># Pr(alive t -&gt; detected t)</span></span>
+<span>    <span class="va">omega</span><span class="op">[</span><span class="fl">2</span>,<span class="fl">1</span>,<span class="va">t</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span>           <span class="co"># Pr(dead t -&gt; non-detected t)</span></span>
+<span>    <span class="va">omega</span><span class="op">[</span><span class="fl">2</span>,<span class="fl">2</span>,<span class="va">t</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0</span>           <span class="co"># Pr(dead t -&gt; detected t)</span></span>
+<span>  <span class="op">}</span></span>
+<span>  <span class="va">beta</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span> <span class="op">~</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html">dnorm</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1.5</span><span class="op">)</span> <span class="co"># prior intercept</span></span>
+<span>  <span class="va">beta</span><span class="op">[</span><span class="fl">2</span><span class="op">]</span> <span class="op">~</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html">dnorm</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1.5</span><span class="op">)</span> <span class="co"># prior slope</span></span>
+<span>  <span class="va">sdeps</span> <span class="op">~</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html">dunif</a></span><span class="op">(</span><span class="fl">0</span>,<span class="fl">10</span><span class="op">)</span></span>
+<span>  <span class="co"># likelihood</span></span>
+<span>  <span class="kw">for</span> <span class="op">(</span><span class="va">i</span> <span class="kw">in</span> <span class="fl">1</span><span class="op">:</span><span class="va">N</span><span class="op">)</span><span class="op">{</span></span>
+<span>    <span class="va">z</span><span class="op">[</span><span class="va">i</span>,<span class="va">first</span><span class="op">[</span><span class="va">i</span><span class="op">]</span><span class="op">]</span> <span class="op">~</span> <span class="fu">dcat</span><span class="op">(</span><span class="va">delta</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">2</span><span class="op">]</span><span class="op">)</span></span>
+<span>    <span class="kw">for</span> <span class="op">(</span><span class="va">j</span> <span class="kw">in</span> <span class="op">(</span><span class="va">first</span><span class="op">[</span><span class="va">i</span><span class="op">]</span><span class="op">+</span><span class="fl">1</span><span class="op">)</span><span class="op">:</span><span class="cn">T</span><span class="op">)</span><span class="op">{</span></span>
+<span>      <span class="va">z</span><span class="op">[</span><span class="va">i</span>,<span class="va">j</span><span class="op">]</span> <span class="op">~</span> <span class="fu">dcat</span><span class="op">(</span><span class="va">gamma</span><span class="op">[</span><span class="va">z</span><span class="op">[</span><span class="va">i</span>,<span class="va">j</span><span class="op">-</span><span class="fl">1</span><span class="op">]</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">2</span>, <span class="va">j</span><span class="op">-</span><span class="fl">1</span><span class="op">]</span><span class="op">)</span></span>
+<span>      <span class="va">y</span><span class="op">[</span><span class="va">i</span>,<span class="va">j</span><span class="op">]</span> <span class="op">~</span> <span class="fu">dcat</span><span class="op">(</span><span class="va">omega</span><span class="op">[</span><span class="va">z</span><span class="op">[</span><span class="va">i</span>,<span class="va">j</span><span class="op">]</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">2</span>, <span class="va">j</span><span class="op">-</span><span class="fl">1</span><span class="op">]</span><span class="op">)</span></span>
+<span>    <span class="op">}</span></span>
+<span>  <span class="op">}</span></span>
+<span><span class="op">}</span><span class="op">)</span></span></code></pre></div>
+<p>Initial values.</p>
+<div class="sourceCode" id="cb77"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">initial.values</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>beta <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html">rnorm</a></span><span class="op">(</span><span class="fl">2</span>,<span class="fl">0</span>,<span class="fl">1</span><span class="op">)</span>,</span>
+<span>                                  p <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html">runif</a></span><span class="op">(</span><span class="va">my.constants</span><span class="op">$</span><span class="cn">T</span><span class="op">-</span><span class="fl">1</span>,<span class="fl">0</span>,<span class="fl">1</span><span class="op">)</span>,</span>
+<span>                                  sdeps <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html">runif</a></span><span class="op">(</span><span class="fl">1</span>,<span class="fl">0</span>,<span class="fl">3</span><span class="op">)</span>,</span>
+<span>                                  z <span class="op">=</span> <span class="va">zinits</span><span class="op">)</span></span></code></pre></div>
+<p>Parameters to be monitored.</p>
+<div class="sourceCode" id="cb78"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">parameters.to.save</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"beta"</span>, <span class="st">"p"</span>, <span class="st">"phi"</span>, <span class="st">"sdeps"</span><span class="op">)</span></span></code></pre></div>
+<p>MCMC details. Note that we’ve increased the number of iterations and the length of the burn-in period.</p>
+<div class="sourceCode" id="cb79"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">n.iter</span> <span class="op">&lt;-</span> <span class="fl">10000</span></span>
+<span><span class="va">n.burnin</span> <span class="op">&lt;-</span> <span class="fl">5000</span></span>
+<span><span class="va">n.chains</span> <span class="op">&lt;-</span> <span class="fl">2</span></span></code></pre></div>
+<p>Run nimble.</p>
+<div class="sourceCode" id="cb80"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">mcmc.phiflowREpt</span> <span class="op">&lt;-</span> <span class="fu">nimbleMCMC</span><span class="op">(</span>code <span class="op">=</span> <span class="va">hmm.phiflowREpt</span>, </span>
+<span>                             constants <span class="op">=</span> <span class="va">my.constants</span>,</span>
+<span>                             data <span class="op">=</span> <span class="va">my.data</span>,              </span>
+<span>                             inits <span class="op">=</span> <span class="va">initial.values</span>,</span>
+<span>                             monitors <span class="op">=</span> <span class="va">parameters.to.save</span>,</span>
+<span>                             niter <span class="op">=</span> <span class="va">n.iter</span>,</span>
+<span>                             nburnin <span class="op">=</span> <span class="va">n.burnin</span>, </span>
+<span>                             nchains <span class="op">=</span> <span class="va">n.chains</span><span class="op">)</span></span></code></pre></div>
+<p>Display outputs. Seems that the water flow effect is not so important anymore.</p>
+<div class="sourceCode" id="cb81"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/load.html">load</a></span><span class="op">(</span><span class="fu">here</span><span class="fu">::</span><span class="fu"><a href="https://here.r-lib.org//reference/here.html">here</a></span><span class="op">(</span><span class="st">"dat/phiflowREpt.RData"</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu">MCMCsummary</span><span class="op">(</span>object <span class="op">=</span> <span class="va">mcmc.phiflowREpt</span>, round <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span>
+<span><span class="co">##          mean   sd  2.5%   50% 97.5% Rhat n.eff</span></span>
+<span><span class="co">## beta[1]  0.27 0.25 -0.32  0.28  0.77 1.04   153</span></span>
+<span><span class="co">## beta[2] -0.22 0.23 -0.65 -0.23  0.31 1.01   300</span></span>
+<span><span class="co">## p[1]     0.70 0.13  0.44  0.71  0.92 1.00  1414</span></span>
+<span><span class="co">## p[2]     0.88 0.07  0.70  0.89  0.98 1.00   971</span></span>
+<span><span class="co">## p[3]     0.87 0.07  0.71  0.88  0.97 1.00   981</span></span>
+<span><span class="co">## p[4]     0.88 0.05  0.75  0.88  0.96 1.01  1236</span></span>
+<span><span class="co">## p[5]     0.91 0.05  0.80  0.91  0.98 1.00   974</span></span>
+<span><span class="co">## p[6]     0.81 0.11  0.56  0.83  0.98 1.00   164</span></span>
+<span><span class="co">## phi[1]   0.65 0.09  0.48  0.63  0.84 1.00   490</span></span>
+<span><span class="co">## phi[2]   0.45 0.07  0.32  0.45  0.59 1.00  1853</span></span>
+<span><span class="co">## phi[3]   0.53 0.06  0.41  0.53  0.63 1.00   660</span></span>
+<span><span class="co">## phi[4]   0.62 0.05  0.52  0.62  0.73 1.00  1238</span></span>
+<span><span class="co">## phi[5]   0.59 0.05  0.50  0.59  0.69 1.01  1061</span></span>
+<span><span class="co">## phi[6]   0.64 0.10  0.50  0.62  0.91 1.00   143</span></span>
+<span><span class="co">## sdeps    0.47 0.54  0.05  0.34  1.59 1.08    91</span></span></code></pre></div>
+<p>Trace plots for the standard deviation of the random effect.</p>
+<div class="sourceCode" id="cb82"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu">MCMCtrace</span><span class="op">(</span>object <span class="op">=</span> <span class="va">mcmc.phiflowREpt</span>, params <span class="op">=</span> <span class="st">"sdeps"</span>, pdf <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div>
+<div class="inline-figure"><img src="banana-book_files/figure-html/unnamed-chunk-102-1.png" width="672"></div>
+</div>
+<div id="individual" class="section level4" number="1.9.4.2">
+<h4>
+<span class="header-section-number">1.9.4.2</span> Individual<a class="anchor" aria-label="anchor" href="#individual"><i class="fas fa-link"></i></a>
+</h4>
+<p>We add an individual random effect.</p>
+<div class="sourceCode" id="cb83"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">hmm.phiwlrep</span> <span class="op">&lt;-</span> <span class="fu">nimbleCode</span><span class="op">(</span><span class="op">{</span></span>
+<span>    <span class="va">p</span> <span class="op">~</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html">dunif</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1</span><span class="op">)</span> <span class="co"># prior detection</span></span>
+<span>    <span class="va">omega</span><span class="op">[</span><span class="fl">1</span>,<span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span> <span class="op">-</span> <span class="va">p</span>    <span class="co"># Pr(alive t -&gt; non-detected t)</span></span>
+<span>    <span class="va">omega</span><span class="op">[</span><span class="fl">1</span>,<span class="fl">2</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="va">p</span>        <span class="co"># Pr(alive t -&gt; detected t)</span></span>
+<span>    <span class="va">omega</span><span class="op">[</span><span class="fl">2</span>,<span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span>        <span class="co"># Pr(dead t -&gt; non-detected t)</span></span>
+<span>    <span class="va">omega</span><span class="op">[</span><span class="fl">2</span>,<span class="fl">2</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0</span>        <span class="co"># Pr(dead t -&gt; detected t)</span></span>
+<span>  <span class="kw">for</span> <span class="op">(</span><span class="va">i</span> <span class="kw">in</span> <span class="fl">1</span><span class="op">:</span><span class="va">N</span><span class="op">)</span><span class="op">{</span></span>
+<span>    <span class="fu">logit</span><span class="op">(</span><span class="va">phi</span><span class="op">[</span><span class="va">i</span><span class="op">]</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="va">beta</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span> <span class="op">+</span> <span class="va">beta</span><span class="op">[</span><span class="fl">2</span><span class="op">]</span> <span class="op">*</span> <span class="va">winglength</span><span class="op">[</span><span class="va">i</span><span class="op">]</span> <span class="op">+</span> <span class="va">eps</span><span class="op">[</span><span class="va">i</span><span class="op">]</span></span>
+<span>    <span class="va">eps</span><span class="op">[</span><span class="va">i</span><span class="op">]</span> <span class="op">~</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html">dnorm</a></span><span class="op">(</span>mean <span class="op">=</span> <span class="fl">0</span>, sd <span class="op">=</span> <span class="va">sdeps</span><span class="op">)</span></span>
+<span>    <span class="va">gamma</span><span class="op">[</span><span class="fl">1</span>,<span class="fl">1</span>,<span class="va">i</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="va">phi</span><span class="op">[</span><span class="va">i</span><span class="op">]</span>      <span class="co"># Pr(alive t -&gt; alive t+1)</span></span>
+<span>    <span class="va">gamma</span><span class="op">[</span><span class="fl">1</span>,<span class="fl">2</span>,<span class="va">i</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span> <span class="op">-</span> <span class="va">phi</span><span class="op">[</span><span class="va">i</span><span class="op">]</span>  <span class="co"># Pr(alive t -&gt; dead t+1)</span></span>
+<span>    <span class="va">gamma</span><span class="op">[</span><span class="fl">2</span>,<span class="fl">1</span>,<span class="va">i</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0</span>           <span class="co"># Pr(dead t -&gt; alive t+1)</span></span>
+<span>    <span class="va">gamma</span><span class="op">[</span><span class="fl">2</span>,<span class="fl">2</span>,<span class="va">i</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span>           <span class="co"># Pr(dead t -&gt; dead t+1)</span></span>
+<span>  <span class="op">}</span></span>
+<span>  <span class="va">beta</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span> <span class="op">~</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html">dnorm</a></span><span class="op">(</span>mean <span class="op">=</span> <span class="fl">0</span>, sd <span class="op">=</span> <span class="fl">1.5</span><span class="op">)</span></span>
+<span>  <span class="va">beta</span><span class="op">[</span><span class="fl">2</span><span class="op">]</span> <span class="op">~</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html">dnorm</a></span><span class="op">(</span>mean <span class="op">=</span> <span class="fl">0</span>, sd <span class="op">=</span> <span class="fl">1.5</span><span class="op">)</span></span>
+<span>  <span class="va">sdeps</span> <span class="op">~</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html">dunif</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">10</span><span class="op">)</span></span>
+<span>  <span class="va">delta</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span>          <span class="co"># Pr(alive t = 1) = 1</span></span>
+<span>  <span class="va">delta</span><span class="op">[</span><span class="fl">2</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0</span>          <span class="co"># Pr(dead t = 1) = 0</span></span>
+<span>  <span class="co"># likelihood</span></span>
+<span>  <span class="kw">for</span> <span class="op">(</span><span class="va">i</span> <span class="kw">in</span> <span class="fl">1</span><span class="op">:</span><span class="va">N</span><span class="op">)</span><span class="op">{</span></span>
+<span>    <span class="va">z</span><span class="op">[</span><span class="va">i</span>,<span class="va">first</span><span class="op">[</span><span class="va">i</span><span class="op">]</span><span class="op">]</span> <span class="op">~</span> <span class="fu">dcat</span><span class="op">(</span><span class="va">delta</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">2</span><span class="op">]</span><span class="op">)</span></span>
+<span>    <span class="kw">for</span> <span class="op">(</span><span class="va">j</span> <span class="kw">in</span> <span class="op">(</span><span class="va">first</span><span class="op">[</span><span class="va">i</span><span class="op">]</span><span class="op">+</span><span class="fl">1</span><span class="op">)</span><span class="op">:</span><span class="cn">T</span><span class="op">)</span><span class="op">{</span></span>
+<span>      <span class="va">z</span><span class="op">[</span><span class="va">i</span>,<span class="va">j</span><span class="op">]</span> <span class="op">~</span> <span class="fu">dcat</span><span class="op">(</span><span class="va">gamma</span><span class="op">[</span><span class="va">z</span><span class="op">[</span><span class="va">i</span>,<span class="va">j</span><span class="op">-</span><span class="fl">1</span><span class="op">]</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">2</span>, <span class="va">i</span><span class="op">]</span><span class="op">)</span></span>
+<span>      <span class="va">y</span><span class="op">[</span><span class="va">i</span>,<span class="va">j</span><span class="op">]</span> <span class="op">~</span> <span class="fu">dcat</span><span class="op">(</span><span class="va">omega</span><span class="op">[</span><span class="va">z</span><span class="op">[</span><span class="va">i</span>,<span class="va">j</span><span class="op">]</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">2</span><span class="op">]</span><span class="op">)</span></span>
+<span>    <span class="op">}</span></span>
+<span>  <span class="op">}</span></span>
+<span><span class="op">}</span><span class="op">)</span></span></code></pre></div>
+<p>Initial values.</p>
+<div class="sourceCode" id="cb84"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">initial.values</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>beta <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html">rnorm</a></span><span class="op">(</span><span class="fl">2</span>,<span class="fl">0</span>,<span class="fl">1.5</span><span class="op">)</span>,</span>
+<span>                                  sdeps <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html">runif</a></span><span class="op">(</span><span class="fl">1</span>,<span class="fl">0</span>,<span class="fl">3</span><span class="op">)</span>,</span>
+<span>                                  p <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html">runif</a></span><span class="op">(</span><span class="fl">1</span>,<span class="fl">0</span>,<span class="fl">1</span><span class="op">)</span>,</span>
+<span>                                  z <span class="op">=</span> <span class="va">zinits</span><span class="op">)</span></span></code></pre></div>
+<p>Parameters to be monitored.</p>
+<div class="sourceCode" id="cb85"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">parameters.to.save</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"beta"</span>, <span class="st">"sdeps"</span>, <span class="st">"p"</span><span class="op">)</span></span></code></pre></div>
+<p>MCMC details. Note that we increase the number of iterations and the length of the burn-in period.</p>
+<div class="sourceCode" id="cb86"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">n.iter</span> <span class="op">&lt;-</span> <span class="fl">10000</span></span>
+<span><span class="va">n.burnin</span> <span class="op">&lt;-</span> <span class="fl">5000</span></span>
+<span><span class="va">n.chains</span> <span class="op">&lt;-</span> <span class="fl">2</span></span></code></pre></div>
+<p>Run nimble.</p>
+<div class="sourceCode" id="cb87"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">mcmc.phiwlrep</span> <span class="op">&lt;-</span> <span class="fu">nimbleMCMC</span><span class="op">(</span>code <span class="op">=</span> <span class="va">hmm.phiwlrep</span>, </span>
+<span>                            constants <span class="op">=</span> <span class="va">my.constants</span>,</span>
+<span>                            data <span class="op">=</span> <span class="va">my.data</span>,              </span>
+<span>                            inits <span class="op">=</span> <span class="va">initial.values</span>,</span>
+<span>                            monitors <span class="op">=</span> <span class="va">parameters.to.save</span>,</span>
+<span>                            niter <span class="op">=</span> <span class="va">n.iter</span>,</span>
+<span>                            nburnin <span class="op">=</span> <span class="va">n.burnin</span>, </span>
+<span>                            nchains <span class="op">=</span> <span class="va">n.chains</span><span class="op">)</span></span></code></pre></div>
+<p>Numerical summaries.</p>
+<pre><code>##          mean   sd  2.5%   50% 97.5% Rhat n.eff
+## beta[1]  0.21 0.12 -0.04  0.21  0.43 1.00  1202
+## beta[2] -0.01 0.10 -0.20 -0.01  0.19 1.00  1789
+## p        0.90 0.03  0.83  0.90  0.95 1.01   790
+## sdeps    0.40 0.26  0.02  0.37  0.95 1.01   170</code></pre>
+<p>Effective sample size for SD very low. Let’s try something else. We reparameterize by non-centering.</p>
+<div class="sourceCode" id="cb89"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">hmm.phiwlrep</span> <span class="op">&lt;-</span> <span class="fu">nimbleCode</span><span class="op">(</span><span class="op">{</span></span>
+<span>    <span class="va">p</span> <span class="op">~</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html">dunif</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1</span><span class="op">)</span> <span class="co"># prior detection</span></span>
+<span>    <span class="va">omega</span><span class="op">[</span><span class="fl">1</span>,<span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span> <span class="op">-</span> <span class="va">p</span>    <span class="co"># Pr(alive t -&gt; non-detected t)</span></span>
+<span>    <span class="va">omega</span><span class="op">[</span><span class="fl">1</span>,<span class="fl">2</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="va">p</span>        <span class="co"># Pr(alive t -&gt; detected t)</span></span>
+<span>    <span class="va">omega</span><span class="op">[</span><span class="fl">2</span>,<span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span>        <span class="co"># Pr(dead t -&gt; non-detected t)</span></span>
+<span>    <span class="va">omega</span><span class="op">[</span><span class="fl">2</span>,<span class="fl">2</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0</span>        <span class="co"># Pr(dead t -&gt; detected t)</span></span>
+<span>  <span class="kw">for</span> <span class="op">(</span><span class="va">i</span> <span class="kw">in</span> <span class="fl">1</span><span class="op">:</span><span class="va">N</span><span class="op">)</span><span class="op">{</span></span>
+<span>    <span class="fu">logit</span><span class="op">(</span><span class="va">phi</span><span class="op">[</span><span class="va">i</span><span class="op">]</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="va">beta</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span> <span class="op">+</span> <span class="va">beta</span><span class="op">[</span><span class="fl">2</span><span class="op">]</span> <span class="op">*</span> <span class="va">winglength</span><span class="op">[</span><span class="va">i</span><span class="op">]</span> <span class="op">+</span> <span class="va">sdeps</span> <span class="op">*</span> <span class="va">eps</span><span class="op">[</span><span class="va">i</span><span class="op">]</span></span>
+<span>    <span class="va">eps</span><span class="op">[</span><span class="va">i</span><span class="op">]</span> <span class="op">~</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html">dnorm</a></span><span class="op">(</span>mean <span class="op">=</span> <span class="fl">0</span>, sd <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
+<span>    <span class="va">gamma</span><span class="op">[</span><span class="fl">1</span>,<span class="fl">1</span>,<span class="va">i</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="va">phi</span><span class="op">[</span><span class="va">i</span><span class="op">]</span>      <span class="co"># Pr(alive t -&gt; alive t+1)</span></span>
+<span>    <span class="va">gamma</span><span class="op">[</span><span class="fl">1</span>,<span class="fl">2</span>,<span class="va">i</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span> <span class="op">-</span> <span class="va">phi</span><span class="op">[</span><span class="va">i</span><span class="op">]</span>  <span class="co"># Pr(alive t -&gt; dead t+1)</span></span>
+<span>    <span class="va">gamma</span><span class="op">[</span><span class="fl">2</span>,<span class="fl">1</span>,<span class="va">i</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0</span>           <span class="co"># Pr(dead t -&gt; alive t+1)</span></span>
+<span>    <span class="va">gamma</span><span class="op">[</span><span class="fl">2</span>,<span class="fl">2</span>,<span class="va">i</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span>           <span class="co"># Pr(dead t -&gt; dead t+1)</span></span>
+<span>  <span class="op">}</span></span>
+<span>  <span class="va">beta</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span> <span class="op">~</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html">dnorm</a></span><span class="op">(</span>mean <span class="op">=</span> <span class="fl">0</span>, sd <span class="op">=</span> <span class="fl">1.5</span><span class="op">)</span></span>
+<span>  <span class="va">beta</span><span class="op">[</span><span class="fl">2</span><span class="op">]</span> <span class="op">~</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html">dnorm</a></span><span class="op">(</span>mean <span class="op">=</span> <span class="fl">0</span>, sd <span class="op">=</span> <span class="fl">1.5</span><span class="op">)</span></span>
+<span>  <span class="va">sdeps</span> <span class="op">~</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html">dunif</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">10</span><span class="op">)</span></span>
+<span>  <span class="va">delta</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span>          <span class="co"># Pr(alive t = 1) = 1</span></span>
+<span>  <span class="va">delta</span><span class="op">[</span><span class="fl">2</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0</span>          <span class="co"># Pr(dead t = 1) = 0</span></span>
+<span>  <span class="co"># likelihood</span></span>
+<span>  <span class="kw">for</span> <span class="op">(</span><span class="va">i</span> <span class="kw">in</span> <span class="fl">1</span><span class="op">:</span><span class="va">N</span><span class="op">)</span><span class="op">{</span></span>
+<span>    <span class="va">z</span><span class="op">[</span><span class="va">i</span>,<span class="va">first</span><span class="op">[</span><span class="va">i</span><span class="op">]</span><span class="op">]</span> <span class="op">~</span> <span class="fu">dcat</span><span class="op">(</span><span class="va">delta</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">2</span><span class="op">]</span><span class="op">)</span></span>
+<span>    <span class="kw">for</span> <span class="op">(</span><span class="va">j</span> <span class="kw">in</span> <span class="op">(</span><span class="va">first</span><span class="op">[</span><span class="va">i</span><span class="op">]</span><span class="op">+</span><span class="fl">1</span><span class="op">)</span><span class="op">:</span><span class="cn">T</span><span class="op">)</span><span class="op">{</span></span>
+<span>      <span class="va">z</span><span class="op">[</span><span class="va">i</span>,<span class="va">j</span><span class="op">]</span> <span class="op">~</span> <span class="fu">dcat</span><span class="op">(</span><span class="va">gamma</span><span class="op">[</span><span class="va">z</span><span class="op">[</span><span class="va">i</span>,<span class="va">j</span><span class="op">-</span><span class="fl">1</span><span class="op">]</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">2</span>, <span class="va">i</span><span class="op">]</span><span class="op">)</span></span>
+<span>      <span class="va">y</span><span class="op">[</span><span class="va">i</span>,<span class="va">j</span><span class="op">]</span> <span class="op">~</span> <span class="fu">dcat</span><span class="op">(</span><span class="va">omega</span><span class="op">[</span><span class="va">z</span><span class="op">[</span><span class="va">i</span>,<span class="va">j</span><span class="op">]</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">2</span><span class="op">]</span><span class="op">)</span></span>
+<span>    <span class="op">}</span></span>
+<span>  <span class="op">}</span></span>
+<span><span class="op">}</span><span class="op">)</span></span></code></pre></div>
+<p>Initial values.</p>
+<div class="sourceCode" id="cb90"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">initial.values</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>beta <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html">rnorm</a></span><span class="op">(</span><span class="fl">2</span>,<span class="fl">0</span>,<span class="fl">1.5</span><span class="op">)</span>,</span>
+<span>                                  sdeps <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html">runif</a></span><span class="op">(</span><span class="fl">1</span>,<span class="fl">0</span>,<span class="fl">3</span><span class="op">)</span>,</span>
+<span>                                  p <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html">runif</a></span><span class="op">(</span><span class="fl">1</span>,<span class="fl">0</span>,<span class="fl">1</span><span class="op">)</span>,</span>
+<span>                                  z <span class="op">=</span> <span class="va">zinits</span><span class="op">)</span></span></code></pre></div>
+<p>Parameters to be monitored.</p>
+<div class="sourceCode" id="cb91"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">parameters.to.save</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"beta"</span>, <span class="st">"sdeps"</span>, <span class="st">"p"</span><span class="op">)</span></span></code></pre></div>
+<p>MCMC details. Note that we increase the number of iterations and the length of the burn-in period.</p>
+<div class="sourceCode" id="cb92"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">n.iter</span> <span class="op">&lt;-</span> <span class="fl">10000</span></span>
+<span><span class="va">n.burnin</span> <span class="op">&lt;-</span> <span class="fl">5000</span></span>
+<span><span class="va">n.chains</span> <span class="op">&lt;-</span> <span class="fl">2</span></span></code></pre></div>
+<p>Run nimble.</p>
+<div class="sourceCode" id="cb93"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">mcmc.phiwlrep</span> <span class="op">&lt;-</span> <span class="fu">nimbleMCMC</span><span class="op">(</span>code <span class="op">=</span> <span class="va">hmm.phiwlrep</span>, </span>
+<span>                            constants <span class="op">=</span> <span class="va">my.constants</span>,</span>
+<span>                            data <span class="op">=</span> <span class="va">my.data</span>,              </span>
+<span>                            inits <span class="op">=</span> <span class="va">initial.values</span>,</span>
+<span>                            monitors <span class="op">=</span> <span class="va">parameters.to.save</span>,</span>
+<span>                            niter <span class="op">=</span> <span class="va">n.iter</span>,</span>
+<span>                            nburnin <span class="op">=</span> <span class="va">n.burnin</span>, </span>
+<span>                            nchains <span class="op">=</span> <span class="va">n.chains</span><span class="op">)</span></span></code></pre></div>
+<p>Numerical summaries. Much better.</p>
+<pre><code>##          mean   sd  2.5%   50% 97.5% Rhat n.eff
+## beta[1]  0.21 0.12 -0.04  0.21  0.43 1.00  1202
+## beta[2] -0.01 0.10 -0.20 -0.01  0.19 1.00  1789
+## p        0.90 0.03  0.83  0.90  0.95 1.01   790
+## sdeps    0.40 0.26  0.02  0.37  0.95 1.01   170</code></pre>
+<p>Let’s plot the posterior distribution of the standard deviation of the individual random effect.</p>
+<div class="sourceCode" id="cb95"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">sdeps</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="va">mcmc.phiwlrep</span><span class="op">$</span><span class="va">chain1</span><span class="op">[</span>,<span class="st">"sdeps"</span><span class="op">]</span>, <span class="va">mcmc.phiwlrep</span><span class="op">$</span><span class="va">chain2</span><span class="op">[</span>,<span class="st">"sdeps"</span><span class="op">]</span><span class="op">)</span></span>
+<span><span class="va">sdeps</span> <span class="op">%&gt;%</span></span>
+<span>  <span class="fu">as_tibble</span><span class="op">(</span><span class="op">)</span> <span class="op">%&gt;%</span></span>
+<span>  <span class="fu">ggplot</span><span class="op">(</span><span class="op">)</span> <span class="op">+</span> </span>
+<span>  <span class="fu">aes</span><span class="op">(</span>x <span class="op">=</span> <span class="va">value</span><span class="op">)</span> <span class="op">+</span> </span>
+<span>  <span class="fu">geom_histogram</span><span class="op">(</span>color <span class="op">=</span> <span class="st">"white"</span>, binwidth <span class="op">=</span> <span class="fl">.03</span>, fill <span class="op">=</span> <span class="st">"gray70"</span><span class="op">)</span> <span class="op">+</span> </span>
+<span>  <span class="fu">geom_density</span><span class="op">(</span><span class="fu">aes</span><span class="op">(</span>y <span class="op">=</span> <span class="fl">.03</span> <span class="op">*</span> <span class="va">..count..</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<div class="inline-figure"><img src="banana-book_files/figure-html/unnamed-chunk-115-1.png" width="672"></div>
+</div>
+</div>
+<div id="what-if-covariates-vary-with-individual-and-time" class="section level3" number="1.9.5">
+<h3>
+<span class="header-section-number">1.9.5</span> What if covariates vary with individual and time?<a class="anchor" aria-label="anchor" href="#what-if-covariates-vary-with-individual-and-time"><i class="fas fa-link"></i></a>
+</h3>
+<div id="age" class="section level4" number="1.9.5.1">
+<h4>
+<span class="header-section-number">1.9.5.1</span> Age<a class="anchor" aria-label="anchor" href="#age"><i class="fas fa-link"></i></a>
+</h4>
+<p>Think of age for example (see exercises in Worksheets); covariate or nested indexing works fine.</p>
+<p>Age in capture-recapture has a particular meaning in capture-recapture analyses. It is the time elapsed since first encounter, which is a proxy of true age obviously, but not true age. Of course, if age is known at first encounter, then it is the true age.</p>
+<p>Another important remark is that age is an individual covariate, but in contrast with the wing length covariate we considered in the previous examples, age varies over time. The cool thing is that it has no missing value as age at <span class="math inline">\(t+1\)</span> is just age at <span class="math inline">\(t\)</span> to which we add 1. This suggests a way to code the age effect in nimble as follows.</p>
+<div class="sourceCode" id="cb96"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">hmm.phiage.in</span> <span class="op">&lt;-</span> <span class="fu">nimbleCode</span><span class="op">(</span><span class="op">{</span></span>
+<span>  <span class="va">p</span> <span class="op">~</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html">dunif</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1</span><span class="op">)</span> <span class="co"># prior detection</span></span>
+<span>  <span class="va">omega</span><span class="op">[</span><span class="fl">1</span>,<span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span> <span class="op">-</span> <span class="va">p</span>    <span class="co"># Pr(alive t -&gt; non-detected t)</span></span>
+<span>  <span class="va">omega</span><span class="op">[</span><span class="fl">1</span>,<span class="fl">2</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="va">p</span>        <span class="co"># Pr(alive t -&gt; detected t)</span></span>
+<span>  <span class="va">omega</span><span class="op">[</span><span class="fl">2</span>,<span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span>        <span class="co"># Pr(dead t -&gt; non-detected t)</span></span>
+<span>  <span class="va">omega</span><span class="op">[</span><span class="fl">2</span>,<span class="fl">2</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0</span>        <span class="co"># Pr(dead t -&gt; detected t)</span></span>
+<span>  <span class="kw">for</span> <span class="op">(</span><span class="va">i</span> <span class="kw">in</span> <span class="fl">1</span><span class="op">:</span><span class="va">N</span><span class="op">)</span><span class="op">{</span></span>
+<span>    <span class="kw">for</span> <span class="op">(</span><span class="va">t</span> <span class="kw">in</span> <span class="va">first</span><span class="op">[</span><span class="va">i</span><span class="op">]</span><span class="op">:</span><span class="op">(</span><span class="cn">T</span><span class="op">-</span><span class="fl">1</span><span class="op">)</span><span class="op">)</span><span class="op">{</span></span>
+<span>    <span class="fu">logit</span><span class="op">(</span><span class="va">phi</span><span class="op">[</span><span class="va">i</span>,<span class="va">t</span><span class="op">]</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="va">beta</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span> <span class="op">+</span> <span class="va">beta</span><span class="op">[</span><span class="fl">2</span><span class="op">]</span> <span class="op">*</span> <span class="fu">equals</span><span class="op">(</span><span class="va">t</span>, <span class="va">first</span><span class="op">[</span><span class="va">i</span><span class="op">]</span><span class="op">)</span> <span class="co"># phi1 = beta1 + beta2 and phi1+ = beta1</span></span>
+<span>    <span class="va">gamma</span><span class="op">[</span><span class="fl">1</span>,<span class="fl">1</span>,<span class="va">i</span>,<span class="va">t</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="va">phi</span><span class="op">[</span><span class="va">i</span>,<span class="va">t</span><span class="op">]</span>      <span class="co"># Pr(alive t -&gt; alive t+1)</span></span>
+<span>    <span class="va">gamma</span><span class="op">[</span><span class="fl">1</span>,<span class="fl">2</span>,<span class="va">i</span>,<span class="va">t</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span> <span class="op">-</span> <span class="va">phi</span><span class="op">[</span><span class="va">i</span>,<span class="va">t</span><span class="op">]</span>  <span class="co"># Pr(alive t -&gt; dead t+1)</span></span>
+<span>    <span class="va">gamma</span><span class="op">[</span><span class="fl">2</span>,<span class="fl">1</span>,<span class="va">i</span>,<span class="va">t</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0</span>           <span class="co"># Pr(dead t -&gt; alive t+1)</span></span>
+<span>    <span class="va">gamma</span><span class="op">[</span><span class="fl">2</span>,<span class="fl">2</span>,<span class="va">i</span>,<span class="va">t</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span>           <span class="co"># Pr(dead t -&gt; dead t+1)</span></span>
+<span>    <span class="op">}</span></span>
+<span>  <span class="op">}</span></span>
+<span>  <span class="va">beta</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span> <span class="op">~</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html">dnorm</a></span><span class="op">(</span>mean <span class="op">=</span> <span class="fl">0</span>, sd <span class="op">=</span> <span class="fl">1.5</span><span class="op">)</span> <span class="co"># phi1+</span></span>
+<span>  <span class="va">beta</span><span class="op">[</span><span class="fl">2</span><span class="op">]</span> <span class="op">~</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html">dnorm</a></span><span class="op">(</span>mean <span class="op">=</span> <span class="fl">0</span>, sd <span class="op">=</span> <span class="fl">1.5</span><span class="op">)</span> <span class="co"># phi1 - phi1+</span></span>
+<span>  <span class="va">phi1plus</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/Logistic.html">plogis</a></span><span class="op">(</span><span class="va">beta</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span><span class="op">)</span>         <span class="co"># phi1+</span></span>
+<span>  <span class="va">phi1</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/Logistic.html">plogis</a></span><span class="op">(</span><span class="va">beta</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span> <span class="op">+</span> <span class="va">beta</span><span class="op">[</span><span class="fl">2</span><span class="op">]</span><span class="op">)</span>   <span class="co"># phi1</span></span>
+<span>  <span class="va">delta</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span>          <span class="co"># Pr(alive t = 1) = 1</span></span>
+<span>  <span class="va">delta</span><span class="op">[</span><span class="fl">2</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0</span>          <span class="co"># Pr(dead t = 1) = 0</span></span>
+<span>  <span class="co"># likelihood</span></span>
+<span>  <span class="kw">for</span> <span class="op">(</span><span class="va">i</span> <span class="kw">in</span> <span class="fl">1</span><span class="op">:</span><span class="va">N</span><span class="op">)</span><span class="op">{</span></span>
+<span>    <span class="va">z</span><span class="op">[</span><span class="va">i</span>,<span class="va">first</span><span class="op">[</span><span class="va">i</span><span class="op">]</span><span class="op">]</span> <span class="op">~</span> <span class="fu">dcat</span><span class="op">(</span><span class="va">delta</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">2</span><span class="op">]</span><span class="op">)</span></span>
+<span>    <span class="kw">for</span> <span class="op">(</span><span class="va">j</span> <span class="kw">in</span> <span class="op">(</span><span class="va">first</span><span class="op">[</span><span class="va">i</span><span class="op">]</span><span class="op">+</span><span class="fl">1</span><span class="op">)</span><span class="op">:</span><span class="cn">T</span><span class="op">)</span><span class="op">{</span></span>
+<span>      <span class="va">z</span><span class="op">[</span><span class="va">i</span>,<span class="va">j</span><span class="op">]</span> <span class="op">~</span> <span class="fu">dcat</span><span class="op">(</span><span class="va">gamma</span><span class="op">[</span><span class="va">z</span><span class="op">[</span><span class="va">i</span>,<span class="va">j</span><span class="op">-</span><span class="fl">1</span><span class="op">]</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">2</span>, <span class="va">i</span>, <span class="va">j</span><span class="op">-</span><span class="fl">1</span><span class="op">]</span><span class="op">)</span></span>
+<span>      <span class="va">y</span><span class="op">[</span><span class="va">i</span>,<span class="va">j</span><span class="op">]</span> <span class="op">~</span> <span class="fu">dcat</span><span class="op">(</span><span class="va">omega</span><span class="op">[</span><span class="va">z</span><span class="op">[</span><span class="va">i</span>,<span class="va">j</span><span class="op">]</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">2</span><span class="op">]</span><span class="op">)</span></span>
+<span>    <span class="op">}</span></span>
+<span>  <span class="op">}</span></span>
+<span><span class="op">}</span><span class="op">)</span></span></code></pre></div>
+<p>Constants in a list.</p>
+<div class="sourceCode" id="cb97"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">first</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/apply.html">apply</a></span><span class="op">(</span><span class="va">y</span>, <span class="fl">1</span>, <span class="kw">function</span><span class="op">(</span><span class="va">x</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/Extremes.html">min</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/which.html">which</a></span><span class="op">(</span><span class="va">x</span> <span class="op">!=</span><span class="fl">0</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">my.constants</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>N <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html">nrow</a></span><span class="op">(</span><span class="va">y</span><span class="op">)</span>, </span>
+<span>                     T <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html">ncol</a></span><span class="op">(</span><span class="va">y</span><span class="op">)</span>, </span>
+<span>                     first <span class="op">=</span> <span class="va">first</span><span class="op">)</span></span></code></pre></div>
+<p>Data in a list.</p>
+<div class="sourceCode" id="cb98"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">my.data</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>y <span class="op">=</span> <span class="va">y</span> <span class="op">+</span> <span class="fl">1</span><span class="op">)</span></span></code></pre></div>
+<p>Initial values.</p>
+<div class="sourceCode" id="cb99"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">zinits</span> <span class="op">&lt;-</span> <span class="va">y</span></span>
+<span><span class="va">zinits</span><span class="op">[</span><span class="va">zinits</span> <span class="op">==</span> <span class="fl">0</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span></span>
+<span><span class="va">initial.values</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>beta <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html">rnorm</a></span><span class="op">(</span><span class="fl">2</span>,<span class="fl">0</span>,<span class="fl">5</span><span class="op">)</span>,</span>
+<span>                                  p <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html">runif</a></span><span class="op">(</span><span class="fl">1</span>,<span class="fl">0</span>,<span class="fl">1</span><span class="op">)</span>,</span>
+<span>                                  z <span class="op">=</span> <span class="va">zinits</span><span class="op">)</span></span></code></pre></div>
+<p>Parameters to be monitored.</p>
+<div class="sourceCode" id="cb100"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">parameters.to.save</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"phi1"</span>, <span class="st">"phi1plus"</span>, <span class="st">"p"</span><span class="op">)</span></span></code></pre></div>
+<p>MCMC details.</p>
+<div class="sourceCode" id="cb101"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">n.iter</span> <span class="op">&lt;-</span> <span class="fl">5000</span></span>
+<span><span class="va">n.burnin</span> <span class="op">&lt;-</span> <span class="fl">2500</span></span>
+<span><span class="va">n.chains</span> <span class="op">&lt;-</span> <span class="fl">2</span></span></code></pre></div>
+<p>Run nimble.</p>
+<div class="sourceCode" id="cb102"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">mcmc.phi.age.in</span> <span class="op">&lt;-</span> <span class="fu">nimbleMCMC</span><span class="op">(</span>code <span class="op">=</span> <span class="va">hmm.phiage.in</span>, </span>
+<span>                             constants <span class="op">=</span> <span class="va">my.constants</span>,</span>
+<span>                             data <span class="op">=</span> <span class="va">my.data</span>,              </span>
+<span>                             inits <span class="op">=</span> <span class="va">initial.values</span>,</span>
+<span>                             monitors <span class="op">=</span> <span class="va">parameters.to.save</span>,</span>
+<span>                             niter <span class="op">=</span> <span class="va">n.iter</span>,</span>
+<span>                             nburnin <span class="op">=</span> <span class="va">n.burnin</span>, </span>
+<span>                             nchains <span class="op">=</span> <span class="va">n.chains</span><span class="op">)</span></span></code></pre></div>
+<p>Display results.</p>
+<pre><code>##          mean   sd 2.5%  50% 97.5% Rhat n.eff
+## p        0.89 0.03 0.83 0.90  0.94 1.00   402
+## phi1     0.56 0.03 0.49 0.55  0.63 1.01   689
+## phi1plus 0.57 0.04 0.50 0.57  0.64 1.00   309</code></pre>
+<p>Another method to include an age effect is to create an individual by time covariate and use nested indexing (as in the previous example) to distinguish survival after first detection from survival afterwards.</p>
+<div class="sourceCode" id="cb104"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">age</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html">matrix</a></span><span class="op">(</span><span class="cn">NA</span>, nrow <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html">nrow</a></span><span class="op">(</span><span class="va">y</span><span class="op">)</span>, ncol <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html">ncol</a></span><span class="op">(</span><span class="va">y</span><span class="op">)</span> <span class="op">-</span> <span class="fl">1</span><span class="op">)</span></span>
+<span><span class="kw">for</span> <span class="op">(</span><span class="va">i</span> <span class="kw">in</span> <span class="fl">1</span><span class="op">:</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html">nrow</a></span><span class="op">(</span><span class="va">age</span><span class="op">)</span><span class="op">)</span><span class="op">{</span></span>
+<span>  <span class="kw">for</span> <span class="op">(</span><span class="va">j</span> <span class="kw">in</span> <span class="fl">1</span><span class="op">:</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html">ncol</a></span><span class="op">(</span><span class="va">age</span><span class="op">)</span><span class="op">)</span><span class="op">{</span></span>
+<span>    <span class="kw">if</span> <span class="op">(</span><span class="va">j</span> <span class="op">==</span> <span class="va">first</span><span class="op">[</span><span class="va">i</span><span class="op">]</span><span class="op">)</span> <span class="va">age</span><span class="op">[</span><span class="va">i</span>,<span class="va">j</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span></span>
+<span>    <span class="kw">if</span> <span class="op">(</span><span class="va">j</span> <span class="op">&gt;</span> <span class="va">first</span><span class="op">[</span><span class="va">i</span><span class="op">]</span><span class="op">)</span> <span class="va">age</span><span class="op">[</span><span class="va">i</span>,<span class="va">j</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">2</span></span>
+<span>  <span class="op">}</span></span>
+<span><span class="op">}</span></span></code></pre></div>
+<p>The model. Careful, now survival is no longer defined on the logit scale as in the previous model, so we use uniform priors.</p>
+<div class="sourceCode" id="cb105"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">hmm.phiage.out</span> <span class="op">&lt;-</span> <span class="fu">nimbleCode</span><span class="op">(</span><span class="op">{</span></span>
+<span>  <span class="va">p</span> <span class="op">~</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html">dunif</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1</span><span class="op">)</span> <span class="co"># prior detection</span></span>
+<span>  <span class="va">omega</span><span class="op">[</span><span class="fl">1</span>,<span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span> <span class="op">-</span> <span class="va">p</span>    <span class="co"># Pr(alive t -&gt; non-detected t)</span></span>
+<span>  <span class="va">omega</span><span class="op">[</span><span class="fl">1</span>,<span class="fl">2</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="va">p</span>        <span class="co"># Pr(alive t -&gt; detected t)</span></span>
+<span>  <span class="va">omega</span><span class="op">[</span><span class="fl">2</span>,<span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span>        <span class="co"># Pr(dead t -&gt; non-detected t)</span></span>
+<span>  <span class="va">omega</span><span class="op">[</span><span class="fl">2</span>,<span class="fl">2</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0</span>        <span class="co"># Pr(dead t -&gt; detected t)</span></span>
+<span>  <span class="kw">for</span> <span class="op">(</span><span class="va">i</span> <span class="kw">in</span> <span class="fl">1</span><span class="op">:</span><span class="va">N</span><span class="op">)</span><span class="op">{</span></span>
+<span>    <span class="kw">for</span> <span class="op">(</span><span class="va">t</span> <span class="kw">in</span> <span class="va">first</span><span class="op">[</span><span class="va">i</span><span class="op">]</span><span class="op">:</span><span class="op">(</span><span class="cn">T</span><span class="op">-</span><span class="fl">1</span><span class="op">)</span><span class="op">)</span><span class="op">{</span></span>
+<span>    <span class="va">phi</span><span class="op">[</span><span class="va">i</span>,<span class="va">t</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="va">beta</span><span class="op">[</span><span class="va">age</span><span class="op">[</span><span class="va">i</span>,<span class="va">t</span><span class="op">]</span><span class="op">]</span> <span class="co"># beta1 = phi1, beta2 = phi1+</span></span>
+<span>    <span class="va">gamma</span><span class="op">[</span><span class="fl">1</span>,<span class="fl">1</span>,<span class="va">i</span>,<span class="va">t</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="va">phi</span><span class="op">[</span><span class="va">i</span>,<span class="va">t</span><span class="op">]</span>      <span class="co"># Pr(alive t -&gt; alive t+1)</span></span>
+<span>    <span class="va">gamma</span><span class="op">[</span><span class="fl">1</span>,<span class="fl">2</span>,<span class="va">i</span>,<span class="va">t</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span> <span class="op">-</span> <span class="va">phi</span><span class="op">[</span><span class="va">i</span>,<span class="va">t</span><span class="op">]</span>  <span class="co"># Pr(alive t -&gt; dead t+1)</span></span>
+<span>    <span class="va">gamma</span><span class="op">[</span><span class="fl">2</span>,<span class="fl">1</span>,<span class="va">i</span>,<span class="va">t</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0</span>           <span class="co"># Pr(dead t -&gt; alive t+1)</span></span>
+<span>    <span class="va">gamma</span><span class="op">[</span><span class="fl">2</span>,<span class="fl">2</span>,<span class="va">i</span>,<span class="va">t</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span>           <span class="co"># Pr(dead t -&gt; dead t+1)</span></span>
+<span>    <span class="op">}</span></span>
+<span>  <span class="op">}</span></span>
+<span>  <span class="va">beta</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span> <span class="op">~</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html">dunif</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1</span><span class="op">)</span> <span class="co"># phi1</span></span>
+<span>  <span class="va">beta</span><span class="op">[</span><span class="fl">2</span><span class="op">]</span> <span class="op">~</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html">dunif</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1</span><span class="op">)</span> <span class="co"># phi1+</span></span>
+<span>  <span class="va">phi1</span> <span class="op">&lt;-</span> <span class="va">beta</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span></span>
+<span>  <span class="va">phi1plus</span> <span class="op">&lt;-</span> <span class="va">beta</span><span class="op">[</span><span class="fl">2</span><span class="op">]</span></span>
+<span>  <span class="va">delta</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span>          <span class="co"># Pr(alive t = 1) = 1</span></span>
+<span>  <span class="va">delta</span><span class="op">[</span><span class="fl">2</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0</span>          <span class="co"># Pr(dead t = 1) = 0</span></span>
+<span>  <span class="co"># likelihood</span></span>
+<span>  <span class="kw">for</span> <span class="op">(</span><span class="va">i</span> <span class="kw">in</span> <span class="fl">1</span><span class="op">:</span><span class="va">N</span><span class="op">)</span><span class="op">{</span></span>
+<span>    <span class="va">z</span><span class="op">[</span><span class="va">i</span>,<span class="va">first</span><span class="op">[</span><span class="va">i</span><span class="op">]</span><span class="op">]</span> <span class="op">~</span> <span class="fu">dcat</span><span class="op">(</span><span class="va">delta</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">2</span><span class="op">]</span><span class="op">)</span></span>
+<span>    <span class="kw">for</span> <span class="op">(</span><span class="va">j</span> <span class="kw">in</span> <span class="op">(</span><span class="va">first</span><span class="op">[</span><span class="va">i</span><span class="op">]</span><span class="op">+</span><span class="fl">1</span><span class="op">)</span><span class="op">:</span><span class="cn">T</span><span class="op">)</span><span class="op">{</span></span>
+<span>      <span class="va">z</span><span class="op">[</span><span class="va">i</span>,<span class="va">j</span><span class="op">]</span> <span class="op">~</span> <span class="fu">dcat</span><span class="op">(</span><span class="va">gamma</span><span class="op">[</span><span class="va">z</span><span class="op">[</span><span class="va">i</span>,<span class="va">j</span><span class="op">-</span><span class="fl">1</span><span class="op">]</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">2</span>, <span class="va">i</span>, <span class="va">j</span><span class="op">-</span><span class="fl">1</span><span class="op">]</span><span class="op">)</span></span>
+<span>      <span class="va">y</span><span class="op">[</span><span class="va">i</span>,<span class="va">j</span><span class="op">]</span> <span class="op">~</span> <span class="fu">dcat</span><span class="op">(</span><span class="va">omega</span><span class="op">[</span><span class="va">z</span><span class="op">[</span><span class="va">i</span>,<span class="va">j</span><span class="op">]</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">2</span><span class="op">]</span><span class="op">)</span></span>
+<span>    <span class="op">}</span></span>
+<span>  <span class="op">}</span></span>
+<span><span class="op">}</span><span class="op">)</span></span></code></pre></div>
+<p>Constants in a list, inculding the age matrix covariate.</p>
+<div class="sourceCode" id="cb106"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">first</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/apply.html">apply</a></span><span class="op">(</span><span class="va">y</span>, <span class="fl">1</span>, <span class="kw">function</span><span class="op">(</span><span class="va">x</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/Extremes.html">min</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/which.html">which</a></span><span class="op">(</span><span class="va">x</span> <span class="op">!=</span><span class="fl">0</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">my.constants</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>N <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html">nrow</a></span><span class="op">(</span><span class="va">y</span><span class="op">)</span>, </span>
+<span>                     T <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html">ncol</a></span><span class="op">(</span><span class="va">y</span><span class="op">)</span>, </span>
+<span>                     first <span class="op">=</span> <span class="va">first</span>,</span>
+<span>                     age <span class="op">=</span> <span class="va">age</span><span class="op">)</span></span></code></pre></div>
+<p>Data in a list.</p>
+<div class="sourceCode" id="cb107"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">my.data</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>y <span class="op">=</span> <span class="va">y</span> <span class="op">+</span> <span class="fl">1</span><span class="op">)</span></span></code></pre></div>
+<p>Initial values.</p>
+<div class="sourceCode" id="cb108"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">zinits</span> <span class="op">&lt;-</span> <span class="va">y</span></span>
+<span><span class="va">zinits</span><span class="op">[</span><span class="va">zinits</span> <span class="op">==</span> <span class="fl">0</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span></span>
+<span><span class="va">initial.values</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>beta <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html">runif</a></span><span class="op">(</span><span class="fl">2</span>,<span class="fl">0</span>,<span class="fl">1</span><span class="op">)</span>,</span>
+<span>                                  p <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html">runif</a></span><span class="op">(</span><span class="fl">1</span>,<span class="fl">0</span>,<span class="fl">1</span><span class="op">)</span>,</span>
+<span>                                  z <span class="op">=</span> <span class="va">zinits</span><span class="op">)</span></span></code></pre></div>
+<p>Parameters to be monitored.</p>
+<div class="sourceCode" id="cb109"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">parameters.to.save</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"phi1"</span>, <span class="st">"phi1plus"</span>, <span class="st">"p"</span><span class="op">)</span></span></code></pre></div>
+<p>MCMC details.</p>
+<div class="sourceCode" id="cb110"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">n.iter</span> <span class="op">&lt;-</span> <span class="fl">5000</span></span>
+<span><span class="va">n.burnin</span> <span class="op">&lt;-</span> <span class="fl">2500</span></span>
+<span><span class="va">n.chains</span> <span class="op">&lt;-</span> <span class="fl">2</span></span></code></pre></div>
+<p>Run nimble.</p>
+<div class="sourceCode" id="cb111"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">mcmc.phi.age.out</span> <span class="op">&lt;-</span> <span class="fu">nimbleMCMC</span><span class="op">(</span>code <span class="op">=</span> <span class="va">hmm.phiage.out</span>, </span>
+<span>                               constants <span class="op">=</span> <span class="va">my.constants</span>,</span>
+<span>                               data <span class="op">=</span> <span class="va">my.data</span>,              </span>
+<span>                               inits <span class="op">=</span> <span class="va">initial.values</span>,</span>
+<span>                               monitors <span class="op">=</span> <span class="va">parameters.to.save</span>,</span>
+<span>                               niter <span class="op">=</span> <span class="va">n.iter</span>,</span>
+<span>                               nburnin <span class="op">=</span> <span class="va">n.burnin</span>, </span>
+<span>                               nchains <span class="op">=</span> <span class="va">n.chains</span><span class="op">)</span></span></code></pre></div>
+<p>Display results.</p>
+<div class="sourceCode" id="cb112"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/load.html">load</a></span><span class="op">(</span><span class="fu">here</span><span class="fu">::</span><span class="fu"><a href="https://here.r-lib.org//reference/here.html">here</a></span><span class="op">(</span><span class="st">"dat/phiageout.RData"</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu">MCMCsummary</span><span class="op">(</span><span class="va">mcmc.phi.age.out</span>, round <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span>
+<span><span class="co">##          mean   sd 2.5%  50% 97.5% Rhat n.eff</span></span>
+<span><span class="co">## p        0.90 0.03 0.84 0.90  0.95 1.02   438</span></span>
+<span><span class="co">## phi1     0.55 0.03 0.48 0.55  0.62 1.00   878</span></span>
+<span><span class="co">## phi1plus 0.57 0.04 0.50 0.57  0.64 1.02  1048</span></span></code></pre></div>
+</div>
+<div id="trap-dependence" class="section level4" number="1.9.5.2">
+<h4>
+<span class="header-section-number">1.9.5.2</span> Trap-dependence<a class="anchor" aria-label="anchor" href="#trap-dependence"><i class="fas fa-link"></i></a>
+</h4>
+<p>Add example for trap-dependence w/ time individual covariate. Move it to case study w/ multievent.</p>
+</div>
+<div id="missing-values" class="section level4" number="1.9.5.3">
+<h4>
+<span class="header-section-number">1.9.5.3</span> Missing values<a class="anchor" aria-label="anchor" href="#missing-values"><i class="fas fa-link"></i></a>
+</h4>
+<p>Now, think of body size across life. Problem is we cannot record size when animal is non-detected. Discretize in small, medium and large and treat as a state. More later. Assume a model for covariate and fill in missing values (imputation).</p>
+</div>
 </div>
 </div>
 <div id="summary" class="section level2" number="1.10">
@@ -17849,10 +18581,11 @@ F
 </li>
 <li>
 <a class="nav-link" href="#covariates"><span class="header-section-number">1.9</span> Covariates</a><ul class="nav navbar-nav">
-<li><a class="nav-link" href="#can-we-explain-time-variation-embrace-heterogeneity"><span class="header-section-number">1.9.1</span> Can we explain time variation? Embrace heterogeneity</a></li>
-<li><a class="nav-link" href="#embrace-heterogeneity"><span class="header-section-number">1.9.2</span> Embrace heterogeneity</a></li>
-<li><a class="nav-link" href="#what-about-individual-heterogeneity"><span class="header-section-number">1.9.3</span> What about individual heterogeneity?</a></li>
-<li><a class="nav-link" href="#what-if-covariates-vary-with-individual-and-time"><span class="header-section-number">1.9.4</span> What if covariates vary with individual and time?</a></li>
+<li><a class="nav-link" href="#temporal-covariates"><span class="header-section-number">1.9.1</span> Temporal covariates</a></li>
+<li><a class="nav-link" href="#individual-covariates"><span class="header-section-number">1.9.2</span> Individual covariates</a></li>
+<li><a class="nav-link" href="#additive-and-interaction"><span class="header-section-number">1.9.3</span> Additive and interaction</a></li>
+<li><a class="nav-link" href="#random-effects"><span class="header-section-number">1.9.4</span> Random effects</a></li>
+<li><a class="nav-link" href="#what-if-covariates-vary-with-individual-and-time"><span class="header-section-number">1.9.5</span> What if covariates vary with individual and time?</a></li>
 </ul>
 </li>
 <li><a class="nav-link" href="#summary"><span class="header-section-number">1.10</span> Summary</a></li>
