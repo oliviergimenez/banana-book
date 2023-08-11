@@ -1,1207 +1,1498 @@
-# Dispersal {#dispersal}
+# Movements between sites, and states {#dispersal}
 
 WORK IN PROGRESS.
 
-<!-- ## Introduction -->
-
-<!-- Blabla. -->
-
-<!-- ```{r} -->
-<!-- knitr::include_graphics("images/arnason1973.png") -->
-<!-- ``` -->
-
-
-<!-- ```{r} -->
-<!-- knitr::include_graphics("images/schwarz1993.png") -->
-<!-- ``` -->
-
-<!-- ```{r} -->
-<!-- knitr::include_graphics("images/deadpool.gif") -->
-<!-- ``` -->
-
-<!-- Thank you Canada! -->
-
-
-<!-- ```{r} -->
-<!-- knitr::include_graphics("images/nichols.png") -->
-<!-- ``` -->
-
-
-<!-- ## Wintering site fidelity in Canada Geese -->
-
-<!-- ### 3 sites Carolinas, Chesapeake, Mid-Atlantic, -->
-
-<!-- with 21277 banded geese, data kindly provided by Jay Hestbeck ([Hestbeck et al. 1991](https://esajournals.onlinelibrary.wiley.com/doi/10.2307/2937193)) -->
-
-<!-- ```{r echo = FALSE} -->
-<!-- geese <- read_csv(here::here("dat", "geese.csv")) -->
-<!-- geese %>% -->
-<!--   kableExtra::kable() %>% -->
-<!--   kableExtra::scroll_box(width = "100%", height = "400px") -->
-<!-- y <- geese %>% -->
-<!--   as.matrix() -->
-<!-- ``` -->
-
-<!-- (large areas along East coast of US) -->
-
-<!-- ### Biological inference -->
-
-<!-- ```{r, echo = FALSE} -->
-<!-- ggplot() + -->
-<!--   geom_point(aes(1, 1), size = 2.5, alpha = .7) + -->
-<!--   geom_point(aes(1, 1.5), size = 2.5, alpha = .7) + -->
-<!--   geom_point(aes(1, 2), size = 2.5, alpha = .7) + -->
-<!--   geom_text(aes(1, 2, label = 'non-detection'), nudge_x = -0.6, size = 7) + -->
-<!--   geom_text(aes(1, 1.5, label = 'detection in site A'), nudge_x = -0.6, size = 7) + -->
-<!--   geom_text(aes(1, 1, label = 'detection in site B'), nudge_x = -0.6, size = 7) + -->
-<!--   geom_point(aes(2, 1), size = 2.5, alpha = .7) + -->
-<!--   geom_point(aes(2, 1.5), size = 2.5, alpha = .7) + -->
-<!--   geom_point(aes(2, 2), size = 2.5, alpha = .7) + -->
-<!--   geom_text(aes(2, 2, label = 'alive in site A'), nudge_x = 0.5, size = 7) + -->
-<!--   geom_text(aes(2, 1.5, label = 'alive in site B'), nudge_x = 0.5, size = 7) + -->
-<!--   geom_text(aes(2, 1, label = 'dead'), nudge_x = 0.5, size = 7) + -->
-<!--   xlim(0, 3) + -->
-<!--   ylim(0.5, 3) + -->
-<!--   annotate('text', x = 1, y = 2.6, label = 'Observations', size = 10) + -->
-<!--   annotate('text', x = 2, y = 2.6, label = 'States', size = 10) + -->
-<!--   theme_void() -->
-<!-- ``` -->
-
-<!-- Observations and states are closely related, but not entirely. -->
-
-
-<!-- ```{r, echo = FALSE} -->
-<!-- ggplot() + -->
-<!--   geom_point(aes(1, 1), size = 2.5, alpha = .7) + -->
-<!--   geom_point(aes(1, 1.5), size = 2.5, alpha = .7) + -->
-<!--   geom_point(aes(1, 2), size = 2.5, alpha = .7) + -->
-<!--   geom_text(aes(1, 2, label = 'non-detection'), nudge_x = -0.6, size = 7) + -->
-<!--   geom_text(aes(1, 1.5, label = 'detection in site A'), nudge_x = -0.6, size = 7) + -->
-<!--   geom_text(aes(1, 1, label = 'detection in site B'), nudge_x = -0.6, size = 7) + -->
-<!--   geom_point(aes(2, 1), size = 2.5, alpha = .7) + -->
-<!--   geom_point(aes(2, 1.5), size = 2.5, alpha = .7) + -->
-<!--   geom_point(aes(2, 2), size = 2.5, alpha = .7) + -->
-<!--   geom_text(aes(2, 2, label = 'alive in site A'), nudge_x = 0.5, size = 7) + -->
-<!--   geom_text(aes(2, 1.5, label = 'alive in site B'), nudge_x = 0.5, size = 7) + -->
-<!--   geom_text(aes(2, 1, label = 'dead'), nudge_x = 0.5, size = 7) + -->
-<!--   xlim(0, 3) + -->
-<!--   ylim(0.5, 3) + -->
-<!--   annotate('text', x = 1, y = 2.6, label = 'Observations', size = 10) + -->
-<!--   annotate('text', x = 2, y = 2.6, label = 'States', size = 10) + -->
-<!--   geom_segment(aes(x = 1, y = 1.5, xend = 2, yend = 2), alpha = 0.7, arrow = arrow(length = unit(0.02, "npc"))) + -->
-<!--   theme_void() -->
-<!-- ``` -->
-
-<!-- ```{r, echo = FALSE} -->
-<!-- ggplot() + -->
-<!--   geom_point(aes(1, 1), size = 2.5, alpha = .7) + -->
-<!--   geom_point(aes(1, 1.5), size = 2.5, alpha = .7) + -->
-<!--   geom_point(aes(1, 2), size = 2.5, alpha = .7) + -->
-<!--   geom_text(aes(1, 2, label = 'non-detection'), nudge_x = -0.6, size = 7) + -->
-<!--   geom_text(aes(1, 1.5, label = 'detection in site A'), nudge_x = -0.6, size = 7) + -->
-<!--   geom_text(aes(1, 1, label = 'detection in site B'), nudge_x = -0.6, size = 7) + -->
-<!--   geom_point(aes(2, 1), size = 2.5, alpha = .7) + -->
-<!--   geom_point(aes(2, 1.5), size = 2.5, alpha = .7) + -->
-<!--   geom_point(aes(2, 2), size = 2.5, alpha = .7) + -->
-<!--   geom_text(aes(2, 2, label = 'alive in site A'), nudge_x = 0.5, size = 7) + -->
-<!--   geom_text(aes(2, 1.5, label = 'alive in site B'), nudge_x = 0.5, size = 7) + -->
-<!--   geom_text(aes(2, 1, label = 'dead'), nudge_x = 0.5, size = 7) + -->
-<!--   xlim(0, 3) + -->
-<!--   ylim(0.5, 3) + -->
-<!--   annotate('text', x = 1, y = 2.6, label = 'Observations', size = 10) + -->
-<!--   annotate('text', x = 2, y = 2.6, label = 'States', size = 10) + -->
-<!--   geom_segment(aes(x = 1, y = 1.5, xend = 2, yend = 2), alpha = 0.7, arrow = arrow(length = unit(0.02, "npc"))) + -->
-<!--   geom_segment(aes(x = 1, y = 1, xend = 2, yend = 1.5), alpha = 0.7, arrow = arrow(length = unit(0.02, "npc"))) + -->
-<!--   theme_void() -->
-<!-- ``` -->
-
-<!-- ```{r, echo = FALSE} -->
-<!-- ggplot() + -->
-<!--   geom_point(aes(1, 1), size = 2.5, alpha = .7) + -->
-<!--   geom_point(aes(1, 1.5), size = 2.5, alpha = .7) + -->
-<!--   geom_point(aes(1, 2), size = 2.5, alpha = .7) + -->
-<!--   geom_text(aes(1, 2, label = 'non-detection'), nudge_x = -0.6, size = 7) + -->
-<!--   geom_text(aes(1, 1.5, label = 'detection in site A'), nudge_x = -0.6, size = 7) + -->
-<!--   geom_text(aes(1, 1, label = 'detection in site B'), nudge_x = -0.6, size = 7) + -->
-<!--   geom_point(aes(2, 1), size = 2.5, alpha = .7) + -->
-<!--   geom_point(aes(2, 1.5), size = 2.5, alpha = .7) + -->
-<!--   geom_point(aes(2, 2), size = 2.5, alpha = .7) + -->
-<!--   geom_text(aes(2, 2, label = 'alive in site A'), nudge_x = 0.5, size = 7) + -->
-<!--   geom_text(aes(2, 1.5, label = 'alive in site B'), nudge_x = 0.5, size = 7) + -->
-<!--   geom_text(aes(2, 1, label = 'dead'), nudge_x = 0.5, size = 7) + -->
-<!--   xlim(0, 3) + -->
-<!--   ylim(0.5, 3) + -->
-<!--   annotate('text', x = 1, y = 2.6, label = 'Observations', size = 10) + -->
-<!--   annotate('text', x = 2, y = 2.6, label = 'States', size = 10) + -->
-<!--   geom_segment(aes(x = 1, y = 2, xend = 2, yend = 2), alpha = 0.7, arrow = arrow(length = unit(0.02, "npc"))) + -->
-<!--   geom_segment(aes(x = 1, y = 2, xend = 2, yend = 1.5), alpha = 0.7, arrow = arrow(length = unit(0.02, "npc"))) + -->
-<!--   geom_segment(aes(x = 1, y = 2, xend = 2, yend = 1), alpha = 0.7, arrow = arrow(length = unit(0.02, "npc"))) + -->
-<!--   geom_segment(aes(x = 1, y = 1.5, xend = 2, yend = 2), alpha = 0.7, arrow = arrow(length = unit(0.02, "npc"))) + -->
-<!--   geom_segment(aes(x = 1, y = 1, xend = 2, yend = 1.5), alpha = 0.7, arrow = arrow(length = unit(0.02, "npc"))) + -->
-<!--   theme_void() -->
-<!-- ``` -->
-
-
-<!-- ### The model construction: How we should think. -->
-
-<!-- ```{r, echo = FALSE} -->
-<!-- ggplot() + -->
-<!--   geom_point(aes(1, 1), size = 2.5, alpha = .7) + -->
-<!--   geom_point(aes(1, 1.5), size = 2.5, alpha = .7) + -->
-<!--   geom_point(aes(1, 2), size = 2.5, alpha = .7) + -->
-<!--   geom_text(aes(2, 2, label = 'non-detection'), nudge_x = 0.5, size = 7) + -->
-<!--   geom_text(aes(2, 1.5, label = 'detection in site A'), nudge_x = 0.6, size = 7) + -->
-<!--   geom_text(aes(2, 1, label = 'detection in site B'), nudge_x = 0.6, size = 7) + -->
-<!--   geom_point(aes(2, 1), size = 2.5, alpha = .7) + -->
-<!--   geom_point(aes(2, 1.5), size = 2.5, alpha = .7) + -->
-<!--   geom_point(aes(2, 2), size = 2.5, alpha = .7) + -->
-<!--   geom_text(aes(1, 2, label = 'alive in site A'), nudge_x = -0.6, size = 7) + -->
-<!--   geom_text(aes(1, 1.5, label = 'alive in site B'), nudge_x = -0.6, size = 7) + -->
-<!--   geom_text(aes(1, 1, label = 'dead'), nudge_x = -0.6, size = 7) + -->
-<!--   xlim(0, 3) + -->
-<!--   ylim(0.5, 3) + -->
-<!--   annotate('text', x = 1, y = 2.6, label = 'States', size = 10) + -->
-<!--   annotate('text', x = 2, y = 2.6, label = 'Observations', size = 10) + -->
-<!--   theme_void() -->
-<!-- ``` -->
-
-<!-- Generative model. States generate observations. -->
-
-
-<!-- ### The model construction: How we should think. -->
-
-<!-- ```{r, echo = FALSE} -->
-<!-- ggplot() + -->
-<!--   geom_point(aes(1, 1), size = 2.5, alpha = .7) + -->
-<!--   geom_point(aes(1, 1.5), size = 2.5, alpha = .7) + -->
-<!--   geom_point(aes(1, 2), size = 2.5, alpha = .7) + -->
-<!--   geom_text(aes(2, 2, label = 'non-detection'), nudge_x = 0.5, size = 7) + -->
-<!--   geom_text(aes(2, 1.5, label = 'detection in site A'), nudge_x = 0.6, size = 7) + -->
-<!--   geom_text(aes(2, 1, label = 'detection in site B'), nudge_x = 0.6, size = 7) + -->
-<!--   geom_point(aes(2, 1), size = 2.5, alpha = .7) + -->
-<!--   geom_point(aes(2, 1.5), size = 2.5, alpha = .7) + -->
-<!--   geom_point(aes(2, 2), size = 2.5, alpha = .7) + -->
-<!--   geom_text(aes(1, 2, label = 'alive in site A'), nudge_x = -0.6, size = 7) + -->
-<!--   geom_text(aes(1, 1.5, label = 'alive in site B'), nudge_x = -0.6, size = 7) + -->
-<!--   geom_text(aes(1, 1, label = 'dead'), nudge_x = -0.6, size = 7) + -->
-<!--   xlim(0, 3) + -->
-<!--   ylim(0.5, 3) + -->
-<!--   annotate('text', x = 1, y = 2.6, label = 'States', size = 10) + -->
-<!--   annotate('text', x = 2, y = 2.6, label = 'Observations', size = 10) + -->
-<!--     geom_segment(aes(x = 1, y = 1, xend = 2, yend = 2), alpha = 0.7, arrow = arrow(length = unit(0.02, "npc"))) + -->
-<!--   theme_void() -->
-<!-- ``` -->
-
-<!-- ### The model construction: How we should think. -->
-
-<!-- ```{r, echo = FALSE} -->
-<!-- ggplot() + -->
-<!--   geom_point(aes(1, 1), size = 2.5, alpha = .7) + -->
-<!--   geom_point(aes(1, 1.5), size = 2.5, alpha = .7) + -->
-<!--   geom_point(aes(1, 2), size = 2.5, alpha = .7) + -->
-<!--   geom_text(aes(2, 2, label = 'non-detection'), nudge_x = 0.5, size = 7) + -->
-<!--   geom_text(aes(2, 1.5, label = 'detection in site A'), nudge_x = 0.6, size = 7) + -->
-<!--   geom_text(aes(2, 1, label = 'detection in site B'), nudge_x = 0.6, size = 7) + -->
-<!--   geom_point(aes(2, 1), size = 2.5, alpha = .7) + -->
-<!--   geom_point(aes(2, 1.5), size = 2.5, alpha = .7) + -->
-<!--   geom_point(aes(2, 2), size = 2.5, alpha = .7) + -->
-<!--   geom_text(aes(1, 2, label = 'alive in site A'), nudge_x = -0.6, size = 7) + -->
-<!--   geom_text(aes(1, 1.5, label = 'alive in site B'), nudge_x = -0.6, size = 7) + -->
-<!--   geom_text(aes(1, 1, label = 'dead'), nudge_x = -0.6, size = 7) + -->
-<!--   xlim(0, 3) + -->
-<!--   ylim(0.5, 3) + -->
-<!--   annotate('text', x = 1, y = 2.6, label = 'States', size = 10) + -->
-<!--   annotate('text', x = 2, y = 2.6, label = 'Observations', size = 10) + -->
-<!--     geom_segment(aes(x = 1, y = 2, xend = 2, yend = 2), alpha = 0.7, arrow = arrow(length = unit(0.02, "npc"))) + -->
-<!--   geom_segment(aes(x = 1, y = 2, xend = 2, yend = 1.5), alpha = 0.7, arrow = arrow(length = unit(0.02, "npc"))) + -->
-<!--   geom_segment(aes(x = 1, y = 1, xend = 2, yend = 2), alpha = 0.7, arrow = arrow(length = unit(0.02, "npc"))) + -->
-<!--   theme_void() -->
-<!-- ``` -->
-
-<!-- ### The model construction: How we should think. -->
-
-<!-- ```{r, echo = FALSE} -->
-<!-- ggplot() + -->
-<!--   geom_point(aes(1, 1), size = 2.5, alpha = .7) + -->
-<!--   geom_point(aes(1, 1.5), size = 2.5, alpha = .7) + -->
-<!--   geom_point(aes(1, 2), size = 2.5, alpha = .7) + -->
-<!--   geom_text(aes(2, 2, label = 'non-detection'), nudge_x = 0.5, size = 7) + -->
-<!--   geom_text(aes(2, 1.5, label = 'detection in site A'), nudge_x = 0.6, size = 7) + -->
-<!--   geom_text(aes(2, 1, label = 'detection in site B'), nudge_x = 0.6, size = 7) + -->
-<!--   geom_point(aes(2, 1), size = 2.5, alpha = .7) + -->
-<!--   geom_point(aes(2, 1.5), size = 2.5, alpha = .7) + -->
-<!--   geom_point(aes(2, 2), size = 2.5, alpha = .7) + -->
-<!--   geom_text(aes(1, 2, label = 'alive in site A'), nudge_x = -0.6, size = 7) + -->
-<!--   geom_text(aes(1, 1.5, label = 'alive in site B'), nudge_x = -0.6, size = 7) + -->
-<!--   geom_text(aes(1, 1, label = 'dead'), nudge_x = -0.6, size = 7) + -->
-<!--   xlim(0, 3) + -->
-<!--   ylim(0.5, 3) + -->
-<!--   annotate('text', x = 1, y = 2.6, label = 'States', size = 10) + -->
-<!--   annotate('text', x = 2, y = 2.6, label = 'Observations', size = 10) + -->
-<!--     geom_segment(aes(x = 1, y = 2, xend = 2, yend = 2), alpha = 0.7, arrow = arrow(length = unit(0.02, "npc"))) + -->
-<!--   geom_segment(aes(x = 1, y = 2, xend = 2, yend = 1.5), alpha = 0.7, arrow = arrow(length = unit(0.02, "npc"))) + -->
-<!--   geom_segment(aes(x = 1, y = 1.5, xend = 2, yend = 2), alpha = 0.7, arrow = arrow(length = unit(0.02, "npc"))) + -->
-<!--   geom_segment(aes(x = 1, y = 1.5, xend = 2, yend = 1), alpha = 0.7, arrow = arrow(length = unit(0.02, "npc"))) + -->
-<!--   geom_segment(aes(x = 1, y = 1, xend = 2, yend = 2), alpha = 0.7, arrow = arrow(length = unit(0.02, "npc"))) + -->
-<!--   theme_void() -->
-<!-- ``` -->
-
-<!-- ### HMM model for dispersal with 2 sites (drop Carolinas) -->
-
-<!-- Transition matrix -->
-
-<!-- $$ -->
-<!-- \begin{matrix} -->
-<!-- & \\ -->
-<!-- \mathbf{\Gamma} = -->
-<!--     \left ( \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \end{matrix} } \right . -->
-<!-- \end{matrix} -->
-<!-- \hspace{-1.2em} -->
-<!-- \begin{matrix} -->
-<!--     z_{t}=A & z_{t}=B & z_{t}=D \\ \hdashline -->
-<!-- \phi_A (1-\psi_{AB}) & \phi_A \psi_{AB} & 1 - \phi_A\\ -->
-<!-- \phi_B \psi_{BA} & \phi_B (1-\psi_{BA}) & 1 - \phi_B\\ -->
-<!-- 0 & 0 & 1 -->
-<!-- \end{matrix} -->
-<!-- \hspace{-0.2em} -->
-<!-- \begin{matrix} -->
-<!-- & \\ -->
-<!-- \left . \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \end{matrix} } \right ) -->
-<!--     \begin{matrix} -->
-<!--     z_{t-1}=A \\ z_{t-1}=B \\ z_{t-1}=D -->
-<!--     \end{matrix} -->
-<!-- \end{matrix} -->
-<!-- $$ -->
-
-<!-- ### HMM model for dispersal with 2 sites (drop Carolinas) -->
-
-<!-- Observation matrix -->
-
-<!-- $$ -->
-<!-- \begin{matrix} -->
-<!-- & \\ -->
-<!-- \mathbf{\Omega} = -->
-<!--     \left ( \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \end{matrix} } \right . -->
-<!-- \end{matrix} -->
-<!-- \hspace{-1.2em} -->
-<!-- \begin{matrix} -->
-<!--     y_t=0 & y_t=1 & y_t=2 \\ \hdashline -->
-<!-- 1 - p_A & p_A & 0\\ -->
-<!-- 1 - p_B & 0 & p_B\\ -->
-<!-- 1 & 0 & 0 -->
-<!-- \end{matrix} -->
-<!-- \hspace{-0.2em} -->
-<!-- \begin{matrix} -->
-<!-- & \\ -->
-<!-- \left . \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \end{matrix} } \right ) -->
-<!--     \begin{matrix} -->
-<!--     z_{t}=A \\ z_{t}=B \\ z_{t}=D -->
-<!--     \end{matrix} -->
-<!-- \end{matrix} -->
-<!-- $$ -->
-
-<!-- ### HMM model for dispersal with 2 sites (drop Carolinas) -->
-
-<!-- Observation matrix -->
-
-<!-- $$ -->
-<!-- \begin{matrix} -->
-<!-- & \\ -->
-<!-- \mathbf{\Omega} = -->
-<!--     \left ( \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \end{matrix} } \right . -->
-<!-- \end{matrix} -->
-<!-- \hspace{-1.2em} -->
-<!-- \begin{matrix} -->
-<!--     y_t=0 & y_t=1 & y_t=2 \\ \hdashline -->
-<!-- 1 - p_A & p_A & 0\\ -->
-<!-- 1 - p_B & 0 & p_B\\ -->
-<!-- 1 & 0 & 0 -->
-<!-- \end{matrix} -->
-<!-- \hspace{-0.2em} -->
-<!-- \begin{matrix} -->
-<!-- & \\ -->
-<!-- \left . \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \end{matrix} } \right ) -->
-<!--     \begin{matrix} -->
-<!--     z_{t}=A \\ z_{t}=B \\ z_{t}=D -->
-<!--     \end{matrix} -->
-<!-- \end{matrix} -->
-<!-- $$ -->
-
-<!-- Note: You may code non-detections as $y_t = 2$, and the first column in the observation matrix should go last. -->
-
-<!-- Quick answer about the -1 and the important issue of coding states and obs. I did this on purpose, to have folks think about the difference between observations and states (non-detection obs should not be confused with state for dead). This becomes even more crucial when we get to multievent models where several observations may be generated by a single state. I get the intuition argument perfectly, but I’d like them to fight against it at first, then once they’re comfortable with the difference, they may code obs/states as they see fit. Let’s see how it goes. I agree that we should mention that during the multistate lecture, in the spirit of « you’re free to code states and jobs the way you like ». I’ll add something. -->
-
-<!-- ### Our model $(\phi_A, \phi_B, \psi_{AB}, \psi_{BA}, p_A, p_B)$ -->
-
-<!-- ```{r eval = FALSE} -->
-<!-- multisite <- nimbleCode({ -->
-<!--   # ------------------------------------------------- -->
-<!--   # Parameters: -->
-<!--   # phiA: survival probability site A -->
-<!--   # phiB: survival probability site B -->
-<!--   # psiAB: movement probability from site A to site B -->
-<!--   # psiBA: movement probability from site B to site A -->
-<!--   # pA: recapture probability site A -->
-<!--   # pB: recapture probability site B -->
-<!--   # ------------------------------------------------- -->
-<!--   # States (z): -->
-<!--   # 1 alive at A -->
-<!--   # 2 alive at B -->
-<!--   # 3 dead -->
-<!--   # Observations (y): -->
-<!--   # 1 not seen -->
-<!--   # 2 seen at A -->
-<!--   # 3 seen at B -->
-<!--   # ------------------------------------------------- -->
-<!-- ... -->
-<!-- ``` -->
-
-<!-- ### Our model $(\phi_A, \phi_B, \psi_{AB}, \psi_{BA}, p_A, p_B)$ -->
-
-<!-- ```{r eval = FALSE} -->
-<!-- multisite <- nimbleCode({ -->
-<!-- ... -->
-<!--   # Priors -->
-<!--   phiA ~ dunif(0, 1) -->
-<!--   phiB ~ dunif(0, 1) -->
-<!--   psiAB ~ dunif(0, 1) -->
-<!--   psiBA ~ dunif(0, 1) -->
-<!--   pA ~ dunif(0, 1) -->
-<!--   pB ~ dunif(0, 1) -->
-<!-- ... -->
-<!-- ``` -->
-
-<!-- ### Our model $(\phi_A, \phi_B, \psi_{AB}, \psi_{BA}, p_A, p_B)$ -->
-
-<!-- ```{r eval = FALSE} -->
-<!-- multisite <- nimbleCode({ -->
-<!-- ... -->
-<!--   # initial state probabilities -->
-<!--   delta[1] <- piA          # Pr(alive in A t = 1) -->
-<!--   delta[2] <- 1 - piA      # Pr(alive in B t = 1) -->
-<!--   delta[3] <- 0            # Pr(dead t = 1) = 0 -->
-<!-- ... -->
-<!-- ``` -->
-
-<!-- Actually, initial state is known exactly. It is alive at site of initial capture, and $\pi_A$ is just the proportion of individuals first captured in site A, no need to estimate it. -->
-
-<!-- Instead of `z[i,first[i]] ~ dcat(delta[1:3])`, use `z[i,first[i]] <- y[i,first[i]]-1` instead in the likelihood. -->
-
-<!-- Same trick applies to CJS models. -->
-
-<!-- ### Our model $(\phi_A, \phi_B, \psi_{AB}, \psi_{BA}, p_A, p_B)$ -->
-
-<!-- ```{r eval = FALSE} -->
-<!-- multisite <- nimbleCode({ -->
-<!-- ... -->
-<!--   # probabilities of state z(t+1) given z(t) -->
-<!--   # (read as gamma[z(t),z(t+1)] = gamma[fromState,toState]) -->
-
-<!--   gamma[1,1] <- phiA * (1 - psiAB) -->
-<!--   gamma[1,2] <- phiA * psiAB -->
-<!--   gamma[1,3] <- 1 - phiA -->
-<!--   gamma[2,1] <- phiB * psiBA -->
-<!--   gamma[2,2] <- phiB * (1 - psiBA) -->
-<!--   gamma[2,3] <- 1 - phiB -->
-<!--   gamma[3,1] <- 0 -->
-<!--   gamma[3,2] <- 0 -->
-<!--   gamma[3,3] <- 1 -->
-<!-- ... -->
-<!-- ``` -->
-
-<!-- ### Our model $(\phi_A, \phi_B, \psi_{AB}, \psi_{BA}, p_A, p_B)$ -->
-
-<!-- ```{r eval = FALSE} -->
-<!-- multisite <- nimbleCode({ -->
-<!-- ... -->
-<!--   # probabilities of y(t) given z(t) -->
-<!--   # (read as omega[y(t),z(t)] = omega[Observation,State]) -->
-
-<!--   omega[1,1] <- 1 - pA     # Pr(alive A t -> non-detected t) -->
-<!--   omega[1,2] <- pA         # Pr(alive A t -> detected A t) -->
-<!--   omega[1,3] <- 0          # Pr(alive A t -> detected B t) -->
-<!--   omega[2,1] <- 1 - pB     # Pr(alive B t -> non-detected t) -->
-<!--   omega[2,2] <- 0          # Pr(alive B t -> detected A t) -->
-<!--   omega[2,3] <- pB         # Pr(alive B t -> detected B t) -->
-<!--   omega[3,1] <- 1          # Pr(dead t -> non-detected t) -->
-<!--   omega[3,2] <- 0          # Pr(dead t -> detected A t) -->
-<!--   omega[3,3] <- 0          # Pr(dead t -> detected B t) -->
-<!-- ... -->
-<!-- ``` -->
-
-<!-- ### Our model $(\phi_A, \phi_B, \psi_{AB}, \psi_{BA}, p_A, p_B)$ -->
-
-<!-- ```{r eval = FALSE} -->
-<!-- multisite <- nimbleCode({ -->
-<!-- ... -->
-<!--   # likelihood -->
-<!--   for (i in 1:N){ -->
-<!--     # latent state at first capture -->
-<!--     z[i,first[i]] <- y[i,first[i]] - 1 -->
-<!--     for (t in (first[i]+1):K){ -->
-<!--       # z(t) given z(t-1) -->
-<!--       z[i,t] ~ dcat(gamma[z[i,t-1],1:3]) -->
-<!--       # y(t) given z(t) -->
-<!--       y[i,t] ~ dcat(omega[z[i,t],1:3]) -->
-<!--     } -->
-<!--   } -->
-<!-- }) -->
-<!-- ``` -->
-
-
-<!-- ```{r echo = FALSE} -->
-<!-- library(MCMCvis) -->
-<!-- load(here::here("dat","geese_2sites.RData")) -->
-<!-- MCMCsummary(mcmc.multisite, round = 2) -->
-<!-- ``` -->
-
-<!-- ```{r, echo = FALSE} -->
-<!-- library(MCMCvis) -->
-<!-- load(here::here("dat","geese_2sites.RData")) -->
-<!-- MCMCplot(mcmc.multisite) -->
-<!-- ``` -->
-
-
-<!-- ## What if there are three sites? -->
-
-<!-- The transition probabilities still need to be between 0 and 1. -->
-
-<!-- Another constraint is that the sum of three probabilities of departure from a given site should be one. -->
-
-<!-- Two methods to fulfill both constraints. Dirichlet prior and multinomial logit link. -->
-
-<!-- Dirichlet prior with parameter alpha -->
-
-<!-- ```{r, echo = FALSE, fig.cap = "Dirichlet prior with parameter alpha"} -->
-<!-- library(gtools) -->
-<!-- library(ggtern) -->
-<!-- set.seed(123) -->
-<!-- n <- 500 -->
-<!-- alpha1 <- c(1, 1, 1) -->
-<!-- p1 <- rdirichlet(n, alpha1) -->
-<!-- alpha2 <- c(5, 5, 5) -->
-<!-- p2 <- rdirichlet(n, alpha2) -->
-<!-- alpha3 <- c(1, 2, 2) -->
-<!-- p3 <- rdirichlet(n, alpha3) -->
-<!-- alpha4 <- c(2, 4, 8) -->
-<!-- p4 <- rdirichlet(n, alpha4) -->
-<!-- df <- cbind(rbind(p1, p2, p3, p4), c(rep("alpha = c(1, 1, 1)", n), -->
-<!--                                      rep("alpha = c(5, 5, 5)", n), -->
-<!--                                      rep("alpha = c(1, 2, 2)", n), -->
-<!--                                      rep("alpha = c(2, 4, 8)", n))) %>% -->
-<!--   as_tibble() %>% -->
-<!--   mutate(x = as.numeric(V1), -->
-<!--          y = as.numeric(V2), -->
-<!--          z = as.numeric(V3), -->
-<!--          alpha = V4) -->
-
-<!-- df %>% -->
-<!--   ggtern(aes(x = x, y = y, z = z)) + -->
-<!--   stat_density_tern(aes(fill=..level.., alpha=..level..), -->
-<!--                     geom = 'polygon', -->
-<!--                     bdl = 0.005) + -->
-<!-- #  scale_fill_gradient2(high = "blue") + -->
-<!--   scale_fill_viridis_b() + -->
-<!--   geom_point(alpha = 0.3, pch = "+") + -->
-<!--   theme_light(base_size = 14) + -->
-<!--   theme_showarrows() + -->
-<!--   scale_T_continuous(breaks = seq(0, 1, by = 0.2), -->
-<!--                      labels = seq(0, 1, by = 0.2)) + -->
-<!--   scale_L_continuous(breaks = seq(0, 1, by = 0.2), -->
-<!--                      labels = seq(0, 1, by = 0.2)) + -->
-<!--   scale_R_continuous(breaks = seq(0, 1, by = 0.2), -->
-<!--                      labels = seq(0, 1, by = 0.2)) + -->
-<!--   labs(x = "", -->
-<!--        y = "", -->
-<!--        z = "", -->
-<!--        Tarrow = "psiAA", -->
-<!--        Larrow = "psiAB", -->
-<!--        Rarrow = "psiAC") + -->
-<!--   guides(color = "none", fill = "none", alpha = "none") + -->
-<!--   facet_wrap(~alpha) -->
-<!-- ``` -->
-
-
-<!-- ### Nimble implementation of the Dirichlet prior -->
-
-<!-- ```{r eval = FALSE} -->
-<!-- multisite <- nimbleCode({ -->
-<!-- ... -->
-<!--   # transitions: Dirichlet priors -->
-<!--   psiA[1:3] ~ ddirch(alpha[1:3]) # psiAA, psiAB, psiAC -->
-<!--   psiB[1:3] ~ ddirch(alpha[1:3]) # psiBA, psiBB, psiCC -->
-<!--   psiC[1:3] ~ ddirch(alpha[1:3]) # psiCA, psiCB, psiCC -->
-<!-- ... -->
-<!-- ``` -->
-
-<!-- ### Nimble implementation of the Dirichlet prior -->
-
-<!-- ```{r eval = FALSE} -->
-<!-- multisite <- nimbleCode({ -->
-<!-- ... -->
-<!--   # probabilities of state z(t+1) given z(t) -->
-<!--   gamma[1,1] <- phiA * psiA[1] -->
-<!--   gamma[1,2] <- phiA * psiA[2] -->
-<!--   gamma[1,3] <- phiA * psiA[3] -->
-<!--   gamma[1,4] <- 1 - phiA -->
-<!--   gamma[2,1] <- phiB * psiB[1] -->
-<!--   gamma[2,2] <- phiB * psiB[2] -->
-<!--   gamma[2,3] <- phiB * psiB[3] -->
-<!--   gamma[2,4] <- 1 - phiB -->
-<!--   gamma[3,1] <- phiC * psiC[1] -->
-<!--   gamma[3,2] <- phiC * psiC[2] -->
-<!--   gamma[3,3] <- phiC * psiC[3] -->
-<!--   gamma[3,4] <- 1 - phiC -->
-<!--   gamma[4,1] <- 0 -->
-<!--   gamma[4,2] <- 0 -->
-<!--   gamma[4,3] <- 0 -->
-<!--   gamma[4,4] <- 1 -->
-<!-- ... -->
-<!-- ``` -->
-
-<!-- ```{r echo = FALSE} -->
-<!-- library(MCMCvis) -->
-<!-- load(here::here("dat","geese_3sites_dirichlet.RData")) -->
-<!-- MCMCsummary(mcmc.multisite, round = 2) -->
-<!-- ``` -->
-
-<!-- ```{r, echo = FALSE} -->
-<!-- library(MCMCvis) -->
-<!-- load(here::here("dat","geese_3sites_dirichlet.RData")) -->
-<!-- MCMCplot(mcmc.multisite) -->
-<!-- ``` -->
-
-
-<!-- ### Multinomial logit -->
-
-<!-- Say we have $P$ sites or states. -->
-
-<!-- Specify a normal prior distribution for $P-1$ transition parameters $\alpha_j$. These probabilities are on the multinomial logit scale, possibly function of covariates. -->
-
-<!-- To back-transform these parameters, we use: -->
-
-<!-- $$\beta_j = \displaystyle{\frac{\exp(\alpha_j)}{1+\displaystyle{\sum_{p=1}^P{\exp(\alpha_p)}}}}, j = 1,\ldots,P-1$$ -->
-
-<!-- This ensures that all $\beta_j$ are between 0 and 1, and their sum is 1. -->
-
-<!-- Last parameter is calculated as the complement $\beta_P = 1 - \displaystyle{\sum_{j=1}^{P-1}{\exp(\beta_j)}}$ -->
-
-<!-- ### Nimble implementation of the Dirichlet prior -->
-
-<!-- ```{r eval = FALSE} -->
-<!-- multisite <- nimbleCode({ -->
-<!-- ... -->
-<!--   # transitions: multinomial logit -->
-<!--   # normal priors on logit of all but one transition probs -->
-<!--   for (i in 1:2){ -->
-<!--     lpsiA[i] ~ dnorm(0, sd = 1000) -->
-<!--     lpsiB[i] ~ dnorm(0, sd = 1000) -->
-<!--     lpsiC[i] ~ dnorm(0, sd = 1000) -->
-<!--   } -->
-<!--   # constrain the transitions such that their sum is < 1 -->
-<!--   for (i in 1:2){ -->
-<!--     psiA[i] <- exp(lpsiA[i]) / (1 + exp(lpsiA[1]) + exp(lpsiA[2])) -->
-<!--     psiB[i] <- exp(lpsiB[i]) / (1 + exp(lpsiB[1]) + exp(lpsiB[2])) -->
-<!--     psiC[i] <- exp(lpsiC[i]) / (1 + exp(lpsiC[1]) + exp(lpsiC[2])) -->
-<!--   } -->
-<!--   # last transition probability -->
-<!--   psiA[3] <- 1 - psiA[1] - psiA[2] -->
-<!--   psiB[3] <- 1 - psiB[1] - psiB[2] -->
-<!--   psiC[3] <- 1 - psiC[1] - psiC[2] -->
-<!-- ... -->
-<!-- ``` -->
-
-<!-- ### Nimble implementation of the Dirichlet prior -->
-
-<!-- ```{r eval = FALSE} -->
-<!-- multisite <- nimbleCode({ -->
-<!-- ... -->
-<!--   # probabilities of state z(t+1) given z(t) -->
-<!--   gamma[1,1] <- phiA * psiA[1] -->
-<!--   gamma[1,2] <- phiA * psiA[2] -->
-<!--   gamma[1,3] <- phiA * psiA[3] -->
-<!--   gamma[1,4] <- 1 - phiA -->
-<!--   gamma[2,1] <- phiB * psiB[1] -->
-<!--   gamma[2,2] <- phiB * psiB[2] -->
-<!--   gamma[2,3] <- phiB * psiB[3] -->
-<!--   gamma[2,4] <- 1 - phiB -->
-<!--   gamma[3,1] <- phiC * psiC[1] -->
-<!--   gamma[3,2] <- phiC * psiC[2] -->
-<!--   gamma[3,3] <- phiC * psiC[3] -->
-<!--   gamma[3,4] <- 1 - phiC -->
-<!--   gamma[4,1] <- 0 -->
-<!--   gamma[4,2] <- 0 -->
-<!--   gamma[4,3] <- 0 -->
-<!--   gamma[4,4] <- 1 -->
-<!-- ... -->
-<!-- ``` -->
-
-<!-- ```{r echo = FALSE} -->
-<!-- library(MCMCvis) -->
-<!-- load(here::here("dat","geese_3sites_logit.RData")) -->
-<!-- MCMCsummary(mcmc.multisite, round = 2) -->
-<!-- ``` -->
-
-<!-- ```{r, echo = FALSE} -->
-<!-- library(MCMCvis) -->
-<!-- load(here::here("dat","geese_3sites_logit.RData")) -->
-<!-- MCMCplot(mcmc.multisite) -->
-<!-- ``` -->
-
-
-<!-- ## Sites may be states. -->
-
-<!-- ## Examples of multistate models -->
-
-<!-- + *Epidemiological or disease states*: sick/healthy, uninfected/infected/recovered. -->
-
-<!-- + *Morphological states*: small/medium/big,  light/medium/heavy. -->
-
-<!-- + *Breeding states*: e.g. breeder/non-breeder,  failed breeder, first-time breeder. -->
-
-<!-- + *Developmental or life-history states*: e.g. juvenile/subadult/adult. -->
-
-<!-- + *Social states*: e.g. solitary/group-living,  subordinate/dominant. -->
-
-<!-- + *Death states*: e.g. alive, dead from harvest, dead from natural causes. -->
-
-<!-- **States = individual, time-specific categorical covariates.** -->
-
-<!-- ```{r} -->
-<!-- knitr::include_graphics("images/sooty.jpg") -->
-<!-- ``` -->
-
-<!-- ### Sooty shearwater (David Boyle) -->
-
-<!-- ## Sooty shearwaters and life-history tradeoffs -->
-
-<!-- We consider data collected between 1940 and 1957 by Lance Richdale on Sooty shearwaters (aka titis). -->
-
-<!-- These data were reanalyzed with multistate models by [Scofield et al. (2001)](https://link.springer.com/article/10.1198/108571101750524607) who kindly provided us with the data. -->
-
-<!-- Following the way the data were collected, four states were originally considered: Alive breeder; Accompanied by another bird in a burrow; Alone in a burrow; On the surface; Dead. -->
-
-<!-- ## Sooty shearwaters and life-history tradeoffs -->
-
-<!-- Because of numerical issues, we pooled all alive states but breeder together in a non-breeder state (NB) that includes: -->
-
-<!-- + failed breeders (birds that had bred previously – skip reproduction or divorce) and pre-breeders (birds that had yet to breed). -->
-
-<!-- + Note that because burrows were not checked before hatching, some birds in the category NB might have already failed. -->
-
-<!-- + We therefore regard those birds in the B state as successful breeders, and those in the NB state as nonbreeders plus prebreeders and failed breeders. -->
-
-<!-- Observations are non-detections, and detections as breeder and non-breeder -->
-
-<!-- Does breeding affect survival? Does breeding in current year affect breeding next year? -->
-
-
-<!-- ```{r echo = FALSE} -->
-<!-- titis <- read_csv2(here::here("dat", "titis.csv"), col_names = FALSE) -->
-<!-- titis %>% -->
-<!--   rename(year_1942 = X1, -->
-<!--          year_1943 = X2, -->
-<!--          year_1944 = X3, -->
-<!--          year_1949 = X4, -->
-<!--          year_1952 = X5, -->
-<!--          year_1953 = X6, -->
-<!--          year_1956 = X7) %>% -->
-<!--   kableExtra::kable() %>% -->
-<!--   kableExtra::scroll_box(width = "100%", height = "400px") -->
-<!-- ``` -->
-
-<!-- ### HMM model for transition between states -->
-
-<!-- Transition matrix -->
-
-<!-- $$ -->
-<!-- \begin{matrix} -->
-<!-- & \\ -->
-<!-- \mathbf{\Gamma} = -->
-<!--     \left ( \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \end{matrix} } \right . -->
-<!-- \end{matrix} -->
-<!-- \hspace{-1.2em} -->
-<!-- \begin{matrix} -->
-<!--     z_t=B & z_t=NB & z_t=D \\ \hdashline -->
-<!-- \phi_B (1-\psi_{BNB}) & \phi_B \psi_{BNB} & 1 - \phi_B\\ -->
-<!-- \phi_{NB} \psi_{NBB} & \phi_{NB} (1-\psi_{NBB}) & 1 - \phi_{NB}\\ -->
-<!-- 0 & 0 & 1 -->
-<!-- \end{matrix} -->
-<!-- \hspace{-0.2em} -->
-<!-- \begin{matrix} -->
-<!-- & \\ -->
-<!-- \left . \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \end{matrix} } \right ) -->
-<!--     \begin{matrix} -->
-<!--     z_{t-1}=B \\ z_{t-1}=NB \\ z_{t-1}=D -->
-<!--     \end{matrix} -->
-<!-- \end{matrix} -->
-<!-- $$ -->
-
-<!-- + Costs or reproduction would reflect in future reproduction $\psi_{BB} = 1 - \psi_{BNB} < \psi_{NBB}$ or survival $\phi_B < \phi_{NB}$. -->
-
-<!-- ### HMM model for transition between states -->
-
-<!-- Observation matrix -->
-
-<!-- $$ -->
-<!-- \begin{matrix} -->
-<!-- & \\ -->
-<!-- \mathbf{\Omega} = -->
-<!--     \left ( \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \end{matrix} } \right . -->
-<!-- \end{matrix} -->
-<!-- \hspace{-1.2em} -->
-<!-- \begin{matrix} -->
-<!--     y_t=0 & y_t=1 & y_t=2 \\ \hdashline -->
-<!-- 1 - p_B & p_B & 0\\ -->
-<!-- 1 - p_{NB} & 0 & p_{NB}\\ -->
-<!-- 1 & 0 & 0 -->
-<!-- \end{matrix} -->
-<!-- \hspace{-0.2em} -->
-<!-- \begin{matrix} -->
-<!-- & \\ -->
-<!-- \left . \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \end{matrix} } \right ) -->
-<!--     \begin{matrix} -->
-<!--     z_{t}=B \\ z_{t}=NB \\ z_{t}=D -->
-<!--     \end{matrix} -->
-<!-- \end{matrix} -->
-<!-- $$ -->
-
-<!-- ### Our model $(\phi_{NB}, \phi_B, \psi_{NBB}, \psi_{BNB}, p_{NB}, p_B)$ -->
-
-<!-- ```{r eval = FALSE} -->
-<!-- multistate <- nimbleCode({ -->
-<!--   # ------------------------------------------------- -->
-<!--   # Parameters: -->
-<!--   # phiB: survival probability state B -->
-<!--   # phiNB: survival probability state NB -->
-<!--   # psiBNB: transition probability from B to NB -->
-<!--   # psiNBB: transition probability from NB to B -->
-<!--   # pB: recapture probability B -->
-<!--   # pNB: recapture probability NB -->
-<!--   # ------------------------------------------------- -->
-<!--   # States (z): -->
-<!--   # 1 alive B -->
-<!--   # 2 alive NB -->
-<!--   # 3 dead -->
-<!--   # Observations (y): -->
-<!--   # 1 not seen -->
-<!--   # 2 seen as B -->
-<!--   # 3 seen as NB -->
-<!--   # ------------------------------------------------- -->
-<!-- ... -->
-<!-- ``` -->
-
-<!-- ### Our model $(\phi_{NB}, \phi_B, \psi_{NBB}, \psi_{BNB}, p_{NB}, p_B)$ -->
-
-<!-- ```{r eval = FALSE} -->
-<!-- multistate <- nimbleCode({ -->
-<!-- ... -->
-<!--   # Priors -->
-<!--   phiB ~ dunif(0, 1) -->
-<!--   phiNB ~ dunif(0, 1) -->
-<!--   psiBNB ~ dunif(0, 1) -->
-<!--   psiNBB ~ dunif(0, 1) -->
-<!--   pB ~ dunif(0, 1) -->
-<!--   pNB ~ dunif(0, 1) -->
-<!-- ... -->
-<!-- ``` -->
-
-<!-- ### Our model $(\phi_{NB}, \phi_B, \psi_{NBB}, \psi_{BNB}, p_{NB}, p_B)$ -->
-
-<!-- ```{r eval = FALSE} -->
-<!-- multistate <- nimbleCode({ -->
-<!-- ... -->
-<!--   # probabilities of state z(t+1) given z(t) -->
-<!--   gamma[1,1] <- phiB * (1 - psiBNB) -->
-<!--   gamma[1,2] <- phiB * psiBNB -->
-<!--   gamma[1,3] <- 1 - phiB -->
-<!--   gamma[2,1] <- phiNB * psiNBB -->
-<!--   gamma[2,2] <- phiNB * (1 - psiNBB) -->
-<!--   gamma[2,3] <- 1 - phiNB -->
-<!--   gamma[3,1] <- 0 -->
-<!--   gamma[3,2] <- 0 -->
-<!--   gamma[3,3] <- 1 -->
-<!-- ... -->
-<!-- ``` -->
-
-<!-- ### Our model $(\phi_{NB}, \phi_B, \psi_{NBB}, \psi_{BNB}, p_{NB}, p_B)$ -->
-
-<!-- ```{r eval = FALSE} -->
-<!-- multistate <- nimbleCode({ -->
-<!-- ... -->
-<!--   # probabilities of y(t) given z(t) -->
-<!--   omega[1,1] <- 1 - pB    # Pr(alive B t -> non-detected t) -->
-<!--   omega[1,2] <- pB        # Pr(alive B t -> detected B t) -->
-<!--   omega[1,3] <- 0         # Pr(alive B t -> detected NB t) -->
-<!--   omega[2,1] <- 1 - pNB   # Pr(alive NB t -> non-detected t) -->
-<!--   omega[2,2] <- 0         # Pr(alive NB t -> detected B t) -->
-<!--   omega[2,3] <- pNB       # Pr(alive NB t -> detected NB t) -->
-<!--   omega[3,1] <- 1         # Pr(dead t -> non-detected t) -->
-<!--   omega[3,2] <- 0         # Pr(dead t -> detected N t) -->
-<!--   omega[3,3] <- 0         # Pr(dead t -> detected NB t) -->
-<!-- ... -->
-<!-- ``` -->
-
-<!-- ### Our model $(\phi_{NB}, \phi_B, \psi_{NBB}, \psi_{BNB}, p_{NB}, p_B)$ -->
-
-<!-- ```{r eval = FALSE} -->
-<!-- multistate <- nimbleCode({ -->
-<!-- ... -->
-<!--   # likelihood -->
-<!--   for (i in 1:N){ -->
-<!--     # latent state at first capture -->
-<!--     z[i,first[i]] <- y[i,first[i]] - 1 -->
-<!--     for (t in (first[i]+1):K){ -->
-<!--       # z(t) given z(t-1) -->
-<!--       z[i,t] ~ dcat(gamma[z[i,t-1],1:3]) -->
-<!--       # y(t) given z(t) -->
-<!--       y[i,t] ~ dcat(omega[z[i,t],1:3]) -->
-<!--     } -->
-<!--   } -->
-<!-- }) -->
-<!-- ``` -->
-
-<!-- ```{r echo = FALSE} -->
-<!-- library(MCMCvis) -->
-<!-- load(here::here("dat","titis.RData")) -->
-<!-- MCMCsummary(mcmc.multistate, round = 2) -->
-<!-- ``` -->
-
-
-<!-- ```{r, echo = FALSE, fig.cap = "Dirichlet prior with parameter alpha"} -->
-<!-- library(MCMCvis) -->
-<!-- load(here::here("dat","titis.RData")) -->
-<!-- MCMCplot(mcmc.multistate) -->
-<!-- ``` -->
-
-<!-- ## Multistate models are very flexible -->
-
-<!-- Access to reproduction -->
-
-<!-- Temporary emigration -->
-
-<!-- Combination of life and dead encounters -->
-
-<!-- ### Access to reproduction -->
-
-<!-- Transition matrix: -->
-
-<!-- $$ -->
-<!-- \begin{matrix} -->
-<!-- & \\ -->
-<!-- \mathbf{\Gamma} = -->
-<!--     \left ( \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \\ 12 \\ 12 \end{matrix} } \right . -->
-<!-- \end{matrix} -->
-<!-- \hspace{-1.2em} -->
-<!-- \begin{matrix} -->
-<!--     z_t=J & z_t=1yNB & z_t=2yNB & z_t=B & z_t=D \\ \hdashline -->
-<!-- 0 & \phi_1 (1-\alpha_1) & 0 & \phi_1 \alpha_1 & 1 - \phi_1\\ -->
-<!-- 0 & 0 & \phi_2 (1-\alpha_2) & \phi_2 \alpha_2 & 1 - \phi_2\\ -->
-<!-- 0 & 0 & 0 & \phi_3 & 1 - \phi_3\\ -->
-<!-- 0 & 0 & 0 & \phi_B & 1 - \phi_B\\ -->
-<!-- 0 & 0 & 0 & 0 & 1 -->
-<!-- \end{matrix} -->
-<!-- \hspace{-0.2em} -->
-<!-- \begin{matrix} -->
-<!-- & \\ -->
-<!-- \left . \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \\ 12 \\ 12 \end{matrix} } \right ) -->
-<!--     \begin{matrix} -->
-<!--     z_{t-1} = J \\ z_{t-1} = 1yNB \\ z_{t-1} = 2yNB \\ z_{t-1} = B \\ z_{t-1} = D -->
-<!--     \end{matrix} -->
-<!-- \end{matrix} -->
-<!-- $$ -->
-
-<!-- First-year and second-year individuals breed with probabilities $\alpha_1$ and $\alpha_2$. -->
-
-<!-- Then, everybody breeds from age 3. -->
-
-<!-- ### Access to reproduction -->
-
-<!-- Observation matrix: -->
-
-<!-- $$ -->
-<!-- \begin{matrix} -->
-<!-- & \\ -->
-<!-- \mathbf{\Omega} = -->
-<!--     \left ( \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \\ 12 \\12 \end{matrix} } \right . -->
-<!-- \end{matrix} -->
-<!-- \hspace{-1.2em} -->
-<!-- \begin{matrix} -->
-<!-- y_t = 0 & y_t = 1 & y_t = 2 & y_t = 3\\ \hdashline -->
-<!-- 1 & 0 & 0 & 0\\ -->
-<!-- 1 - p_1 & p_1 & 0 & 0\\ -->
-<!-- 1 - p_2 & 0 & p_2 & 0\\ -->
-<!-- 1 - p_3 & 0 & 0 & p_3\\ -->
-<!-- 1 & 0 & 0 & 0 -->
-<!-- \end{matrix} -->
-<!-- \hspace{-0.2em} -->
-<!-- \begin{matrix} -->
-<!-- & \\ -->
-<!-- \left . \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \\ 12 \\12 \end{matrix} } \right ) -->
-<!--     \begin{matrix} -->
-<!--     z_t = J \\ z_t = 1yNB \\ z_t = 2yNB \\ z_t = B \\ z_t = D -->
-<!--     \end{matrix} -->
-<!-- \end{matrix} -->
-<!-- $$ -->
-
-<!-- Juveniles are never detected. -->
-
-<!-- ## Temporary emigration -->
-
-<!-- Transition matrix: -->
-
-<!-- $$ -->
-<!-- \begin{matrix} -->
-<!-- & \\ -->
-<!-- \mathbf{\Gamma} = -->
-<!--     \left ( \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \end{matrix} } \right . -->
-<!-- \end{matrix} -->
-<!-- \hspace{-1.2em} -->
-<!-- \begin{matrix} -->
-<!--     z_t=\text{in} & z_t=\text{out} & z_t=\text{D} \\ \hdashline -->
-<!-- \phi (1-\psi_{\text{in} \rightarrow \text{out}}) & \phi \psi_{\text{in} \rightarrow \text{out}} & 1 - \phi\\ -->
-<!-- \phi \psi_{\text{out} \rightarrow \text{in}} & \phi (1-\psi_{\text{out} \rightarrow \text{in}}) & 1 - \phi\\ -->
-<!-- 0 & 0 & 1 -->
-<!-- \end{matrix} -->
-<!-- \hspace{-0.2em} -->
-<!-- \begin{matrix} -->
-<!-- & \\ -->
-<!-- \left . \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \end{matrix} } \right ) -->
-<!--     \begin{matrix} -->
-<!--     z_{t-1}=\text{in} \\ z_{t-1}=\text{out} \\ z_{t-1}=\text{D} -->
-<!--     \end{matrix} -->
-<!-- \end{matrix} -->
-<!-- $$ -->
-
-<!-- Observation matrix: -->
-
-<!-- $$ -->
-<!-- \begin{matrix} -->
-<!-- & \\ -->
-<!-- \mathbf{\Omega} = -->
-<!--     \left ( \vphantom{ \begin{matrix} 12 \\ 12 \end{matrix} } \right . -->
-<!-- \end{matrix} -->
-<!-- \hspace{-1.2em} -->
-<!-- \begin{matrix} -->
-<!--     y_t=0 & y_t=1 \\ \hdashline -->
-<!-- 1 - p & p\\ -->
-<!-- 1 & 0\\ -->
-<!-- 1 & 0 -->
-<!-- \end{matrix} -->
-<!-- \hspace{-0.2em} -->
-<!-- \begin{matrix} -->
-<!-- & \\ -->
-<!-- \left . \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \end{matrix} } \right ) -->
-<!--     \begin{matrix} -->
-<!--     z_{t}=\text{in} \\ z_{t}=\text{out} \\ z_{t}=\text{D} -->
-<!--     \end{matrix} -->
-<!-- \end{matrix} -->
-<!-- $$ -->
-
-<!-- ### Combination of life and dead encounters -->
-
-<!-- Transition matrix -->
-
-<!-- $$ -->
-<!-- \begin{matrix} -->
-<!-- & \\ -->
-<!-- \mathbf{\Gamma} = -->
-<!--     \left ( \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \end{matrix} } \right . -->
-<!-- \end{matrix} -->
-<!-- \hspace{-1.2em} -->
-<!-- \begin{matrix} -->
-<!--     z_t=A & z_t=JD & z_t=D \\ \hdashline -->
-<!-- s & 1-s & 0\\ -->
-<!-- 0 & 0 & 1\\ -->
-<!-- 0 & 0 & 1 -->
-<!-- \end{matrix} -->
-<!-- \hspace{-0.2em} -->
-<!-- \begin{matrix} -->
-<!-- & \\ -->
-<!-- \left . \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \end{matrix} } \right ) -->
-<!--     \begin{matrix} -->
-<!--     z_{t-1}=\text{alive} \\ z_{t-1}=\text{just dead} \\ z_{t-1}=\text{dead for good} -->
-<!--     \end{matrix} -->
-<!-- \end{matrix} -->
-<!-- $$ -->
-
-<!-- Observation matrix -->
-
-<!-- $$ -->
-<!-- \begin{matrix} -->
-<!-- & \\ -->
-<!-- \mathbf{\Omega} = -->
-<!--     \left ( \vphantom{ \begin{matrix} 12 \\ 12 \\ 12\end{matrix} } \right . -->
-<!-- \end{matrix} -->
-<!-- \hspace{-1.2em} -->
-<!-- \begin{matrix} -->
-<!--     y_t=0 & y_t=1 & y_t=2 \\ \hdashline -->
-<!-- 1 - p & 0 & p\\ -->
-<!-- 1 - r & r & 0\\ -->
-<!-- 1 & 0 & 0 -->
-<!-- \end{matrix} -->
-<!-- \hspace{-0.2em} -->
-<!-- \begin{matrix} -->
-<!-- & \\ -->
-<!-- \left . \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \end{matrix} } \right ) -->
-<!--     \begin{matrix} -->
-<!--     z_{t}=A \\ z_{t}=JD \\ z_{t}=D -->
-<!--     \end{matrix} -->
-<!-- \end{matrix} -->
-<!-- $$ -->
-
-<!-- ## Issue of local minima -->
-
-<!-- Simulated data: 2 sites or states, and 7 occasions, Survival $\phi = 1$, detection $p = 0.6$, Transition $\psi_{12} = 0.6$, Transition $\psi_{21} = 0.85$. -->
-
-<!-- Courtesy of Jérôme Dupuis, used in [Gimenez et al. (2005)](https://oliviergimenez.github.io/pubs/Gimenezetal2005JABES.pdf). -->
-
-<!-- ### Data -->
-
-<!-- ```{r echo = FALSE} -->
-<!-- dat <- matrix(c(2, 0, 2, 1, 2, 0, 2, -->
-<!--                 2, 0, 2, 1, 2, 0, 2, -->
-<!--                 2, 0, 2, 1, 2, 0, 2, -->
-<!--                 2, 0, 2, 1, 2, 0, 2, -->
-<!--                 1, 1, 1, 0, 1, 0, 1, -->
-<!--                 1, 1, 1, 0, 1, 0, 1, -->
-<!--                 1, 1, 1, 0, 1, 0, 1, -->
-<!--                 1, 1, 1, 0, 1, 0, 1, -->
-<!--                 2, 0, 2, 0, 2, 0, 1, -->
-<!--                 2, 0, 2, 0, 2, 0, 1, -->
-<!--                 2, 0, 2, 0, 2, 0, 1, -->
-<!--                 2, 0, 2, 0, 2, 0, 1, -->
-<!--                 1, 0, 1, 0, 1, 0, 1, -->
-<!--                 1, 0, 1, 0, 1, 0, 1, -->
-<!--                 1, 0, 1, 0, 1, 0, 1, -->
-<!--                 1, 0, 1, 0, 1, 0, 1, -->
-<!--                 2, 0, 2, 0, 2, 0, 2, -->
-<!--                 2, 0, 2, 0, 2, 0, 2, -->
-<!--                 2, 0, 2, 0, 2, 0, 2, -->
-<!--                 2, 0, 2, 0, 2, 0, 2, -->
-<!--                 1, 0, 1, 0, 1, 0, 2, -->
-<!--                 1, 0, 1, 0, 1, 0, 2, -->
-<!--                 1, 0, 1, 0, 1, 0, 2, -->
-<!--                 1, 0, 1, 0, 1, 0, 2, -->
-<!--                 2, 2, 0, 1, 0, 2, 1, -->
-<!--                 2, 2, 0, 1, 0, 2, 1, -->
-<!--                 2, 2, 0, 1, 0, 2, 1, -->
-<!--                 2, 2, 0, 1, 0, 2, 1, -->
-<!--                 2, 1, 0, 2, 0, 1, 1, -->
-<!--                 2, 1, 0, 2, 0, 1, 1, -->
-<!--                 2, 1, 0, 2, 0, 1, 1, -->
-<!--                 2, 1, 0, 2, 0, 1, 1), -->
-<!--               byrow = T, -->
-<!--               ncol = 7) -->
-<!-- dat %>% -->
-<!--   as_tibble() %>% -->
-<!--   kableExtra::kable() %>% -->
-<!--   kableExtra::scroll_box(width = "100%", height = "400px") -->
-<!-- ``` -->
-
-<!-- ```{r} -->
-<!-- knitr::include_graphics("images/multistate_local_minimav2_Page_05.png") -->
-<!-- ``` -->
-
-
-<!-- ```{r} -->
-<!-- knitr::include_graphics("images/multistate_local_minimav2_Page_06.png") -->
-<!-- ``` -->
-
-<!-- ```{r} -->
-<!-- knitr::include_graphics("images/multistate_local_minimav2_Page_07.png") -->
-<!-- ``` -->
-
-
-<!-- ```{r, echo = FALSE} -->
-<!-- load(here::here("dat","localminima.RData")) -->
-<!-- psiBA <- c(mcmc.multistate$chain1[,"psiBA"], mcmc.multistate$chain2[,"psiBA"]) -->
-<!-- plotpsiBA <- psiBA %>% -->
-<!--   as_tibble() %>% -->
-<!--   ggplot() + -->
-<!--   aes(x = 1:length(value), y = value) + -->
-<!--   geom_line(color = "gray70") + -->
-<!--   labs(y = "psi21", x = "iterations") + -->
-<!--   theme_light(base_size = 14) + -->
-<!--   geom_hline(yintercept = 0.85, lty = 2, color = "blue") -->
-
-<!-- psiAB <- c(mcmc.multistate$chain1[,"psiAB"],mcmc.multistate$chain2[,"psiAB"]) -->
-<!-- plotpsiAB <- psiAB %>% -->
-<!--   as_tibble() %>% -->
-<!--   ggplot() + -->
-<!--   aes(x = 1:length(value), y = value) + -->
-<!--   geom_line(color = "gray70") + -->
-<!--   labs(y = "psi12", x = "iterations") + -->
-<!--   theme_light(base_size = 14) + -->
-<!--   geom_hline(yintercept = 0.6, lty = 2, color = "blue") -->
-
-<!-- det <- c(mcmc.multistate$chain1[,"p"], mcmc.multistate$chain2[,"p"]) -->
-<!-- plotdet <- det %>% -->
-<!--   as_tibble() %>% -->
-<!--   ggplot() + -->
-<!--   aes(x = 1:length(value), y = value) + -->
-<!--   geom_line(color = "gray70") + -->
-<!--   labs(y = "detection", x = "iterations") + -->
-<!--   theme_light(base_size = 14) + -->
-<!--   geom_hline(yintercept = 0.6, lty = 2, color = "blue") -->
-
-
-<!-- library(patchwork) -->
-
-<!-- plotdet / (plotpsiAB + plotpsiBA) -->
-<!-- ``` -->
-
-
-<!-- ```{r, echo = FALSE} -->
-<!-- load(here::here("dat","localminima.RData")) -->
-<!-- psiBA <- c(mcmc.multistate$chain1[,"psiBA"], mcmc.multistate$chain2[,"psiBA"]) -->
-<!-- plotpsiBA <- psiBA %>% -->
-<!--   as_tibble() %>% -->
-<!--   ggplot() + -->
-<!--   aes(x = value) + -->
-<!--   geom_histogram(color = "white", binwidth = .03, fill = "gray70") + -->
-<!--   geom_density(aes(y = .03 * ..count..)) + -->
-<!--   labs(x = "psi21", y = "") + -->
-<!--   theme_light(base_size = 14) + -->
-<!--   geom_vline(xintercept = 0.85, lty = 2, color = "blue") -->
-
-<!-- psiAB <- c(mcmc.multistate$chain1[,"psiAB"],mcmc.multistate$chain2[,"psiAB"]) -->
-<!-- plotpsiAB <- psiAB %>% -->
-<!--   as_tibble() %>% -->
-<!--   ggplot() + -->
-<!--   aes(x = value) + -->
-<!--   geom_histogram(color = "white", binwidth = .03, fill = "gray70") + -->
-<!--   geom_density(aes(y = .03 * ..count..)) + -->
-<!--   labs(x = "psi12", y = "") + -->
-<!--   theme_light(base_size = 14) + -->
-<!--   geom_vline(xintercept = 0.6, lty = 2, color = "blue") -->
-
-
-<!-- det <- c(mcmc.multistate$chain1[,"p"], mcmc.multistate$chain2[,"p"]) -->
-<!-- plotdet <- det %>% -->
-<!--   as_tibble() %>% -->
-<!--   ggplot() + -->
-<!--   aes(x = value) + -->
-<!--   geom_histogram(color = "white", binwidth = .03, fill = "gray70") + -->
-<!--   geom_density(aes(y = .03 * ..count..)) + -->
-<!--   labs(x = "detection", y = "") + -->
-<!--   theme_light(base_size = 14) + -->
-<!--   geom_vline(xintercept = 0.6, lty = 2, color = "blue") -->
-
-
-<!-- library(patchwork) -->
-
-<!-- plotdet / (plotpsiAB + plotpsiBA) -->
-<!-- ``` -->
-
-
-<!-- ## Summary -->
-
-<!-- + Blabla. -->
-
-<!-- + Blabla. -->
-
-<!-- ## Suggested reading -->
-
-<!-- + Lebreton, J.-D., J. D. Nichols, R. J. Barker, R. Pradel and J. A. Spendelow (2009). [Modeling Individual Animal Histories with Multistate Capture–Recapture Models](https://multievent.sciencesconf.org/conference/multievent/pages/Lebretonetal2009AER.pdf). Advances in Ecological Research, 41:87-173. -->
+## Introduction
+
+Blabla.
+
+```{r}
+knitr::include_graphics("images/arnason1973.png")
+```
+
+
+```{r}
+knitr::include_graphics("images/schwarz1993.png")
+```
+
+```{r}
+knitr::include_graphics("images/deadpool.gif")
+```
+
+Thank you Canada!
+
+
+```{r}
+knitr::include_graphics("images/nichols.png")
+```
+
+
+## Wintering site fidelity in Canada Geese
+
+### 3 sites Carolinas, Chesapeake, Mid-Atlantic,
+
+with 21277 banded geese, data kindly provided by Jay Hestbeck ([Hestbeck et al. 1991](https://esajournals.onlinelibrary.wiley.com/doi/10.2307/2937193))
+
+```{r echo = FALSE}
+geese <- read_csv(here::here("dat", "geese.csv"))
+geese %>%
+  kableExtra::kable() %>%
+  kableExtra::scroll_box(width = "100%", height = "400px")
+y <- geese %>%
+  as.matrix()
+```
+
+(large areas along East coast of US)
+
+### Biological inference
+
+```{r, echo = FALSE}
+ggplot() +
+  geom_point(aes(1, 1), size = 2.5, alpha = .7) +
+  geom_point(aes(1, 1.5), size = 2.5, alpha = .7) +
+  geom_point(aes(1, 2), size = 2.5, alpha = .7) +
+  geom_text(aes(1, 2, label = 'non-detection'), nudge_x = -0.6, size = 7) +
+  geom_text(aes(1, 1.5, label = 'detection in site A'), nudge_x = -0.6, size = 7) +
+  geom_text(aes(1, 1, label = 'detection in site B'), nudge_x = -0.6, size = 7) +
+  geom_point(aes(2, 1), size = 2.5, alpha = .7) +
+  geom_point(aes(2, 1.5), size = 2.5, alpha = .7) +
+  geom_point(aes(2, 2), size = 2.5, alpha = .7) +
+  geom_text(aes(2, 2, label = 'alive in site A'), nudge_x = 0.5, size = 7) +
+  geom_text(aes(2, 1.5, label = 'alive in site B'), nudge_x = 0.5, size = 7) +
+  geom_text(aes(2, 1, label = 'dead'), nudge_x = 0.5, size = 7) +
+  xlim(0, 3) +
+  ylim(0.5, 3) +
+  annotate('text', x = 1, y = 2.6, label = 'Observations', size = 10) +
+  annotate('text', x = 2, y = 2.6, label = 'States', size = 10) +
+  theme_void()
+```
+
+Observations and states are closely related, but not entirely.
+
+
+```{r, echo = FALSE}
+ggplot() +
+  geom_point(aes(1, 1), size = 2.5, alpha = .7) +
+  geom_point(aes(1, 1.5), size = 2.5, alpha = .7) +
+  geom_point(aes(1, 2), size = 2.5, alpha = .7) +
+  geom_text(aes(1, 2, label = 'non-detection'), nudge_x = -0.6, size = 7) +
+  geom_text(aes(1, 1.5, label = 'detection in site A'), nudge_x = -0.6, size = 7) +
+  geom_text(aes(1, 1, label = 'detection in site B'), nudge_x = -0.6, size = 7) +
+  geom_point(aes(2, 1), size = 2.5, alpha = .7) +
+  geom_point(aes(2, 1.5), size = 2.5, alpha = .7) +
+  geom_point(aes(2, 2), size = 2.5, alpha = .7) +
+  geom_text(aes(2, 2, label = 'alive in site A'), nudge_x = 0.5, size = 7) +
+  geom_text(aes(2, 1.5, label = 'alive in site B'), nudge_x = 0.5, size = 7) +
+  geom_text(aes(2, 1, label = 'dead'), nudge_x = 0.5, size = 7) +
+  xlim(0, 3) +
+  ylim(0.5, 3) +
+  annotate('text', x = 1, y = 2.6, label = 'Observations', size = 10) +
+  annotate('text', x = 2, y = 2.6, label = 'States', size = 10) +
+  geom_segment(aes(x = 1, y = 1.5, xend = 2, yend = 2), alpha = 0.7, arrow = arrow(length = unit(0.02, "npc"))) +
+  theme_void()
+```
+
+```{r, echo = FALSE}
+ggplot() +
+  geom_point(aes(1, 1), size = 2.5, alpha = .7) +
+  geom_point(aes(1, 1.5), size = 2.5, alpha = .7) +
+  geom_point(aes(1, 2), size = 2.5, alpha = .7) +
+  geom_text(aes(1, 2, label = 'non-detection'), nudge_x = -0.6, size = 7) +
+  geom_text(aes(1, 1.5, label = 'detection in site A'), nudge_x = -0.6, size = 7) +
+  geom_text(aes(1, 1, label = 'detection in site B'), nudge_x = -0.6, size = 7) +
+  geom_point(aes(2, 1), size = 2.5, alpha = .7) +
+  geom_point(aes(2, 1.5), size = 2.5, alpha = .7) +
+  geom_point(aes(2, 2), size = 2.5, alpha = .7) +
+  geom_text(aes(2, 2, label = 'alive in site A'), nudge_x = 0.5, size = 7) +
+  geom_text(aes(2, 1.5, label = 'alive in site B'), nudge_x = 0.5, size = 7) +
+  geom_text(aes(2, 1, label = 'dead'), nudge_x = 0.5, size = 7) +
+  xlim(0, 3) +
+  ylim(0.5, 3) +
+  annotate('text', x = 1, y = 2.6, label = 'Observations', size = 10) +
+  annotate('text', x = 2, y = 2.6, label = 'States', size = 10) +
+  geom_segment(aes(x = 1, y = 1.5, xend = 2, yend = 2), alpha = 0.7, arrow = arrow(length = unit(0.02, "npc"))) +
+  geom_segment(aes(x = 1, y = 1, xend = 2, yend = 1.5), alpha = 0.7, arrow = arrow(length = unit(0.02, "npc"))) +
+  theme_void()
+```
+
+```{r, echo = FALSE}
+ggplot() +
+  geom_point(aes(1, 1), size = 2.5, alpha = .7) +
+  geom_point(aes(1, 1.5), size = 2.5, alpha = .7) +
+  geom_point(aes(1, 2), size = 2.5, alpha = .7) +
+  geom_text(aes(1, 2, label = 'non-detection'), nudge_x = -0.6, size = 7) +
+  geom_text(aes(1, 1.5, label = 'detection in site A'), nudge_x = -0.6, size = 7) +
+  geom_text(aes(1, 1, label = 'detection in site B'), nudge_x = -0.6, size = 7) +
+  geom_point(aes(2, 1), size = 2.5, alpha = .7) +
+  geom_point(aes(2, 1.5), size = 2.5, alpha = .7) +
+  geom_point(aes(2, 2), size = 2.5, alpha = .7) +
+  geom_text(aes(2, 2, label = 'alive in site A'), nudge_x = 0.5, size = 7) +
+  geom_text(aes(2, 1.5, label = 'alive in site B'), nudge_x = 0.5, size = 7) +
+  geom_text(aes(2, 1, label = 'dead'), nudge_x = 0.5, size = 7) +
+  xlim(0, 3) +
+  ylim(0.5, 3) +
+  annotate('text', x = 1, y = 2.6, label = 'Observations', size = 10) +
+  annotate('text', x = 2, y = 2.6, label = 'States', size = 10) +
+  geom_segment(aes(x = 1, y = 2, xend = 2, yend = 2), alpha = 0.7, arrow = arrow(length = unit(0.02, "npc"))) +
+  geom_segment(aes(x = 1, y = 2, xend = 2, yend = 1.5), alpha = 0.7, arrow = arrow(length = unit(0.02, "npc"))) +
+  geom_segment(aes(x = 1, y = 2, xend = 2, yend = 1), alpha = 0.7, arrow = arrow(length = unit(0.02, "npc"))) +
+  geom_segment(aes(x = 1, y = 1.5, xend = 2, yend = 2), alpha = 0.7, arrow = arrow(length = unit(0.02, "npc"))) +
+  geom_segment(aes(x = 1, y = 1, xend = 2, yend = 1.5), alpha = 0.7, arrow = arrow(length = unit(0.02, "npc"))) +
+  theme_void()
+```
+
+
+### The model construction: How we should think.
+
+```{r, echo = FALSE}
+ggplot() +
+  geom_point(aes(1, 1), size = 2.5, alpha = .7) +
+  geom_point(aes(1, 1.5), size = 2.5, alpha = .7) +
+  geom_point(aes(1, 2), size = 2.5, alpha = .7) +
+  geom_text(aes(2, 2, label = 'non-detection'), nudge_x = 0.5, size = 7) +
+  geom_text(aes(2, 1.5, label = 'detection in site A'), nudge_x = 0.6, size = 7) +
+  geom_text(aes(2, 1, label = 'detection in site B'), nudge_x = 0.6, size = 7) +
+  geom_point(aes(2, 1), size = 2.5, alpha = .7) +
+  geom_point(aes(2, 1.5), size = 2.5, alpha = .7) +
+  geom_point(aes(2, 2), size = 2.5, alpha = .7) +
+  geom_text(aes(1, 2, label = 'alive in site A'), nudge_x = -0.6, size = 7) +
+  geom_text(aes(1, 1.5, label = 'alive in site B'), nudge_x = -0.6, size = 7) +
+  geom_text(aes(1, 1, label = 'dead'), nudge_x = -0.6, size = 7) +
+  xlim(0, 3) +
+  ylim(0.5, 3) +
+  annotate('text', x = 1, y = 2.6, label = 'States', size = 10) +
+  annotate('text', x = 2, y = 2.6, label = 'Observations', size = 10) +
+  theme_void()
+```
+
+Generative model. States generate observations.
+
+
+### The model construction: How we should think.
+
+```{r, echo = FALSE}
+ggplot() +
+  geom_point(aes(1, 1), size = 2.5, alpha = .7) +
+  geom_point(aes(1, 1.5), size = 2.5, alpha = .7) +
+  geom_point(aes(1, 2), size = 2.5, alpha = .7) +
+  geom_text(aes(2, 2, label = 'non-detection'), nudge_x = 0.5, size = 7) +
+  geom_text(aes(2, 1.5, label = 'detection in site A'), nudge_x = 0.6, size = 7) +
+  geom_text(aes(2, 1, label = 'detection in site B'), nudge_x = 0.6, size = 7) +
+  geom_point(aes(2, 1), size = 2.5, alpha = .7) +
+  geom_point(aes(2, 1.5), size = 2.5, alpha = .7) +
+  geom_point(aes(2, 2), size = 2.5, alpha = .7) +
+  geom_text(aes(1, 2, label = 'alive in site A'), nudge_x = -0.6, size = 7) +
+  geom_text(aes(1, 1.5, label = 'alive in site B'), nudge_x = -0.6, size = 7) +
+  geom_text(aes(1, 1, label = 'dead'), nudge_x = -0.6, size = 7) +
+  xlim(0, 3) +
+  ylim(0.5, 3) +
+  annotate('text', x = 1, y = 2.6, label = 'States', size = 10) +
+  annotate('text', x = 2, y = 2.6, label = 'Observations', size = 10) +
+    geom_segment(aes(x = 1, y = 1, xend = 2, yend = 2), alpha = 0.7, arrow = arrow(length = unit(0.02, "npc"))) +
+  theme_void()
+```
+
+### The model construction: How we should think.
+
+```{r, echo = FALSE}
+ggplot() +
+  geom_point(aes(1, 1), size = 2.5, alpha = .7) +
+  geom_point(aes(1, 1.5), size = 2.5, alpha = .7) +
+  geom_point(aes(1, 2), size = 2.5, alpha = .7) +
+  geom_text(aes(2, 2, label = 'non-detection'), nudge_x = 0.5, size = 7) +
+  geom_text(aes(2, 1.5, label = 'detection in site A'), nudge_x = 0.6, size = 7) +
+  geom_text(aes(2, 1, label = 'detection in site B'), nudge_x = 0.6, size = 7) +
+  geom_point(aes(2, 1), size = 2.5, alpha = .7) +
+  geom_point(aes(2, 1.5), size = 2.5, alpha = .7) +
+  geom_point(aes(2, 2), size = 2.5, alpha = .7) +
+  geom_text(aes(1, 2, label = 'alive in site A'), nudge_x = -0.6, size = 7) +
+  geom_text(aes(1, 1.5, label = 'alive in site B'), nudge_x = -0.6, size = 7) +
+  geom_text(aes(1, 1, label = 'dead'), nudge_x = -0.6, size = 7) +
+  xlim(0, 3) +
+  ylim(0.5, 3) +
+  annotate('text', x = 1, y = 2.6, label = 'States', size = 10) +
+  annotate('text', x = 2, y = 2.6, label = 'Observations', size = 10) +
+    geom_segment(aes(x = 1, y = 2, xend = 2, yend = 2), alpha = 0.7, arrow = arrow(length = unit(0.02, "npc"))) +
+  geom_segment(aes(x = 1, y = 2, xend = 2, yend = 1.5), alpha = 0.7, arrow = arrow(length = unit(0.02, "npc"))) +
+  geom_segment(aes(x = 1, y = 1, xend = 2, yend = 2), alpha = 0.7, arrow = arrow(length = unit(0.02, "npc"))) +
+  theme_void()
+```
+
+### The model construction: How we should think.
+
+```{r, echo = FALSE}
+ggplot() +
+  geom_point(aes(1, 1), size = 2.5, alpha = .7) +
+  geom_point(aes(1, 1.5), size = 2.5, alpha = .7) +
+  geom_point(aes(1, 2), size = 2.5, alpha = .7) +
+  geom_text(aes(2, 2, label = 'non-detection'), nudge_x = 0.5, size = 7) +
+  geom_text(aes(2, 1.5, label = 'detection in site A'), nudge_x = 0.6, size = 7) +
+  geom_text(aes(2, 1, label = 'detection in site B'), nudge_x = 0.6, size = 7) +
+  geom_point(aes(2, 1), size = 2.5, alpha = .7) +
+  geom_point(aes(2, 1.5), size = 2.5, alpha = .7) +
+  geom_point(aes(2, 2), size = 2.5, alpha = .7) +
+  geom_text(aes(1, 2, label = 'alive in site A'), nudge_x = -0.6, size = 7) +
+  geom_text(aes(1, 1.5, label = 'alive in site B'), nudge_x = -0.6, size = 7) +
+  geom_text(aes(1, 1, label = 'dead'), nudge_x = -0.6, size = 7) +
+  xlim(0, 3) +
+  ylim(0.5, 3) +
+  annotate('text', x = 1, y = 2.6, label = 'States', size = 10) +
+  annotate('text', x = 2, y = 2.6, label = 'Observations', size = 10) +
+    geom_segment(aes(x = 1, y = 2, xend = 2, yend = 2), alpha = 0.7, arrow = arrow(length = unit(0.02, "npc"))) +
+  geom_segment(aes(x = 1, y = 2, xend = 2, yend = 1.5), alpha = 0.7, arrow = arrow(length = unit(0.02, "npc"))) +
+  geom_segment(aes(x = 1, y = 1.5, xend = 2, yend = 2), alpha = 0.7, arrow = arrow(length = unit(0.02, "npc"))) +
+  geom_segment(aes(x = 1, y = 1.5, xend = 2, yend = 1), alpha = 0.7, arrow = arrow(length = unit(0.02, "npc"))) +
+  geom_segment(aes(x = 1, y = 1, xend = 2, yend = 2), alpha = 0.7, arrow = arrow(length = unit(0.02, "npc"))) +
+  theme_void()
+```
+
+### HMM model for dispersal with 2 sites (drop Carolinas)
+
+Transition matrix
+
+$$
+\begin{matrix}
+& \\
+\mathbf{\Gamma} =
+    \left ( \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \end{matrix} } \right .
+\end{matrix}
+\hspace{-1.2em}
+\begin{matrix}
+    z_{t}=A & z_{t}=B & z_{t}=D \\ \hdashline
+\phi_A (1-\psi_{AB}) & \phi_A \psi_{AB} & 1 - \phi_A\\
+\phi_B \psi_{BA} & \phi_B (1-\psi_{BA}) & 1 - \phi_B\\
+0 & 0 & 1
+\end{matrix}
+\hspace{-0.2em}
+\begin{matrix}
+& \\
+\left . \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \end{matrix} } \right )
+    \begin{matrix}
+    z_{t-1}=A \\ z_{t-1}=B \\ z_{t-1}=D
+    \end{matrix}
+\end{matrix}
+$$
+
+### HMM model for dispersal with 2 sites (drop Carolinas)
+
+Observation matrix
+
+$$
+\begin{matrix}
+& \\
+\mathbf{\Omega} =
+    \left ( \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \end{matrix} } \right .
+\end{matrix}
+\hspace{-1.2em}
+\begin{matrix}
+    y_t=0 & y_t=1 & y_t=2 \\ \hdashline
+1 - p_A & p_A & 0\\
+1 - p_B & 0 & p_B\\
+1 & 0 & 0
+\end{matrix}
+\hspace{-0.2em}
+\begin{matrix}
+& \\
+\left . \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \end{matrix} } \right )
+    \begin{matrix}
+    z_{t}=A \\ z_{t}=B \\ z_{t}=D
+    \end{matrix}
+\end{matrix}
+$$
+
+### HMM model for dispersal with 2 sites (drop Carolinas)
+
+Observation matrix
+
+$$
+\begin{matrix}
+& \\
+\mathbf{\Omega} =
+    \left ( \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \end{matrix} } \right .
+\end{matrix}
+\hspace{-1.2em}
+\begin{matrix}
+    y_t=0 & y_t=1 & y_t=2 \\ \hdashline
+1 - p_A & p_A & 0\\
+1 - p_B & 0 & p_B\\
+1 & 0 & 0
+\end{matrix}
+\hspace{-0.2em}
+\begin{matrix}
+& \\
+\left . \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \end{matrix} } \right )
+    \begin{matrix}
+    z_{t}=A \\ z_{t}=B \\ z_{t}=D
+    \end{matrix}
+\end{matrix}
+$$
+
+Note: You may code non-detections as $y_t = 2$, and the first column in the observation matrix should go last.
+
+Quick answer about the -1 and the important issue of coding states and obs. I did this on purpose, to have folks think about the difference between observations and states (non-detection obs should not be confused with state for dead). This becomes even more crucial when we get to multievent models where several observations may be generated by a single state. I get the intuition argument perfectly, but I’d like them to fight against it at first, then once they’re comfortable with the difference, they may code obs/states as they see fit. Let’s see how it goes. I agree that we should mention that during the multistate lecture, in the spirit of « you’re free to code states and jobs the way you like ». I’ll add something.
+
+### Our model $(\phi_A, \phi_B, \psi_{AB}, \psi_{BA}, p_A, p_B)$
+
+```{r eval = FALSE}
+multisite <- nimbleCode({
+  # -------------------------------------------------
+  # Parameters:
+  # phiA: survival probability site A
+  # phiB: survival probability site B
+  # psiAB: movement probability from site A to site B
+  # psiBA: movement probability from site B to site A
+  # pA: recapture probability site A
+  # pB: recapture probability site B
+  # -------------------------------------------------
+  # States (z):
+  # 1 alive at A
+  # 2 alive at B
+  # 3 dead
+  # Observations (y):
+  # 1 not seen
+  # 2 seen at A
+  # 3 seen at B
+  # -------------------------------------------------
+...
+```
+
+### Our model $(\phi_A, \phi_B, \psi_{AB}, \psi_{BA}, p_A, p_B)$
+
+```{r eval = FALSE}
+multisite <- nimbleCode({
+...
+  # Priors
+  phiA ~ dunif(0, 1)
+  phiB ~ dunif(0, 1)
+  psiAB ~ dunif(0, 1)
+  psiBA ~ dunif(0, 1)
+  pA ~ dunif(0, 1)
+  pB ~ dunif(0, 1)
+...
+```
+
+### Our model $(\phi_A, \phi_B, \psi_{AB}, \psi_{BA}, p_A, p_B)$
+
+```{r eval = FALSE}
+multisite <- nimbleCode({
+...
+  # initial state probabilities
+  delta[1] <- piA          # Pr(alive in A t = 1)
+  delta[2] <- 1 - piA      # Pr(alive in B t = 1)
+  delta[3] <- 0            # Pr(dead t = 1) = 0
+...
+```
+
+Actually, initial state is known exactly. It is alive at site of initial capture, and $\pi_A$ is just the proportion of individuals first captured in site A, no need to estimate it.
+
+Instead of `z[i,first[i]] ~ dcat(delta[1:3])`, use `z[i,first[i]] <- y[i,first[i]]-1` instead in the likelihood.
+
+Same trick applies to CJS models.
+
+### Our model $(\phi_A, \phi_B, \psi_{AB}, \psi_{BA}, p_A, p_B)$
+
+```{r eval = FALSE}
+multisite <- nimbleCode({
+...
+  # probabilities of state z(t+1) given z(t)
+  # (read as gamma[z(t),z(t+1)] = gamma[fromState,toState])
+
+  gamma[1,1] <- phiA * (1 - psiAB)
+  gamma[1,2] <- phiA * psiAB
+  gamma[1,3] <- 1 - phiA
+  gamma[2,1] <- phiB * psiBA
+  gamma[2,2] <- phiB * (1 - psiBA)
+  gamma[2,3] <- 1 - phiB
+  gamma[3,1] <- 0
+  gamma[3,2] <- 0
+  gamma[3,3] <- 1
+...
+```
+
+### Our model $(\phi_A, \phi_B, \psi_{AB}, \psi_{BA}, p_A, p_B)$
+
+```{r eval = FALSE}
+multisite <- nimbleCode({
+...
+  # probabilities of y(t) given z(t)
+  # (read as omega[y(t),z(t)] = omega[Observation,State])
+
+  omega[1,1] <- 1 - pA     # Pr(alive A t -> non-detected t)
+  omega[1,2] <- pA         # Pr(alive A t -> detected A t)
+  omega[1,3] <- 0          # Pr(alive A t -> detected B t)
+  omega[2,1] <- 1 - pB     # Pr(alive B t -> non-detected t)
+  omega[2,2] <- 0          # Pr(alive B t -> detected A t)
+  omega[2,3] <- pB         # Pr(alive B t -> detected B t)
+  omega[3,1] <- 1          # Pr(dead t -> non-detected t)
+  omega[3,2] <- 0          # Pr(dead t -> detected A t)
+  omega[3,3] <- 0          # Pr(dead t -> detected B t)
+...
+```
+
+### Our model $(\phi_A, \phi_B, \psi_{AB}, \psi_{BA}, p_A, p_B)$
+
+```{r eval = FALSE}
+multisite <- nimbleCode({
+...
+  # likelihood
+  for (i in 1:N){
+    # latent state at first capture
+    z[i,first[i]] <- y[i,first[i]] - 1
+    for (t in (first[i]+1):K){
+      # z(t) given z(t-1)
+      z[i,t] ~ dcat(gamma[z[i,t-1],1:3])
+      # y(t) given z(t)
+      y[i,t] ~ dcat(omega[z[i,t],1:3])
+    }
+  }
+})
+```
+
+
+```{r echo = FALSE}
+library(MCMCvis)
+load(here::here("dat","geese_2sites.RData"))
+MCMCsummary(mcmc.multisite, round = 2)
+```
+
+```{r, echo = FALSE}
+library(MCMCvis)
+load(here::here("dat","geese_2sites.RData"))
+MCMCplot(mcmc.multisite)
+```
+
+
+## What if there are three sites?
+
+The transition probabilities still need to be between 0 and 1.
+
+Another constraint is that the sum of three probabilities of departure from a given site should be one.
+
+Two methods to fulfill both constraints. Dirichlet prior and multinomial logit link.
+
+Dirichlet prior with parameter alpha
+
+```{r, echo = FALSE, fig.cap = "Dirichlet prior with parameter alpha"}
+library(gtools)
+library(ggtern)
+set.seed(123)
+n <- 500
+alpha1 <- c(1, 1, 1)
+p1 <- rdirichlet(n, alpha1)
+alpha2 <- c(5, 5, 5)
+p2 <- rdirichlet(n, alpha2)
+alpha3 <- c(1, 2, 2)
+p3 <- rdirichlet(n, alpha3)
+alpha4 <- c(2, 4, 8)
+p4 <- rdirichlet(n, alpha4)
+df <- cbind(rbind(p1, p2, p3, p4), c(rep("alpha = c(1, 1, 1)", n),
+                                     rep("alpha = c(5, 5, 5)", n),
+                                     rep("alpha = c(1, 2, 2)", n),
+                                     rep("alpha = c(2, 4, 8)", n))) %>%
+  as_tibble() %>%
+  mutate(x = as.numeric(V1),
+         y = as.numeric(V2),
+         z = as.numeric(V3),
+         alpha = V4)
+
+df %>%
+  ggtern(aes(x = x, y = y, z = z)) +
+  stat_density_tern(aes(fill=..level.., alpha=..level..),
+                    geom = 'polygon',
+                    bdl = 0.005) +
+#  scale_fill_gradient2(high = "blue") +
+  scale_fill_viridis_b() +
+  geom_point(alpha = 0.3, pch = "+") +
+  theme_light(base_size = 14) +
+  theme_showarrows() +
+  scale_T_continuous(breaks = seq(0, 1, by = 0.2),
+                     labels = seq(0, 1, by = 0.2)) +
+  scale_L_continuous(breaks = seq(0, 1, by = 0.2),
+                     labels = seq(0, 1, by = 0.2)) +
+  scale_R_continuous(breaks = seq(0, 1, by = 0.2),
+                     labels = seq(0, 1, by = 0.2)) +
+  labs(x = "",
+       y = "",
+       z = "",
+       Tarrow = "psiAA",
+       Larrow = "psiAB",
+       Rarrow = "psiAC") +
+  guides(color = "none", fill = "none", alpha = "none") +
+  facet_wrap(~alpha)
+```
+
+
+### Nimble implementation of the Dirichlet prior
+
+```{r eval = FALSE}
+multisite <- nimbleCode({
+...
+  # transitions: Dirichlet priors
+  psiA[1:3] ~ ddirch(alpha[1:3]) # psiAA, psiAB, psiAC
+  psiB[1:3] ~ ddirch(alpha[1:3]) # psiBA, psiBB, psiCC
+  psiC[1:3] ~ ddirch(alpha[1:3]) # psiCA, psiCB, psiCC
+...
+```
+
+### Nimble implementation of the Dirichlet prior
+
+```{r eval = FALSE}
+multisite <- nimbleCode({
+...
+  # probabilities of state z(t+1) given z(t)
+  gamma[1,1] <- phiA * psiA[1]
+  gamma[1,2] <- phiA * psiA[2]
+  gamma[1,3] <- phiA * psiA[3]
+  gamma[1,4] <- 1 - phiA
+  gamma[2,1] <- phiB * psiB[1]
+  gamma[2,2] <- phiB * psiB[2]
+  gamma[2,3] <- phiB * psiB[3]
+  gamma[2,4] <- 1 - phiB
+  gamma[3,1] <- phiC * psiC[1]
+  gamma[3,2] <- phiC * psiC[2]
+  gamma[3,3] <- phiC * psiC[3]
+  gamma[3,4] <- 1 - phiC
+  gamma[4,1] <- 0
+  gamma[4,2] <- 0
+  gamma[4,3] <- 0
+  gamma[4,4] <- 1
+...
+```
+
+```{r echo = FALSE}
+library(MCMCvis)
+load(here::here("dat","geese_3sites_dirichlet.RData"))
+MCMCsummary(mcmc.multisite, round = 2)
+```
+
+```{r, echo = FALSE}
+library(MCMCvis)
+load(here::here("dat","geese_3sites_dirichlet.RData"))
+MCMCplot(mcmc.multisite)
+```
+
+
+### Multinomial logit
+
+Say we have $P$ sites or states.
+
+Specify a normal prior distribution for $P-1$ transition parameters $\alpha_j$. These probabilities are on the multinomial logit scale, possibly function of covariates.
+
+To back-transform these parameters, we use:
+
+$$\beta_j = \displaystyle{\frac{\exp(\alpha_j)}{1+\displaystyle{\sum_{p=1}^P{\exp(\alpha_p)}}}}, j = 1,\ldots,P-1$$
+
+This ensures that all $\beta_j$ are between 0 and 1, and their sum is 1.
+
+Last parameter is calculated as the complement $\beta_P = 1 - \displaystyle{\sum_{j=1}^{P-1}{\exp(\beta_j)}}$
+
+### Nimble implementation of the Dirichlet prior
+
+```{r eval = FALSE}
+multisite <- nimbleCode({
+...
+  # transitions: multinomial logit
+  # normal priors on logit of all but one transition probs
+  for (i in 1:2){
+    lpsiA[i] ~ dnorm(0, sd = 1000)
+    lpsiB[i] ~ dnorm(0, sd = 1000)
+    lpsiC[i] ~ dnorm(0, sd = 1000)
+  }
+  # constrain the transitions such that their sum is < 1
+  for (i in 1:2){
+    psiA[i] <- exp(lpsiA[i]) / (1 + exp(lpsiA[1]) + exp(lpsiA[2]))
+    psiB[i] <- exp(lpsiB[i]) / (1 + exp(lpsiB[1]) + exp(lpsiB[2]))
+    psiC[i] <- exp(lpsiC[i]) / (1 + exp(lpsiC[1]) + exp(lpsiC[2]))
+  }
+  # last transition probability
+  psiA[3] <- 1 - psiA[1] - psiA[2]
+  psiB[3] <- 1 - psiB[1] - psiB[2]
+  psiC[3] <- 1 - psiC[1] - psiC[2]
+...
+```
+
+### Nimble implementation of the Dirichlet prior
+
+```{r eval = FALSE}
+multisite <- nimbleCode({
+...
+  # probabilities of state z(t+1) given z(t)
+  gamma[1,1] <- phiA * psiA[1]
+  gamma[1,2] <- phiA * psiA[2]
+  gamma[1,3] <- phiA * psiA[3]
+  gamma[1,4] <- 1 - phiA
+  gamma[2,1] <- phiB * psiB[1]
+  gamma[2,2] <- phiB * psiB[2]
+  gamma[2,3] <- phiB * psiB[3]
+  gamma[2,4] <- 1 - phiB
+  gamma[3,1] <- phiC * psiC[1]
+  gamma[3,2] <- phiC * psiC[2]
+  gamma[3,3] <- phiC * psiC[3]
+  gamma[3,4] <- 1 - phiC
+  gamma[4,1] <- 0
+  gamma[4,2] <- 0
+  gamma[4,3] <- 0
+  gamma[4,4] <- 1
+...
+```
+
+```{r echo = FALSE}
+library(MCMCvis)
+load(here::here("dat","geese_3sites_logit.RData"))
+MCMCsummary(mcmc.multisite, round = 2)
+```
+
+```{r, echo = FALSE}
+library(MCMCvis)
+load(here::here("dat","geese_3sites_logit.RData"))
+MCMCplot(mcmc.multisite)
+```
+
+
+## Sites may be states.
+
+## Examples of multistate models
+
++ *Epidemiological or disease states*: sick/healthy, uninfected/infected/recovered.
+
++ *Morphological states*: small/medium/big,  light/medium/heavy.
+
++ *Breeding states*: e.g. breeder/non-breeder,  failed breeder, first-time breeder.
+
++ *Developmental or life-history states*: e.g. juvenile/subadult/adult.
+
++ *Social states*: e.g. solitary/group-living,  subordinate/dominant.
+
++ *Death states*: e.g. alive, dead from harvest, dead from natural causes.
+
+**States = individual, time-specific categorical covariates.**
+
+```{r}
+knitr::include_graphics("images/sooty.jpg")
+```
+
+### Sooty shearwater (David Boyle)
+
+## Sooty shearwaters and life-history tradeoffs
+
+We consider data collected between 1940 and 1957 by Lance Richdale on Sooty shearwaters (aka titis).
+
+These data were reanalyzed with multistate models by [Scofield et al. (2001)](https://link.springer.com/article/10.1198/108571101750524607) who kindly provided us with the data.
+
+Following the way the data were collected, four states were originally considered: Alive breeder; Accompanied by another bird in a burrow; Alone in a burrow; On the surface; Dead.
+
+## Sooty shearwaters and life-history tradeoffs
+
+Because of numerical issues, we pooled all alive states but breeder together in a non-breeder state (NB) that includes:
+
++ failed breeders (birds that had bred previously – skip reproduction or divorce) and pre-breeders (birds that had yet to breed).
+
++ Note that because burrows were not checked before hatching, some birds in the category NB might have already failed.
+
++ We therefore regard those birds in the B state as successful breeders, and those in the NB state as nonbreeders plus prebreeders and failed breeders.
+
+Observations are non-detections, and detections as breeder and non-breeder
+
+Does breeding affect survival? Does breeding in current year affect breeding next year?
+
+
+```{r echo = FALSE}
+titis <- read_csv2(here::here("dat", "titis.csv"), col_names = FALSE)
+titis %>%
+  rename(year_1942 = X1,
+         year_1943 = X2,
+         year_1944 = X3,
+         year_1949 = X4,
+         year_1952 = X5,
+         year_1953 = X6,
+         year_1956 = X7) %>%
+  kableExtra::kable() %>%
+  kableExtra::scroll_box(width = "100%", height = "400px")
+```
+
+### HMM model for transition between states
+
+Transition matrix
+
+$$
+\begin{matrix}
+& \\
+\mathbf{\Gamma} =
+    \left ( \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \end{matrix} } \right .
+\end{matrix}
+\hspace{-1.2em}
+\begin{matrix}
+    z_t=B & z_t=NB & z_t=D \\ \hdashline
+\phi_B (1-\psi_{BNB}) & \phi_B \psi_{BNB} & 1 - \phi_B\\
+\phi_{NB} \psi_{NBB} & \phi_{NB} (1-\psi_{NBB}) & 1 - \phi_{NB}\\
+0 & 0 & 1
+\end{matrix}
+\hspace{-0.2em}
+\begin{matrix}
+& \\
+\left . \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \end{matrix} } \right )
+    \begin{matrix}
+    z_{t-1}=B \\ z_{t-1}=NB \\ z_{t-1}=D
+    \end{matrix}
+\end{matrix}
+$$
+
++ Costs or reproduction would reflect in future reproduction $\psi_{BB} = 1 - \psi_{BNB} < \psi_{NBB}$ or survival $\phi_B < \phi_{NB}$.
+
+### HMM model for transition between states
+
+Observation matrix
+
+$$
+\begin{matrix}
+& \\
+\mathbf{\Omega} =
+    \left ( \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \end{matrix} } \right .
+\end{matrix}
+\hspace{-1.2em}
+\begin{matrix}
+    y_t=0 & y_t=1 & y_t=2 \\ \hdashline
+1 - p_B & p_B & 0\\
+1 - p_{NB} & 0 & p_{NB}\\
+1 & 0 & 0
+\end{matrix}
+\hspace{-0.2em}
+\begin{matrix}
+& \\
+\left . \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \end{matrix} } \right )
+    \begin{matrix}
+    z_{t}=B \\ z_{t}=NB \\ z_{t}=D
+    \end{matrix}
+\end{matrix}
+$$
+
+### Our model $(\phi_{NB}, \phi_B, \psi_{NBB}, \psi_{BNB}, p_{NB}, p_B)$
+
+```{r eval = FALSE}
+multistate <- nimbleCode({
+  # -------------------------------------------------
+  # Parameters:
+  # phiB: survival probability state B
+  # phiNB: survival probability state NB
+  # psiBNB: transition probability from B to NB
+  # psiNBB: transition probability from NB to B
+  # pB: recapture probability B
+  # pNB: recapture probability NB
+  # -------------------------------------------------
+  # States (z):
+  # 1 alive B
+  # 2 alive NB
+  # 3 dead
+  # Observations (y):
+  # 1 not seen
+  # 2 seen as B
+  # 3 seen as NB
+  # -------------------------------------------------
+...
+```
+
+### Our model $(\phi_{NB}, \phi_B, \psi_{NBB}, \psi_{BNB}, p_{NB}, p_B)$
+
+```{r eval = FALSE}
+multistate <- nimbleCode({
+...
+  # Priors
+  phiB ~ dunif(0, 1)
+  phiNB ~ dunif(0, 1)
+  psiBNB ~ dunif(0, 1)
+  psiNBB ~ dunif(0, 1)
+  pB ~ dunif(0, 1)
+  pNB ~ dunif(0, 1)
+...
+```
+
+### Our model $(\phi_{NB}, \phi_B, \psi_{NBB}, \psi_{BNB}, p_{NB}, p_B)$
+
+```{r eval = FALSE}
+multistate <- nimbleCode({
+...
+  # probabilities of state z(t+1) given z(t)
+  gamma[1,1] <- phiB * (1 - psiBNB)
+  gamma[1,2] <- phiB * psiBNB
+  gamma[1,3] <- 1 - phiB
+  gamma[2,1] <- phiNB * psiNBB
+  gamma[2,2] <- phiNB * (1 - psiNBB)
+  gamma[2,3] <- 1 - phiNB
+  gamma[3,1] <- 0
+  gamma[3,2] <- 0
+  gamma[3,3] <- 1
+...
+```
+
+### Our model $(\phi_{NB}, \phi_B, \psi_{NBB}, \psi_{BNB}, p_{NB}, p_B)$
+
+```{r eval = FALSE}
+multistate <- nimbleCode({
+...
+  # probabilities of y(t) given z(t)
+  omega[1,1] <- 1 - pB    # Pr(alive B t -> non-detected t)
+  omega[1,2] <- pB        # Pr(alive B t -> detected B t)
+  omega[1,3] <- 0         # Pr(alive B t -> detected NB t)
+  omega[2,1] <- 1 - pNB   # Pr(alive NB t -> non-detected t)
+  omega[2,2] <- 0         # Pr(alive NB t -> detected B t)
+  omega[2,3] <- pNB       # Pr(alive NB t -> detected NB t)
+  omega[3,1] <- 1         # Pr(dead t -> non-detected t)
+  omega[3,2] <- 0         # Pr(dead t -> detected N t)
+  omega[3,3] <- 0         # Pr(dead t -> detected NB t)
+...
+```
+
+### Our model $(\phi_{NB}, \phi_B, \psi_{NBB}, \psi_{BNB}, p_{NB}, p_B)$
+
+```{r eval = FALSE}
+multistate <- nimbleCode({
+...
+  # likelihood
+  for (i in 1:N){
+    # latent state at first capture
+    z[i,first[i]] <- y[i,first[i]] - 1
+    for (t in (first[i]+1):K){
+      # z(t) given z(t-1)
+      z[i,t] ~ dcat(gamma[z[i,t-1],1:3])
+      # y(t) given z(t)
+      y[i,t] ~ dcat(omega[z[i,t],1:3])
+    }
+  }
+})
+```
+
+```{r echo = FALSE}
+library(MCMCvis)
+load(here::here("dat","titis.RData"))
+MCMCsummary(mcmc.multistate, round = 2)
+```
+
+
+```{r, echo = FALSE, fig.cap = "Dirichlet prior with parameter alpha"}
+library(MCMCvis)
+load(here::here("dat","titis.RData"))
+MCMCplot(mcmc.multistate)
+```
+
+
+## Issue of local minima
+
+Simulated data: 2 sites or states, and 7 occasions, Survival $\phi = 1$, detection $p = 0.6$, Transition $\psi_{12} = 0.6$, Transition $\psi_{21} = 0.85$.
+
+Courtesy of Jérôme Dupuis, used in [Gimenez et al. (2005)](https://oliviergimenez.github.io/pubs/Gimenezetal2005JABES.pdf).
+
+### Data
+
+```{r echo = FALSE}
+dat <- matrix(c(2, 0, 2, 1, 2, 0, 2,
+                2, 0, 2, 1, 2, 0, 2,
+                2, 0, 2, 1, 2, 0, 2,
+                2, 0, 2, 1, 2, 0, 2,
+                1, 1, 1, 0, 1, 0, 1,
+                1, 1, 1, 0, 1, 0, 1,
+                1, 1, 1, 0, 1, 0, 1,
+                1, 1, 1, 0, 1, 0, 1,
+                2, 0, 2, 0, 2, 0, 1,
+                2, 0, 2, 0, 2, 0, 1,
+                2, 0, 2, 0, 2, 0, 1,
+                2, 0, 2, 0, 2, 0, 1,
+                1, 0, 1, 0, 1, 0, 1,
+                1, 0, 1, 0, 1, 0, 1,
+                1, 0, 1, 0, 1, 0, 1,
+                1, 0, 1, 0, 1, 0, 1,
+                2, 0, 2, 0, 2, 0, 2,
+                2, 0, 2, 0, 2, 0, 2,
+                2, 0, 2, 0, 2, 0, 2,
+                2, 0, 2, 0, 2, 0, 2,
+                1, 0, 1, 0, 1, 0, 2,
+                1, 0, 1, 0, 1, 0, 2,
+                1, 0, 1, 0, 1, 0, 2,
+                1, 0, 1, 0, 1, 0, 2,
+                2, 2, 0, 1, 0, 2, 1,
+                2, 2, 0, 1, 0, 2, 1,
+                2, 2, 0, 1, 0, 2, 1,
+                2, 2, 0, 1, 0, 2, 1,
+                2, 1, 0, 2, 0, 1, 1,
+                2, 1, 0, 2, 0, 1, 1,
+                2, 1, 0, 2, 0, 1, 1,
+                2, 1, 0, 2, 0, 1, 1),
+              byrow = T,
+              ncol = 7)
+dat %>%
+  as_tibble() %>%
+  kableExtra::kable() %>%
+  kableExtra::scroll_box(width = "100%", height = "400px")
+```
+
+```{r}
+knitr::include_graphics("images/multistate_local_minimav2_Page_05.png")
+```
+
+
+```{r}
+knitr::include_graphics("images/multistate_local_minimav2_Page_06.png")
+```
+
+```{r}
+knitr::include_graphics("images/multistate_local_minimav2_Page_07.png")
+```
+
+
+```{r, echo = FALSE}
+load(here::here("dat","localminima.RData"))
+psiBA <- c(mcmc.multistate$chain1[,"psiBA"], mcmc.multistate$chain2[,"psiBA"])
+plotpsiBA <- psiBA %>%
+  as_tibble() %>%
+  ggplot() +
+  aes(x = 1:length(value), y = value) +
+  geom_line(color = "gray70") +
+  labs(y = "psi21", x = "iterations") +
+  theme_light(base_size = 14) +
+  geom_hline(yintercept = 0.85, lty = 2, color = "blue")
+
+psiAB <- c(mcmc.multistate$chain1[,"psiAB"],mcmc.multistate$chain2[,"psiAB"])
+plotpsiAB <- psiAB %>%
+  as_tibble() %>%
+  ggplot() +
+  aes(x = 1:length(value), y = value) +
+  geom_line(color = "gray70") +
+  labs(y = "psi12", x = "iterations") +
+  theme_light(base_size = 14) +
+  geom_hline(yintercept = 0.6, lty = 2, color = "blue")
+
+det <- c(mcmc.multistate$chain1[,"p"], mcmc.multistate$chain2[,"p"])
+plotdet <- det %>%
+  as_tibble() %>%
+  ggplot() +
+  aes(x = 1:length(value), y = value) +
+  geom_line(color = "gray70") +
+  labs(y = "detection", x = "iterations") +
+  theme_light(base_size = 14) +
+  geom_hline(yintercept = 0.6, lty = 2, color = "blue")
+
+
+library(patchwork)
+
+plotdet / (plotpsiAB + plotpsiBA)
+```
+
+
+```{r, echo = FALSE}
+load(here::here("dat","localminima.RData"))
+psiBA <- c(mcmc.multistate$chain1[,"psiBA"], mcmc.multistate$chain2[,"psiBA"])
+plotpsiBA <- psiBA %>%
+  as_tibble() %>%
+  ggplot() +
+  aes(x = value) +
+  geom_histogram(color = "white", binwidth = .03, fill = "gray70") +
+  geom_density(aes(y = .03 * ..count..)) +
+  labs(x = "psi21", y = "") +
+  theme_light(base_size = 14) +
+  geom_vline(xintercept = 0.85, lty = 2, color = "blue")
+
+psiAB <- c(mcmc.multistate$chain1[,"psiAB"],mcmc.multistate$chain2[,"psiAB"])
+plotpsiAB <- psiAB %>%
+  as_tibble() %>%
+  ggplot() +
+  aes(x = value) +
+  geom_histogram(color = "white", binwidth = .03, fill = "gray70") +
+  geom_density(aes(y = .03 * ..count..)) +
+  labs(x = "psi12", y = "") +
+  theme_light(base_size = 14) +
+  geom_vline(xintercept = 0.6, lty = 2, color = "blue")
+
+
+det <- c(mcmc.multistate$chain1[,"p"], mcmc.multistate$chain2[,"p"])
+plotdet <- det %>%
+  as_tibble() %>%
+  ggplot() +
+  aes(x = value) +
+  geom_histogram(color = "white", binwidth = .03, fill = "gray70") +
+  geom_density(aes(y = .03 * ..count..)) +
+  labs(x = "detection", y = "") +
+  theme_light(base_size = 14) +
+  geom_vline(xintercept = 0.6, lty = 2, color = "blue")
+
+
+library(patchwork)
+
+plotdet / (plotpsiAB + plotpsiBA)
+```
+
+## Uncertainty
+
+We're going to talk about multievent models. Multievent models extend multistate models with uncertainty in state assignment. Let's see some examples to fix ideas. These examples are from published papers which used multievent models.
+
++ Breeding status in female roe deer is ascertained based on fawn detection
+
++ Sex status is ascertained based on morphological criteria in Audouin's gulls
+
++ Disease status in house finches is ascertained based on birds' eyes examination
+
++ Hybrid status in wolves is ascertained based on genetics
+
++ Dominance status in wolves is ascertained based on heterogeneity in detection
+
+The common thing to all these examples is that. We need to explicitly consider state assignment in a model. HMMs to the rescue! And to do that, we'll use HMMs again!
+
+Examples
+
++ Testing life-history trade-offs while accounting for uncertainty in breeding status
+
++ Quantifying disease dynamics while accounting for uncertainty in disease status
+
++ Estimating survival while accounting for individual heterogeneity in detection
+
++ In this module, I'll go through 3 examples.
++ Testing life-history trade-offs while accounting for uncertainty in breeding status.
++ Quantifying disease dynamics while accounting for uncertainty in disease status.
++ Estimating survival while accounting for individual heterogeneity in detection.
+
++ **Testing life-history trade-offs while accounting for uncertainty in breeding status**
+
++ Quantifying disease dynamics while accounting for uncertainty in disease status
+
++ Estimating survival while accounting for individual heterogeneity in detection
+
+
+```{r}
+knitr::include_graphics("images/sooty.jpg")
+```
+
+### Uncertainty in breeding status: Sooty shearwater (David Boyle)
+
+Ingredients
+
++ 3 states
+    + breeding (B)
+    + non-breeding (NB)
+    + dead (D)
+
++ 4 observations
+    + not encountered (0)
+    + found, ascertained as breeder (1)
+    + found, ascertained as non-breeder (2)
+    + found, status unknown (3)
+
++ We still have 3 states, breeding, non-breeding and dead.
++ With regard to observations, a bird may be not encountered.
++ It may also be encountered, but in contrast with multistate CR data, we don't know its state for sure.
++ It may be found and ascertained or classified as breeder.
++ It may be found and ascertained or classified as non-breeder.
++ It may be found be we are unable to determine whether it's breeding or non-breeding.
+
+How states generate observations
+
+```{r, echo = FALSE}
+ggplot() +
+  geom_point(aes(1, 1), size = 2.5, alpha = .7) +
+  geom_point(aes(1, 1.5), size = 2.5, alpha = .7) +
+  geom_point(aes(1, 2), size = 2.5, alpha = .7) +
+  geom_text(aes(1.5, 2, label = 'not encountered (0)'), nudge_x = 1, size = 7) +
+  geom_text(aes(1.5, 1.5, label = 'found, ascertained as breeder (1)'), nudge_x = 1.5, size = 7) +
+  geom_text(aes(1.5, 1, label = 'found, ascertained as non-breeder (2)'), nudge_x = 1.7, size = 7) +
+  geom_text(aes(1.5, 0.5, label = 'found, status unknown (3)'), nudge_x = 1.2, size = 7) +
+  geom_point(aes(1.5, 0.5), size = 2.5, alpha = .7) +
+  geom_point(aes(1.5, 1), size = 2.5, alpha = .7) +
+  geom_point(aes(1.5, 1.5), size = 2.5, alpha = .7) +
+  geom_point(aes(1.5, 2), size = 2.5, alpha = .7) +
+  geom_text(aes(.5, 2, label = 'breeding'), nudge_x = 0, size = 7) +
+  geom_text(aes(.5, 1.5, label = 'non-breeding'), nudge_x = -0.2, size = 7) +
+  geom_text(aes(.5, 1, label = 'dead'), nudge_x = 0.1, size = 7) +
+  xlim(0, 4.5) +
+  ylim(0.5, 3) +
+  annotate('text', x = .5, y = 2.6, label = 'States', size = 10) +
+  annotate('text', x = 2.5, y = 2.6, label = 'Observations', size = 10) +
+  theme_void()
+```
+
+Now how do the states generate the observations?
+
+```{r, echo = FALSE}
+ggplot() +
+  geom_point(aes(1, 1), size = 2.5, alpha = .7) +
+  geom_point(aes(1, 1.5), size = 2.5, alpha = .7) +
+  geom_point(aes(1, 2), size = 2.5, alpha = .7) +
+  geom_text(aes(1.5, 2, label = 'not encountered (0)'), nudge_x = 1, size = 7) +
+  geom_text(aes(1.5, 1.5, label = 'found, ascertained as breeder (1)'), nudge_x = 1.5, size = 7) +
+  geom_text(aes(1.5, 1, label = 'found, ascertained as non-breeder (2)'), nudge_x = 1.7, size = 7) +
+  geom_text(aes(1.5, 0.5, label = 'found, status unknown (3)'), nudge_x = 1.2, size = 7) +
+  geom_point(aes(1.5, 0.5), size = 2.5, alpha = .7) +
+  geom_point(aes(1.5, 1), size = 2.5, alpha = .7) +
+  geom_point(aes(1.5, 1.5), size = 2.5, alpha = .7) +
+  geom_point(aes(1.5, 2), size = 2.5, alpha = .7) +
+  geom_text(aes(.5, 2, label = 'breeding'), nudge_x = 0, size = 7) +
+  geom_text(aes(.5, 1.5, label = 'non-breeding'), nudge_x = -0.2, size = 7) +
+  geom_text(aes(.5, 1, label = 'dead'), nudge_x = 0.1, size = 7) +
+  xlim(0, 4.5) +
+  ylim(0.5, 3) +
+  annotate('text', x = .5, y = 2.6, label = 'States', size = 10) +
+  annotate('text', x = 2.5, y = 2.6, label = 'Observations', size = 10) +
+  geom_segment(aes(x = 1, y = 1, xend = 1.5, yend = 2), alpha = 0.7, arrow = arrow(length = unit(0.02, "npc"))) +
+  theme_void()
+```
+
+```{r, echo = FALSE}
+ggplot() +
+  geom_point(aes(1, 1), size = 2.5, alpha = .7) +
+  geom_point(aes(1, 1.5), size = 2.5, alpha = .7) +
+  geom_point(aes(1, 2), size = 2.5, alpha = .7) +
+  geom_text(aes(1.5, 2, label = 'not encountered (0)'), nudge_x = 1, size = 7) +
+  geom_text(aes(1.5, 1.5, label = 'found, ascertained as breeder (1)'), nudge_x = 1.5, size = 7) +
+  geom_text(aes(1.5, 1, label = 'found, ascertained as non-breeder (2)'), nudge_x = 1.7, size = 7) +
+  geom_text(aes(1.5, 0.5, label = 'found, status unknown (3)'), nudge_x = 1.2, size = 7) +
+  geom_point(aes(1.5, 0.5), size = 2.5, alpha = .7) +
+  geom_point(aes(1.5, 1), size = 2.5, alpha = .7) +
+  geom_point(aes(1.5, 1.5), size = 2.5, alpha = .7) +
+  geom_point(aes(1.5, 2), size = 2.5, alpha = .7) +
+  geom_text(aes(.5, 2, label = 'breeding'), nudge_x = 0, size = 7) +
+  geom_text(aes(.5, 1.5, label = 'non-breeding'), nudge_x = -0.2, size = 7) +
+  geom_text(aes(.5, 1, label = 'dead'), nudge_x = 0.1, size = 7) +
+  xlim(0, 4.5) +
+  ylim(0.5, 3) +
+  annotate('text', x = .5, y = 2.6, label = 'States', size = 10) +
+  annotate('text', x = 2.5, y = 2.6, label = 'Observations', size = 10) +
+  geom_segment(aes(x = 1, y = 2, xend = 1.5, yend = .5), alpha = 0.7, arrow = arrow(length = unit(0.02, "npc"))) +
+  geom_segment(aes(x = 1, y = 2, xend = 1.5, yend = 1.5), alpha = 0.7, arrow = arrow(length = unit(0.02, "npc"))) +
+  geom_segment(aes(x = 1, y = 2, xend = 1.5, yend = 2), alpha = 0.7, arrow = arrow(length = unit(0.02, "npc"))) +
+
+  theme_void()
+```
+
+```{r, echo = FALSE}
+ggplot() +
+  geom_point(aes(1, 1), size = 2.5, alpha = .7) +
+  geom_point(aes(1, 1.5), size = 2.5, alpha = .7) +
+  geom_point(aes(1, 2), size = 2.5, alpha = .7) +
+  geom_text(aes(1.5, 2, label = 'not encountered (0)'), nudge_x = 1, size = 7) +
+  geom_text(aes(1.5, 1.5, label = 'found, ascertained as breeder (1)'), nudge_x = 1.5, size = 7) +
+  geom_text(aes(1.5, 1, label = 'found, ascertained as non-breeder (2)'), nudge_x = 1.7, size = 7) +
+  geom_text(aes(1.5, 0.5, label = 'found, status unknown (3)'), nudge_x = 1.2, size = 7) +
+  geom_point(aes(1.5, 0.5), size = 2.5, alpha = .7) +
+  geom_point(aes(1.5, 1), size = 2.5, alpha = .7) +
+  geom_point(aes(1.5, 1.5), size = 2.5, alpha = .7) +
+  geom_point(aes(1.5, 2), size = 2.5, alpha = .7) +
+  geom_text(aes(.5, 2, label = 'breeding'), nudge_x = 0, size = 7) +
+  geom_text(aes(.5, 1.5, label = 'non-breeding'), nudge_x = -0.2, size = 7) +
+  geom_text(aes(.5, 1, label = 'dead'), nudge_x = 0.1, size = 7) +
+  xlim(0, 4.5) +
+  ylim(0.5, 3) +
+  annotate('text', x = .5, y = 2.6, label = 'States', size = 10) +
+  annotate('text', x = 2.5, y = 2.6, label = 'Observations', size = 10) +
+  geom_segment(aes(x = 1, y = 1.5, xend = 1.5, yend = 1), alpha = 0.7, arrow = arrow(length = unit(0.02, "npc"))) +
+  geom_segment(aes(x = 1, y = 1.5, xend = 1.5, yend = 2), alpha = 0.7, arrow = arrow(length = unit(0.02, "npc"))) +
+  geom_segment(aes(x = 1, y = 1.5, xend = 1.5, yend = .5), alpha = 0.7, arrow = arrow(length = unit(0.02, "npc"))) +
+  theme_void()
+```
+
+```{r, echo = FALSE}
+ggplot() +
+  geom_point(aes(1, 1), size = 2.5, alpha = .7) +
+  geom_point(aes(1, 1.5), size = 2.5, alpha = .7) +
+  geom_point(aes(1, 2), size = 2.5, alpha = .7) +
+  geom_text(aes(1.5, 2, label = 'not encountered (0)'), nudge_x = 1, size = 7) +
+  geom_text(aes(1.5, 1.5, label = 'found, ascertained as breeder (1)'), nudge_x = 1.5, size = 7) +
+  geom_text(aes(1.5, 1, label = 'found, ascertained as non-breeder (2)'), nudge_x = 1.7, size = 7) +
+  geom_text(aes(1.5, 0.5, label = 'found, status unknown (3)'), nudge_x = 1.2, size = 7) +
+  geom_point(aes(1.5, 0.5), size = 2.5, alpha = .7) +
+  geom_point(aes(1.5, 1), size = 2.5, alpha = .7) +
+  geom_point(aes(1.5, 1.5), size = 2.5, alpha = .7) +
+  geom_point(aes(1.5, 2), size = 2.5, alpha = .7) +
+  geom_text(aes(.5, 2, label = 'breeding'), nudge_x = 0, size = 7) +
+  geom_text(aes(.5, 1.5, label = 'non-breeding'), nudge_x = -0.2, size = 7) +
+  geom_text(aes(.5, 1, label = 'dead'), nudge_x = 0.1, size = 7) +
+  xlim(0, 4.5) +
+  ylim(0.5, 3) +
+  annotate('text', x = .5, y = 2.6, label = 'States', size = 10) +
+  annotate('text', x = 2.5, y = 2.6, label = 'Observations', size = 10) +
+
+  geom_segment(aes(x = 1, y = 1, xend = 1.5, yend = 2), alpha = 0.7, arrow = arrow(length = unit(0.02, "npc"))) +
+
+  geom_segment(aes(x = 1, y = 1.5, xend = 1.5, yend = 1), lty = 2, alpha = 0.7, arrow = arrow(length = unit(0.02, "npc"))) +
+  geom_segment(aes(x = 1, y = 1.5, xend = 1.5, yend = 2), lty = 2, alpha = 0.7, arrow = arrow(length = unit(0.02, "npc"))) +
+  geom_segment(aes(x = 1, y = 1.5, xend = 1.5, yend = .5), lty = 2, alpha = 0.7, arrow = arrow(length = unit(0.02, "npc"))) +
+
+  geom_segment(aes(x = 1, y = 2, xend = 1.5, yend = .5), lty = 2, alpha = 0.7, arrow = arrow(length = unit(0.02, "npc"))) +
+  geom_segment(aes(x = 1, y = 2, xend = 1.5, yend = 1.5), lty = 2, alpha = 0.7, arrow = arrow(length = unit(0.02, "npc"))) +
+  geom_segment(aes(x = 1, y = 2, xend = 1.5, yend = 2), lty = 2, alpha = 0.7, arrow = arrow(length = unit(0.02, "npc"))) +
+
+  theme_void()
+```
+
+To wrap up each live state can generate 3 observations. The only deterministic link is that between the dead state and the observation non-encountered. Cause if you're dead, you cannot be detected for sure.
+
+### HMM model for breeding states with uncertainty
+
+Vector of initial state probabilities
+
+$$
+\begin{matrix}
+& \\
+\mathbf{\delta} =
+    \left ( \vphantom{ \begin{matrix} 12 \end{matrix} } \right .
+\end{matrix}
+\hspace{-1.2em}
+\begin{matrix}
+    z_t=B & z_t=NB & z_t=D \\ \hdashline
+\pi_B & 1 - \pi_{B} & 0\\
+\end{matrix}
+\hspace{-0.2em}
+\begin{matrix}
+& \\
+\left . \vphantom{ \begin{matrix} 12 \end{matrix} } \right )
+    \begin{matrix}
+    \end{matrix}
+\end{matrix}
+$$
+
+$\pi_B$ is the probability that a newly encountered individual is a breeder. $\pi_{NB} = 1 - \pi_B$ is the probability that a newly encountered individual is a non-breeder
+
+OK now let’s specify the model. First thing we need, and it’s a big difference with multistate models, we need initial state probabilities cause we cannot assign states to individuals w/ certainty. Let's define pi_B the prob that a newly encountered individual is a breeding individual. We write down the prob for each state at first encounter. We have pi_B, then the prob of being a NB is the complementary. And the prob of being dead at first encounter is 0 of course.
+
+
+Transition matrix
+
+$$
+\begin{matrix}
+& \\
+\mathbf{\Gamma} =
+    \left ( \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \end{matrix} } \right .
+\end{matrix}
+\hspace{-1.2em}
+\begin{matrix}
+    z_t=B & z_t=NB & z_t=D \\ \hdashline
+\phi_B (1-\psi_{BNB}) & \phi_B \psi_{BNB} & 1 - \phi_B\\
+\phi_{NB} \psi_{NBB} & \phi_{NB} (1-\psi_{NBB}) & 1 - \phi_{NB}\\
+0 & 0 & 1
+\end{matrix}
+\hspace{-0.2em}
+\begin{matrix}
+& \\
+\left . \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \end{matrix} } \right )
+    \begin{matrix}
+    z_{t-1}=B \\ z_{t-1}=NB \\ z_{t-1}=D
+    \end{matrix}
+\end{matrix}
+$$
+
+$\phi_B$ is breeder survival, $\phi_{NB}$ that of non-breeders. $\psi_{BNB}$ is the probability for an individual breeding a year to be a non-breeder the next year. $\psi_{NBB}$ is the probability for an non-breeder individual to breeder the next year. The transition parameters are in a matrix similar to the one we used for multistate models.
+
+Observation matrix
+
+$$
+\begin{matrix}
+& \\
+\mathbf{\Omega} =
+    \left ( \vphantom{ \begin{matrix} 12 \\ 12 \\ 12\end{matrix} } \right .
+\end{matrix}
+\hspace{-1.2em}
+\begin{matrix}
+    y_t=0 & y_t=1 & y_t=2 & y_t=3\\ \hdashline
+1 - p_B & p_B \beta_B & 0 & p_B (1-\beta_B) \\
+1-p_{NB} & 0 & p_{NB} \beta_{NB} & p_{NB} (1-\beta_{NB})\\
+1 & 0 & 0 & 0
+\end{matrix}
+\hspace{-0.2em}
+\begin{matrix}
+& \\
+\left . \vphantom{ \begin{matrix} 12 \\ 12 \\ 12\end{matrix} } \right )
+    \begin{matrix}
+    z_{t}=B \\ z_{t}=NB \\ z_{t}=D
+    \end{matrix}
+\end{matrix}
+$$
+
+$\beta_B$ is the probability to assign an individual in state B to state B. $\beta_{NB}$ is the probability to assign an individual in state NB to state NB. $p_B$ is the detection probability of breeders, $p_{NB}$ that of non-breeders.
+
+The main difference between multistate and multievent models is here, in the observation parameters. We introduce two new parameters. $\delta_B$: prob. to correctly assign an indiv. that is in state B to state B, $\delta_{NB}$: prob. to correctly assign an indiv. that is in state NB to state NB. We put everything in a matrix, as usual. The observation matrix. In rows we have the states, breeding, non-breeding and dead. In columns, at the same occasion, we have the observation, detected and ascertained B,
+detected and ascertained NB, detected and state unknown, and not detected. For example, the prob of being detected and assigned to the state B, given that you’re in state B is the product of the detection prob in B and delta the prob of correctly assigning a B individual to state B.
+
+Because animals are all captured, $p_B = p_{NB} = 1$ at first encounter:
+
+$$
+\begin{matrix}
+& \\
+    \left ( \vphantom{ \begin{matrix} 12 \\ 12 \\ 12\end{matrix} } \right .
+\end{matrix}
+\hspace{-1.2em}
+\begin{matrix}
+    y_t=0 & y_t=1 & y_t=2 & y_t=3\\ \hdashline
+ 0 & \beta_B & 0 & (1-\beta_B)\\
+0 & 0 & \beta_{NB} & (1-\beta_{NB})\\
+1 & 0 & 0 & 0
+\end{matrix}
+\hspace{-0.2em}
+\begin{matrix}
+& \\
+\left . \vphantom{ \begin{matrix} 12 \\ 12 \\ 12\end{matrix} } \right )
+    \begin{matrix}
+    z_{t}=B \\ z_{t}=NB \\ z_{t}=D
+    \end{matrix}
+\end{matrix}
+$$
+
+Note: Breeding assessment is unaffected. Then at first encounter, what happens is that step 1 of encounter is degenerate because individuals are all captured. Just set all the p’s to 1 in the encounter matrix. The breeding assessment matrix remains unchanged.
+
+Our model $(\phi_B, \phi_{NB}, \psi_{BNB}, \psi_{NBB}, p_B, p_{NB}, \beta_B, \beta_{NB}, \pi)$
+
+```{r eval = FALSE}
+multievent <- nimbleCode({
+  # -------------------------------------------------
+  # Parameters:
+  # phiB: survival probability state B
+  # phiNB: survival probability state NB
+  # psiBNB: transition probability from B to NB
+  # psiNBB: transition probability from NB to B
+  # pB: recapture probability B
+  # pNB: recapture probability NB
+  # piB prob. of being in initial state breeder
+  # betaNB prob to ascertain the breeding status of an individual encountered as non-breeder
+  # betaB prob to ascertain the breeding status of an individual encountered as breeder
+  # -------------------------------------------------
+  # States (z):
+  # 1 alive B
+  # 2 alive NB
+  # 3 dead
+  # Observations (y):
+  # 1 = non-detected
+  # 2 = seen and ascertained as breeder
+  # 3 = seen and ascertained as non-breeder
+  # 4 = not ascertained
+  # -------------------------------------------------
+...
+```
+
+```{r eval = FALSE}
+multievent <- nimbleCode({
+...
+  # Priors
+  phiB ~ dunif(0, 1)
+  phiNB ~ dunif(0, 1)
+  psiBNB ~ dunif(0, 1)
+  psiNBB ~ dunif(0, 1)
+  pB ~ dunif(0, 1)
+  pNB ~ dunif(0, 1)
+  piB ~ dunif(0, 1)
+  betaNB ~ dunif(0, 1)
+  betaB ~ dunif(0, 1)
+...
+```
+
+```{r eval = FALSE}
+multievent <- nimbleCode({
+...
+  # vector of initial stats probs
+  delta[1] <- piB # prob. of being in initial state B
+  delta[2] <- 1 - piB # prob. of being in initial state NB
+  delta[3] <- 0 # prob. of being in initial state dead
+...
+```
+
+```{r eval = FALSE}
+multievent <- nimbleCode({
+...
+  # probabilities of state z(t+1) given z(t)
+  gamma[1,1] <- phiB * (1 - psiBNB)
+  gamma[1,2] <- phiB * psiBNB
+  gamma[1,3] <- 1 - phiB
+  gamma[2,1] <- phiNB * psiNBB
+  gamma[2,2] <- phiNB * (1 - psiNBB)
+  gamma[2,3] <- 1 - phiNB
+  gamma[3,1] <- 0
+  gamma[3,2] <- 0
+  gamma[3,3] <- 1
+...
+```
+
+```{r eval = FALSE}
+multievent <- nimbleCode({
+...
+  # probabilities of y(t) given z(t)
+  omega[1,1] <- 1 - pB             # Pr(alive B t -> non-detected t)
+  omega[1,2] <- pB * betaB         # Pr(alive B t -> detected B t)
+  omega[1,3] <- 0                  # Pr(alive B t -> detected NB t)
+  omega[1,4] <- pB * (1 - betaB)   # Pr(alive B t -> detected U t)
+  omega[2,1] <- 1 - pNB            # Pr(alive NB t -> non-detected t)
+  omega[2,2] <- 0                  # Pr(alive NB t -> detected B t)
+  omega[2,3] <- pNB * betaNB       # Pr(alive NB t -> detected NB t)
+  omega[2,4] <- pNB * (1 - betaNB) # Pr(alive NB t -> detected U t)
+  omega[3,1] <- 1                  # Pr(dead t -> non-detected t)
+  omega[3,2] <- 0                  # Pr(dead t -> detected N t)
+  omega[3,3] <- 0                  # Pr(dead t -> detected NB t)
+  omega[3,4] <- 0                  # Pr(dead t -> detected U t)
+...
+```
+
+```{r eval = FALSE}
+multievent <- nimbleCode({
+...
+  # probabilities of y(first) given z(first)
+  omega.init[1,1] <- 0          # Pr(alive B t = 1 -> non-detected t = 1)
+  omega.init[1,2] <- betaB      # Pr(alive B t = 1 -> detected B t = 1)
+  omega.init[1,3] <- 0          # Pr(alive B t = 1 -> detected NB t = 1)
+  omega.init[1,4] <- 1 - betaB  # Pr(alive B t = 1 -> detected U t = 1)
+  omega.init[2,1] <- 0          # Pr(alive NB t = 1 -> non-detected t = 1)
+  omega.init[2,2] <- 0          # Pr(alive NB t = 1 -> detected B t = 1)
+  omega.init[2,3] <- betaNB     # Pr(alive NB t = 1 -> detected NB t = 1)
+  omega.init[2,4] <- 1 - betaNB # Pr(alive NB t = 1 -> detected U t = 1)
+  omega.init[3,1] <- 1          # Pr(dead t = 1 -> non-detected t = 1)
+  omega.init[3,2] <- 0          # Pr(dead t = 1 -> detected N t = 1)
+  omega.init[3,3] <- 0          # Pr(dead t = 1 -> detected NB t = 1)
+  omega.init[3,4] <- 0          # Pr(dead t = 1 -> detected U t = 1)
+...
+```
+
+```{r eval = FALSE}
+multievent <- nimbleCode({
+...
+  # likelihood
+  for (i in 1:N){
+    # latent state at first capture
+    z[i,first[i]] ~ dcat(delta[1:3])
+    y[i,first[i]] ~ dcat(omega.init[z[i,first[i]],1:4])
+    for (t in (first[i]+1):K){
+      # z(t) given z(t-1)
+      z[i,t] ~ dcat(gamma[z[i,t-1],1:3])
+      # y(t) given z(t)
+      y[i,t] ~ dcat(omega[z[i,t],1:4])
+    }
+  }
+})
+```
+
+### Results
+
+```{r echo = FALSE}
+library(MCMCvis)
+load(here::here("dat","titisuncertain.RData"))
+MCMCsummary(mcmc.multievent, round = 2)
+```
+
+Breeders are difficult to assigned to the correct state. Non-breeders are relatively well classified as non-breeders. No cost of breeding, neither on survival, nor on future reproduction.
+
+
+```{r, echo = FALSE}
+library(MCMCvis)
+load(here::here("dat","titisuncertain.RData"))
+MCMCplot(mcmc.multievent)
+```
+
+
+
+
+## Summary
+
++ Blabla.
+
++ Blabla.
+
+## Suggested reading
+
++ Lebreton, J.-D., J. D. Nichols, R. J. Barker, R. Pradel and J. A. Spendelow (2009). [Modeling Individual Animal Histories with Multistate Capture–Recapture Models](https://multievent.sciencesconf.org/conference/multievent/pages/Lebretonetal2009AER.pdf). Advances in Ecological Research, 41:87-173.
+
++ Seminal paper by Pradel (2005) [Multievent: An Extension of Multistate Capture–Recapture Models to Uncertain States](https://onlinelibrary.wiley.com/doi/abs/10.1111/j.1541-0420.2005.00318.x). Biometrics, 61: 442-447.
+
++ Dupuis (1995) had a similar idea for the Arnason-Schwarz model: Dupuis, J. (1995) [Bayesian estimation of movement and survival probabilities from capture-recapture data](https://academic.oup.com/biomet/article-abstract/82/4/761/252161). Biometrika. Vol. 82, pp 761-772.
+
++ See also for a review Gimenez et al. (2012) [Estimating demographic parameters using hidden process dynamic models](https://oliviergimenez.github.io/pubs/Gimenezetal2012TPB.pdf). Theoretical Population Biology 82: 307-316.
 
