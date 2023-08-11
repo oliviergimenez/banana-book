@@ -302,13 +302,13 @@ MCMCsummary(object = mcmc.phipt, params = c("phi","p"), round = 2)
 
 We're left with four models. Different ecological hypotheses. What to do from here? Model selection. **A raffiner**
 
-## Model selection via WAIC
+## Model comparison with WAIC
 
-Which of the four models above is best supported by the data? To answer this question, we need to bear in mind that we used all the observed data to fit these models, and how close to the truth these models will perform when predicting for future data -- or predictive accuracy -- should be assessed. A natural candidate measure for predictive accuracy is the the likelihood which will be referred in this context as predictive density. However, we know neither the true process, nor the future data, and we can only estimate the predictive density with some bias. 
+Which of the four models above is best supported by the data? To answer this question, we need to bear in mind that we used all the observed data to fit these models, and how close to the truth these models will perform when predicting for future data -- or predictive accuracy -- should be assessed. A natural candidate measure for predictive accuracy is the likelihood which is often referred in the context of model comparison as the predictive density. However, we know neither the true process, nor the future data, and we can only estimate the predictive density with some bias. 
 
-You may have heard about the Akaike Information Criterion (AIC) in the Feequentist framework, and the Deviance Information Criterion (DIC) in the Bayesian framework. We will consider here the Widely Applicable Information Criterion or Watanabe Information Criterion (WAIC). AIC, DIC and WAIC each aim to provide an approximation of predictive accuracy. 
+You may have heard about the Akaike Information Criterion (AIC) in the Frequentist framework, and the Deviance Information Criterion (DIC) in the Bayesian framework. We will consider here the Widely Applicable Information Criterion or Watanabe Information Criterion (WAIC). AIC, DIC and WAIC each aim to provide an approximation of predictive accuracy. 
 
-While AIC is the predictive measure of choice in the Frequentist framework for ecologists, DIC has been around for some time for Bayesian applications due to its availability in population BUGS pieces of software. However, these methods only utilize a point estimate of the unknown parameters. Also, various difficulties have been noted with DIC which may give nonsensical results when the posterior distribution is not well summarized by its mean. For a more fully Bayesian approach we would like to use the entire posterior distribution to evaluate the predictive performance, which is exaclty what WAIC does. 
+While AIC is the predictive measure of choice in the Frequentist framework for ecologists, DIC has been around for some time for Bayesian applications due to its availability in population BUGS pieces of software. However, these methods only utilize a point estimate of the unknown parameters. Also, various difficulties have been noted with DIC which may give nonsensical results when the posterior distribution is not well summarized by its mean. For a more fully Bayesian approach we would like to use the entire posterior distribution to evaluate the predictive performance, which is exactly what WAIC does. 
 
 Conveniently, NIMBLE calculates WAIC for you. E.g. for model from previous chapter. **explain**
 ```{r eval = FALSE}
@@ -324,8 +324,7 @@ mcmc.phitpt <- nimbleMCMC(code = hmm.phitpt,
                           WAIC = TRUE) 
 ```
 
-Dipper example - continued
-
+Dipper example - continued:
 ```{r echo = FALSE}
 load(here::here("dat","dipper_waic.RData"))
 data.frame(model = c("(phi,p)",
@@ -339,6 +338,64 @@ data.frame(model = c("(phi,p)",
 ```
 
 Lower values of WAIC imply higher predictive accuracy. So we would favor model with constant parameters.
+
+## Goodness-of-fit testing
+
+In the previous section, we compared models between each other based on their predictive accuracy, in other words we assessed their *relative* fit. However, even though we are able to rank these models according to predictive accuracy, it could happen that all models actually have poor predictive performance, this has to do with *absolute* fit. 
+
+How to assess the goodness of fit of the CJS model to capture-recapture data? In particular how to assess homogeneity of survival and recapture probabilities and the independence between individuals?
+
+In the Bayesian framework, you would rely on posterior predictive checks to assess absolute fit. Briefly speaking, the idea is to compare the observed data to replicated data generated from the model. If the model is a good fit to the data, then the replicated data predicted from the model should look similar to the observed data. To simplify the comparison, some summary statistics are generally considered that should be built based on the ecological question of interest. 
+
+For the CJS model, posterior predictive checks can be used. However, there are well established procedures for assessing absolute fit and departures from specific model assumptions that would be a shame to just ignore. 
+
+These aspects are examined specifically in two independent component tests called, respectively, Test 3.SR and Test 2.CT. The component tests directed at transients and trap-dependence actually address features of the data that are consequences of, respectively, the presence of transients and trap-dependence, so that these features may also be caused by other, completely different phenomena. They do verify, respectively, that:
+
+We focus on two such assumptions that have an ecological interpretation, transience and trap-dependence and corresponding testing procedure. The transience test assesses whether newly encountered individuals have the same chance to be later re-observed as recaptured (previously encountered) individuals. The trap-dependence test assesses whether missed individuals have the same chance to be recaptured at the next occasion as currently captured individuals. Although these components are called "test of transience" and "test of trap-dependence", when it comes to interpretation, you should keep in mind that transience (an excess of individuals never seen again) and trap-dependence (trapping has an effect on detection) are just two specific reasons why the tests might detect a lack of fit.
+
+These tests are implemented in the package `R2ucare`, and we illustrate its use with the dipper data.
+```{r}
+library(R2ucare)
+```
+
+We get the capture-recapture data:
+```{r}
+# capture-recapture data
+dipper <- read_csv(here::here("dat", "dipper.csv"))
+dip.hist <- dipper %>%
+  select(year_1981:year_1987) %>%
+  as.matrix()
+# number of birds with that particular capture-recapture history
+dip.freq <- rep(1, nrow(dip.hist))
+# sex of each bird
+dip.group <- dipper$sex
+```
+
+For the sake of illustration, we consider females only:
+```{r}
+mask <- (dip.group == 'F')
+dip.fem.hist <- dip.hist[mask,]
+dip.fem.freq <- dip.freq[mask]
+```
+
+The overall test shows that we cannot reject the hypothesis that the CJS models fits the data well:
+```{r}
+overall_CJS(dip.fem.hist, dip.fem.freq)
+```
+
+We may perform a test specifically to assess a transient effect:
+```{r}
+test3sr(dip.fem.hist, dip.fem.freq)
+```
+
+Or trap-dependence:
+```{r}
+test2ct(dip.fem.hist, dip.fem.freq)
+```
+
+What to do if these tests are significant? If you detect a transient effect, then 2 age classes should be considered on survival probability to account for this issue (fast forward covariate section below). **explain without talking about age effect, and why it is on survival that the effect should be considered** If trap dependence is significant, you could use a time-varying individual covariate to account for this effect **explain the covariate** (fast forward section on covariate below), or consider more complex models **explain without talking about states** (Pradel and Sanz (2012) recommend multievent models - fast forward case study).
+
+So far, we have addressed assumptions relative to the model. There are also assumption relative to the design. In particular, survival refers to the study area, and so we need to think carefully about what survival does actually mean in capture-recapture. More precisely, mortality and permanent emigration are confounded. Therefore we estimate apparent survival, not true survival. Apparent survival probability is the product of true survival and study area fidelity. Consequently, apparent survival is always lower than true survival unless study area fidelity is exactly 1. Last, no mark lost, identity of individuals recorded without error (no false positives), and captured individuals are a random sample.
 
 ## Why Bayes? Incorporate prior information
 
@@ -410,66 +467,6 @@ For our model, that means:
 
 Now we simply have to use $\text{Beta}(\alpha = 25.6,\beta = 19.3)$ as a prior instead of our $\text{Normal}(0.57, sd = 0.073)$. 
 
-## Model assumptions
-
-Mention relative fit (WAIC) vs absolute fit. Put this section next to the WAIC section. 
-
-Statistical models rely on assumptions, and the CJS model makes no exception. 
-
-In the Bayesian framework, posterior predictive checks. Explain principle. However omnibus, test all directions departure from good fit of the CJS to data. Also need to figure out distance, and summary statistics, not easy w/ HMM. 
-
-Good think is that we have tests. 
-
-Design: No mark lost, Identity of individuals recorded without error (no false positives), Captured individuals are a random sample.
-
-Model: Homogeneity of survival and recapture probabilities, Independence between individuals (overdispersion).
-
-Test validity of assumptions: These assumptions should be valid, whatever inferential framework, Use goodness-of-fit tests <span>&#8212;</span> Pradel et al. (2005), `R` implementation with [package `R2ucare`](https://besjournals.onlinelibrary.wiley.com/doi/full/10.1111/2041-210X.13014). Posterior predictive checks can also be used ([Gelman et al. 2020](https://arxiv.org/pdf/2011.01808.pdf)). Make distinction between omnibus vs. directional tests (two-sided vs one-sided).
-
-Example on CJS w/ Dipper. We will see ways to account for transience and trap-dependence. Gof for this model obtained easily by sustracting. I am aware that I'm mixing Bayesian and Frequentist frameworks, information theoretic and null hypothesis testing, and some colleagues might not like it, but best of the two worlds, and just dismiss the amount of research done on gof testing?!
-
-To close this section on model assumptions, I should stress out that survival refers to the study area, and so we need to think carefully about what survival does actually mean in capture-recapture. More precisely, mortality and permanent emigration are confounded. Therefore we estimate apparent survival, not true survival. Apparent survival probability is the product of true survival and study area fidelity. Consequently, apparent survival is always lower than true survival unless study area fidelity is exactly 1. Use caution with interpretation.
-
-```{r}
-library(R2ucare)
-```
-
-Get encounter histories, counts and groups:
-```{r}
-dipper <- read_csv(here::here("dat", "dipper.csv"))
-dip.hist <- dipper %>%
-  select(year_1981:year_1987) %>%
-  as.matrix()
-dip.freq <- rep(1, nrow(dip.hist))
-dip.group <- dipper$sex
-```
-
-Consider females only::
-```{r}
-mask <- (dip.group == 'F')
-dip.fem.hist <- dip.hist[mask,]
-dip.fem.freq <- dip.freq[mask]
-```
-
-Overall test:
-```{r}
-overall_CJS(dip.fem.hist, dip.fem.freq)
-```
-
-Or perform Test.3Sr for transience Test3.Sm:
-```{r}
-test3sr <- test3sr(dip.fem.hist, dip.fem.freq)
-test3sr
-```
-
-Or Test2.Ct for trap-dep
-```{r}
-test2ct <- test2ct(dip.fem.hist, dip.fem.freq)
-test2ct
-```
-
-What to do if these tests are significant? If you detect a transient effect, then 2 age classes should be considered on the survival probability to account for this issue (fast forward covariate section below). If trap dependence is significant, Cooch and White (2017) illustrate how to use a time-varying individual covariate to account for this effect (fast forward section on covariate below), and Pradel and Sanz (2012) recommend multievent models (fast forward case study).
-
 ## Covariates
 
 Proportion of variance explained. Path analyses, structural equation models. Splines (more about spatial stats? CAR model?). Imputation and multistate models to account for missing data. Explain basics of parametric statistical modeling (linear models, GLMs and random effects).
@@ -518,7 +515,9 @@ hmm.phiflowp <- nimbleCode({
 water_flow <- c(443, 1114, 529, 434, 627, 466) # 1981, 1982, ..., 1987
 water_flow_st <- (water_flow - mean(water_flow))/sd(water_flow) #<<
 ```
-]
+
+Also consider flood effect discrete cov. 
+
 
 ```{r eval = FALSE}
 my.constants <- list(N = nrow(y),
@@ -709,6 +708,8 @@ df %>%
 
 + Think of age for example (see exercises in Worksheets); covariate or nested indexing works fine.
 
++ Add example for trap-dependence w/ time individual covariate. 
+
 + Now, think of body size across life.
 
 + Problem is we cannot record size when animal is non-detected.
@@ -719,13 +720,15 @@ df %>%
 
 ## Summary
 
-+ Blabla.
++ Statistical models rely on assumptions, and the CJS model makes no exception. 
 
 + Blabla.
 
 ## Suggested reading
 
 + A bit of history about the CJS model and the people involved in its developements by [S.T. Buckland (2016)](https://research-repository.st-andrews.ac.uk/handle/10023/8869).
+
++ Mettre papier Vlad et Morten pour temps, et mon papier Oikos pour individu. 
 
 + CJS state-space formulation [Gimenez et al. (2007)](https://oliviergimenez.github.io/pubs/Gimenezetal2007EcologicalModelling.pdf) and [Royle (2008)](https://onlinelibrary.wiley.com/doi/10.1111/j.1541-0420.2007.00891.x). 
 
@@ -736,6 +739,8 @@ df %>%
 + Work on missing values by [Bonner et al. (2006)](https://onlinelibrary.wiley.com/doi/abs/10.1111/j.1541-0420.2005.00399.x) and [Langrock and King (2013)](https://projecteuclid.org/journals/annals-of-applied-statistics/volume-7/issue-3/Maximum-likelihood-estimation-of-markrecapturerecovery-models-in-the-presence-of/10.1214/13-AOAS644.full) and [Worthington et al. (2015)](https://link.springer.com/article/10.1007/s13253-014-0184-z).
 
 + The example on how to incorporate prior information is in [McCarthy and Masters (2005)](https://besjournals.onlinelibrary.wiley.com/doi/abs/10.1111/j.1365-2664.2005.01101.x).
+
++ On posterior predictive check, see paper by Chambert https://doi.org/10.1002/ece3.993, or Conn https://doi.org/10.1002/ecm.1314.
 
 + Combine live recapture w/ dead recoveries by [Lebreton et al. (1999)](https://www.tandfonline.com/doi/pdf/10.1080/00063659909477230) and go spatial to account for emigration [Gilroy et al. (2012)](https://esajournals.onlinelibrary.wiley.com/doi/full/10.1890/12-0124.1) and [Schaub & Royle (2014)](https://besjournals.onlinelibrary.wiley.com/doi/full/10.1111/2041-210X.12134).
 
