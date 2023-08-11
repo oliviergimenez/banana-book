@@ -6,15 +6,15 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <title>Chapter 4 Survival | Bayesian Analysis of Capture-Recapture Data with Hidden Markov Models</title>
 <meta name="author" content="Olivier Gimenez">
-<meta name="description" content="WORK IN PROGRESS.  4.1 Introduction In this fourth chapter, you will learn about the Cormack-Jolly-Seber model that allows estimating survival based on capture-recapture data. You will also see...">
+<meta name="description" content="4.1 Introduction In this fourth chapter, you will learn about the Cormack-Jolly-Seber model that allows estimating survival based on capture-recapture data. You will also see how to deal with...">
 <meta name="generator" content="bookdown 0.33 with bs4_book()">
 <meta property="og:title" content="Chapter 4 Survival | Bayesian Analysis of Capture-Recapture Data with Hidden Markov Models">
 <meta property="og:type" content="book">
 <meta property="og:url" content="https://oliviergimenez.github.io/bayesian-cr-workshop/survival.html">
-<meta property="og:description" content="WORK IN PROGRESS.  4.1 Introduction In this fourth chapter, you will learn about the Cormack-Jolly-Seber model that allows estimating survival based on capture-recapture data. You will also see...">
+<meta property="og:description" content="4.1 Introduction In this fourth chapter, you will learn about the Cormack-Jolly-Seber model that allows estimating survival based on capture-recapture data. You will also see how to deal with...">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="Chapter 4 Survival | Bayesian Analysis of Capture-Recapture Data with Hidden Markov Models">
-<meta name="twitter:description" content="WORK IN PROGRESS.  4.1 Introduction In this fourth chapter, you will learn about the Cormack-Jolly-Seber model that allows estimating survival based on capture-recapture data. You will also see...">
+<meta name="twitter:description" content="4.1 Introduction In this fourth chapter, you will learn about the Cormack-Jolly-Seber model that allows estimating survival based on capture-recapture data. You will also see how to deal with...">
 <!-- JS --><script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.6/clipboard.min.js" integrity="sha256-inc5kl9MA1hkeYUt+EC3BhlIgyp/2jDIyBLS6k3UxPI=" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/fuse.js/6.4.6/fuse.js" integrity="sha512-zv6Ywkjyktsohkbp9bb45V6tEMoWhzFzXis+LrMehmJZZSys19Yxf1dopHx7WzIKxr5tK2dVcYmaCk2uqdjF4A==" crossorigin="anonymous"></script><script src="https://kit.fontawesome.com/6ecbd6c532.js" crossorigin="anonymous"></script><script src="libs/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <link href="libs/bootstrap-4.6.0/bootstrap.min.css" rel="stylesheet">
 <script src="libs/bootstrap-4.6.0/bootstrap.bundle.min.js"></script><script src="libs/bs3compat-0.5.0/transition.js"></script><script src="libs/bs3compat-0.5.0/tabs.js"></script><script src="libs/bs3compat-0.5.0/bs3compat.js"></script><link href="libs/bs4_book-1.0.0/bs4_book.css" rel="stylesheet">
@@ -79,14 +79,11 @@
 <li class="book-part">II. Transitions</li>
 <li><a class="" href="introduction-4.html">Introduction</a></li>
 <li><a class="active" href="survival.html"><span class="header-section-number">4</span> Survival</a></li>
-<li><a class="" href="dispersal.html"><span class="header-section-number">5</span> Dispersal</a></li>
-<li><a class="" href="uncertainty.html"><span class="header-section-number">6</span> State uncertainty</a></li>
 <li class="book-part">III. Case studies</li>
 <li><a class="" href="introduction-6.html">Introduction</a></li>
 <li class="book-part">IV. Conclusions</li>
 <li><a class="" href="introduction-7.html">Introduction</a></li>
 <li><a class="" href="take-home-messages.html">Take-home messages</a></li>
-<li><a class="" href="faq.html">FAQ</a></li>
 <li><a class="" href="references.html">References</a></li>
 </ul>
 
@@ -99,32 +96,31 @@
 <h1>
 <span class="header-section-number">4</span> Survival<a class="anchor" aria-label="anchor" href="#survival"><i class="fas fa-link"></i></a>
 </h1>
-<p>WORK IN PROGRESS.</p>
 <div id="introduction-5" class="section level2" number="4.1">
 <h2>
 <span class="header-section-number">4.1</span> Introduction<a class="anchor" aria-label="anchor" href="#introduction-5"><i class="fas fa-link"></i></a>
 </h2>
-<p>In this fourth chapter, you will learn about the Cormack-Jolly-Seber model that allows estimating survival based on capture-recapture data. You will also see how to deal with covariates to try and explain temporal and/or individual variation in survival.</p>
+<p>In this fourth chapter, you will learn about the Cormack-Jolly-Seber model that allows estimating survival based on capture-recapture data. You will also see how to deal with covariates to try and explain temporal and/or individual variation in survival. This chapter will also be the opportunity to illustrate how to incorporate prior information to improve model inference.</p>
 </div>
 <div id="the-cormack-jolly-seber-cjs-model" class="section level2" number="4.2">
 <h2>
 <span class="header-section-number">4.2</span> The Cormack-Jolly-Seber (CJS) model<a class="anchor" aria-label="anchor" href="#the-cormack-jolly-seber-cjs-model"><i class="fas fa-link"></i></a>
 </h2>
-<p>In the previous chapter, we introduced a capture-recapture model with constant survival and detection probabilities which we formulated as a HMM and fitted to data in NIMBLE. Historically, however, it was a slightly more complicated model that was first proposed – the so-called Cormack-Jolly-Seber (CJS) model – in which survival and recapture probabilities are time-varying. This feature of the CJS model is useful to account for variation due to environmental conditions in survival or to sampling effort in detection. Schematically the CJS model can be represented this way:</p>
+<p>In chapter <a href="hmmcapturerecapture.html#hmmcapturerecapture">3</a>, we introduced a capture-recapture model with constant survival and detection probabilities which we formulated as a HMM and fitted to data in NIMBLE. Historically, however, it was a slightly more complicated model that was first proposed – the so-called Cormack-Jolly-Seber (CJS) model – in which survival and recapture probabilities are time-varying. This feature of the CJS model is useful to account for variation due to environmental conditions in survival or to sampling effort in detection. Schematically the CJS model can be represented this way:</p>
 <div class="inline-figure"><img src="banana-book_files/figure-html/unnamed-chunk-169-1.png" width="672"></div>
 <p>Note that the states (in gray) and the observations (in white) do not change. We still have <span class="math inline">\(z = 1\)</span> for alive, <span class="math inline">\(z = 2\)</span> for dead, <span class="math inline">\(y = 1\)</span> for non-detected, and <span class="math inline">\(y = 2\)</span> for detected.</p>
-<p>Parameters are now indexed by time. The survival probability is defined as the probability of staying alive (or “ah, ha, ha, ha, stayin’ alive” like the Bee Gees would say) over the interval between <span class="math inline">\(t\)</span> and <span class="math inline">\(t+1\)</span>, that is <span class="math inline">\(\phi_t = \Pr(z_{t+1} = 1 | z_t = 1)\)</span>. The detection probability is defined as the probability of being observed at <span class="math inline">\(t\)</span> given you’re alive at <span class="math inline">\(t\)</span>, that is <span class="math inline">\(p_t = \Pr(y_{t} = 1 | z_t = 1)\)</span>. It is important to bear in mind that survival operates over an interval while detection occurs at a specific time. <strong>Fast forward to covariates section?</strong></p>
-<p>The CJS model is named after three statisticians who published independent sole-author papers introducing more or less the same approach, a year apart ! In fact, Richard Cormack and George Jolly were working in the same corridor in Scotland back in the 1960’s. They would meet every day at coffee and would play some game together, but never mention work and were not aware of each other’s work.</p>
+<p>Parameters are now indexed by time. The survival probability is defined as the probability of staying alive (or “ah, ha, ha, ha, stayin’ alive” like the Bee Gees would say) over the interval between <span class="math inline">\(t\)</span> and <span class="math inline">\(t+1\)</span>, that is <span class="math inline">\(\phi_t = \Pr(z_{t+1} = 1 | z_t = 1)\)</span>. The detection probability is defined as the probability of being observed at <span class="math inline">\(t\)</span> given you’re alive at <span class="math inline">\(t\)</span>, that is <span class="math inline">\(p_t = \Pr(y_{t} = 1 | z_t = 1)\)</span>. It is important to bear in mind that survival operates over an interval while detection occurs at a specific time (see Section <a href="survival.html#covariates">4.8</a>).</p>
+<p>The CJS model is named after three statisticians who each published independently a paper introducing more or less the same approach, a year apart ! In fact, Richard Cormack and George Jolly were working in the same corridor in Scotland back in the 1960’s. They would meet every day at coffee and would play some game together, but never mention work and were not aware of each other’s work.</p>
 </div>
-<div id="capture-recapture-data-1" class="section level2" number="4.3">
+<div id="capture-recapture-data" class="section level2" number="4.3">
 <h2>
-<span class="header-section-number">4.3</span> Capture-recapture data<a class="anchor" aria-label="anchor" href="#capture-recapture-data-1"><i class="fas fa-link"></i></a>
+<span class="header-section-number">4.3</span> Capture-recapture data<a class="anchor" aria-label="anchor" href="#capture-recapture-data"><i class="fas fa-link"></i></a>
 </h2>
-<p>Before we turn to fitting the CJS model to actual data, let’s talk about capture-recapture for a minute. We said in the previous chapter (section 1.6.1) that individuals are individual marked. This can be accomplished in two ways, either with artificial marks like rings for birds or ear tags for mammals, or (non-invasive) natural marks like coat patterns or feces DNA sequencing (Figure <a href="survival.html#fig:marking">4.1</a>).</p>
+<p>Before we turn to fitting the CJS model to actual data, let’s talk about capture-recapture for a minute. We said in Section <a href="hmmcapturerecapture.html#capturerecapturedata">3.6.1</a> that animals are individually marked. This can be accomplished in two ways, either with artificial marks like rings for birds or ear tags for mammals, or (non-invasive) natural marks like coat patterns or feces DNA sequencing (Figure <a href="survival.html#fig:marking">4.1</a>).</p>
 <div class="figure">
 <span style="display:block;" id="fig:marking"></span>
-<img src="images/gull.jpg" alt="Animal marks" width="50%"><img src="images/bighorn.png" alt="Animal marks" width="50%"><img src="images/lynx.png" alt="Animal marks" width="50%"><img src="images/bearscat.png" alt="Animal marks" width="50%"><p class="caption">
-Figure 4.1: Animal marks
+<img src="images/gull.jpg" alt="Animal individual marking. Top-left: rings; Top-right: ear-tags; Bottom left: coat patterns; Bottom right: ADN feces" width="50%"><img src="images/bighorn.png" alt="Animal individual marking. Top-left: rings; Top-right: ear-tags; Bottom left: coat patterns; Bottom right: ADN feces" width="50%"><img src="images/lynx.png" alt="Animal individual marking. Top-left: rings; Top-right: ear-tags; Bottom left: coat patterns; Bottom right: ADN feces" width="50%"><img src="images/bearscat.png" alt="Animal individual marking. Top-left: rings; Top-right: ear-tags; Bottom left: coat patterns; Bottom right: ADN feces" width="50%"><p class="caption">
+Figure 4.1: Animal individual marking. Top-left: rings; Top-right: ear-tags; Bottom left: coat patterns; Bottom right: ADN feces
 </p>
 </div>
 <p>Throughout this chapter, we will use data on the White-throated Dipper (<em>Cinclus cinclus</em>; dipper hereafter) kindly provided by Gilbert Marzolin (Figure <a href="survival.html#fig:pixdipper">4.2</a>). In total, 294 dippers with known sex and wing length were captured and recaptured between 1981 and 1987 during the March-June period. Birds were at least 1 year old when initially banded.</p>
@@ -8696,13 +8692,13 @@ F
 </tbody>
 </table></div>
 </div>
-<p>The seven first columns are years in which Gilbert went on the field and captured the birds. A 0 stands for a non-detection, and a 1 for a detection. The eighth column informs on the sex of the bird, with F for female and M for male. The last column gives a measure wing length the first time a bird was captured.</p>
+<p>The first seven columns are years in which Gilbert went on the field and captured the birds. A 0 stands for a non-detection, and a 1 for a detection. The eighth column informs on the sex of the bird, with F for female and M for male. The last column gives a measure wing length the first time a bird was captured.</p>
 </div>
 <div id="fitting-the-cjs-model-to-the-dipper-data-with-nimble" class="section level2" number="4.4">
 <h2>
 <span class="header-section-number">4.4</span> Fitting the CJS model to the dipper data with NIMBLE<a class="anchor" aria-label="anchor" href="#fitting-the-cjs-model-to-the-dipper-data-with-nimble"><i class="fas fa-link"></i></a>
 </h2>
-<p>To write the NIMBLE code corresponding to the CJS model, we only need to make a few adjustments to the NIMBLE code for the model with constant parameters from the previous chapter. The main modification concerns the observation and transitions matrices which we need to be time-varying and therefore become arrays and inherit a third dimension besides that for rows and columns. Also we need priors for all time-varying survival and detection probabilities. <strong>insist on first and several cohort vs single cohort in previous chapter</strong> We get:</p>
+<p>To write the NIMBLE code corresponding to the CJS model, we only need to make a few adjustments to the NIMBLE code for the model with constant parameters from Section <a href="hmmcapturerecapture.html#fittinghmmnimble">3.7</a>. The main modification concerns the observation and transition matrices which we need to make time-varying. These matrices therefore become arrays and inherit a third dimension besides that for rows and columns. Also we need priors for all time-varying survival and detection probabilities. We write:</p>
 <div class="sourceCode" id="cb139"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">...</span></span>
 <span><span class="co"># parameters</span></span>
@@ -8721,7 +8717,7 @@ F
 <span>    <span class="va">omega</span><span class="op">[</span><span class="fl">2</span>,<span class="fl">2</span>,<span class="va">t</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0</span>        <span class="co"># Pr(dead t -&gt; detected t)</span></span>
 <span>  <span class="op">}</span></span>
 <span><span class="va">...</span></span></code></pre></div>
-<p>The likelihood does not change, except that the time-varying observation and transition matrices need to be used appropriately:</p>
+<p>The likelihood does not change, except that the time-varying observation and transition matrices need to be used appropriately. Also, because we now deal with several cohorts of animals first captured, marked and released each year (in contrast with a single cohort as in Chapter <a href="hmmcapturerecapture.html#hmmcapturerecapture">3</a>), we need to start the loop over time from the first capture for each individual. Therefore, we write:</p>
 <div class="sourceCode" id="cb140"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">...</span></span>
 <span><span class="co"># likelihood</span></span>
@@ -8766,12 +8762,14 @@ F
 <span><span class="va">y</span> <span class="op">&lt;-</span> <span class="va">dipper</span> <span class="op">%&gt;%</span></span>
 <span>  <span class="fu">select</span><span class="op">(</span><span class="va">year_1981</span><span class="op">:</span><span class="va">year_1987</span><span class="op">)</span> <span class="op">%&gt;%</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/matrix.html">as.matrix</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
-<p>Get the occasion of first capture for all individuals: <strong>Say several cohorts, different from prevcious chapter example</strong></p>
+<p>We get the occasion of first capture for all individuals, by finding the position of detections in the encounter history (<code>which(x !=0)</code>), and keeping the first one:</p>
 <div class="sourceCode" id="cb143"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">first</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/apply.html">apply</a></span><span class="op">(</span><span class="va">y</span>, <span class="fl">1</span>, <span class="kw">function</span><span class="op">(</span><span class="va">x</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/Extremes.html">min</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/which.html">which</a></span><span class="op">(</span><span class="va">x</span> <span class="op">!=</span><span class="fl">0</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <p>Now we specify the constants:</p>
 <div class="sourceCode" id="cb144"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">my.constants</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>N <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html">nrow</a></span><span class="op">(</span><span class="va">y</span><span class="op">)</span>, T <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html">ncol</a></span><span class="op">(</span><span class="va">y</span><span class="op">)</span>, first <span class="op">=</span> <span class="va">first</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="va">my.constants</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>N <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html">nrow</a></span><span class="op">(</span><span class="va">y</span><span class="op">)</span>,   <span class="co"># number of animals</span></span>
+<span>                     T <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html">ncol</a></span><span class="op">(</span><span class="va">y</span><span class="op">)</span>,   <span class="co"># number of sampling occasions</span></span>
+<span>                     first <span class="op">=</span> <span class="va">first</span><span class="op">)</span> <span class="co"># first capture for all animales</span></span>
 <span><span class="va">my.constants</span></span>
 <span><span class="co">## $N</span></span>
 <span><span class="co">## [1] 294</span></span>
@@ -8791,27 +8789,25 @@ F
 <span><span class="co">## [217] 6 6 6 6 6 6 6 6 6 6 6 6 6 6 6 6 6 6 6 6 6 6 6 6 6 6 6</span></span>
 <span><span class="co">## [244] 6 6 6 6 6 6 6 6 6 6 6 6 7 7 7 7 7 7 7 7 7 7 7 7 7 7 7</span></span>
 <span><span class="co">## [271] 7 7 7 7 7 7 7 7 7 7 7 7 7 7 7 7 7 7 7 7 7 7 7 7</span></span></code></pre></div>
-<p>Now the data in a list. Note that we add 1 to the data to have 1 for non-detections and 2 for detections. You may use the coding you prefer of course, you will just need to adjust the <span class="math inline">\(\Omega\)</span> and <span class="math inline">\(\Gamma\)</span> matrices in the model above.</p>
+<p>Now we put the data in a list. We add 1 to the data to code non-detections as 1’s detections as 2’s (see Section @ref{fittinghmmnimble}).</p>
 <div class="sourceCode" id="cb145"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">my.data</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>y <span class="op">=</span> <span class="va">y</span> <span class="op">+</span> <span class="fl">1</span><span class="op">)</span></span></code></pre></div>
-<p>Now let’s write a function for the initial values. For the latent states, we go for the easy way, and say that all individuals are alive through the study period.</p>
+<p>Now let’s write a function for the initial values. For the latent states, we go the easy way, and say that all individuals are alive through the study period:</p>
 <div class="sourceCode" id="cb146"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">zinits</span> <span class="op">&lt;-</span> <span class="va">y</span> <span class="op">+</span> <span class="fl">1</span> <span class="co"># non-detection -&gt; alive</span></span>
 <span><span class="va">zinits</span><span class="op">[</span><span class="va">zinits</span> <span class="op">==</span> <span class="fl">2</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span> <span class="co"># dead -&gt; alive</span></span>
 <span><span class="va">initial.values</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>phi <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html">runif</a></span><span class="op">(</span><span class="va">my.constants</span><span class="op">$</span><span class="cn">T</span><span class="op">-</span><span class="fl">1</span>,<span class="fl">0</span>,<span class="fl">1</span><span class="op">)</span>,</span>
 <span>                                  p <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html">runif</a></span><span class="op">(</span><span class="va">my.constants</span><span class="op">$</span><span class="cn">T</span><span class="op">-</span><span class="fl">1</span>,<span class="fl">0</span>,<span class="fl">1</span><span class="op">)</span>,</span>
 <span>                                  z <span class="op">=</span> <span class="va">zinits</span><span class="op">)</span></span></code></pre></div>
-<p>We specify the parameters we’d like to monitor:</p>
+<p>We specify the parameters we would like to monitor:</p>
 <div class="sourceCode" id="cb147"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">parameters.to.save</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"phi"</span>, <span class="st">"p"</span><span class="op">)</span></span>
-<span><span class="va">parameters.to.save</span></span>
-<span><span class="co">## [1] "phi" "p"</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="va">parameters.to.save</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"phi"</span>, <span class="st">"p"</span><span class="op">)</span></span></code></pre></div>
 <p>We provide MCMC details:</p>
 <div class="sourceCode" id="cb148"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">n.iter</span> <span class="op">&lt;-</span> <span class="fl">5000</span></span>
 <span><span class="va">n.burnin</span> <span class="op">&lt;-</span> <span class="fl">1000</span></span>
 <span><span class="va">n.chains</span> <span class="op">&lt;-</span> <span class="fl">2</span></span></code></pre></div>
-<p>At last, we’re ready to run NIMBLE:</p>
+<p>Now we are ready to run NIMBLE:</p>
 <div class="sourceCode" id="cb149"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">mcmc.output</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimbleMCMC.html">nimbleMCMC</a></span><span class="op">(</span>code <span class="op">=</span> <span class="va">hmm.phitpt</span>,</span>
 <span>                          constants <span class="op">=</span> <span class="va">my.constants</span>,</span>
@@ -8821,7 +8817,7 @@ F
 <span>                          niter <span class="op">=</span> <span class="va">n.iter</span>,</span>
 <span>                          nburnin <span class="op">=</span> <span class="va">n.burnin</span>,</span>
 <span>                          nchains <span class="op">=</span> <span class="va">n.chains</span><span class="op">)</span></span></code></pre></div>
-<p>We may have a look to the numerical summaries. <strong>Comment on variation in survival, and constancy in detection. And write example of how to interpret these estimates.</strong> Note the small effective sample size for the last survival and recapture probabilities, we will get back to that in a minute.</p>
+<p>We may have a look to the numerical summaries:</p>
 <div class="sourceCode" id="cb150"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/pkg/MCMCvis/man/MCMCsummary.html">MCMCsummary</a></span><span class="op">(</span><span class="va">mcmc.output</span>, round <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span></code></pre></div>
 <pre><code>##        mean   sd 2.5%  50% 97.5% Rhat n.eff
@@ -8837,12 +8833,9 @@ F
 ## p[4]   0.87 0.06 0.74 0.88  0.96 1.05   333
 ## p[5]   0.90 0.05 0.77 0.91  0.98 1.01   224
 ## p[6]   0.72 0.13 0.50 0.72  0.97 1.08    37</code></pre>
-<p>Let’s produce a caterpillar plot of the estimates.</p>
+<p>There is not so much time variation in the detection probability which is estimated high around 0.90. Note that <code>p[1]</code> corresponds to the detection probability in 1982 that is <span class="math inline">\(p_2\)</span>, <code>p[2]</code> to detection in 1983 therefore <span class="math inline">\(p_3\)</span>, and so on. In contrast, the dippers seem to have experienced a decrease in survival in years 1982-1983 (<code>phi[2]</code>) and 1983-1984 (<code>phi[4]</code>). We will get back to that in Section <a href="survival.html#covariates">4.8</a>.</p>
+<p>You may have noticed the small effective sample size for the last survival (<code>phi[6]</code>) and detection (<code>p[6]</code>) probabilities. Let’s have a look to mixing for parameter <code>phi[6]</code> for example:</p>
 <div class="sourceCode" id="cb152"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/pkg/MCMCvis/man/MCMCplot.html">MCMCplot</a></span><span class="op">(</span>object <span class="op">=</span> <span class="va">mcmc.phitpt</span>, params <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"phi"</span>,<span class="st">"p"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<div class="inline-figure"><img src="banana-book_files/figure-html/unnamed-chunk-184-1.png" width="672"></div>
-<p>Let’s focus for a minute on the last survival probability. See how mixing is bad and the overlap with the prior is big. This parameter is redundant, and it can be shown that only the product of <span class="math inline">\(\phi_6\)</span> and <span class="math inline">\(p_7\)</span> can be estimated.</p>
-<div class="sourceCode" id="cb153"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">priors</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html">runif</a></span><span class="op">(</span><span class="fl">3000</span>, <span class="fl">0</span>, <span class="fl">1</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/pkg/MCMCvis/man/MCMCtrace.html">MCMCtrace</a></span><span class="op">(</span>object <span class="op">=</span> <span class="va">mcmc.phitpt</span>,</span>
 <span>          ISB <span class="op">=</span> <span class="cn">FALSE</span>,</span>
@@ -8850,16 +8843,16 @@ F
 <span>          params <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"phi[6]"</span><span class="op">)</span>,</span>
 <span>          pdf <span class="op">=</span> <span class="cn">FALSE</span>, </span>
 <span>          priors <span class="op">=</span> <span class="va">priors</span><span class="op">)</span></span></code></pre></div>
-<div class="inline-figure"><img src="banana-book_files/figure-html/unnamed-chunk-185-1.png" width="672"></div>
-<p>There are two potential issues, either intrinsic or extrinsic parameter redundacy. Intrinsic redundancy means that the model likelihood can be expressed by a smaller number of parameters; it is a feature of the model. Extrinsic redundancymeans that model structure is fine, but the lack of data makes a parameter non-estimable; this is a feature of the data. <strong>Recommendation overlap, et refer to book by Diana Cole.</strong></p>
+<div class="inline-figure"><img src="banana-book_files/figure-html/unnamed-chunk-184-1.png" width="672"></div>
+<p>Clearly mixing (left panel in the plot above) is bad and there is a big overlap between the prior and the posterior for this parameter (right panel) suggesting that its prior was not well updated with the data. What is going on? If you could inspect the likelihood of the CJS model, you would realise that these two parameters <span class="math inline">\(\phi_6\)</span> and <span class="math inline">\(p_7\)</span> appear only as the product <span class="math inline">\(\phi_6 p_7\)</span> and cannot be estimated separately. In other words, one of these parameters is redundant, and you’d need an extra sampling occasion to be able to disentangle them. This is not a big issue as long as you’re aware of it and you do not attempt to ecologically interpret these parameters.</p>
 </div>
 <div id="cjs-model-derivatives" class="section level2" number="4.5">
 <h2>
 <span class="header-section-number">4.5</span> CJS model derivatives<a class="anchor" aria-label="anchor" href="#cjs-model-derivatives"><i class="fas fa-link"></i></a>
 </h2>
-<p>Besides the model we fitted in the previous chapter with constant parameters and the CJS model with time-varying parameters, you might want to fit in-between models with time variation on either detection or survival.</p>
-<p>Let’s start with the model with time-varying survival and constant detection. In NIMBLE, the code is:</p>
-<div class="sourceCode" id="cb154"><pre class="downlit sourceCode r">
+<p>Besides the model we considered with constant parameters (see Chapter <a href="hmmcapturerecapture.html#hmmcapturerecapture">3</a>) and the CJS model with time-varying parameters, you might want to fit in-between or models with time variation on either detection or survival.</p>
+<p>Let’s start with the model with time-varying survival and constant detection. We modify the CJS model NIMBLE code by no longer having the observation matrix time-specific:</p>
+<div class="sourceCode" id="cb153"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">hmm.phitp</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimbleCode.html">nimbleCode</a></span><span class="op">(</span><span class="op">{</span></span>
 <span>  <span class="kw">for</span> <span class="op">(</span><span class="va">t</span> <span class="kw">in</span> <span class="fl">1</span><span class="op">:</span><span class="op">(</span><span class="cn">T</span><span class="op">-</span><span class="fl">1</span><span class="op">)</span><span class="op">)</span><span class="op">{</span></span>
 <span>    <span class="va">phi</span><span class="op">[</span><span class="va">t</span><span class="op">]</span> <span class="op">~</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html">dunif</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1</span><span class="op">)</span> <span class="co"># prior survival</span></span>
@@ -8884,7 +8877,7 @@ F
 <span>    <span class="op">}</span></span>
 <span>  <span class="op">}</span></span>
 <span><span class="op">}</span><span class="op">)</span></span></code></pre></div>
-<p>We obtain the following estimates: <strong>comment</strong></p>
+<p>We obtain the following numerical summaries for parameters, confirming high detection and temporal variation in survival:</p>
 <pre><code>##        mean   sd 2.5%  50% 97.5% Rhat n.eff
 ## phi[1] 0.63 0.10 0.42 0.63  0.82 1.04   564
 ## phi[2] 0.46 0.06 0.35 0.46  0.59 1.01   629
@@ -8893,8 +8886,8 @@ F
 ## phi[5] 0.61 0.05 0.50 0.61  0.72 1.00   568
 ## phi[6] 0.59 0.05 0.48 0.59  0.69 1.03   463
 ## p      0.89 0.03 0.82 0.89  0.95 1.04   211</code></pre>
-<p>Now the model with time-varying detection and constant survival, for which the NIMBLE code is:</p>
-<div class="sourceCode" id="cb156"><pre class="downlit sourceCode r">
+<p>Now the model with time-varying detection and constant survival, for which the NIMBLE code has a constant over time transition matrix:</p>
+<div class="sourceCode" id="cb155"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">hmm.phipt</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimbleCode.html">nimbleCode</a></span><span class="op">(</span><span class="op">{</span></span>
 <span>  <span class="va">phi</span> <span class="op">~</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html">dunif</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1</span><span class="op">)</span> <span class="co"># prior survival</span></span>
 <span>  <span class="va">gamma</span><span class="op">[</span><span class="fl">1</span>,<span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="va">phi</span>      <span class="co"># Pr(alive t -&gt; alive t+1)</span></span>
@@ -8919,7 +8912,7 @@ F
 <span>    <span class="op">}</span></span>
 <span>  <span class="op">}</span></span>
 <span><span class="op">}</span><span class="op">)</span></span></code></pre></div>
-<p>Parameter estimates are: <strong>comment</strong></p>
+<p>Numerical summaries for the parameters are:</p>
 <pre><code>##      mean   sd 2.5%  50% 97.5% Rhat n.eff
 ## phi  0.56 0.03 0.52 0.56  0.61 1.02   381
 ## p[1] 0.75 0.12 0.48 0.77  0.93 1.03   452
@@ -8928,17 +8921,17 @@ F
 ## p[4] 0.89 0.05 0.77 0.89  0.97 1.00   412
 ## p[5] 0.91 0.04 0.82 0.92  0.98 1.00   376
 ## p[6] 0.90 0.07 0.73 0.91  1.00 1.07   111</code></pre>
-<p>We’re left with four models. Different ecological hypotheses. What to do from here? Model selection. <strong>A raffiner</strong></p>
+<p>We note that these two models do no longer have parameter redundancy issues. We are left with four models, each saying a different story about the data, with temporal variation or not in either survival or detection probabilty. How to quantify the most plausible of these four ecological hypotheses? Rendez-vous in the next section.</p>
 </div>
-<div id="model-comparison-with-waic" class="section level2" number="4.6">
+<div id="waic" class="section level2" number="4.6">
 <h2>
-<span class="header-section-number">4.6</span> Model comparison with WAIC<a class="anchor" aria-label="anchor" href="#model-comparison-with-waic"><i class="fas fa-link"></i></a>
+<span class="header-section-number">4.6</span> Model comparison with WAIC<a class="anchor" aria-label="anchor" href="#waic"><i class="fas fa-link"></i></a>
 </h2>
 <p>Which of the four models above is best supported by the data? To answer this question, we need to bear in mind that we used all the observed data to fit these models, and how close to the truth these models will perform when predicting for future data – or predictive accuracy – should be assessed. A natural candidate measure for predictive accuracy is the likelihood which is often referred in the context of model comparison as the predictive density. However, we know neither the true process, nor the future data, and we can only estimate the predictive density with some bias.</p>
 <p>You may have heard about the Akaike Information Criterion (AIC) in the Frequentist framework, and the Deviance Information Criterion (DIC) in the Bayesian framework. We will consider here the Widely Applicable Information Criterion or Watanabe Information Criterion (WAIC). AIC, DIC and WAIC each aim to provide an approximation of predictive accuracy.</p>
 <p>While AIC is the predictive measure of choice in the Frequentist framework for ecologists, DIC has been around for some time for Bayesian applications due to its availability in population BUGS pieces of software. However, these methods only utilize a point estimate of the unknown parameters. Also, various difficulties have been noted with DIC which may give nonsensical results when the posterior distribution is not well summarized by its mean. For a more fully Bayesian approach we would like to use the entire posterior distribution to evaluate the predictive performance, which is exactly what WAIC does.</p>
-<p>Conveniently, NIMBLE calculates WAIC for you. E.g. for model from previous chapter. <strong>explain</strong></p>
-<div class="sourceCode" id="cb158"><pre class="downlit sourceCode r">
+<p>Conveniently, NIMBLE calculates WAIC for you. The only modifications we need to make are i) to monitor the latent states and ii) to add <code>WAIC = TRUE</code> in the call to the <code><a href="https://rdrr.io/pkg/nimble/man/nimbleMCMC.html">nimbleMCMC()</a></code> function. For example, for the CJS model, we would write:</p>
+<div class="sourceCode" id="cb157"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">parameters.to.save</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"phi"</span>, <span class="st">"p"</span>, <span class="st">"z"</span><span class="op">)</span> </span>
 <span><span class="va">mcmc.phitpt</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimbleMCMC.html">nimbleMCMC</a></span><span class="op">(</span>code <span class="op">=</span> <span class="va">hmm.phitpt</span>,</span>
 <span>                          constants <span class="op">=</span> <span class="va">my.constants</span>,</span>
@@ -8949,29 +8942,33 @@ F
 <span>                          nburnin <span class="op">=</span> <span class="va">n.burnin</span>,</span>
 <span>                          nchains <span class="op">=</span> <span class="va">n.chains</span>,</span>
 <span>                          WAIC <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span> </span></code></pre></div>
-<p>Dipper example - continued:</p>
-<pre><code>##       model  WAIC
-## 1   (phi,p) 265.9
-## 2  (phit,p) 277.6
-## 3  (phi,pt) 270.2
-## 4 (phit,pt) 308.8</code></pre>
-<p>Lower values of WAIC imply higher predictive accuracy. So we would favor model with constant parameters.</p>
+<p>I re-ran the four models to calculate the WAIC value for each of them</p>
+<pre><code>##                                                    model
+## 1        model with both survival and detection constant
+## 2 model with time-dependent survival, constant detection
+## 3 model with constant survival, time-dependent detection
+## 4                                              CJS model
+##    WAIC
+## 1 265.9
+## 2 277.6
+## 3 270.2
+## 4 308.8</code></pre>
+<p>Lower values of WAIC imply higher predictive accuracy, thefore we would favor model with constant parameters.</p>
 </div>
 <div id="goodness-of-fit-testing" class="section level2" number="4.7">
 <h2>
 <span class="header-section-number">4.7</span> Goodness-of-fit testing<a class="anchor" aria-label="anchor" href="#goodness-of-fit-testing"><i class="fas fa-link"></i></a>
 </h2>
-<p>In the previous section, we compared models between each other based on their predictive accuracy, in other words we assessed their <em>relative</em> fit. However, even though we are able to rank these models according to predictive accuracy, it could happen that all models actually have poor predictive performance, this has to do with <em>absolute</em> fit.</p>
-<p>How to assess the goodness of fit of the CJS model to capture-recapture data? In particular how to assess homogeneity of survival and recapture probabilities and the independence between individuals?</p>
-<p>In the Bayesian framework, you would rely on posterior predictive checks to assess absolute fit. Briefly speaking, the idea is to compare the observed data to replicated data generated from the model. If the model is a good fit to the data, then the replicated data predicted from the model should look similar to the observed data. To simplify the comparison, some summary statistics are generally considered that should be built based on the ecological question of interest.</p>
+<p>In the previous Section <a href="survival.html#waic">4.6</a>, we compared models between each other based on their predictive accuracy – we assessed their <em>relative</em> fit. However, even though we were able to rank these models according to predictive accuracy, it could happen that all models actually had poor predictive performance – this has to do with <em>absolute</em> fit.</p>
+<p>How to assess the goodness of fit of the CJS model to capture-recapture data? In particular how to assess homogeneity of survival and detection probabilities which is a fundamental assumption for this model?</p>
+<p>In the Bayesian framework, we would rely on posterior predictive checks to assess absolute fit. Briefly speaking, the idea is to compare the observed data to replicated data generated from the model. If the model is a good fit to the data, then the replicated data predicted from the model should look similar to the observed data. To simplify the comparison, some summary statistics are generally considered that should be built based on the ecological question of interest.</p>
 <p>For the CJS model, posterior predictive checks can be used. However, there are well established procedures for assessing absolute fit and departures from specific model assumptions that would be a shame to just ignore.</p>
-<p>These aspects are examined specifically in two independent component tests called, respectively, Test 3.SR and Test 2.CT. The component tests directed at transients and trap-dependence actually address features of the data that are consequences of, respectively, the presence of transients and trap-dependence, so that these features may also be caused by other, completely different phenomena. They do verify, respectively, that:</p>
-<p>We focus on two such assumptions that have an ecological interpretation, transience and trap-dependence and corresponding testing procedure. The transience test assesses whether newly encountered individuals have the same chance to be later re-observed as recaptured (previously encountered) individuals. The trap-dependence test assesses whether missed individuals have the same chance to be recaptured at the next occasion as currently captured individuals. Although these components are called “test of transience” and “test of trap-dependence”, when it comes to interpretation, you should keep in mind that transience (an excess of individuals never seen again) and trap-dependence (trapping has an effect on detection) are just two specific reasons why the tests might detect a lack of fit.</p>
+<p>We focus on two such assumptions that have an ecological interpretation, transience and trap-dependence. The transience procedure assesses whether newly encountered individuals have the same chance to be later re-observed as recaptured (previously encountered) individuals. The trap-dependence procedure assesses whether missed individuals have the same chance to be recaptured at the next occasion as currently captured individuals. Although these procedures are called <em>test of transience</em> and <em>test of trap-dependence</em>, when it comes to interpretation, you should keep in mind that transience – an excess of individuals never seen again – and trap-dependence – an effect of trapping on detection – are just two specific reasons why the tests might detect a lack of fit.</p>
 <p>These tests are implemented in the package <code>R2ucare</code>, and we illustrate its use with the dipper data.</p>
-<div class="sourceCode" id="cb160"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb159"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/oliviergimenez/R2ucare">R2ucare</a></span><span class="op">)</span></span></code></pre></div>
 <p>We get the capture-recapture data:</p>
-<div class="sourceCode" id="cb161"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb160"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># capture-recapture data</span></span>
 <span><span class="va">dipper</span> <span class="op">&lt;-</span> <span class="fu">read_csv</span><span class="op">(</span><span class="fu">here</span><span class="fu">::</span><span class="fu"><a href="https://here.r-lib.org//reference/here.html">here</a></span><span class="op">(</span><span class="st">"dat"</span>, <span class="st">"dipper.csv"</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="va">dip.hist</span> <span class="op">&lt;-</span> <span class="va">dipper</span> <span class="op">%&gt;%</span></span>
@@ -8982,17 +8979,17 @@ F
 <span><span class="co"># sex of each bird</span></span>
 <span><span class="va">dip.group</span> <span class="op">&lt;-</span> <span class="va">dipper</span><span class="op">$</span><span class="va">sex</span></span></code></pre></div>
 <p>For the sake of illustration, we consider females only:</p>
-<div class="sourceCode" id="cb162"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb161"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">mask</span> <span class="op">&lt;-</span> <span class="op">(</span><span class="va">dip.group</span> <span class="op">==</span> <span class="st">'F'</span><span class="op">)</span></span>
 <span><span class="va">dip.fem.hist</span> <span class="op">&lt;-</span> <span class="va">dip.hist</span><span class="op">[</span><span class="va">mask</span>,<span class="op">]</span></span>
 <span><span class="va">dip.fem.freq</span> <span class="op">&lt;-</span> <span class="va">dip.freq</span><span class="op">[</span><span class="va">mask</span><span class="op">]</span></span></code></pre></div>
 <p>The overall test shows that we cannot reject the hypothesis that the CJS models fits the data well:</p>
-<div class="sourceCode" id="cb163"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb162"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/pkg/R2ucare/man/overall_CJS.html">overall_CJS</a></span><span class="op">(</span><span class="va">dip.fem.hist</span>, <span class="va">dip.fem.freq</span><span class="op">)</span></span>
 <span><span class="co">##                          chi2 degree_of_freedom p_value</span></span>
 <span><span class="co">## Gof test for CJS model: 10.28                12   0.592</span></span></code></pre></div>
 <p>We may perform a test specifically to assess a transient effect:</p>
-<div class="sourceCode" id="cb164"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb163"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/pkg/R2ucare/man/test3sr.html">test3sr</a></span><span class="op">(</span><span class="va">dip.fem.hist</span>, <span class="va">dip.fem.freq</span><span class="op">)</span></span>
 <span><span class="co">## $test3sr</span></span>
 <span><span class="co">##      stat        df     p_val sign_test </span></span>
@@ -9006,7 +9003,7 @@ F
 <span><span class="co">## 4         5 0.103 0.748      -0.321 Chi-square</span></span>
 <span><span class="co">## 5         6 0.001 0.982       0.032 Chi-square</span></span></code></pre></div>
 <p>Or trap-dependence:</p>
-<div class="sourceCode" id="cb165"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb164"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/pkg/R2ucare/man/test2ct.html">test2ct</a></span><span class="op">(</span><span class="va">dip.fem.hist</span>, <span class="va">dip.fem.freq</span><span class="op">)</span></span>
 <span><span class="co">## $test2ct</span></span>
 <span><span class="co">##      stat        df     p_val sign_test </span></span>
@@ -9018,57 +9015,24 @@ F
 <span><span class="co">## 2         3   1    0     1           0    Fisher</span></span>
 <span><span class="co">## 3         4   1    0     1           0    Fisher</span></span>
 <span><span class="co">## 4         5   1 3.25 0.071      -1.803    Fisher</span></span></code></pre></div>
-<p>What to do if these tests are significant? If you detect a transient effect, then 2 age classes should be considered on survival probability to account for this issue (fast forward covariate section below). <strong>explain without talking about age effect, and why it is on survival that the effect should be considered</strong> If trap dependence is significant, you could use a time-varying individual covariate to account for this effect <strong>explain the covariate</strong> (fast forward section on covariate below), or consider more complex models <strong>explain without talking about states</strong> (Pradel and Sanz (2012) recommend multievent models - fast forward case study).</p>
-<p>So far, we have addressed assumptions relative to the model. There are also assumption relative to the design. In particular, survival refers to the study area, and so we need to think carefully about what survival does actually mean in capture-recapture. More precisely, mortality and permanent emigration are confounded. Therefore we estimate apparent survival, not true survival. Apparent survival probability is the product of true survival and study area fidelity. Consequently, apparent survival is always lower than true survival unless study area fidelity is exactly 1. Last, no mark lost, identity of individuals recorded without error (no false positives), and captured individuals are a random sample.</p>
+<p><strong>What to do if these tests are significant? If you detect a transient effect, then 2 age classes should be considered on survival probability to account for this issue (fast forward covariate section below). Explain without talking about age effect, and why it is on survival that the effect should be considered. If trap dependence is significant, you could use a time-varying individual covariate to account for this effect. Explain the covariate (fast forward section on covariate below), or consider more complex models. Explain multievent model without talking about states (fast forward case study).</strong></p>
+<p>So far, we have addressed assumptions relative to the model. There are also assumptions relative to the design. In particular, survival refers to the study area, and so we need to think carefully about what survival does actually mean. We actually estimate what we usually call <em>apparent</em> survival, not exactly <em>true</em> survival. Apparent survival probability is the product of true survival and study area fidelity. Consequently, apparent survival is always lower than true survival unless study area fidelity is exactly 1. There are other assumptions relative to the design, which we simply list here. There should be no mark loss, the identity of individuals should be recorded without error (no false positives), and captured animals should be a random sample of the population.</p>
 </div>
-<div id="why-bayes-incorporate-prior-information" class="section level2" number="4.8">
+<div id="covariates" class="section level2" number="4.8">
 <h2>
-<span class="header-section-number">4.8</span> Why Bayes? Incorporate prior information<a class="anchor" aria-label="anchor" href="#why-bayes-incorporate-prior-information"><i class="fas fa-link"></i></a>
-</h2>
-<p>So far, we have assumed a non-informative prior on survival <span class="math inline">\(\text{Beta}(1,1) = \text{Uniform}(0,1)\)</span>. With this prior, mean posterior survival is <span class="math inline">\(\phi = 0.56\)</span> with credible interval <span class="math inline">\([0.52,0.62]\)</span>. Graphically we may represent the posterior distribution of survival obtained with two chains with different colors, and our prior in gray dashed line:
-<img src="banana-book_files/figure-html/unnamed-chunk-198-1.png" width="672"></p>
-<div id="prior-elicitation" class="section level3" number="4.8.1">
-<h3>
-<span class="header-section-number">4.8.1</span> Prior elicitation<a class="anchor" aria-label="anchor" href="#prior-elicitation"><i class="fas fa-link"></i></a>
-</h3>
-<p>The thing is that we know a lot about passerines and it is a shame not to be able to use this information and act as if we have to start from scratch and know nothing. We illustrate how to incorporate prior information by acknowledging that species with similar body masses have similar survival. By gathering information on several other European passerines than the dipper, let’s assume we have built a regression of survival vs. body mass – allometric relationship. Knowing dippers weigh on average 59.8g, we’re now in the position to build a prior for dipper survival probability by predicting its value using the regression. We obtain a predicted survival of 0.57 and a standard deviation of 0.075. Using an informative prior <span class="math inline">\(\text{Normal}(0.57, sd = 0.073)\)</span> in NIMBLE, we get a mean posterior of <span class="math inline">\(0.56\)</span> with credible interval <span class="math inline">\([0.52, 0.61]\)</span>. There’s barely no difference with the non-informative prior, quite a disappointment.</p>
-<p>Now let’s assume that we had only the three first years of data, what would have happened? We fit the model with constant parameters with both the non-informative and informative priors to the dataset from which we delete the final 4 years of data. Now the benefit of using the prior information becomes clear as the credible interval when prior information is ignored has a width of 0.53, which is more than twice as much as when prior information is used (0.24), illustrating the increased precision provided by the prior. We may assess visually this gain in precision by comparing the survival posterior distributions with and without informative prior:</p>
-<div class="inline-figure"><img src="banana-book_files/figure-html/unnamed-chunk-199-1.png" width="672"></div>
-<p>In brief, if the aim is to get an estimate of survival, Gilbert did not have to conduct further data collection after 3 years, and he could have reached the same precision as with 7 years of data by using prior information derived from body mass. In brief, the prior information was worth 4 years of field data. Of course, this is assuming that the ecological question remains the same whether you have 3 or 7 years of data, which is unlikely to be the case, as with long-term data, there is so much we can ask, more than “just” what annual survival probability is.</p>
-</div>
-<div id="moment-matching" class="section level3" number="4.8.2">
-<h3>
-<span class="header-section-number">4.8.2</span> Moment matching<a class="anchor" aria-label="anchor" href="#moment-matching"><i class="fas fa-link"></i></a>
-</h3>
-<p>The prior <span class="math inline">\(\text{Normal}(0.57, sd = 0.073)\)</span> is not entirely satisfying because it is not constrained to be positive or less than one, which is the minimum for a probability (of survival) to be well defined. In our specific example, the prior distribution is centered on positive values far from 0, and the sandard deviation is small enough so that the chances to get values smaller than 0 or higher than 1 are null (to convince yourself, <code>hist(rnorm(1000, mean = 0.57, sd = 0.073))</code>). Can we do better? The answer is yes.</p>
-<p>Remember the Beta distribution? Recall that the Beta distribution is a continuous distribution with values between 0 and 1. It is therefore convenient to specify priors for survival and detection probabilities. Plus we know everything about the Beta distribution, in particular its moments. If <span class="math inline">\(X \sim Beta(\alpha,\beta)\)</span>, then the first (mean) and second moments (variance) of <span class="math inline">\(X\)</span> are <span class="math inline">\(\mu = \text{E}(X) = \frac{\alpha}{\alpha + \beta}\)</span> and <span class="math inline">\(\sigma^2 = \text{Var}(X) = \frac{\alpha\beta}{(\alpha + \beta)^2 (\alpha + \beta + 1)}\)</span>.</p>
-<p>In the capture-recapture example, we know a priori that the mean of the probability we’re interested in is <span class="math inline">\(\mu = 0.57\)</span> and its variance is <span class="math inline">\(\sigma^2 = 0.073^2\)</span>. Parameters <span class="math inline">\(\mu\)</span> and <span class="math inline">\(\sigma^2\)</span> are seen as the moments of a <span class="math inline">\(Beta(\alpha,\beta)\)</span> distribution. Now we look for values of <span class="math inline">\(\alpha\)</span> and <span class="math inline">\(\beta\)</span> that match the observed moments of the Beta distribution <span class="math inline">\(\mu\)</span> and <span class="math inline">\(\sigma^2\)</span>. We need another set of equations:
-<span class="math display">\[\alpha = \bigg(\frac{1-\mu}{\sigma^2}- \frac{1}{\mu} \bigg)\mu^2\]</span>
-<span class="math display">\[\beta = \alpha \bigg(\frac{1}{\mu}-1\bigg)\]</span>
-For our model, that means:</p>
-<div class="sourceCode" id="cb166"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="op">(</span><span class="va">alpha</span> <span class="op">&lt;-</span> <span class="op">(</span> <span class="op">(</span><span class="fl">1</span> <span class="op">-</span> <span class="fl">0.57</span><span class="op">)</span><span class="op">/</span><span class="op">(</span><span class="fl">0.073</span><span class="op">*</span><span class="fl">0.073</span><span class="op">)</span> <span class="op">-</span> <span class="op">(</span><span class="fl">1</span><span class="op">/</span><span class="fl">0.57</span><span class="op">)</span> <span class="op">)</span><span class="op">*</span><span class="fl">0.57</span><span class="op">^</span><span class="fl">2</span><span class="op">)</span></span>
-<span><span class="co">## [1] 25.65</span></span>
-<span><span class="op">(</span><span class="va">beta</span> <span class="op">&lt;-</span> <span class="va">alpha</span> <span class="op">*</span> <span class="op">(</span> <span class="op">(</span><span class="fl">1</span><span class="op">/</span><span class="fl">0.57</span><span class="op">)</span> <span class="op">-</span> <span class="fl">1</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="co">## [1] 19.35</span></span></code></pre></div>
-<p>Now we simply have to use <span class="math inline">\(\text{Beta}(\alpha = 25.6,\beta = 19.3)\)</span> as a prior instead of our <span class="math inline">\(\text{Normal}(0.57, sd = 0.073)\)</span>.</p>
-</div>
-</div>
-<div id="covariates" class="section level2" number="4.9">
-<h2>
-<span class="header-section-number">4.9</span> Covariates<a class="anchor" aria-label="anchor" href="#covariates"><i class="fas fa-link"></i></a>
+<span class="header-section-number">4.8</span> Covariates<a class="anchor" aria-label="anchor" href="#covariates"><i class="fas fa-link"></i></a>
 </h2>
 <p><strong>Blabla sur le pourquoi des covariables.</strong></p>
-<div id="temporal-covariates" class="section level3" number="4.9.1">
+<div id="temporal-covariates" class="section level3" number="4.8.1">
 <h3>
-<span class="header-section-number">4.9.1</span> Temporal covariates<a class="anchor" aria-label="anchor" href="#temporal-covariates"><i class="fas fa-link"></i></a>
+<span class="header-section-number">4.8.1</span> Temporal covariates<a class="anchor" aria-label="anchor" href="#temporal-covariates"><i class="fas fa-link"></i></a>
 </h3>
-<div id="discrete" class="section level4" number="4.9.1.1">
+<div id="discrete" class="section level4" number="4.8.1.1">
 <h4>
-<span class="header-section-number">4.9.1.1</span> Discrete<a class="anchor" aria-label="anchor" href="#discrete"><i class="fas fa-link"></i></a>
+<span class="header-section-number">4.8.1.1</span> Discrete<a class="anchor" aria-label="anchor" href="#discrete"><i class="fas fa-link"></i></a>
 </h4>
 <p>Also consider flood effect discrete cov. A major flood occurred during the 1983 breeding season. Because captures during the breding season occurred well before and after the flood, survival in the two years 1982-1983 and 1983-1984 were likely to be affected. Indeed survival of a species living along and feeding in the river in these two flood years was most likely lower than in nonflood years.</p>
-<div class="sourceCode" id="cb167"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb165"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">hmm.phifloodp</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimbleCode.html">nimbleCode</a></span><span class="op">(</span><span class="op">{</span></span>
 <span>  <span class="va">delta</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span>          <span class="co"># Pr(alive t = 1) = 1</span></span>
 <span>  <span class="va">delta</span><span class="op">[</span><span class="fl">2</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0</span>          <span class="co"># Pr(dead t = 1) = 0</span></span>
@@ -9096,24 +9060,24 @@ For our model, that means:</p>
 <span>  <span class="op">}</span></span>
 <span><span class="op">}</span><span class="op">)</span></span></code></pre></div>
 <p>Flood / nonflood year covariate:</p>
-<div class="sourceCode" id="cb168"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb166"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">flood</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1</span>, <span class="fl">1</span>, <span class="fl">0</span>, <span class="fl">0</span>, <span class="fl">0</span><span class="op">)</span> <span class="co"># 1981-1982, 1982-1983, 1983-1984, 1984-1985, ...</span></span></code></pre></div>
 <p>Constants in a list.</p>
-<div class="sourceCode" id="cb169"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb167"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">my.constants</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>N <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html">nrow</a></span><span class="op">(</span><span class="va">y</span><span class="op">)</span>,</span>
 <span>                     T <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html">ncol</a></span><span class="op">(</span><span class="va">y</span><span class="op">)</span>,</span>
 <span>                     first <span class="op">=</span> <span class="va">first</span>,</span>
 <span>                     flood <span class="op">=</span> <span class="va">flood</span><span class="op">)</span></span></code></pre></div>
 <p>Initial values.</p>
-<div class="sourceCode" id="cb170"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb168"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">initial.values</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>beta <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html">rnorm</a></span><span class="op">(</span><span class="fl">2</span>,<span class="fl">0</span>,<span class="fl">1</span><span class="op">)</span>,</span>
 <span>                                  p <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html">runif</a></span><span class="op">(</span><span class="fl">1</span>,<span class="fl">0</span>,<span class="fl">1</span><span class="op">)</span>,</span>
 <span>                                  z <span class="op">=</span> <span class="va">zinits</span><span class="op">)</span></span></code></pre></div>
 <p>Parameters to be monitored.</p>
-<div class="sourceCode" id="cb171"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb169"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">parameters.to.save</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"beta"</span>, <span class="st">"p"</span>, <span class="st">"phi"</span>, <span class="st">"z"</span><span class="op">)</span></span></code></pre></div>
 <p>Run nimble.</p>
-<div class="sourceCode" id="cb172"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb170"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">mcmc.phifloodp</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimbleMCMC.html">nimbleMCMC</a></span><span class="op">(</span>code <span class="op">=</span> <span class="va">hmm.phifloodp</span>, </span>
 <span>                          constants <span class="op">=</span> <span class="va">my.constants</span>,</span>
 <span>                          data <span class="op">=</span> <span class="va">my.data</span>,              </span>
@@ -9128,9 +9092,9 @@ For our model, that means:</p>
 <p>WAIC is <code>mcmc.phifloodp$WAIC$WAIC</code>. Survival in flood years lower than in nonflood years.</p>
 <p>Let’s use a covariate <span class="math inline">\(\text{flood}\)</span> that contains 1s and 2s, indicating whether we are in a flood or nonflood year for each year: 1 if nonflood year, and 2 if flood year. E.g. for year <span class="math inline">\(t = 2\)</span>, <code>beta[flood[t]]</code> gives <code>beta[flood[2]]</code> which will be <code>beta[1]</code> or <code>beta[2]</code> depending on whether flood[2] is 1 or 2.</p>
 <p>Flood / nonflood year covariate:</p>
-<div class="sourceCode" id="cb173"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb171"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">flood</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">2</span>, <span class="fl">2</span>, <span class="fl">1</span>, <span class="fl">1</span>, <span class="fl">1</span><span class="op">)</span> <span class="co"># 1981-1982, 1982-1983, 1983-1984, 1984-1985, ...</span></span></code></pre></div>
-<div class="sourceCode" id="cb174"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb172"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">hmm.phifloodp</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimbleCode.html">nimbleCode</a></span><span class="op">(</span><span class="op">{</span></span>
 <span>  <span class="va">delta</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span>          <span class="co"># Pr(alive t = 1) = 1</span></span>
 <span>  <span class="va">delta</span><span class="op">[</span><span class="fl">2</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0</span>          <span class="co"># Pr(dead t = 1) = 0</span></span>
@@ -9158,21 +9122,21 @@ For our model, that means:</p>
 <span>  <span class="op">}</span></span>
 <span><span class="op">}</span><span class="op">)</span></span></code></pre></div>
 <p>Constants in a list.</p>
-<div class="sourceCode" id="cb175"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb173"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">my.constants</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>N <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html">nrow</a></span><span class="op">(</span><span class="va">y</span><span class="op">)</span>,</span>
 <span>                     T <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html">ncol</a></span><span class="op">(</span><span class="va">y</span><span class="op">)</span>,</span>
 <span>                     first <span class="op">=</span> <span class="va">first</span>,</span>
 <span>                     flood <span class="op">=</span> <span class="va">flood</span><span class="op">)</span></span></code></pre></div>
 <p>Initial values.</p>
-<div class="sourceCode" id="cb176"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb174"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">initial.values</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>beta <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html">runif</a></span><span class="op">(</span><span class="fl">2</span>,<span class="fl">0</span>,<span class="fl">1</span><span class="op">)</span>,</span>
 <span>                                  p <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html">runif</a></span><span class="op">(</span><span class="fl">1</span>,<span class="fl">0</span>,<span class="fl">1</span><span class="op">)</span>,</span>
 <span>                                  z <span class="op">=</span> <span class="va">zinits</span><span class="op">)</span></span></code></pre></div>
 <p>Parameters to be monitored.</p>
-<div class="sourceCode" id="cb177"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb175"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">parameters.to.save</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"beta"</span>, <span class="st">"p"</span>, <span class="st">"phi"</span>, <span class="st">"z"</span><span class="op">)</span></span></code></pre></div>
 <p>Run nimble.</p>
-<div class="sourceCode" id="cb178"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb176"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">mcmc.phifloodp</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimbleMCMC.html">nimbleMCMC</a></span><span class="op">(</span>code <span class="op">=</span> <span class="va">hmm.phifloodp</span>, </span>
 <span>                             constants <span class="op">=</span> <span class="va">my.constants</span>,</span>
 <span>                             data <span class="op">=</span> <span class="va">my.data</span>,              </span>
@@ -9186,12 +9150,12 @@ For our model, that means:</p>
 <p>Which gives survival in flood years 0.61 (0.55, 0.67) and in nonflood year 0.47 (0.39, 0.55).</p>
 <p>WAIC is <code>mcmc.phifloodp$WAIC$WAIC</code>. Survival in flood years lower than in nonflood years.</p>
 </div>
-<div id="continuous" class="section level4" number="4.9.1.2">
+<div id="continuous" class="section level4" number="4.8.1.2">
 <h4>
-<span class="header-section-number">4.9.1.2</span> Continuous<a class="anchor" aria-label="anchor" href="#continuous"><i class="fas fa-link"></i></a>
+<span class="header-section-number">4.8.1.2</span> Continuous<a class="anchor" aria-label="anchor" href="#continuous"><i class="fas fa-link"></i></a>
 </h4>
 <p>Include temporal covariates, say <span class="math inline">\(x_t\)</span>, through <span class="math inline">\(\text{logit}(\phi_t) = \beta_1 + \beta_2 x_t\)</span>. <strong>explain logit link function</strong> <strong>a bit of caution with priors</strong>. Let’s investigate the effect of water flow on dipper survival (<a href="https://doi.org/10.2307/3802934">Marzolin 2002</a>). Now we’d like to add a temporal covariate to try and explain annual variation in survival. We pick water flow in river. We specify the relationship on the logit scale.</p>
-<div class="sourceCode" id="cb179"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb177"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">hmm.phiflowp</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimbleCode.html">nimbleCode</a></span><span class="op">(</span><span class="op">{</span></span>
 <span>  <span class="va">delta</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span>          <span class="co"># Pr(alive t = 1) = 1</span></span>
 <span>  <span class="va">delta</span><span class="op">[</span><span class="fl">2</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0</span>          <span class="co"># Pr(dead t = 1) = 0</span></span>
@@ -9219,26 +9183,26 @@ For our model, that means:</p>
 <span>  <span class="op">}</span></span>
 <span><span class="op">}</span><span class="op">)</span></span></code></pre></div>
 <p>We only take the values we need, and standardize the covariate. Insist on think of when covariate operates on time interval.</p>
-<div class="sourceCode" id="cb180"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb178"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># water flow in L/s</span></span>
 <span><span class="va">water_flow</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="fl">443</span>, <span class="fl">1114</span>, <span class="fl">529</span>, <span class="fl">434</span>, <span class="fl">627</span>, <span class="fl">466</span><span class="op">)</span> <span class="co"># 1981, 1982, ..., 1987</span></span>
 <span><span class="va">water_flow_st</span> <span class="op">&lt;-</span> <span class="op">(</span><span class="va">water_flow</span> <span class="op">-</span> <span class="fu"><a href="https://rdrr.io/r/base/mean.html">mean</a></span><span class="op">(</span><span class="va">water_flow</span><span class="op">)</span><span class="op">)</span><span class="op">/</span><span class="fu"><a href="https://rdrr.io/r/stats/sd.html">sd</a></span><span class="op">(</span><span class="va">water_flow</span><span class="op">)</span></span></code></pre></div>
 <p>Constants in a list.</p>
-<div class="sourceCode" id="cb181"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb179"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">my.constants</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>N <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html">nrow</a></span><span class="op">(</span><span class="va">y</span><span class="op">)</span>,</span>
 <span>                     T <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html">ncol</a></span><span class="op">(</span><span class="va">y</span><span class="op">)</span>,</span>
 <span>                     first <span class="op">=</span> <span class="va">first</span>,</span>
 <span>                     flow <span class="op">=</span> <span class="va">water_flow_st</span><span class="op">)</span></span></code></pre></div>
 <p>Initial values.</p>
-<div class="sourceCode" id="cb182"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb180"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">initial.values</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>beta <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html">rnorm</a></span><span class="op">(</span><span class="fl">2</span>,<span class="fl">0</span>,<span class="fl">1</span><span class="op">)</span>,</span>
 <span>                                  p <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html">runif</a></span><span class="op">(</span><span class="fl">1</span>,<span class="fl">0</span>,<span class="fl">1</span><span class="op">)</span>,</span>
 <span>                                  z <span class="op">=</span> <span class="va">zinits</span><span class="op">)</span></span></code></pre></div>
 <p>Parameters to be monitored.</p>
-<div class="sourceCode" id="cb183"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb181"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">parameters.to.save</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"beta"</span>, <span class="st">"p"</span>, <span class="st">"phi"</span><span class="op">)</span></span></code></pre></div>
 <p>Run nimble.</p>
-<div class="sourceCode" id="cb184"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb182"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">mcmc.phiflowp</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimbleMCMC.html">nimbleMCMC</a></span><span class="op">(</span>code <span class="op">=</span> <span class="va">hmm.phiflowp</span>, </span>
 <span>                          constants <span class="op">=</span> <span class="va">my.constants</span>,</span>
 <span>                          data <span class="op">=</span> <span class="va">my.data</span>,              </span>
@@ -9248,14 +9212,14 @@ For our model, that means:</p>
 <span>                          nburnin <span class="op">=</span> <span class="va">n.burnin</span>, </span>
 <span>                          nchains <span class="op">=</span> <span class="va">n.chains</span><span class="op">)</span></span></code></pre></div>
 <p>Regression intercept and slope. Caterpillar plot of the regression parameters. The posterior distribution of the slope is centered on negative values, suggesting the as water flow increases, survival decreases.
-<img src="banana-book_files/figure-html/unnamed-chunk-221-1.png" width="672">
+<img src="banana-book_files/figure-html/unnamed-chunk-217-1.png" width="672">
 Time-dependent (covariate constrained) survival probability estimates. Caterpillar plot of the survival estimates. Survival between 1982 and 1983 seems to have been affected highly by a huge water flow compared to the other years. Coherent with previous section with flood effect.
-<img src="banana-book_files/figure-html/unnamed-chunk-222-1.png" width="672"></p>
+<img src="banana-book_files/figure-html/unnamed-chunk-218-1.png" width="672"></p>
 </div>
 </div>
-<div id="individual-covariates" class="section level3" number="4.9.2">
+<div id="individual-covariates" class="section level3" number="4.8.2">
 <h3>
-<span class="header-section-number">4.9.2</span> Individual covariates<a class="anchor" aria-label="anchor" href="#individual-covariates"><i class="fas fa-link"></i></a>
+<span class="header-section-number">4.8.2</span> Individual covariates<a class="anchor" aria-label="anchor" href="#individual-covariates"><i class="fas fa-link"></i></a>
 </h3>
 <ul>
 <li><p>Discrete covariate like, e.g., sex</p></li>
@@ -17823,9 +17787,9 @@ F
 </tbody>
 </table></div>
 </div>
-<div id="discrete-1" class="section level4" number="4.9.2.1">
+<div id="discrete-1" class="section level4" number="4.8.2.1">
 <h4>
-<span class="header-section-number">4.9.2.1</span> Discrete<a class="anchor" aria-label="anchor" href="#discrete-1"><i class="fas fa-link"></i></a>
+<span class="header-section-number">4.8.2.1</span> Discrete<a class="anchor" aria-label="anchor" href="#discrete-1"><i class="fas fa-link"></i></a>
 </h4>
 <p>Sex effect</p>
 <ul>
@@ -17839,7 +17803,7 @@ F
 </ul>
 <p><span class="math display">\[\text{logit}(\phi_i) = \beta_1 + \beta_2\]</span></p>
 <p>Nimble implementation with sex as a covariate</p>
-<div class="sourceCode" id="cb185"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb183"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">hmm.phisexp</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimbleCode.html">nimbleCode</a></span><span class="op">(</span><span class="op">{</span></span>
 <span><span class="va">...</span></span>
 <span>  <span class="kw">for</span> <span class="op">(</span><span class="va">i</span> <span class="kw">in</span> <span class="fl">1</span><span class="op">:</span><span class="va">N</span><span class="op">)</span><span class="op">{</span> <span class="co">#&lt;&lt;</span></span>
@@ -17873,7 +17837,7 @@ F
 <ul>
 <li>Let’s use a covariate <span class="math inline">\(\text{sex}\)</span> that contains 1s and 2s, indicating the sex of each individual: 1 if male, and 2 if female</li>
 </ul>
-<div class="sourceCode" id="cb187"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb185"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">...</span></span>
 <span><span class="kw">for</span> <span class="op">(</span><span class="va">i</span> <span class="kw">in</span> <span class="fl">1</span><span class="op">:</span><span class="va">N</span><span class="op">)</span><span class="op">{</span></span>
 <span>  <span class="va">phi</span><span class="op">[</span><span class="va">i</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="va">beta</span><span class="op">[</span><span class="va">sex</span><span class="op">[</span><span class="va">i</span><span class="op">]</span><span class="op">]</span></span>
@@ -17893,11 +17857,11 @@ F
 ## beta[2] 0.55 0.03 0.48 0.55  0.62 1.02   657
 ## p       0.90 0.03 0.83 0.90  0.95 1.10   229</code></pre>
 </div>
-<div id="continuous-1" class="section level4" number="4.9.2.2">
+<div id="continuous-1" class="section level4" number="4.8.2.2">
 <h4>
-<span class="header-section-number">4.9.2.2</span> Continuous<a class="anchor" aria-label="anchor" href="#continuous-1"><i class="fas fa-link"></i></a>
+<span class="header-section-number">4.8.2.2</span> Continuous<a class="anchor" aria-label="anchor" href="#continuous-1"><i class="fas fa-link"></i></a>
 </h4>
-<div class="sourceCode" id="cb189"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb187"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">...</span></span>
 <span>  <span class="kw">for</span> <span class="op">(</span><span class="va">i</span> <span class="kw">in</span> <span class="fl">1</span><span class="op">:</span><span class="va">N</span><span class="op">)</span><span class="op">{</span> <span class="co">#&lt;&lt;</span></span>
 <span>    <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimble-math.html">logit</a></span><span class="op">(</span><span class="va">phi</span><span class="op">[</span><span class="va">i</span><span class="op">]</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="va">beta</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span> <span class="op">+</span> <span class="va">beta</span><span class="op">[</span><span class="fl">2</span><span class="op">]</span> <span class="op">*</span> <span class="va">winglength</span><span class="op">[</span><span class="va">i</span><span class="op">]</span> <span class="co">#&lt;&lt;</span></span>
@@ -17909,18 +17873,18 @@ F
 <span>  <span class="va">beta</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span> <span class="op">~</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html">dnorm</a></span><span class="op">(</span>mean <span class="op">=</span> <span class="fl">0</span>, sd <span class="op">=</span> <span class="fl">1.5</span><span class="op">)</span> <span class="co"># intercept #&lt;&lt;</span></span>
 <span>  <span class="va">beta</span><span class="op">[</span><span class="fl">2</span><span class="op">]</span> <span class="op">~</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html">dnorm</a></span><span class="op">(</span>mean <span class="op">=</span> <span class="fl">0</span>, sd <span class="op">=</span> <span class="fl">1.5</span><span class="op">)</span> <span class="co"># slope #&lt;&lt;</span></span>
 <span><span class="va">...</span></span></code></pre></div>
-<div class="sourceCode" id="cb190"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb188"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">dipper</span> <span class="op">&lt;-</span> <span class="fu">read_csv</span><span class="op">(</span><span class="st">"dat/dipper.csv"</span><span class="op">)</span></span>
 <span><span class="va">y</span> <span class="op">&lt;-</span> <span class="va">dipper</span> <span class="op">%&gt;%</span></span>
 <span>  <span class="fu">select</span><span class="op">(</span><span class="va">year_1981</span><span class="op">:</span><span class="va">year_1987</span><span class="op">)</span> <span class="op">%&gt;%</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/matrix.html">as.matrix</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
 <p>Besides discrete individual covariates, you might want to have continuous individual covariates, e.g. wing length in the dipper case study. Note that we’re considering an individual trait that takes the same value whatever the occasion. If we were to have time-varying individual covariate in the model, we would have to do something about missing values of the covariate when an individual is not recaptured. The easiest way to cope with time-varying individual covariate is to discretize and treat levels of the covariates as states. More in the next live demo. Back to wing length. We first standardize the covariate.</p>
-<div class="sourceCode" id="cb191"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb189"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">wing.length.st</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/vector.html">as.vector</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/scale.html">scale</a></span><span class="op">(</span><span class="va">dipper</span><span class="op">$</span><span class="va">wing_length</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/head.html">head</a></span><span class="op">(</span><span class="va">wing.length.st</span><span class="op">)</span></span>
 <span><span class="co">## [1]  0.7581 -0.8671  0.5260 -1.5637 -1.3315  1.2225</span></span></code></pre></div>
 <p>Now we write the model. Basically we replace sex by wing length in the first method we used in the previous section. Easy.</p>
-<div class="sourceCode" id="cb192"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb190"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">hmm.phiwlp</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimbleCode.html">nimbleCode</a></span><span class="op">(</span><span class="op">{</span></span>
 <span>    <span class="va">p</span> <span class="op">~</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html">dunif</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1</span><span class="op">)</span> <span class="co"># prior detection</span></span>
 <span>    <span class="va">omega</span><span class="op">[</span><span class="fl">1</span>,<span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span> <span class="op">-</span> <span class="va">p</span>    <span class="co"># Pr(alive t -&gt; non-detected t)</span></span>
@@ -17948,18 +17912,18 @@ F
 <span>  <span class="op">}</span></span>
 <span><span class="op">}</span><span class="op">)</span></span></code></pre></div>
 <p>Constants in a list.</p>
-<div class="sourceCode" id="cb193"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb191"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">my.constants</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>N <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html">nrow</a></span><span class="op">(</span><span class="va">y</span><span class="op">)</span>, </span>
 <span>                     T <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html">ncol</a></span><span class="op">(</span><span class="va">y</span><span class="op">)</span>, </span>
 <span>                     first <span class="op">=</span> <span class="va">first</span>,</span>
 <span>                     winglength <span class="op">=</span> <span class="va">wing.length.st</span><span class="op">)</span></span></code></pre></div>
 <p>Initial values.</p>
-<div class="sourceCode" id="cb194"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb192"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">initial.values</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>beta <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html">rnorm</a></span><span class="op">(</span><span class="fl">2</span>,<span class="fl">0</span>,<span class="fl">1</span><span class="op">)</span>,</span>
 <span>                                  p <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html">runif</a></span><span class="op">(</span><span class="fl">1</span>,<span class="fl">0</span>,<span class="fl">1</span><span class="op">)</span>,</span>
 <span>                                  z <span class="op">=</span> <span class="va">zinits</span><span class="op">)</span></span></code></pre></div>
 <p>Run nimble.</p>
-<div class="sourceCode" id="cb195"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb193"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">mcmc.phiwlp</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimbleMCMC.html">nimbleMCMC</a></span><span class="op">(</span>code <span class="op">=</span> <span class="va">hmm.phiwlp</span>, </span>
 <span>                          constants <span class="op">=</span> <span class="va">my.constants</span>,</span>
 <span>                          data <span class="op">=</span> <span class="va">my.data</span>,              </span>
@@ -17973,18 +17937,18 @@ F
 <span><span class="co">## |-------------|-------------|-------------|-------------|</span></span>
 <span><span class="co">## |-------------------------------------------------------|</span></span></code></pre></div>
 <p>Numerical summaries. Wing length does not seem to explain much individual-to-individual variation in survival. See corresponding slope param.</p>
-<div class="sourceCode" id="cb196"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb194"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/load.html">load</a></span><span class="op">(</span><span class="fu">here</span><span class="fu">::</span><span class="fu"><a href="https://here.r-lib.org//reference/here.html">here</a></span><span class="op">(</span><span class="st">"dat/phiwlp.RData"</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/pkg/MCMCvis/man/MCMCsummary.html">MCMCsummary</a></span><span class="op">(</span><span class="va">mcmc.phiwlp</span>, params <span class="op">=</span> <span class="st">"beta"</span>, round <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span>
 <span><span class="co">##          mean   sd  2.5%   50% 97.5% Rhat n.eff</span></span>
 <span><span class="co">## beta[1]  0.25 0.10  0.04  0.25  0.45    1  1472</span></span>
 <span><span class="co">## beta[2] -0.02 0.09 -0.20 -0.02  0.17    1  1555</span></span></code></pre></div>
 <p>Let’s plot the relationship. First, we gather the values generated from the posterior distribution of the regression parameters in the two chains.</p>
-<div class="sourceCode" id="cb197"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb195"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">beta1</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="va">mcmc.phiwlp</span><span class="op">$</span><span class="va">chain1</span><span class="op">[</span>,<span class="st">'beta[1]'</span><span class="op">]</span>, <span class="va">mcmc.phiwlp</span><span class="op">$</span><span class="va">chain2</span><span class="op">[</span>,<span class="st">'beta[1]'</span><span class="op">]</span><span class="op">)</span></span>
 <span><span class="va">beta2</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="va">mcmc.phiwlp</span><span class="op">$</span><span class="va">chain1</span><span class="op">[</span>,<span class="st">'beta[2]'</span><span class="op">]</span>, <span class="va">mcmc.phiwlp</span><span class="op">$</span><span class="va">chain2</span><span class="op">[</span>,<span class="st">'beta[2]'</span><span class="op">]</span><span class="op">)</span></span></code></pre></div>
 <p>Then we define a grid of values for wing length, and predict survival for each MCMC iteration.</p>
-<div class="sourceCode" id="cb198"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb196"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">predicted_survival</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html">matrix</a></span><span class="op">(</span><span class="cn">NA</span>, nrow <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/length.html">length</a></span><span class="op">(</span><span class="va">beta1</span><span class="op">)</span>, ncol <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/length.html">length</a></span><span class="op">(</span><span class="va">my.constants</span><span class="op">$</span><span class="va">winglength</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="kw">for</span> <span class="op">(</span><span class="va">i</span> <span class="kw">in</span> <span class="fl">1</span><span class="op">:</span><span class="fu"><a href="https://rdrr.io/r/base/length.html">length</a></span><span class="op">(</span><span class="va">beta1</span><span class="op">)</span><span class="op">)</span><span class="op">{</span></span>
 <span>  <span class="kw">for</span> <span class="op">(</span><span class="va">j</span> <span class="kw">in</span> <span class="fl">1</span><span class="op">:</span><span class="fu"><a href="https://rdrr.io/r/base/length.html">length</a></span><span class="op">(</span><span class="va">my.constants</span><span class="op">$</span><span class="va">winglength</span><span class="op">)</span><span class="op">)</span><span class="op">{</span></span>
@@ -17992,7 +17956,7 @@ F
 <span>  <span class="op">}</span></span>
 <span><span class="op">}</span></span></code></pre></div>
 <p>Now we calculate posterior mean and the credible interval. Note the ordering.</p>
-<div class="sourceCode" id="cb199"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb197"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">mean_survival</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/apply.html">apply</a></span><span class="op">(</span><span class="va">predicted_survival</span>, <span class="fl">2</span>, <span class="va">mean</span><span class="op">)</span></span>
 <span><span class="va">lci</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/apply.html">apply</a></span><span class="op">(</span><span class="va">predicted_survival</span>, <span class="fl">2</span>, <span class="va">quantile</span>, prob <span class="op">=</span> <span class="fl">2.5</span><span class="op">/</span><span class="fl">100</span><span class="op">)</span></span>
 <span><span class="va">uci</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/apply.html">apply</a></span><span class="op">(</span><span class="va">predicted_survival</span>, <span class="fl">2</span>, <span class="va">quantile</span>, prob <span class="op">=</span> <span class="fl">97.5</span><span class="op">/</span><span class="fl">100</span><span class="op">)</span></span>
@@ -18002,7 +17966,7 @@ F
 <span>                 lci <span class="op">=</span> <span class="va">lci</span><span class="op">[</span><span class="va">ord</span><span class="op">]</span>,</span>
 <span>                 uci <span class="op">=</span> <span class="va">uci</span><span class="op">[</span><span class="va">ord</span><span class="op">]</span><span class="op">)</span></span></code></pre></div>
 <p>Now time to visualize.</p>
-<div class="sourceCode" id="cb200"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb198"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">df</span> <span class="op">%&gt;%</span></span>
 <span>  <span class="fu">ggplot</span><span class="op">(</span><span class="op">)</span> <span class="op">+</span> </span>
 <span>  <span class="fu">aes</span><span class="op">(</span>x <span class="op">=</span> <span class="va">wing_length</span>, y <span class="op">=</span> <span class="va">survival</span><span class="op">)</span> <span class="op">+</span> </span>
@@ -18011,16 +17975,16 @@ F
 <span>  <span class="fu">ylim</span><span class="op">(</span><span class="fl">0</span>,<span class="fl">1</span><span class="op">)</span> <span class="op">+</span> </span>
 <span>  <span class="fu">labs</span><span class="op">(</span>x <span class="op">=</span> <span class="st">"wing length"</span>, y <span class="op">=</span> <span class="st">"estimated survival"</span><span class="op">)</span></span></code></pre></div>
 <div class="inline-figure">
-<img src="banana-book_files/figure-html/unnamed-chunk-239-1.png" width="672">
+<img src="banana-book_files/figure-html/unnamed-chunk-235-1.png" width="672">
 Wing length</div>
 </div>
 </div>
-<div id="additive-and-interaction" class="section level3" number="4.9.3">
+<div id="additive-and-interaction" class="section level3" number="4.8.3">
 <h3>
-<span class="header-section-number">4.9.3</span> Additive and interaction<a class="anchor" aria-label="anchor" href="#additive-and-interaction"><i class="fas fa-link"></i></a>
+<span class="header-section-number">4.8.3</span> Additive and interaction<a class="anchor" aria-label="anchor" href="#additive-and-interaction"><i class="fas fa-link"></i></a>
 </h3>
 <p>You may test an effect of both sex and wing length. Write the model. We use nested indexing with the sex index that contains 1 if the bird is a male, and 2 otherwise. We have <span class="math inline">\(\logit(\phi_i) = \beta_1 + \beta_3 * \text{winglength}_i\)</span> for males, and <span class="math inline">\(\logit(\phi_i) = \beta_2 + \beta_3 * \text{winglength}_i\)</span> for females.</p>
-<div class="sourceCode" id="cb201"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb199"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">hmm.phisexwlp</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimbleCode.html">nimbleCode</a></span><span class="op">(</span><span class="op">{</span></span>
 <span>  <span class="va">p</span> <span class="op">~</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html">dunif</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1</span><span class="op">)</span> <span class="co"># prior detection</span></span>
 <span>  <span class="va">omega</span><span class="op">[</span><span class="fl">1</span>,<span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span> <span class="op">-</span> <span class="va">p</span>    <span class="co"># Pr(alive t -&gt; non-detected t)</span></span>
@@ -18049,7 +18013,7 @@ Wing length</div>
 <span>  <span class="op">}</span></span>
 <span><span class="op">}</span><span class="op">)</span></span></code></pre></div>
 <p>Constants in a list. Note we standardise wing length.</p>
-<div class="sourceCode" id="cb202"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb200"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">first</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/apply.html">apply</a></span><span class="op">(</span><span class="va">y</span>, <span class="fl">1</span>, <span class="kw">function</span><span class="op">(</span><span class="va">x</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/Extremes.html">min</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/which.html">which</a></span><span class="op">(</span><span class="va">x</span> <span class="op">!=</span><span class="fl">0</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="va">wing.length.st</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/vector.html">as.vector</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/scale.html">scale</a></span><span class="op">(</span><span class="va">dipper</span><span class="op">$</span><span class="va">wing_length</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="va">my.constants</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>N <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html">nrow</a></span><span class="op">(</span><span class="va">y</span><span class="op">)</span>, </span>
@@ -18059,25 +18023,25 @@ Wing length</div>
 <span>                     sex <span class="op">=</span> <span class="fu">if_else</span><span class="op">(</span><span class="va">dipper</span><span class="op">$</span><span class="va">sex</span> <span class="op">==</span> <span class="st">"M"</span>, <span class="fl">1</span>, <span class="fl">2</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="va">my.data</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>y <span class="op">=</span> <span class="va">y</span> <span class="op">+</span> <span class="fl">1</span><span class="op">)</span></span></code></pre></div>
 <p>Data in a list.</p>
-<div class="sourceCode" id="cb203"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb201"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">my.data</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>y <span class="op">=</span> <span class="va">y</span> <span class="op">+</span> <span class="fl">1</span><span class="op">)</span></span></code></pre></div>
 <p>Initial values.</p>
-<div class="sourceCode" id="cb204"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb202"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">zinits</span> <span class="op">&lt;-</span> <span class="va">y</span></span>
 <span><span class="va">zinits</span><span class="op">[</span><span class="va">zinits</span> <span class="op">==</span> <span class="fl">0</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span></span>
 <span><span class="va">initial.values</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>beta <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html">rnorm</a></span><span class="op">(</span><span class="fl">3</span>,<span class="fl">0</span>,<span class="fl">5</span><span class="op">)</span>,</span>
 <span>                                  p <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html">runif</a></span><span class="op">(</span><span class="fl">1</span>,<span class="fl">0</span>,<span class="fl">1</span><span class="op">)</span>,</span>
 <span>                                  z <span class="op">=</span> <span class="va">zinits</span><span class="op">)</span></span></code></pre></div>
 <p>Parameters to be monitored.</p>
-<div class="sourceCode" id="cb205"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb203"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">parameters.to.save</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"beta"</span>, <span class="st">"p"</span><span class="op">)</span></span></code></pre></div>
 <p>MCMC details.</p>
-<div class="sourceCode" id="cb206"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb204"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">n.iter</span> <span class="op">&lt;-</span> <span class="fl">5000</span></span>
 <span><span class="va">n.burnin</span> <span class="op">&lt;-</span> <span class="fl">2500</span></span>
 <span><span class="va">n.chains</span> <span class="op">&lt;-</span> <span class="fl">2</span></span></code></pre></div>
 <p>Run nimble.</p>
-<div class="sourceCode" id="cb207"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb205"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">mcmc.phisexwlp</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimbleMCMC.html">nimbleMCMC</a></span><span class="op">(</span>code <span class="op">=</span> <span class="va">hmm.phisexwlp</span>, </span>
 <span>                             constants <span class="op">=</span> <span class="va">my.constants</span>,</span>
 <span>                             data <span class="op">=</span> <span class="va">my.data</span>,              </span>
@@ -18094,12 +18058,12 @@ Wing length</div>
 ## p        0.90 0.03  0.83  0.90  0.95 1.02   466</code></pre>
 <p>Let’s visualise survival as a function of wing length for both sexes.</p>
 <p>First we put together the values from the two chains we generated in the posterior distributions of the regression parameters.</p>
-<div class="sourceCode" id="cb209"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb207"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">beta1</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="va">mcmc.phisexwlp</span><span class="op">$</span><span class="va">chain1</span><span class="op">[</span>,<span class="st">'beta[1]'</span><span class="op">]</span>, <span class="va">mcmc.phisexwlp</span><span class="op">$</span><span class="va">chain2</span><span class="op">[</span>,<span class="st">'beta[1]'</span><span class="op">]</span><span class="op">)</span></span>
 <span><span class="va">beta2</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="va">mcmc.phisexwlp</span><span class="op">$</span><span class="va">chain1</span><span class="op">[</span>,<span class="st">'beta[2]'</span><span class="op">]</span>, <span class="va">mcmc.phisexwlp</span><span class="op">$</span><span class="va">chain2</span><span class="op">[</span>,<span class="st">'beta[2]'</span><span class="op">]</span><span class="op">)</span></span>
 <span><span class="va">beta3</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="va">mcmc.phisexwlp</span><span class="op">$</span><span class="va">chain1</span><span class="op">[</span>,<span class="st">'beta[3]'</span><span class="op">]</span>, <span class="va">mcmc.phisexwlp</span><span class="op">$</span><span class="va">chain2</span><span class="op">[</span>,<span class="st">'beta[3]'</span><span class="op">]</span><span class="op">)</span></span></code></pre></div>
 <p>We get survival estimates for each MCMC iteration.</p>
-<div class="sourceCode" id="cb210"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb208"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">predicted_survivalM</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html">matrix</a></span><span class="op">(</span><span class="cn">NA</span>, nrow <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/length.html">length</a></span><span class="op">(</span><span class="va">beta1</span><span class="op">)</span>, ncol <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/length.html">length</a></span><span class="op">(</span><span class="va">my.constants</span><span class="op">$</span><span class="va">winglength</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="va">predicted_survivalF</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html">matrix</a></span><span class="op">(</span><span class="cn">NA</span>, nrow <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/length.html">length</a></span><span class="op">(</span><span class="va">beta1</span><span class="op">)</span>, ncol <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/length.html">length</a></span><span class="op">(</span><span class="va">my.constants</span><span class="op">$</span><span class="va">winglength</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="kw">for</span> <span class="op">(</span><span class="va">i</span> <span class="kw">in</span> <span class="fl">1</span><span class="op">:</span><span class="fu"><a href="https://rdrr.io/r/base/length.html">length</a></span><span class="op">(</span><span class="va">beta1</span><span class="op">)</span><span class="op">)</span><span class="op">{</span></span>
@@ -18109,7 +18073,7 @@ Wing length</div>
 <span>  <span class="op">}</span></span>
 <span><span class="op">}</span></span></code></pre></div>
 <p>From here, we may calculate posterior mean and credible intervals.</p>
-<div class="sourceCode" id="cb211"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb209"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">mean_survivalM</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/apply.html">apply</a></span><span class="op">(</span><span class="va">predicted_survivalM</span>, <span class="fl">2</span>, <span class="va">mean</span><span class="op">)</span></span>
 <span><span class="va">lciM</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/apply.html">apply</a></span><span class="op">(</span><span class="va">predicted_survivalM</span>, <span class="fl">2</span>, <span class="va">quantile</span>, prob <span class="op">=</span> <span class="fl">2.5</span><span class="op">/</span><span class="fl">100</span><span class="op">)</span></span>
 <span><span class="va">uciM</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/apply.html">apply</a></span><span class="op">(</span><span class="va">predicted_survivalM</span>, <span class="fl">2</span>, <span class="va">quantile</span>, prob <span class="op">=</span> <span class="fl">97.5</span><span class="op">/</span><span class="fl">100</span><span class="op">)</span></span>
@@ -18123,7 +18087,7 @@ Wing length</div>
 <span>                 uci <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="va">uciM</span><span class="op">[</span><span class="va">ord</span><span class="op">]</span>,<span class="va">uciF</span><span class="op">[</span><span class="va">ord</span><span class="op">]</span><span class="op">)</span>,</span>
 <span>                 sex <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/rep.html">rep</a></span><span class="op">(</span><span class="st">"male"</span>, <span class="fu"><a href="https://rdrr.io/r/base/length.html">length</a></span><span class="op">(</span><span class="va">mean_survivalM</span><span class="op">)</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/rep.html">rep</a></span><span class="op">(</span><span class="st">"female"</span>, <span class="fu"><a href="https://rdrr.io/r/base/length.html">length</a></span><span class="op">(</span><span class="va">mean_survivalF</span><span class="op">)</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <p>Now on a plot.</p>
-<div class="sourceCode" id="cb212"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb210"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">df</span> <span class="op">%&gt;%</span></span>
 <span>  <span class="fu">ggplot</span><span class="op">(</span><span class="op">)</span> <span class="op">+</span> </span>
 <span>  <span class="fu">aes</span><span class="op">(</span>x <span class="op">=</span> <span class="va">wing_length</span>, y <span class="op">=</span> <span class="va">survival</span>, color <span class="op">=</span> <span class="va">sex</span><span class="op">)</span> <span class="op">+</span> </span>
@@ -18131,18 +18095,18 @@ Wing length</div>
 <span>  <span class="fu">geom_ribbon</span><span class="op">(</span><span class="fu">aes</span><span class="op">(</span>ymin <span class="op">=</span> <span class="va">lci</span>, ymax <span class="op">=</span> <span class="va">uci</span>, fill <span class="op">=</span> <span class="va">sex</span><span class="op">)</span>, alpha <span class="op">=</span> <span class="fl">0.5</span><span class="op">)</span> <span class="op">+</span> </span>
 <span>  <span class="fu">ylim</span><span class="op">(</span><span class="fl">0</span>,<span class="fl">1</span><span class="op">)</span> <span class="op">+</span> </span>
 <span>  <span class="fu">labs</span><span class="op">(</span>x <span class="op">=</span> <span class="st">"wing length"</span>, y <span class="op">=</span> <span class="st">"estimated survival"</span>, color <span class="op">=</span> <span class="st">""</span>, fill <span class="op">=</span> <span class="st">""</span><span class="op">)</span></span></code></pre></div>
-<div class="inline-figure"><img src="banana-book_files/figure-html/unnamed-chunk-252-1.png" width="672"></div>
+<div class="inline-figure"><img src="banana-book_files/figure-html/unnamed-chunk-248-1.png" width="672"></div>
 </div>
-<div id="random-effects" class="section level3" number="4.9.4">
+<div id="random-effects" class="section level3" number="4.8.4">
 <h3>
-<span class="header-section-number">4.9.4</span> Random effects<a class="anchor" aria-label="anchor" href="#random-effects"><i class="fas fa-link"></i></a>
+<span class="header-section-number">4.8.4</span> Random effects<a class="anchor" aria-label="anchor" href="#random-effects"><i class="fas fa-link"></i></a>
 </h3>
-<div id="temporal" class="section level4" number="4.9.4.1">
+<div id="temporal" class="section level4" number="4.8.4.1">
 <h4>
-<span class="header-section-number">4.9.4.1</span> Temporal<a class="anchor" aria-label="anchor" href="#temporal"><i class="fas fa-link"></i></a>
+<span class="header-section-number">4.8.4.1</span> Temporal<a class="anchor" aria-label="anchor" href="#temporal"><i class="fas fa-link"></i></a>
 </h4>
 <p>Include temporal covariates, say <span class="math inline">\(x_t\)</span> with <span class="math inline">\(\text{logit}(\phi_t) = \beta_1 + \beta_2 x_t\)</span>. If temporal variation not fully explained by covariates, add random effects <span class="math inline">\(\text{logit}(\phi_t) = \beta_1 + \beta_2 x_t + \varepsilon_t, \; \varepsilon_t \sim N(0,\sigma^2)\)</span>. We may wish to allow for extra variation in the survival vs. water flow relationship. To do so, we consider a yearly random effect. The prior on the standard deviation of the random effect is uniform between 0 and 10.</p>
-<div class="sourceCode" id="cb213"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb211"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">hmm.phiflowREpt</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimbleCode.html">nimbleCode</a></span><span class="op">(</span><span class="op">{</span></span>
 <span>  <span class="va">delta</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span>          <span class="co"># Pr(alive t = 1) = 1</span></span>
 <span>  <span class="va">delta</span><span class="op">[</span><span class="fl">2</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0</span>          <span class="co"># Pr(dead t = 1) = 0</span></span>
@@ -18172,21 +18136,21 @@ Wing length</div>
 <span>  <span class="op">}</span></span>
 <span><span class="op">}</span><span class="op">)</span></span></code></pre></div>
 <p>Initial values.</p>
-<div class="sourceCode" id="cb214"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb212"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">initial.values</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>beta <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html">rnorm</a></span><span class="op">(</span><span class="fl">2</span>,<span class="fl">0</span>,<span class="fl">1</span><span class="op">)</span>,</span>
 <span>                                  p <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html">runif</a></span><span class="op">(</span><span class="va">my.constants</span><span class="op">$</span><span class="cn">T</span><span class="op">-</span><span class="fl">1</span>,<span class="fl">0</span>,<span class="fl">1</span><span class="op">)</span>,</span>
 <span>                                  sdeps <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html">runif</a></span><span class="op">(</span><span class="fl">1</span>,<span class="fl">0</span>,<span class="fl">3</span><span class="op">)</span>,</span>
 <span>                                  z <span class="op">=</span> <span class="va">zinits</span><span class="op">)</span></span></code></pre></div>
 <p>Parameters to be monitored.</p>
-<div class="sourceCode" id="cb215"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb213"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">parameters.to.save</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"beta"</span>, <span class="st">"p"</span>, <span class="st">"phi"</span>, <span class="st">"sdeps"</span><span class="op">)</span></span></code></pre></div>
 <p>MCMC details. Note that we’ve increased the number of iterations and the length of the burn-in period.</p>
-<div class="sourceCode" id="cb216"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb214"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">n.iter</span> <span class="op">&lt;-</span> <span class="fl">10000</span></span>
 <span><span class="va">n.burnin</span> <span class="op">&lt;-</span> <span class="fl">5000</span></span>
 <span><span class="va">n.chains</span> <span class="op">&lt;-</span> <span class="fl">2</span></span></code></pre></div>
 <p>Run nimble.</p>
-<div class="sourceCode" id="cb217"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb215"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">mcmc.phiflowREpt</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimbleMCMC.html">nimbleMCMC</a></span><span class="op">(</span>code <span class="op">=</span> <span class="va">hmm.phiflowREpt</span>, </span>
 <span>                             constants <span class="op">=</span> <span class="va">my.constants</span>,</span>
 <span>                             data <span class="op">=</span> <span class="va">my.data</span>,              </span>
@@ -18196,7 +18160,7 @@ Wing length</div>
 <span>                             nburnin <span class="op">=</span> <span class="va">n.burnin</span>, </span>
 <span>                             nchains <span class="op">=</span> <span class="va">n.chains</span><span class="op">)</span></span></code></pre></div>
 <p>Display outputs. Seems that the water flow effect is not so important anymore.</p>
-<div class="sourceCode" id="cb218"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb216"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/load.html">load</a></span><span class="op">(</span><span class="fu">here</span><span class="fu">::</span><span class="fu"><a href="https://here.r-lib.org//reference/here.html">here</a></span><span class="op">(</span><span class="st">"dat/phiflowREpt.RData"</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/pkg/MCMCvis/man/MCMCsummary.html">MCMCsummary</a></span><span class="op">(</span>object <span class="op">=</span> <span class="va">mcmc.phiflowREpt</span>, round <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span>
 <span><span class="co">##          mean   sd  2.5%   50% 97.5% Rhat n.eff</span></span>
@@ -18216,16 +18180,16 @@ Wing length</div>
 <span><span class="co">## phi[6]   0.64 0.10  0.50  0.62  0.91 1.00   143</span></span>
 <span><span class="co">## sdeps    0.47 0.54  0.05  0.34  1.59 1.08    91</span></span></code></pre></div>
 <p>Trace plots for the standard deviation of the random effect.</p>
-<div class="sourceCode" id="cb219"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb217"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/pkg/MCMCvis/man/MCMCtrace.html">MCMCtrace</a></span><span class="op">(</span>object <span class="op">=</span> <span class="va">mcmc.phiflowREpt</span>, params <span class="op">=</span> <span class="st">"sdeps"</span>, pdf <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div>
-<div class="inline-figure"><img src="banana-book_files/figure-html/unnamed-chunk-259-1.png" width="672"></div>
+<div class="inline-figure"><img src="banana-book_files/figure-html/unnamed-chunk-255-1.png" width="672"></div>
 </div>
-<div id="individual" class="section level4" number="4.9.4.2">
+<div id="individual" class="section level4" number="4.8.4.2">
 <h4>
-<span class="header-section-number">4.9.4.2</span> Individual<a class="anchor" aria-label="anchor" href="#individual"><i class="fas fa-link"></i></a>
+<span class="header-section-number">4.8.4.2</span> Individual<a class="anchor" aria-label="anchor" href="#individual"><i class="fas fa-link"></i></a>
 </h4>
 <p>We add an individual random effect.</p>
-<div class="sourceCode" id="cb220"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb218"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">hmm.phiwlrep</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimbleCode.html">nimbleCode</a></span><span class="op">(</span><span class="op">{</span></span>
 <span>    <span class="va">p</span> <span class="op">~</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html">dunif</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1</span><span class="op">)</span> <span class="co"># prior detection</span></span>
 <span>    <span class="va">omega</span><span class="op">[</span><span class="fl">1</span>,<span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span> <span class="op">-</span> <span class="va">p</span>    <span class="co"># Pr(alive t -&gt; non-detected t)</span></span>
@@ -18255,21 +18219,21 @@ Wing length</div>
 <span>  <span class="op">}</span></span>
 <span><span class="op">}</span><span class="op">)</span></span></code></pre></div>
 <p>Initial values.</p>
-<div class="sourceCode" id="cb221"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb219"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">initial.values</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>beta <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html">rnorm</a></span><span class="op">(</span><span class="fl">2</span>,<span class="fl">0</span>,<span class="fl">1.5</span><span class="op">)</span>,</span>
 <span>                                  sdeps <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html">runif</a></span><span class="op">(</span><span class="fl">1</span>,<span class="fl">0</span>,<span class="fl">3</span><span class="op">)</span>,</span>
 <span>                                  p <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html">runif</a></span><span class="op">(</span><span class="fl">1</span>,<span class="fl">0</span>,<span class="fl">1</span><span class="op">)</span>,</span>
 <span>                                  z <span class="op">=</span> <span class="va">zinits</span><span class="op">)</span></span></code></pre></div>
 <p>Parameters to be monitored.</p>
-<div class="sourceCode" id="cb222"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb220"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">parameters.to.save</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"beta"</span>, <span class="st">"sdeps"</span>, <span class="st">"p"</span><span class="op">)</span></span></code></pre></div>
 <p>MCMC details. Note that we increase the number of iterations and the length of the burn-in period.</p>
-<div class="sourceCode" id="cb223"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb221"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">n.iter</span> <span class="op">&lt;-</span> <span class="fl">10000</span></span>
 <span><span class="va">n.burnin</span> <span class="op">&lt;-</span> <span class="fl">5000</span></span>
 <span><span class="va">n.chains</span> <span class="op">&lt;-</span> <span class="fl">2</span></span></code></pre></div>
 <p>Run nimble.</p>
-<div class="sourceCode" id="cb224"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb222"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">mcmc.phiwlrep</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimbleMCMC.html">nimbleMCMC</a></span><span class="op">(</span>code <span class="op">=</span> <span class="va">hmm.phiwlrep</span>, </span>
 <span>                            constants <span class="op">=</span> <span class="va">my.constants</span>,</span>
 <span>                            data <span class="op">=</span> <span class="va">my.data</span>,              </span>
@@ -18285,7 +18249,7 @@ Wing length</div>
 ## p        0.90 0.03  0.83  0.90  0.95 1.01   790
 ## sdeps    0.40 0.26  0.02  0.37  0.95 1.01   170</code></pre>
 <p>Effective sample size for SD very low. Let’s try something else. We reparameterize by non-centering.</p>
-<div class="sourceCode" id="cb226"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb224"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">hmm.phiwlrep</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimbleCode.html">nimbleCode</a></span><span class="op">(</span><span class="op">{</span></span>
 <span>    <span class="va">p</span> <span class="op">~</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html">dunif</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1</span><span class="op">)</span> <span class="co"># prior detection</span></span>
 <span>    <span class="va">omega</span><span class="op">[</span><span class="fl">1</span>,<span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span> <span class="op">-</span> <span class="va">p</span>    <span class="co"># Pr(alive t -&gt; non-detected t)</span></span>
@@ -18315,21 +18279,21 @@ Wing length</div>
 <span>  <span class="op">}</span></span>
 <span><span class="op">}</span><span class="op">)</span></span></code></pre></div>
 <p>Initial values.</p>
-<div class="sourceCode" id="cb227"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb225"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">initial.values</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>beta <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html">rnorm</a></span><span class="op">(</span><span class="fl">2</span>,<span class="fl">0</span>,<span class="fl">1.5</span><span class="op">)</span>,</span>
 <span>                                  sdeps <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html">runif</a></span><span class="op">(</span><span class="fl">1</span>,<span class="fl">0</span>,<span class="fl">3</span><span class="op">)</span>,</span>
 <span>                                  p <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html">runif</a></span><span class="op">(</span><span class="fl">1</span>,<span class="fl">0</span>,<span class="fl">1</span><span class="op">)</span>,</span>
 <span>                                  z <span class="op">=</span> <span class="va">zinits</span><span class="op">)</span></span></code></pre></div>
 <p>Parameters to be monitored.</p>
-<div class="sourceCode" id="cb228"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb226"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">parameters.to.save</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"beta"</span>, <span class="st">"sdeps"</span>, <span class="st">"p"</span><span class="op">)</span></span></code></pre></div>
 <p>MCMC details. Note that we increase the number of iterations and the length of the burn-in period.</p>
-<div class="sourceCode" id="cb229"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb227"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">n.iter</span> <span class="op">&lt;-</span> <span class="fl">10000</span></span>
 <span><span class="va">n.burnin</span> <span class="op">&lt;-</span> <span class="fl">5000</span></span>
 <span><span class="va">n.chains</span> <span class="op">&lt;-</span> <span class="fl">2</span></span></code></pre></div>
 <p>Run nimble.</p>
-<div class="sourceCode" id="cb230"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb228"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">mcmc.phiwlrep</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimbleMCMC.html">nimbleMCMC</a></span><span class="op">(</span>code <span class="op">=</span> <span class="va">hmm.phiwlrep</span>, </span>
 <span>                            constants <span class="op">=</span> <span class="va">my.constants</span>,</span>
 <span>                            data <span class="op">=</span> <span class="va">my.data</span>,              </span>
@@ -18345,7 +18309,7 @@ Wing length</div>
 ## p        0.90 0.03  0.83  0.90  0.95 1.01   790
 ## sdeps    0.40 0.26  0.02  0.37  0.95 1.01   170</code></pre>
 <p>Let’s plot the posterior distribution of the standard deviation of the individual random effect.</p>
-<div class="sourceCode" id="cb232"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb230"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">sdeps</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="va">mcmc.phiwlrep</span><span class="op">$</span><span class="va">chain1</span><span class="op">[</span>,<span class="st">"sdeps"</span><span class="op">]</span>, <span class="va">mcmc.phiwlrep</span><span class="op">$</span><span class="va">chain2</span><span class="op">[</span>,<span class="st">"sdeps"</span><span class="op">]</span><span class="op">)</span></span>
 <span><span class="va">sdeps</span> <span class="op">%&gt;%</span></span>
 <span>  <span class="fu">as_tibble</span><span class="op">(</span><span class="op">)</span> <span class="op">%&gt;%</span></span>
@@ -18353,21 +18317,21 @@ Wing length</div>
 <span>  <span class="fu">aes</span><span class="op">(</span>x <span class="op">=</span> <span class="va">value</span><span class="op">)</span> <span class="op">+</span> </span>
 <span>  <span class="fu">geom_histogram</span><span class="op">(</span>color <span class="op">=</span> <span class="st">"white"</span>, binwidth <span class="op">=</span> <span class="fl">.03</span>, fill <span class="op">=</span> <span class="st">"gray70"</span><span class="op">)</span> <span class="op">+</span> </span>
 <span>  <span class="fu">geom_density</span><span class="op">(</span><span class="fu">aes</span><span class="op">(</span>y <span class="op">=</span> <span class="fl">.03</span> <span class="op">*</span> <span class="va">..count..</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<div class="inline-figure"><img src="banana-book_files/figure-html/unnamed-chunk-272-1.png" width="672"></div>
+<div class="inline-figure"><img src="banana-book_files/figure-html/unnamed-chunk-268-1.png" width="672"></div>
 </div>
 </div>
-<div id="what-if-covariates-vary-with-individual-and-time" class="section level3" number="4.9.5">
+<div id="what-if-covariates-vary-with-individual-and-time" class="section level3" number="4.8.5">
 <h3>
-<span class="header-section-number">4.9.5</span> What if covariates vary with individual and time?<a class="anchor" aria-label="anchor" href="#what-if-covariates-vary-with-individual-and-time"><i class="fas fa-link"></i></a>
+<span class="header-section-number">4.8.5</span> What if covariates vary with individual and time?<a class="anchor" aria-label="anchor" href="#what-if-covariates-vary-with-individual-and-time"><i class="fas fa-link"></i></a>
 </h3>
-<div id="age" class="section level4" number="4.9.5.1">
+<div id="age" class="section level4" number="4.8.5.1">
 <h4>
-<span class="header-section-number">4.9.5.1</span> Age<a class="anchor" aria-label="anchor" href="#age"><i class="fas fa-link"></i></a>
+<span class="header-section-number">4.8.5.1</span> Age<a class="anchor" aria-label="anchor" href="#age"><i class="fas fa-link"></i></a>
 </h4>
 <p>Think of age for example (see exercises in Worksheets); covariate or nested indexing works fine.</p>
 <p>Age in capture-recapture has a particular meaning in capture-recapture analyses. It is the time elapsed since first encounter, which is a proxy of true age obviously, but not true age. Of course, if age is known at first encounter, then it is the true age.</p>
 <p>Another important remark is that age is an individual covariate, but in contrast with the wing length covariate we considered in the previous examples, age varies over time. The cool thing is that it has no missing value as age at <span class="math inline">\(t+1\)</span> is just age at <span class="math inline">\(t\)</span> to which we add 1. This suggests a way to code the age effect in nimble as follows.</p>
-<div class="sourceCode" id="cb233"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb231"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">hmm.phiage.in</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimbleCode.html">nimbleCode</a></span><span class="op">(</span><span class="op">{</span></span>
 <span>  <span class="va">p</span> <span class="op">~</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html">dunif</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1</span><span class="op">)</span> <span class="co"># prior detection</span></span>
 <span>  <span class="va">omega</span><span class="op">[</span><span class="fl">1</span>,<span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span> <span class="op">-</span> <span class="va">p</span>    <span class="co"># Pr(alive t -&gt; non-detected t)</span></span>
@@ -18399,31 +18363,31 @@ Wing length</div>
 <span>  <span class="op">}</span></span>
 <span><span class="op">}</span><span class="op">)</span></span></code></pre></div>
 <p>Constants in a list.</p>
-<div class="sourceCode" id="cb234"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb232"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">first</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/apply.html">apply</a></span><span class="op">(</span><span class="va">y</span>, <span class="fl">1</span>, <span class="kw">function</span><span class="op">(</span><span class="va">x</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/Extremes.html">min</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/which.html">which</a></span><span class="op">(</span><span class="va">x</span> <span class="op">!=</span><span class="fl">0</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="va">my.constants</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>N <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html">nrow</a></span><span class="op">(</span><span class="va">y</span><span class="op">)</span>, </span>
 <span>                     T <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html">ncol</a></span><span class="op">(</span><span class="va">y</span><span class="op">)</span>, </span>
 <span>                     first <span class="op">=</span> <span class="va">first</span><span class="op">)</span></span></code></pre></div>
 <p>Data in a list.</p>
-<div class="sourceCode" id="cb235"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb233"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">my.data</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>y <span class="op">=</span> <span class="va">y</span> <span class="op">+</span> <span class="fl">1</span><span class="op">)</span></span></code></pre></div>
 <p>Initial values.</p>
-<div class="sourceCode" id="cb236"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb234"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">zinits</span> <span class="op">&lt;-</span> <span class="va">y</span></span>
 <span><span class="va">zinits</span><span class="op">[</span><span class="va">zinits</span> <span class="op">==</span> <span class="fl">0</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span></span>
 <span><span class="va">initial.values</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>beta <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html">rnorm</a></span><span class="op">(</span><span class="fl">2</span>,<span class="fl">0</span>,<span class="fl">5</span><span class="op">)</span>,</span>
 <span>                                  p <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html">runif</a></span><span class="op">(</span><span class="fl">1</span>,<span class="fl">0</span>,<span class="fl">1</span><span class="op">)</span>,</span>
 <span>                                  z <span class="op">=</span> <span class="va">zinits</span><span class="op">)</span></span></code></pre></div>
 <p>Parameters to be monitored.</p>
-<div class="sourceCode" id="cb237"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb235"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">parameters.to.save</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"phi1"</span>, <span class="st">"phi1plus"</span>, <span class="st">"p"</span><span class="op">)</span></span></code></pre></div>
 <p>MCMC details.</p>
-<div class="sourceCode" id="cb238"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb236"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">n.iter</span> <span class="op">&lt;-</span> <span class="fl">5000</span></span>
 <span><span class="va">n.burnin</span> <span class="op">&lt;-</span> <span class="fl">2500</span></span>
 <span><span class="va">n.chains</span> <span class="op">&lt;-</span> <span class="fl">2</span></span></code></pre></div>
 <p>Run nimble.</p>
-<div class="sourceCode" id="cb239"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb237"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">mcmc.phi.age.in</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimbleMCMC.html">nimbleMCMC</a></span><span class="op">(</span>code <span class="op">=</span> <span class="va">hmm.phiage.in</span>, </span>
 <span>                             constants <span class="op">=</span> <span class="va">my.constants</span>,</span>
 <span>                             data <span class="op">=</span> <span class="va">my.data</span>,              </span>
@@ -18438,7 +18402,7 @@ Wing length</div>
 ## phi1     0.56 0.03 0.49 0.55  0.63 1.01   689
 ## phi1plus 0.57 0.04 0.50 0.57  0.64 1.00   309</code></pre>
 <p>Another method to include an age effect is to create an individual by time covariate and use nested indexing (as in the previous example) to distinguish survival after first detection from survival afterwards.</p>
-<div class="sourceCode" id="cb241"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb239"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">age</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html">matrix</a></span><span class="op">(</span><span class="cn">NA</span>, nrow <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html">nrow</a></span><span class="op">(</span><span class="va">y</span><span class="op">)</span>, ncol <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html">ncol</a></span><span class="op">(</span><span class="va">y</span><span class="op">)</span> <span class="op">-</span> <span class="fl">1</span><span class="op">)</span></span>
 <span><span class="kw">for</span> <span class="op">(</span><span class="va">i</span> <span class="kw">in</span> <span class="fl">1</span><span class="op">:</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html">nrow</a></span><span class="op">(</span><span class="va">age</span><span class="op">)</span><span class="op">)</span><span class="op">{</span></span>
 <span>  <span class="kw">for</span> <span class="op">(</span><span class="va">j</span> <span class="kw">in</span> <span class="fl">1</span><span class="op">:</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html">ncol</a></span><span class="op">(</span><span class="va">age</span><span class="op">)</span><span class="op">)</span><span class="op">{</span></span>
@@ -18447,7 +18411,7 @@ Wing length</div>
 <span>  <span class="op">}</span></span>
 <span><span class="op">}</span></span></code></pre></div>
 <p>The model. Careful, now survival is no longer defined on the logit scale as in the previous model, so we use uniform priors.</p>
-<div class="sourceCode" id="cb242"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb240"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">hmm.phiage.out</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimbleCode.html">nimbleCode</a></span><span class="op">(</span><span class="op">{</span></span>
 <span>  <span class="va">p</span> <span class="op">~</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html">dunif</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1</span><span class="op">)</span> <span class="co"># prior detection</span></span>
 <span>  <span class="va">omega</span><span class="op">[</span><span class="fl">1</span>,<span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span> <span class="op">-</span> <span class="va">p</span>    <span class="co"># Pr(alive t -&gt; non-detected t)</span></span>
@@ -18479,32 +18443,32 @@ Wing length</div>
 <span>  <span class="op">}</span></span>
 <span><span class="op">}</span><span class="op">)</span></span></code></pre></div>
 <p>Constants in a list, inculding the age matrix covariate.</p>
-<div class="sourceCode" id="cb243"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb241"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">first</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/apply.html">apply</a></span><span class="op">(</span><span class="va">y</span>, <span class="fl">1</span>, <span class="kw">function</span><span class="op">(</span><span class="va">x</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/Extremes.html">min</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/which.html">which</a></span><span class="op">(</span><span class="va">x</span> <span class="op">!=</span><span class="fl">0</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="va">my.constants</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>N <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html">nrow</a></span><span class="op">(</span><span class="va">y</span><span class="op">)</span>, </span>
 <span>                     T <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html">ncol</a></span><span class="op">(</span><span class="va">y</span><span class="op">)</span>, </span>
 <span>                     first <span class="op">=</span> <span class="va">first</span>,</span>
 <span>                     age <span class="op">=</span> <span class="va">age</span><span class="op">)</span></span></code></pre></div>
 <p>Data in a list.</p>
-<div class="sourceCode" id="cb244"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb242"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">my.data</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>y <span class="op">=</span> <span class="va">y</span> <span class="op">+</span> <span class="fl">1</span><span class="op">)</span></span></code></pre></div>
 <p>Initial values.</p>
-<div class="sourceCode" id="cb245"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb243"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">zinits</span> <span class="op">&lt;-</span> <span class="va">y</span></span>
 <span><span class="va">zinits</span><span class="op">[</span><span class="va">zinits</span> <span class="op">==</span> <span class="fl">0</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span></span>
 <span><span class="va">initial.values</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>beta <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html">runif</a></span><span class="op">(</span><span class="fl">2</span>,<span class="fl">0</span>,<span class="fl">1</span><span class="op">)</span>,</span>
 <span>                                  p <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html">runif</a></span><span class="op">(</span><span class="fl">1</span>,<span class="fl">0</span>,<span class="fl">1</span><span class="op">)</span>,</span>
 <span>                                  z <span class="op">=</span> <span class="va">zinits</span><span class="op">)</span></span></code></pre></div>
 <p>Parameters to be monitored.</p>
-<div class="sourceCode" id="cb246"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb244"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">parameters.to.save</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"phi1"</span>, <span class="st">"phi1plus"</span>, <span class="st">"p"</span><span class="op">)</span></span></code></pre></div>
 <p>MCMC details.</p>
-<div class="sourceCode" id="cb247"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb245"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">n.iter</span> <span class="op">&lt;-</span> <span class="fl">5000</span></span>
 <span><span class="va">n.burnin</span> <span class="op">&lt;-</span> <span class="fl">2500</span></span>
 <span><span class="va">n.chains</span> <span class="op">&lt;-</span> <span class="fl">2</span></span></code></pre></div>
 <p>Run nimble.</p>
-<div class="sourceCode" id="cb248"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb246"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">mcmc.phi.age.out</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimbleMCMC.html">nimbleMCMC</a></span><span class="op">(</span>code <span class="op">=</span> <span class="va">hmm.phiage.out</span>, </span>
 <span>                               constants <span class="op">=</span> <span class="va">my.constants</span>,</span>
 <span>                               data <span class="op">=</span> <span class="va">my.data</span>,              </span>
@@ -18514,7 +18478,7 @@ Wing length</div>
 <span>                               nburnin <span class="op">=</span> <span class="va">n.burnin</span>, </span>
 <span>                               nchains <span class="op">=</span> <span class="va">n.chains</span><span class="op">)</span></span></code></pre></div>
 <p>Display results.</p>
-<div class="sourceCode" id="cb249"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb247"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/load.html">load</a></span><span class="op">(</span><span class="fu">here</span><span class="fu">::</span><span class="fu"><a href="https://here.r-lib.org//reference/here.html">here</a></span><span class="op">(</span><span class="st">"dat/phiageout.RData"</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/pkg/MCMCvis/man/MCMCsummary.html">MCMCsummary</a></span><span class="op">(</span><span class="va">mcmc.phi.age.out</span>, round <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span>
 <span><span class="co">##          mean   sd 2.5%  50% 97.5% Rhat n.eff</span></span>
@@ -18522,32 +18486,32 @@ Wing length</div>
 <span><span class="co">## phi1     0.55 0.03 0.48 0.55  0.62 1.00   878</span></span>
 <span><span class="co">## phi1plus 0.57 0.04 0.50 0.57  0.64 1.02  1048</span></span></code></pre></div>
 </div>
-<div id="trap-dependence" class="section level4" number="4.9.5.2">
+<div id="trap-dependence" class="section level4" number="4.8.5.2">
 <h4>
-<span class="header-section-number">4.9.5.2</span> Trap-dependence<a class="anchor" aria-label="anchor" href="#trap-dependence"><i class="fas fa-link"></i></a>
+<span class="header-section-number">4.8.5.2</span> Trap-dependence<a class="anchor" aria-label="anchor" href="#trap-dependence"><i class="fas fa-link"></i></a>
 </h4>
 <p>Add example for trap-dependence w/ time individual covariate. Move it to case study w/ multievent.</p>
 </div>
-<div id="missing-values" class="section level4" number="4.9.5.3">
+<div id="missing-values" class="section level4" number="4.8.5.3">
 <h4>
-<span class="header-section-number">4.9.5.3</span> Missing values<a class="anchor" aria-label="anchor" href="#missing-values"><i class="fas fa-link"></i></a>
+<span class="header-section-number">4.8.5.3</span> Missing values<a class="anchor" aria-label="anchor" href="#missing-values"><i class="fas fa-link"></i></a>
 </h4>
 <p>Now, think of body size across life. Problem is we cannot record size when animal is non-detected. Discretize in small, medium and large and treat as a state. More later. Assume a model for covariate and fill in missing values (imputation).</p>
 </div>
 </div>
 </div>
-<div id="summary-3" class="section level2" number="4.10">
+<div id="summary-3" class="section level2" number="4.9">
 <h2>
-<span class="header-section-number">4.10</span> Summary<a class="anchor" aria-label="anchor" href="#summary-3"><i class="fas fa-link"></i></a>
+<span class="header-section-number">4.9</span> Summary<a class="anchor" aria-label="anchor" href="#summary-3"><i class="fas fa-link"></i></a>
 </h2>
 <ul>
 <li><p>Statistical models rely on assumptions, and the CJS model makes no exception.</p></li>
 <li><p>Blabla.</p></li>
 </ul>
 </div>
-<div id="suggested-reading-3" class="section level2" number="4.11">
+<div id="suggested-reading-3" class="section level2" number="4.10">
 <h2>
-<span class="header-section-number">4.11</span> Suggested reading<a class="anchor" aria-label="anchor" href="#suggested-reading-3"><i class="fas fa-link"></i></a>
+<span class="header-section-number">4.10</span> Suggested reading<a class="anchor" aria-label="anchor" href="#suggested-reading-3"><i class="fas fa-link"></i></a>
 </h2>
 <ul>
 <li><p>A bit of history about the CJS model and the people involved in its developements by <a href="https://research-repository.st-andrews.ac.uk/handle/10023/8869">S.T. Buckland (2016)</a>.</p></li>
@@ -18563,37 +18527,34 @@ Wing length</div>
 </ul>
 </div>
 </div>
+
+
+
   <div class="chapter-nav">
 <div class="prev"><a href="introduction-4.html">Introduction</a></div>
-<div class="next"><a href="dispersal.html"><span class="header-section-number">5</span> Dispersal</a></div>
+<div class="next"><a href="introduction-6.html">Introduction</a></div>
 </div></main><div class="col-md-3 col-lg-2 d-none d-md-block sidebar sidebar-chapter">
     <nav id="toc" data-toggle="toc" aria-label="On this page"><h2>On this page</h2>
       <ul class="nav navbar-nav">
 <li><a class="nav-link" href="#survival"><span class="header-section-number">4</span> Survival</a></li>
 <li><a class="nav-link" href="#introduction-5"><span class="header-section-number">4.1</span> Introduction</a></li>
 <li><a class="nav-link" href="#the-cormack-jolly-seber-cjs-model"><span class="header-section-number">4.2</span> The Cormack-Jolly-Seber (CJS) model</a></li>
-<li><a class="nav-link" href="#capture-recapture-data-1"><span class="header-section-number">4.3</span> Capture-recapture data</a></li>
+<li><a class="nav-link" href="#capture-recapture-data"><span class="header-section-number">4.3</span> Capture-recapture data</a></li>
 <li><a class="nav-link" href="#fitting-the-cjs-model-to-the-dipper-data-with-nimble"><span class="header-section-number">4.4</span> Fitting the CJS model to the dipper data with NIMBLE</a></li>
 <li><a class="nav-link" href="#cjs-model-derivatives"><span class="header-section-number">4.5</span> CJS model derivatives</a></li>
-<li><a class="nav-link" href="#model-comparison-with-waic"><span class="header-section-number">4.6</span> Model comparison with WAIC</a></li>
+<li><a class="nav-link" href="#waic"><span class="header-section-number">4.6</span> Model comparison with WAIC</a></li>
 <li><a class="nav-link" href="#goodness-of-fit-testing"><span class="header-section-number">4.7</span> Goodness-of-fit testing</a></li>
 <li>
-<a class="nav-link" href="#why-bayes-incorporate-prior-information"><span class="header-section-number">4.8</span> Why Bayes? Incorporate prior information</a><ul class="nav navbar-nav">
-<li><a class="nav-link" href="#prior-elicitation"><span class="header-section-number">4.8.1</span> Prior elicitation</a></li>
-<li><a class="nav-link" href="#moment-matching"><span class="header-section-number">4.8.2</span> Moment matching</a></li>
+<a class="nav-link" href="#covariates"><span class="header-section-number">4.8</span> Covariates</a><ul class="nav navbar-nav">
+<li><a class="nav-link" href="#temporal-covariates"><span class="header-section-number">4.8.1</span> Temporal covariates</a></li>
+<li><a class="nav-link" href="#individual-covariates"><span class="header-section-number">4.8.2</span> Individual covariates</a></li>
+<li><a class="nav-link" href="#additive-and-interaction"><span class="header-section-number">4.8.3</span> Additive and interaction</a></li>
+<li><a class="nav-link" href="#random-effects"><span class="header-section-number">4.8.4</span> Random effects</a></li>
+<li><a class="nav-link" href="#what-if-covariates-vary-with-individual-and-time"><span class="header-section-number">4.8.5</span> What if covariates vary with individual and time?</a></li>
 </ul>
 </li>
-<li>
-<a class="nav-link" href="#covariates"><span class="header-section-number">4.9</span> Covariates</a><ul class="nav navbar-nav">
-<li><a class="nav-link" href="#temporal-covariates"><span class="header-section-number">4.9.1</span> Temporal covariates</a></li>
-<li><a class="nav-link" href="#individual-covariates"><span class="header-section-number">4.9.2</span> Individual covariates</a></li>
-<li><a class="nav-link" href="#additive-and-interaction"><span class="header-section-number">4.9.3</span> Additive and interaction</a></li>
-<li><a class="nav-link" href="#random-effects"><span class="header-section-number">4.9.4</span> Random effects</a></li>
-<li><a class="nav-link" href="#what-if-covariates-vary-with-individual-and-time"><span class="header-section-number">4.9.5</span> What if covariates vary with individual and time?</a></li>
-</ul>
-</li>
-<li><a class="nav-link" href="#summary-3"><span class="header-section-number">4.10</span> Summary</a></li>
-<li><a class="nav-link" href="#suggested-reading-3"><span class="header-section-number">4.11</span> Suggested reading</a></li>
+<li><a class="nav-link" href="#summary-3"><span class="header-section-number">4.9</span> Summary</a></li>
+<li><a class="nav-link" href="#suggested-reading-3"><span class="header-section-number">4.10</span> Suggested reading</a></li>
 </ul>
 
       <div class="book-extra">
