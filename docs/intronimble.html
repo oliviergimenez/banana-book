@@ -1,0 +1,1305 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<title>Chapter 2 NIMBLE tutorial | Bayesian Analysis of Capture-Recapture Data with Hidden Markov Models</title>
+<meta name="author" content="Olivier Gimenez">
+<meta name="description" content="2.1 Introduction In this second chapter, you will get familiar with NIMBLE, an R package that implements up-to-date MCMC algorithms for fitting complex models. NIMBLE spares you from coding the...">
+<meta name="generator" content="bookdown 0.33 with bs4_book()">
+<meta property="og:title" content="Chapter 2 NIMBLE tutorial | Bayesian Analysis of Capture-Recapture Data with Hidden Markov Models">
+<meta property="og:type" content="book">
+<meta property="og:url" content="https://oliviergimenez.github.io/bayesian-cr-workshop/intronimble.html">
+<meta property="og:description" content="2.1 Introduction In this second chapter, you will get familiar with NIMBLE, an R package that implements up-to-date MCMC algorithms for fitting complex models. NIMBLE spares you from coding the...">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Chapter 2 NIMBLE tutorial | Bayesian Analysis of Capture-Recapture Data with Hidden Markov Models">
+<meta name="twitter:description" content="2.1 Introduction In this second chapter, you will get familiar with NIMBLE, an R package that implements up-to-date MCMC algorithms for fitting complex models. NIMBLE spares you from coding the...">
+<!-- JS --><script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.6/clipboard.min.js" integrity="sha256-inc5kl9MA1hkeYUt+EC3BhlIgyp/2jDIyBLS6k3UxPI=" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/fuse.js/6.4.6/fuse.js" integrity="sha512-zv6Ywkjyktsohkbp9bb45V6tEMoWhzFzXis+LrMehmJZZSys19Yxf1dopHx7WzIKxr5tK2dVcYmaCk2uqdjF4A==" crossorigin="anonymous"></script><script src="https://kit.fontawesome.com/6ecbd6c532.js" crossorigin="anonymous"></script><script src="libs/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<link href="libs/bootstrap-4.6.0/bootstrap.min.css" rel="stylesheet">
+<script src="libs/bootstrap-4.6.0/bootstrap.bundle.min.js"></script><script src="libs/bs3compat-0.5.0/transition.js"></script><script src="libs/bs3compat-0.5.0/tabs.js"></script><script src="libs/bs3compat-0.5.0/bs3compat.js"></script><link href="libs/bs4_book-1.0.0/bs4_book.css" rel="stylesheet">
+<script src="libs/bs4_book-1.0.0/bs4_book.js"></script><script src="libs/kePrint-0.0.1/kePrint.js"></script><link href="libs/lightable-0.0.1/lightable.css" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/autocomplete.js/0.38.0/autocomplete.jquery.min.js" integrity="sha512-GU9ayf+66Xx2TmpxqJpliWbT5PiGYxpaG8rfnBEk1LL8l1KGkRShhngwdXK1UgqhAzWpZHSiYPc09/NwDQIGyg==" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/mark.js/8.11.1/mark.min.js" integrity="sha512-5CYOlHXGh6QpOFA/TeTylKLWfB3ftPsde7AnmhuitiTX4K5SqCLBeKro6sPS8ilsz1Q4NRx3v8Ko2IBiszzdww==" crossorigin="anonymous"></script><!-- CSS --><style type="text/css">
+    
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+  </style>
+<style type="text/css">
+    /* Used with Pandoc 2.11+ new --citeproc when CSL is used */
+    div.csl-bib-body { }
+    div.csl-entry {
+      clear: both;
+        }
+    .hanging div.csl-entry {
+      margin-left:2em;
+      text-indent:-2em;
+    }
+    div.csl-left-margin {
+      min-width:2em;
+      float:left;
+    }
+    div.csl-right-inline {
+      margin-left:2em;
+      padding-left:1em;
+    }
+    div.csl-indent {
+      margin-left: 2em;
+    }
+  </style>
+<link rel="stylesheet" href="bs4_style.css">
+</head>
+<body data-spy="scroll" data-target="#toc">
+
+<div class="container-fluid">
+<div class="row">
+  <header class="col-sm-12 col-lg-3 sidebar sidebar-book"><a class="sr-only sr-only-focusable" href="#content">Skip to main content</a>
+
+    <div class="d-flex align-items-start justify-content-between">
+      <h1>
+        <a href="index.html" title="Theory and Case Studies in R">Bayesian Analysis of Capture-Recapture Data with Hidden Markov Models</a>:
+        <small class="text-muted">Theory and Case Studies in R</small>
+      </h1>
+      <button class="btn btn-outline-primary d-lg-none ml-2 mt-1" type="button" data-toggle="collapse" data-target="#main-nav" aria-expanded="true" aria-controls="main-nav"><i class="fas fa-bars"></i><span class="sr-only">Show table of contents</span></button>
+    </div>
+
+    <div id="main-nav" class="collapse-lg">
+      <form role="search">
+        <input id="search" class="form-control" type="search" placeholder="Search" aria-label="Search">
+</form>
+
+      <nav aria-label="Table of contents"><h2>Table of contents</h2>
+        <ul class="book-toc list-unstyled">
+<li><a class="" href="index.html">Welcome</a></li>
+<li><a class="" href="preface.html">Preface</a></li>
+<li><a class="" href="about-the-author.html">About the author</a></li>
+<li class="book-part">I. Foundations</li>
+<li><a class="" href="introduction.html">Introduction</a></li>
+<li><a class="" href="crashcourse.html"><span class="header-section-number">1</span> Bayesian statistics &amp; MCMC</a></li>
+<li><a class="active" href="intronimble.html"><span class="header-section-number">2</span> NIMBLE tutorial</a></li>
+<li><a class="" href="hmmcapturerecapture.html"><span class="header-section-number">3</span> Hidden Markov models</a></li>
+<li class="book-part">II. Transitions</li>
+<li><a class="" href="introduction-4.html">Introduction</a></li>
+<li><a class="" href="survival.html"><span class="header-section-number">4</span> Survival</a></li>
+<li><a class="" href="dispersal.html"><span class="header-section-number">5</span> Movements between sites, and states</a></li>
+<li class="book-part">III. Case studies</li>
+<li><a class="" href="introduction-7.html">Introduction</a></li>
+<li class="book-part">IV. Conclusions</li>
+<li><a class="" href="introduction-8.html">Introduction</a></li>
+<li><a class="" href="take-home-messages.html">Take-home messages</a></li>
+<li><a class="" href="references.html">References</a></li>
+</ul>
+
+        <div class="book-extra">
+          <p><a id="book-repo" href="https://github.com/oliviergimenez/banana-book">View book source <i class="fab fa-github"></i></a></p>
+        </div>
+      </nav>
+</div>
+  </header><main class="col-sm-12 col-md-9 col-lg-7" id="content"><div id="intronimble" class="section level1" number="2">
+<h1>
+<span class="header-section-number">2</span> NIMBLE tutorial<a class="anchor" aria-label="anchor" href="#intronimble"><i class="fas fa-link"></i></a>
+</h1>
+<div id="introduction-2" class="section level2" number="2.1">
+<h2>
+<span class="header-section-number">2.1</span> Introduction<a class="anchor" aria-label="anchor" href="#introduction-2"><i class="fas fa-link"></i></a>
+</h2>
+<p>In this second chapter, you will get familiar with NIMBLE, an R package that implements up-to-date MCMC algorithms for fitting complex models. NIMBLE spares you from coding the MCMC algorithms by hand, and requires only the specification of a likelihood and priors for model parameters. We will illustrate NIMBLE main features with a simple example, but the ideas hold for other problems.</p>
+</div>
+<div id="what-is-nimble" class="section level2" number="2.2">
+<h2>
+<span class="header-section-number">2.2</span> What is NIMBLE?<a class="anchor" aria-label="anchor" href="#what-is-nimble"><i class="fas fa-link"></i></a>
+</h2>
+<p>NIMBLE stands for <strong>N</strong>umerical <strong>I</strong>nference for statistical <strong>M</strong>odels using <strong>B</strong>ayesian and <strong>L</strong>ikelihood <strong>E</strong>stimation. Briefly speaking, NIMBLE is an R package that implements for you MCMC algorithms to generate samples from the posterior distribution of model parameters. Freed from the burden of coding your own MCMC algorithms, you only have to specify a likelihood and priors to apply the Bayes theorem. To do so, NIMBLE uses a syntax very similar to the R syntax, which should make your life easier. This so-called BUGS language is also used by other programs like WinBUGS, OpenBUGS, and JAGS.</p>
+<p>So why use NIMBLE you may ask? The short answer is that NIMBLE is capable of so much more than just running MCMC algorithms! First, you will work from within R, but in the background NIMBLE will translate your code in C++ for (in general) faster computation. Second, NIMBLE extends the BUGS language for writing new functions and distributions of your own, or borrow those written by others. Third, NIMBLE gives you full control of the MCMC samplers, and you may pick other algorithms than the defaults. Fourth, NIMBLE comes with a library of numerical methods other than MCMC algorithms, including sequential Monte Carlo (for particle filtering) and Monte Carlo Expectation Maximization (for maximum likelihood). Last but not least, the development team is friendly and helpful, and based on users’ feedbacks, NIMBLE folks work constantly at improving the package capabilities.</p>
+<div class="figure" style="text-align: center">
+<span style="display:block;" id="fig:nimblelogo"></span>
+<img src="images/nimble-icon.png" alt="Logo of the NIMBLE R package designed by Luke Larson. **Ask Perry for context and meaning.**" width="50%"><p class="caption">
+Figure 2.1: Logo of the NIMBLE R package designed by Luke Larson. <strong>Ask Perry for context and meaning.</strong>
+</p>
+</div>
+<!-- Why NIMBLE over Stan? i) The BUGS language is cool, ii) discrete latent states easier to deal with NIMBLE, no need to marginalise like with Stan (ref forward to relevant section of the book for marginalization in NIMBLE), iii) also HMC is on its way in NIMBLE, so NIMBLE includes STAN and has so much more to offer the users.  -->
+</div>
+<div id="start-nimble" class="section level2" number="2.3">
+<h2>
+<span class="header-section-number">2.3</span> Getting started<a class="anchor" aria-label="anchor" href="#start-nimble"><i class="fas fa-link"></i></a>
+</h2>
+
+<div class="rmdnote">
+To run NIMBLE, you will need to:<br>
+1. Build a model consisting of a likelihood and priors.<br>
+2. Read in some data.<br>
+3. Specify parameters you want to make inference about.<br>
+4. Pick initial values for parameters to be estimated (for each chain).<br>
+5. Provide MCMC details namely the number of chains, the length of the burn-in period and the number of iterations following burn-in.
+</div>
+<p>First things first, let’s not forget to load the <code>nimble</code> package:</p>
+<div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="va"><a href="https://r-nimble.org">nimble</a></span><span class="op">)</span></span></code></pre></div>
+<p>Note that before you can install <code>nimble</code> like any other R package, Windows users will need to install <code>Rtools</code>, and Mac users will need to install <code>Xcode</code>. More at <a href="https://r-nimble.org/download" class="uri">https://r-nimble.org/download</a>.</p>
+<p>Now let’s go back to our example on animal survival from the previous chapter. First step is to build our model by specifying the binomial likelihood and a uniform prior on survival probability <code>theta</code>. We use the <code><a href="https://rdrr.io/pkg/nimble/man/nimbleCode.html">nimbleCode()</a></code> function and wrap code within curly brackets:</p>
+<div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">model</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimbleCode.html">nimbleCode</a></span><span class="op">(</span><span class="op">{</span></span>
+<span>  <span class="co"># likelihood</span></span>
+<span>  <span class="va">survived</span> <span class="op">~</span> <span class="fu"><a href="https://rdrr.io/r/stats/Binomial.html">dbinom</a></span><span class="op">(</span><span class="va">theta</span>, <span class="va">released</span><span class="op">)</span></span>
+<span>  <span class="co"># prior</span></span>
+<span>  <span class="va">theta</span> <span class="op">~</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html">dunif</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1</span><span class="op">)</span></span>
+<span>  <span class="co"># derived quantity</span></span>
+<span>  <span class="va">lifespan</span> <span class="op">&lt;-</span> <span class="op">-</span><span class="fl">1</span><span class="op">/</span><span class="fu"><a href="https://rdrr.io/r/base/Log.html">log</a></span><span class="op">(</span><span class="va">theta</span><span class="op">)</span></span>
+<span><span class="op">}</span><span class="op">)</span></span></code></pre></div>
+<p>You can check that the <code>model</code> R object contains your code:</p>
+<div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">model</span></span>
+<span><span class="co">## {</span></span>
+<span><span class="co">##     survived ~ dbinom(theta, released)</span></span>
+<span><span class="co">##     theta ~ dunif(0, 1)</span></span>
+<span><span class="co">##     lifespan &lt;- -1/log(theta)</span></span>
+<span><span class="co">## }</span></span></code></pre></div>
+<p>In the code above, <code>survived</code> and <code>released</code> are known, only <code>theta</code> needs to be estimated. The line <code>survived ~ dbinom(theta, released)</code> states that the number of successes or animals that have survived over winter <code>survived</code> is distributed as (that’s the <code>~</code>) as a binomial with <code>released</code> trials and probability of success or survival <code>theta</code>. Then the line <code>theta ~ dunif(0, 1)</code> assigns a uniform between 0 and 1 as a prior distribution to the survival probability. This is all you need, a likelihood and priors for model parameters, NIMBLE knows the Bayes theorem. The last line <code>lifespan &lt;- - 1/log(theta)</code> calculates a quantity derived from <code>theta</code>, which is the expected lifespan assuming constant survival<a class="footnote-ref" tabindex="0" data-toggle="popover" data-content="&lt;p&gt;Cook LM, Brower LP, Croze HJ (1967) The accuracy of a population estimation from multiple recapture data. J Anim Ecol 36:57–60&lt;/p&gt;"><sup>17</sup></a>.</p>
+<p>A few comments:</p>
+<ul>
+<li><p>The most common distributions are available in NIMBLE. Among others, we will use later in the book <code>dbeta</code>, <code>dmultinom</code> and <code>dnorm</code>. If you cannot find what you need in NIMBLE, you can write your own distribution as illustrated in Section <a href="intronimble.html#functions-in-nimble">2.4</a>.</p></li>
+<li><p>It does not matter in what order you write each line of code, NIMBLE uses what is called a declarative language for building models. In brief, you write code that tells NIMBLE what you want to achieve, and not how to get there. In contrast, an imperative language requires that you write what you want your program to do step by step.</p></li>
+<li>
+<p>You can think of models in NIMBLE as graphs as in Figure <a href="intronimble.html#fig:dag-survival">2.2</a>. A graph is made of relations (or edges) that can be of two types. A stochastic relation is signaled by a <code>~</code> sign and defines a random variable in the model, such as <code>survived</code> or <code>theta</code>. A deterministic relation is signaled by a <code>&lt;-</code> sign, like <code>lifespan</code>. Relations define nodes on the left - the children - in terms of other nodes on the right - the parents, and relations are directed edges from parents to children. Such graphs are called directed acyclic graph or DAG.</p>
+<div class="figure">
+<span style="display:block;" id="fig:dag-survival"></span>
+<img src="banana-book_files/figure-html/dag-survival-1.png" alt="Graph of the animal survival model. Survived is a stochastic node defined by its parents `released` and `theta`, while `lifespan` is a deterministic node the value of which is defined exactly by the value of its parent `theta`." width="672"><p class="caption">
+Figure 2.2: Graph of the animal survival model. Survived is a stochastic node defined by its parents <code>released</code> and <code>theta</code>, while <code>lifespan</code> is a deterministic node the value of which is defined exactly by the value of its parent <code>theta</code>.
+</p>
+</div>
+</li>
+</ul>
+<p>Second step in our workflow is to read in some data. We use a list in which each component corresponds to a known quantity in the model:</p>
+<div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">my.data</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>released <span class="op">=</span> <span class="fl">57</span>, survived <span class="op">=</span> <span class="fl">19</span><span class="op">)</span></span></code></pre></div>
+<p>You can proceed with data passed this way, but you should know a little more about how NIMBLE sees data. NIMBLE distinguishes data and constants. Constants are values that do not change, e.g. vectors of known index values or the indices used to define for loops. Data are values that you might want to change, basically anything that only appears on the left of a <code>~</code>. Declaring relevant values as constants is better for computational efficiency, but it is easy to forget, and fortunately NIMBLE will by itself distinguish data and constants. I will not use the distinction between data and constants in this chapter, but in the next chapters it will become important.</p>
+<!-- In passing say that full indexing is needed, you cannot let NIMBLE guess dimensions. -->
+<!-- Ici on reprend le modèle simple du dessus, et on l'exprime un peu différemment pour illustrer qqs autres features de NIMBLE: i) loops, ii) distinction between constants and data. The binomial is a sum of independent Bernoulli outcomes with same probability. the Like flipping a coin for each individual and get a survivor with prob theta. Here survived is. Going back to our animal survival example, it means that the likelihood can be written as a Bernoulli random variable taking value 1 if animal survived, and 0 otherwise. **Voir dans annexe Hobbs**. E.g. `survived[1] ~ dbern(theta)` up to `survived[59] ~ dbern(theta)`. Likelihood contribution of individuals. Loops is the product. Iid. Instead of duplicating the same line of code `survived[i] ~ dbern(theta)` we use a loop. -->
+<!-- ```{r} -->
+<!-- model <- nimbleCode({ -->
+<!--   # likelihood -->
+<!--   for (i in 1:released){ -->
+<!--     survived[i] ~ dbern(theta) -->
+<!--   } -->
+<!--   # prior -->
+<!--   theta ~ dunif(0, 1) -->
+<!-- }) -->
+<!-- ``` -->
+<!-- **If you try nimbleMCMC it won't work. This is because we ned to distinguish data from constants. Uncomment code.** -->
+<!-- Distinguih constants and data. To Nimble, not all "data" is data... -->
+<!-- ```{r} -->
+<!-- my.constants <- list(released = 57) -->
+<!-- my.data <- list(survived = 19) -->
+<!-- ``` -->
+<!-- ```{r, eval = FALSE} -->
+<!-- mcmc.output <- nimbleMCMC(code = model, -->
+<!--                           data = my.data, -->
+<!--                           constants = my.constants, -->
+<!--                           inits = initial.values, -->
+<!--                           monitors = parameters.to.save, -->
+<!--                           niter = n.iter, -->
+<!--                           nburnin = n.burnin, -->
+<!--                           nchains = n.chains) -->
+<!-- ``` -->
+<!-- ```{r} -->
+<!-- my.data <- list(survived = c(rep(1,19), rep(0,57-19))) -->
+<!-- my.constants <- list(released = 57) -->
+<!-- ``` -->
+<!-- The rest is the same. Steps 3, 4 and 5. -->
+<!-- ```{r} -->
+<!-- parameters.to.save <- c("theta", "life_expectancy") -->
+<!-- initial.values <- function() list(theta = runif(1,0,1)) -->
+<!-- n.iter <- 5000 -->
+<!-- n.burnin <- 1000 -->
+<!-- n.chains <- 3 -->
+<!-- ``` -->
+<!-- Run model, add argument `constants = my.constants`. -->
+<!-- ```{r} -->
+<!-- mcmc.output <- nimbleMCMC(code = model, -->
+<!--                           data = my.data, -->
+<!--                           constants = my.constants, -->
+<!--                           inits = initial.values, -->
+<!--                           monitors = parameters.to.save, -->
+<!--                           niter = n.iter, -->
+<!--                           nburnin = n.burnin, -->
+<!--                           nchains = n.chains) -->
+<!-- ``` -->
+<p>Third step is to tell NIMBLE which nodes in your model you would like to keep track of, in other words the quantities you’d like to do inference about. In our model we want survival <code>theta</code> and <code>lifespan</code>:</p>
+<div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">parameters.to.save</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"theta"</span>, <span class="st">"lifespan"</span><span class="op">)</span></span></code></pre></div>
+<p>In general you have many quantities in your model, including some of little interest that are not worth monitoring, and having full control on verbosity will prove handy.</p>
+<p>Fourth step is to specify initial values for all model parameters. To make sure that the MCMC algorithm explores the posterior distribution, we start different chains with different parameter values. You can specify initial values for each chain in a list and put them in yet another list:</p>
+<div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">init1</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>theta <span class="op">=</span> <span class="fl">0.1</span><span class="op">)</span></span>
+<span><span class="va">init2</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>theta <span class="op">=</span> <span class="fl">0.5</span><span class="op">)</span></span>
+<span><span class="va">init3</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>theta <span class="op">=</span> <span class="fl">0.9</span><span class="op">)</span></span>
+<span><span class="va">initial.values</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span><span class="va">init1</span>, <span class="va">init2</span>, <span class="va">init3</span><span class="op">)</span></span>
+<span><span class="va">initial.values</span></span>
+<span><span class="co">## [[1]]</span></span>
+<span><span class="co">## [[1]]$theta</span></span>
+<span><span class="co">## [1] 0.1</span></span>
+<span><span class="co">## </span></span>
+<span><span class="co">## </span></span>
+<span><span class="co">## [[2]]</span></span>
+<span><span class="co">## [[2]]$theta</span></span>
+<span><span class="co">## [1] 0.5</span></span>
+<span><span class="co">## </span></span>
+<span><span class="co">## </span></span>
+<span><span class="co">## [[3]]</span></span>
+<span><span class="co">## [[3]]$theta</span></span>
+<span><span class="co">## [1] 0.9</span></span></code></pre></div>
+<p>Alternatively, you can write a simple R function that generates random initial values:</p>
+<div class="sourceCode" id="cb23"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">initial.values</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>theta <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html">runif</a></span><span class="op">(</span><span class="fl">1</span>,<span class="fl">0</span>,<span class="fl">1</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu">initial.values</span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="co">## $theta</span></span>
+<span><span class="co">## [1] 0.8356</span></span></code></pre></div>
+<p>Firth and last step, you need to tell NIMBLE the number of chains to run, say <code>n.chain</code>, how long the burn-in period should be, say <code>n.burnin</code>, and the number of iterations following the burn-in period to be used for posterior inference. In NIMBLE, you specify the total number of iterations, say <code>n.iter</code>, so that the number of posterior samples per chain is <code>n.iter - n.burnin</code>. NIMBLE also allows discarding samples after burn-in, a procedure known as thinning, which I will not use in this book<a class="footnote-ref" tabindex="0" data-toggle="popover" data-content="&lt;p&gt;Link, W.A. and Eaton, M.J. (2012), On thinning of chains in MCMC. Methods in Ecology and Evolution, 3: 112-115.&lt;/p&gt;"><sup>18</sup></a>.</p>
+<div class="sourceCode" id="cb24"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">n.iter</span> <span class="op">&lt;-</span> <span class="fl">5000</span></span>
+<span><span class="va">n.burnin</span> <span class="op">&lt;-</span> <span class="fl">1000</span></span>
+<span><span class="va">n.chains</span> <span class="op">&lt;-</span> <span class="fl">3</span></span></code></pre></div>
+<p>We now have all the ingredients to run model, that is to sample in the posterior distribution of model parameters using MCMC simulations. This is accomplished using function <code><a href="https://rdrr.io/pkg/nimble/man/nimbleMCMC.html">nimbleMCMC()</a></code>:</p>
+<div class="sourceCode" id="cb25"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">mcmc.output</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimbleMCMC.html">nimbleMCMC</a></span><span class="op">(</span>code <span class="op">=</span> <span class="va">model</span>,</span>
+<span>                          data <span class="op">=</span> <span class="va">my.data</span>,</span>
+<span>                          inits <span class="op">=</span> <span class="va">initial.values</span>,</span>
+<span>                          monitors <span class="op">=</span> <span class="va">parameters.to.save</span>,</span>
+<span>                          niter <span class="op">=</span> <span class="va">n.iter</span>,</span>
+<span>                          nburnin <span class="op">=</span> <span class="va">n.burnin</span>,</span>
+<span>                          nchains <span class="op">=</span> <span class="va">n.chains</span><span class="op">)</span></span>
+<span><span class="co">## |-------------|-------------|-------------|-------------|</span></span>
+<span><span class="co">## |-------------------------------------------------------|</span></span>
+<span><span class="co">## |-------------|-------------|-------------|-------------|</span></span>
+<span><span class="co">## |-------------------------------------------------------|</span></span>
+<span><span class="co">## |-------------|-------------|-------------|-------------|</span></span>
+<span><span class="co">## |-------------------------------------------------------|</span></span></code></pre></div>
+<p>NIMBLE goes through several steps that we will explain in Section <a href="intronimble.html#under-the-hood">2.5</a>. Function <code><a href="https://rdrr.io/pkg/nimble/man/nimbleMCMC.html">nimbleMCMC()</a></code> takes other arguments that you might find useful. For example, you can suppress the progress bar if you find it too depressing when running long simulations with <code>progressBar = FALSE</code>. You can also get a summary of the outputs by specifying <code>summary = TRUE</code>. Check <code><a href="https://rdrr.io/pkg/nimble/man/nimbleMCMC.html">?nimbleMCMC</a></code> for more details.</p>
+<p>Now let’s inspect what we have in <code>mcmc.output</code>:</p>
+<div class="sourceCode" id="cb26"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/str.html">str</a></span><span class="op">(</span><span class="va">mcmc.output</span><span class="op">)</span></span>
+<span><span class="co">## List of 3</span></span>
+<span><span class="co">##  $ chain1: num [1:4000, 1:2] 0.907 0.907 0.907 0.907 0.853 ...</span></span>
+<span><span class="co">##   ..- attr(*, "dimnames")=List of 2</span></span>
+<span><span class="co">##   .. ..$ : NULL</span></span>
+<span><span class="co">##   .. ..$ : chr [1:2] "lifespan" "theta"</span></span>
+<span><span class="co">##  $ chain2: num [1:4000, 1:2] 0.787 0.894 1.291 1.388 1.388 ...</span></span>
+<span><span class="co">##   ..- attr(*, "dimnames")=List of 2</span></span>
+<span><span class="co">##   .. ..$ : NULL</span></span>
+<span><span class="co">##   .. ..$ : chr [1:2] "lifespan" "theta"</span></span>
+<span><span class="co">##  $ chain3: num [1:4000, 1:2] 0.745 0.745 0.745 0.886 1.136 ...</span></span>
+<span><span class="co">##   ..- attr(*, "dimnames")=List of 2</span></span>
+<span><span class="co">##   .. ..$ : NULL</span></span>
+<span><span class="co">##   .. ..$ : chr [1:2] "lifespan" "theta"</span></span></code></pre></div>
+<p>The R object <code>mcmc.output</code> is a list with three components, one for each MCMC chain. Let’s have a look to <code>chain1</code> for example:</p>
+<div class="sourceCode" id="cb27"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/dim.html">dim</a></span><span class="op">(</span><span class="va">mcmc.output</span><span class="op">$</span><span class="va">chain1</span><span class="op">)</span></span>
+<span><span class="co">## [1] 4000    2</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/head.html">head</a></span><span class="op">(</span><span class="va">mcmc.output</span><span class="op">$</span><span class="va">chain1</span><span class="op">)</span></span>
+<span><span class="co">##      lifespan  theta</span></span>
+<span><span class="co">## [1,]   0.9069 0.3320</span></span>
+<span><span class="co">## [2,]   0.9069 0.3320</span></span>
+<span><span class="co">## [3,]   0.9069 0.3320</span></span>
+<span><span class="co">## [4,]   0.9069 0.3320</span></span>
+<span><span class="co">## [5,]   0.8526 0.3095</span></span>
+<span><span class="co">## [6,]   0.7987 0.2859</span></span></code></pre></div>
+<p>Each component of the list is a matrix. In rows, you have 4000 samples from the posterior distribution of <code>theta</code>, which corresponds to <code>n.iter - n.burnin</code> iterations. In columns, you have the quantities we monitor, <code>theta</code> and <code>lifespan</code>. From there, you can compute the posterior mean of <code>theta</code>:</p>
+<div class="sourceCode" id="cb28"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/mean.html">mean</a></span><span class="op">(</span><span class="va">mcmc.output</span><span class="op">$</span><span class="va">chain1</span><span class="op">[</span>,<span class="st">'theta'</span><span class="op">]</span><span class="op">)</span></span>
+<span><span class="co">## [1] 0.3407</span></span></code></pre></div>
+<p>You can also obtain the 95% credible interval for <code>theta</code>:</p>
+<div class="sourceCode" id="cb29"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/stats/quantile.html">quantile</a></span><span class="op">(</span><span class="va">mcmc.output</span><span class="op">$</span><span class="va">chain1</span><span class="op">[</span>,<span class="st">'theta'</span><span class="op">]</span>, probs <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="fl">2.5</span>, <span class="fl">97.5</span><span class="op">)</span><span class="op">/</span><span class="fl">100</span><span class="op">)</span></span>
+<span><span class="co">##   2.5%  97.5% </span></span>
+<span><span class="co">## 0.2219 0.4620</span></span></code></pre></div>
+<p>Let’s visualise the posterior distribution of <code>theta</code> with a histogram:</p>
+<div class="sourceCode" id="cb30"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">mcmc.output</span> <span class="op">%&gt;%</span></span>
+<span>  <span class="fu">as_tibble</span><span class="op">(</span><span class="op">)</span> <span class="op">%&gt;%</span></span>
+<span>  <span class="fu">ggplot</span><span class="op">(</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu">geom_histogram</span><span class="op">(</span><span class="fu">aes</span><span class="op">(</span>x <span class="op">=</span> <span class="va">chain1</span><span class="op">[</span>,<span class="st">"theta"</span><span class="op">]</span><span class="op">)</span>, color <span class="op">=</span> <span class="st">"white"</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu">labs</span><span class="op">(</span>x <span class="op">=</span> <span class="st">"survival probability"</span><span class="op">)</span></span></code></pre></div>
+<div class="inline-figure"><img src="banana-book_files/figure-html/unnamed-chunk-43-1.png" width="672"></div>
+<p>There are less painful ways of doing posterior inference. In this book, I will use the R package <code>MCMCvis</code><a class="footnote-ref" tabindex="0" data-toggle="popover" data-content='&lt;p&gt;&lt;a href="https://github.com/caseyyoungflesh/MCMCvis" class="uri"&gt;https://github.com/caseyyoungflesh/MCMCvis&lt;/a&gt;&lt;/p&gt;'><sup>19</sup></a> to summarise and visualize MCMC outputs, but there are other perfectly valid options out there like <code>ggmcmc</code><a class="footnote-ref" tabindex="0" data-toggle="popover" data-content="&lt;p&gt;Fernández-i-Marín, X. (2016). ggmcmc: Analysis of MCMC Samples and Bayesian Inference. Journal of Statistical Software, 70(9), 1–20&lt;/p&gt;"><sup>20</sup></a> and <code>basicMCMCplots</code><a class="footnote-ref" tabindex="0" data-toggle="popover" data-content='&lt;p&gt;&lt;a href="https://cran.r-project.org/web/packages/basicMCMCplots/index.html" class="uri"&gt;https://cran.r-project.org/web/packages/basicMCMCplots/index.html&lt;/a&gt;&lt;/p&gt;'><sup>21</sup></a>. <strong>Shall I demonstrate these other options?</strong></p>
+<!-- Finally we want to look at our samples. NIMBLE returns samples as a simple matrix with named columns. There are numerous packages for processing MCMC output. If you want to use the coda package, you can convert a matrix to a coda mcmc object like this: -->
+<!-- library(coda) -->
+<!-- coda.samples <- as.mcmc(samples) -->
+<!-- Alternatively, if you call nimbleMCMC with the argument samplesAsCodaMCMC = TRUE, the samples will be returned as a coda object. -->
+<p>Let’s load the package <code>MCMCvis</code>:</p>
+<div class="sourceCode" id="cb31"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/caseyyoungflesh/MCMCvis">MCMCvis</a></span><span class="op">)</span></span></code></pre></div>
+<p>To get the most common numerical summaries, the function <code><a href="https://rdrr.io/pkg/MCMCvis/man/MCMCsummary.html">MCMCsummary()</a></code> does the job:</p>
+<div class="sourceCode" id="cb32"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/pkg/MCMCvis/man/MCMCsummary.html">MCMCsummary</a></span><span class="op">(</span>object <span class="op">=</span> <span class="va">mcmc.output</span>, round <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span>
+<span><span class="co">##          mean   sd 2.5%  50% 97.5% Rhat n.eff</span></span>
+<span><span class="co">## lifespan 0.94 0.17 0.66 0.92  1.32    1  2513</span></span>
+<span><span class="co">## theta    0.34 0.06 0.22 0.34  0.47    1  2533</span></span></code></pre></div>
+<p>You can use a caterpillar plot to visualise the posterior distributions of <code>theta</code> with <code><a href="https://rdrr.io/pkg/MCMCvis/man/MCMCplot.html">MCMCplot()</a></code>:</p>
+<div class="sourceCode" id="cb33"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/pkg/MCMCvis/man/MCMCplot.html">MCMCplot</a></span><span class="op">(</span>object <span class="op">=</span> <span class="va">mcmc.output</span>, </span>
+<span>         params <span class="op">=</span> <span class="st">'theta'</span><span class="op">)</span></span></code></pre></div>
+<div class="inline-figure"><img src="banana-book_files/figure-html/unnamed-chunk-46-1.png" width="672"></div>
+<p>The point represents the posterior median, the thick line is the 50% credible interval and the thin line the 95% credible interval.</p>
+<p>The trace and posterior density of theta can be obtained with <code><a href="https://rdrr.io/pkg/MCMCvis/man/MCMCtrace.html">MCMCtrace()</a></code>:</p>
+<div class="sourceCode" id="cb34"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/pkg/MCMCvis/man/MCMCtrace.html">MCMCtrace</a></span><span class="op">(</span>object <span class="op">=</span> <span class="va">mcmc.output</span>,</span>
+<span>          pdf <span class="op">=</span> <span class="cn">FALSE</span>, <span class="co"># no export to PDF</span></span>
+<span>          ind <span class="op">=</span> <span class="cn">TRUE</span>, <span class="co"># separate density lines per chain</span></span>
+<span>          params <span class="op">=</span> <span class="st">"theta"</span><span class="op">)</span></span></code></pre></div>
+<div class="inline-figure"><img src="banana-book_files/figure-html/unnamed-chunk-47-1.png" width="672"></div>
+<p>You can also add the diagnostics of convergence we discussed in the previous chapter:</p>
+<div class="sourceCode" id="cb35"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/pkg/MCMCvis/man/MCMCtrace.html">MCMCtrace</a></span><span class="op">(</span>object <span class="op">=</span> <span class="va">mcmc.output</span>,</span>
+<span>          pdf <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>          ind <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>          Rhat <span class="op">=</span> <span class="cn">TRUE</span>, <span class="co"># add Rhat</span></span>
+<span>          n.eff <span class="op">=</span> <span class="cn">TRUE</span>, <span class="co"># add eff sample size</span></span>
+<span>          params <span class="op">=</span> <span class="st">"theta"</span><span class="op">)</span></span></code></pre></div>
+<div class="inline-figure"><img src="banana-book_files/figure-html/unnamed-chunk-48-1.png" width="672"></div>
+<p>We calculated lifespan directly in our model with <code>lifespan &lt;- -1/log(theta)</code>. But you can also calculate this quantity from outside NIMBLE. This is a nice by-product of using MCMC simulations: you can obtain the posterior distribution of any quantity that is function of your model parameters by applying this function to samples from the posterior distribution of these parameters. In our example, all you need is samples from the posterior distribution of <code>theta</code>, which we pool between the three chains with:</p>
+<div class="sourceCode" id="cb36"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">theta_samples</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="va">mcmc.output</span><span class="op">$</span><span class="va">chain1</span><span class="op">[</span>,<span class="st">'theta'</span><span class="op">]</span>, </span>
+<span>                   <span class="va">mcmc.output</span><span class="op">$</span><span class="va">chain2</span><span class="op">[</span>,<span class="st">'theta'</span><span class="op">]</span>,</span>
+<span>                   <span class="va">mcmc.output</span><span class="op">$</span><span class="va">chain3</span><span class="op">[</span>,<span class="st">'theta'</span><span class="op">]</span><span class="op">)</span></span></code></pre></div>
+<p>To get samples from the posterior distribution of lifespan, we apply the function to calculate lifespan to the samples from the posterior distribution of survival:</p>
+<div class="sourceCode" id="cb37"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">lifespan</span> <span class="op">&lt;-</span> <span class="op">-</span><span class="fl">1</span><span class="op">/</span><span class="fu"><a href="https://rdrr.io/r/base/Log.html">log</a></span><span class="op">(</span><span class="va">theta_samples</span><span class="op">)</span></span></code></pre></div>
+<p>As usual then, you can calculate the posterior mean and 95% credible interval:</p>
+<div class="sourceCode" id="cb38"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/mean.html">mean</a></span><span class="op">(</span><span class="va">lifespan</span><span class="op">)</span></span>
+<span><span class="co">## [1] 0.9398</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/stats/quantile.html">quantile</a></span><span class="op">(</span><span class="va">lifespan</span>, probs <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="fl">2.5</span>, <span class="fl">97.5</span><span class="op">)</span><span class="op">/</span><span class="fl">100</span><span class="op">)</span></span>
+<span><span class="co">##   2.5%  97.5% </span></span>
+<span><span class="co">## 0.6629 1.3194</span></span></code></pre></div>
+<p>You can also visualise the posterior distribution of lifespan:</p>
+<div class="sourceCode" id="cb39"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">lifespan</span> <span class="op">%&gt;%</span></span>
+<span>  <span class="fu">as_tibble</span><span class="op">(</span><span class="op">)</span> <span class="op">%&gt;%</span></span>
+<span>  <span class="fu">ggplot</span><span class="op">(</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu">geom_histogram</span><span class="op">(</span><span class="fu">aes</span><span class="op">(</span>x <span class="op">=</span> <span class="va">value</span><span class="op">)</span>, color <span class="op">=</span> <span class="st">"white"</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu">labs</span><span class="op">(</span>x <span class="op">=</span> <span class="st">"lifespan"</span><span class="op">)</span></span></code></pre></div>
+<div class="inline-figure"><img src="banana-book_files/figure-html/unnamed-chunk-52-1.png" width="672"></div>
+<p>Now you’re good to go. For convenience I have summarized the steps above in the box below. The NIMBLE workflow provided with <code><a href="https://rdrr.io/pkg/nimble/man/nimbleMCMC.html">nimbleMCMC()</a></code> allows you to build models and make inference. This is what you can achieve with other software like WinBUGS or JAGS.</p>
+<div class="rmdnote">
+<p><strong>NIMBLE workflow:</strong></p>
+<div class="sourceCode" id="cb40"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># model building</span></span>
+<span><span class="va">model</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimbleCode.html">nimbleCode</a></span><span class="op">(</span><span class="op">{</span></span>
+<span>  <span class="co"># likelihood</span></span>
+<span>  <span class="va">survived</span> <span class="op">~</span> <span class="fu"><a href="https://rdrr.io/r/stats/Binomial.html">dbinom</a></span><span class="op">(</span><span class="va">theta</span>, <span class="va">released</span><span class="op">)</span></span>
+<span>  <span class="co"># prior</span></span>
+<span>  <span class="va">theta</span> <span class="op">~</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html">dunif</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1</span><span class="op">)</span></span>
+<span>  <span class="co"># derived quantity</span></span>
+<span>  <span class="va">lifespan</span> <span class="op">&lt;-</span> <span class="op">-</span><span class="fl">1</span><span class="op">/</span><span class="fu"><a href="https://rdrr.io/r/base/Log.html">log</a></span><span class="op">(</span><span class="va">theta</span><span class="op">)</span></span>
+<span><span class="op">}</span><span class="op">)</span></span>
+<span><span class="co"># read in data</span></span>
+<span><span class="va">my.data</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>released <span class="op">=</span> <span class="fl">57</span>, survived <span class="op">=</span> <span class="fl">19</span><span class="op">)</span></span>
+<span><span class="co"># specify parameters to monitor</span></span>
+<span><span class="va">parameters.to.save</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"theta"</span>, <span class="st">"lifespan"</span><span class="op">)</span></span>
+<span><span class="co"># pick initial values</span></span>
+<span><span class="va">initial.values</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>theta <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html">runif</a></span><span class="op">(</span><span class="fl">1</span>,<span class="fl">0</span>,<span class="fl">1</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co"># specify MCMC details</span></span>
+<span><span class="va">n.iter</span> <span class="op">&lt;-</span> <span class="fl">5000</span></span>
+<span><span class="va">n.burnin</span> <span class="op">&lt;-</span> <span class="fl">1000</span></span>
+<span><span class="va">n.chains</span> <span class="op">&lt;-</span> <span class="fl">3</span></span>
+<span><span class="co"># run NIMBLE</span></span>
+<span><span class="va">mcmc.output</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimbleMCMC.html">nimbleMCMC</a></span><span class="op">(</span>code <span class="op">=</span> <span class="va">model</span>,</span>
+<span>                          data <span class="op">=</span> <span class="va">my.data</span>,</span>
+<span>                          inits <span class="op">=</span> <span class="va">initial.values</span>,</span>
+<span>                          monitors <span class="op">=</span> <span class="va">parameters.to.save</span>,</span>
+<span>                          niter <span class="op">=</span> <span class="va">n.iter</span>,</span>
+<span>                          nburnin <span class="op">=</span> <span class="va">n.burnin</span>,</span>
+<span>                          nchains <span class="op">=</span> <span class="va">n.chains</span><span class="op">)</span></span>
+<span><span class="co"># calculate numerical summaries</span></span>
+<span><span class="fu"><a href="https://rdrr.io/pkg/MCMCvis/man/MCMCsummary.html">MCMCsummary</a></span><span class="op">(</span>object <span class="op">=</span> <span class="va">mcmc.output</span>, round <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span>
+<span><span class="co"># visualize parameter posterior distribution</span></span>
+<span><span class="fu"><a href="https://rdrr.io/pkg/MCMCvis/man/MCMCplot.html">MCMCplot</a></span><span class="op">(</span>object <span class="op">=</span> <span class="va">mcmc.output</span>, </span>
+<span>         params <span class="op">=</span> <span class="st">'theta'</span><span class="op">)</span></span>
+<span><span class="co"># check convergence</span></span>
+<span><span class="fu"><a href="https://rdrr.io/pkg/MCMCvis/man/MCMCtrace.html">MCMCtrace</a></span><span class="op">(</span>object <span class="op">=</span> <span class="va">mcmc.output</span>,</span>
+<span>          pdf <span class="op">=</span> <span class="cn">FALSE</span>, <span class="co"># no export to PDF</span></span>
+<span>          ind <span class="op">=</span> <span class="cn">TRUE</span>, <span class="co"># separate density lines per chain</span></span>
+<span>          params <span class="op">=</span> <span class="st">"theta"</span><span class="op">)</span></span></code></pre></div>
+</div>
+<p>But NIMBLE is more than just another MCMC engine. It provides a programming environment so that you have full control when building models and estimating parameters. NIMBLE allows you to write your own functions and distributions to build models, and to choose alternative MCMC samplers or code new ones. This flexibility often comes with faster convergence.</p>
+<p>I have to be honest, learning these improvements over other software takes some reading and experimentation, and it might well be that you do not need to use any of these features. And it’s fine. In the next sections, I cover some of this advanced material. You may skip these sections and go back to this material later if you need it.</p>
+</div>
+<div id="functions-in-nimble" class="section level2" number="2.4">
+<h2>
+<span class="header-section-number">2.4</span> Programming<a class="anchor" aria-label="anchor" href="#functions-in-nimble"><i class="fas fa-link"></i></a>
+</h2>
+<p>In NIMBLE you can write and use your own functions, or use existing R or C/C++ functions. This allows you to customize models the way you want.</p>
+<div id="nimble-functions" class="section level3" number="2.4.1">
+<h3>
+<span class="header-section-number">2.4.1</span> NIMBLE functions<a class="anchor" aria-label="anchor" href="#nimble-functions"><i class="fas fa-link"></i></a>
+</h3>
+<p>NIMBLE provides <code>nimbleFunctions</code> for programming. A <code>nimbleFunction</code> is like an R function, plus it can be compiled for faster computation. Going back to our animal survival example, we can write a <code>nimbleFunction</code> to compute lifespan:</p>
+<div class="sourceCode" id="cb41"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">computeLifespan</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimbleFunction.html">nimbleFunction</a></span><span class="op">(</span></span>
+<span>    run <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">theta</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/double.html">double</a></span><span class="op">(</span><span class="fl">0</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span> <span class="co"># type declarations</span></span>
+<span>        <span class="va">ans</span> <span class="op">&lt;-</span> <span class="op">-</span><span class="fl">1</span><span class="op">/</span><span class="fu"><a href="https://rdrr.io/r/base/Log.html">log</a></span><span class="op">(</span><span class="va">theta</span><span class="op">)</span></span>
+<span>        <span class="kw"><a href="https://rdrr.io/r/base/function.html">return</a></span><span class="op">(</span><span class="va">ans</span><span class="op">)</span></span>
+<span>        <span class="fu">returnType</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/double.html">double</a></span><span class="op">(</span><span class="fl">0</span><span class="op">)</span><span class="op">)</span>  <span class="co"># return type declaration</span></span>
+<span>    <span class="op">}</span> <span class="op">)</span></span></code></pre></div>
+<p>Within the nimbleFunction, the <code>run</code> section gives the function to be executed. It is written in the NIMBLE language. The <code>theta = double(0)</code> and <code>returnType(double(0))</code> arguments tell NIMBLE that the input and output are single numeric values (scalars). Alternatively, <code>double(1)</code> and <code>double(2)</code> are for vectors and matrices, while <code><a href="https://rdrr.io/r/base/logical.html">logical()</a></code>, <code><a href="https://rdrr.io/r/base/integer.html">integer()</a></code> and <code><a href="https://rdrr.io/r/base/character.html">character()</a></code> are for logical, integer and character values.</p>
+<p>You can use your <code>nimbleFunction</code> in R:</p>
+<div class="sourceCode" id="cb42"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu">computeLifespan</span><span class="op">(</span><span class="fl">0.8</span><span class="op">)</span></span>
+<span><span class="co">## [1] 4.481</span></span></code></pre></div>
+<p>You can compile it and use the C++ code for faster computation:</p>
+<div class="sourceCode" id="cb43"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">CcomputeLifespan</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/compileNimble.html">compileNimble</a></span><span class="op">(</span><span class="va">computeLifespan</span><span class="op">)</span></span>
+<span><span class="fu">CcomputeLifespan</span><span class="op">(</span><span class="fl">0.8</span><span class="op">)</span></span>
+<span><span class="co">## [1] 4.481</span></span></code></pre></div>
+<p>You can also use your <code>nimbleFunction</code> in a model:</p>
+<div class="sourceCode" id="cb44"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">model</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimbleCode.html">nimbleCode</a></span><span class="op">(</span><span class="op">{</span></span>
+<span>  <span class="co"># likelihood</span></span>
+<span>  <span class="va">survived</span> <span class="op">~</span> <span class="fu"><a href="https://rdrr.io/r/stats/Binomial.html">dbinom</a></span><span class="op">(</span><span class="va">theta</span>, <span class="va">released</span><span class="op">)</span></span>
+<span>  <span class="co"># prior</span></span>
+<span>  <span class="va">theta</span> <span class="op">~</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html">dunif</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1</span><span class="op">)</span></span>
+<span>  <span class="co"># derived quantity</span></span>
+<span>  <span class="va">lifespan</span> <span class="op">&lt;-</span> <span class="fu">computeLifespan</span><span class="op">(</span><span class="va">theta</span><span class="op">)</span></span>
+<span><span class="op">}</span><span class="op">)</span></span></code></pre></div>
+<p>The rest of the workflow remains the same:</p>
+<div class="sourceCode" id="cb45"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">my.data</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>survived <span class="op">=</span> <span class="fl">19</span>, released <span class="op">=</span> <span class="fl">57</span><span class="op">)</span></span>
+<span><span class="va">parameters.to.save</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"theta"</span>, <span class="st">"lifespan"</span><span class="op">)</span></span>
+<span><span class="va">initial.values</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>theta <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html">runif</a></span><span class="op">(</span><span class="fl">1</span>,<span class="fl">0</span>,<span class="fl">1</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">n.iter</span> <span class="op">&lt;-</span> <span class="fl">5000</span></span>
+<span><span class="va">n.burnin</span> <span class="op">&lt;-</span> <span class="fl">1000</span></span>
+<span><span class="va">n.chains</span> <span class="op">&lt;-</span> <span class="fl">3</span></span>
+<span><span class="va">mcmc.output</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimbleMCMC.html">nimbleMCMC</a></span><span class="op">(</span>code <span class="op">=</span> <span class="va">model</span>,</span>
+<span>                          data <span class="op">=</span> <span class="va">my.data</span>,</span>
+<span>                          inits <span class="op">=</span> <span class="va">initial.values</span>,</span>
+<span>                          monitors <span class="op">=</span> <span class="va">parameters.to.save</span>,</span>
+<span>                          niter <span class="op">=</span> <span class="va">n.iter</span>,</span>
+<span>                          nburnin <span class="op">=</span> <span class="va">n.burnin</span>,</span>
+<span>                          nchains <span class="op">=</span> <span class="va">n.chains</span><span class="op">)</span></span>
+<span><span class="co">## |-------------|-------------|-------------|-------------|</span></span>
+<span><span class="co">## |-------------------------------------------------------|</span></span>
+<span><span class="co">## |-------------|-------------|-------------|-------------|</span></span>
+<span><span class="co">## |-------------------------------------------------------|</span></span>
+<span><span class="co">## |-------------|-------------|-------------|-------------|</span></span>
+<span><span class="co">## |-------------------------------------------------------|</span></span>
+<span><span class="fu"><a href="https://rdrr.io/pkg/MCMCvis/man/MCMCsummary.html">MCMCsummary</a></span><span class="op">(</span>object <span class="op">=</span> <span class="va">mcmc.output</span>, round <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span>
+<span><span class="co">##          mean   sd 2.5%  50% 97.5% Rhat n.eff</span></span>
+<span><span class="co">## lifespan 0.94 0.16 0.66 0.92  1.31    1  2593</span></span>
+<span><span class="co">## theta    0.34 0.06 0.22 0.34  0.47    1  2652</span></span></code></pre></div>
+<p>With <code>nimbleFunctions</code>, you can mimic basic R syntax, do linear algebra (e.g. compute eigenvalues), operate on vectors and matrices (e.g. inverse a matrix), use logical operators (e.g. and/or) and flow control (e.g. if-else). There is also a long list of common and less common distributions that can be used with <code>nimbleFunctions</code>.</p>
+<p>To learn everything you need to know on writing <code>nimbleFunctions</code>, make sure to read chapter 11 of the NIMBLE manual at <a href="https://r-nimble.org/html_manual/cha-RCfunctions.html#cha-RCfunctions" class="uri">https://r-nimble.org/html_manual/cha-RCfunctions.html#cha-RCfunctions</a>.</p>
+</div>
+<div id="callrfninnimble" class="section level3" number="2.4.2">
+<h3>
+<span class="header-section-number">2.4.2</span> Calling R/C++ functions<a class="anchor" aria-label="anchor" href="#callrfninnimble"><i class="fas fa-link"></i></a>
+</h3>
+<p>If you’re like me, and too lazy to write your own functions, you can rely on the scientific community and use existing C, C++ or R code. The trick is to write a <code>nimbleFunction</code> that wraps access to that code which can then be used by NIMBLE. As an example, imagine you’d like to use an R function <code>myfunction()</code>, either a function you wrote yourself, or a function available in your favorite R package:</p>
+<div class="sourceCode" id="cb46"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">myfunction</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">x</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="op">-</span><span class="fl">1</span><span class="op">/</span><span class="fu"><a href="https://rdrr.io/r/base/Log.html">log</a></span><span class="op">(</span><span class="va">x</span><span class="op">)</span></span>
+<span><span class="op">}</span></span></code></pre></div>
+<p>Now wrap this function using <code><a href="https://rdrr.io/pkg/nimble/man/nimbleRcall.html">nimbleRcall()</a></code> or <code><a href="https://rdrr.io/pkg/nimble/man/nimbleExternalCall.html">nimbleExternalCall()</a></code> for a C or C++ function:</p>
+<div class="sourceCode" id="cb47"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">Rmyfunction</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimbleRcall.html">nimbleRcall</a></span><span class="op">(</span>prototype <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">x</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/double.html">double</a></span><span class="op">(</span><span class="fl">0</span><span class="op">)</span><span class="op">)</span><span class="op">{</span><span class="op">}</span>, </span>
+<span>                           Rfun <span class="op">=</span> <span class="st">'myfunction'</span>,</span>
+<span>                           returnType <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/double.html">double</a></span><span class="op">(</span><span class="fl">0</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<p>In the call to <code><a href="https://rdrr.io/pkg/nimble/man/nimbleRcall.html">nimbleRcall()</a></code> above, the argument <code>prototype</code> specifies inputs (a single numeric value <code>double(0)</code>) of the R function <code>Rfun</code> that generates outputs <code>returnType</code> (a single numeric value <code>double(0)</code>).</p>
+<p>Now you can call your R function from a model (or any <code>nimbleFunctions</code>):</p>
+<div class="sourceCode" id="cb48"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">model</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimbleCode.html">nimbleCode</a></span><span class="op">(</span><span class="op">{</span></span>
+<span>  <span class="co"># likelihood</span></span>
+<span>  <span class="va">survived</span> <span class="op">~</span> <span class="fu"><a href="https://rdrr.io/r/stats/Binomial.html">dbinom</a></span><span class="op">(</span><span class="va">theta</span>, <span class="va">released</span><span class="op">)</span></span>
+<span>  <span class="co"># prior</span></span>
+<span>  <span class="va">theta</span> <span class="op">~</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html">dunif</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1</span><span class="op">)</span></span>
+<span>  <span class="va">lifespan</span> <span class="op">&lt;-</span> <span class="fu">Rmyfunction</span><span class="op">(</span><span class="va">theta</span><span class="op">)</span></span>
+<span><span class="op">}</span><span class="op">)</span></span></code></pre></div>
+<p>The rest of the workflow remains the same:</p>
+<div class="sourceCode" id="cb49"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">my.data</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>survived <span class="op">=</span> <span class="fl">19</span>, released <span class="op">=</span> <span class="fl">57</span><span class="op">)</span></span>
+<span><span class="va">parameters.to.save</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"theta"</span>, <span class="st">"lifespan"</span><span class="op">)</span></span>
+<span><span class="va">initial.values</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>theta <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html">runif</a></span><span class="op">(</span><span class="fl">1</span>,<span class="fl">0</span>,<span class="fl">1</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">n.iter</span> <span class="op">&lt;-</span> <span class="fl">5000</span></span>
+<span><span class="va">n.burnin</span> <span class="op">&lt;-</span> <span class="fl">1000</span></span>
+<span><span class="va">n.chains</span> <span class="op">&lt;-</span> <span class="fl">3</span></span>
+<span><span class="va">mcmc.output</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimbleMCMC.html">nimbleMCMC</a></span><span class="op">(</span>code <span class="op">=</span> <span class="va">model</span>,</span>
+<span>                          data <span class="op">=</span> <span class="va">my.data</span>,</span>
+<span>                          inits <span class="op">=</span> <span class="va">initial.values</span>,</span>
+<span>                          monitors <span class="op">=</span> <span class="va">parameters.to.save</span>,</span>
+<span>                          niter <span class="op">=</span> <span class="va">n.iter</span>,</span>
+<span>                          nburnin <span class="op">=</span> <span class="va">n.burnin</span>,</span>
+<span>                          nchains <span class="op">=</span> <span class="va">n.chains</span><span class="op">)</span></span>
+<span><span class="co">## |-------------|-------------|-------------|-------------|</span></span>
+<span><span class="co">## |-------------------------------------------------------|</span></span>
+<span><span class="co">## |-------------|-------------|-------------|-------------|</span></span>
+<span><span class="co">## |-------------------------------------------------------|</span></span>
+<span><span class="co">## |-------------|-------------|-------------|-------------|</span></span>
+<span><span class="co">## |-------------------------------------------------------|</span></span>
+<span><span class="fu"><a href="https://rdrr.io/pkg/MCMCvis/man/MCMCsummary.html">MCMCsummary</a></span><span class="op">(</span>object <span class="op">=</span> <span class="va">mcmc.output</span>, round <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span>
+<span><span class="co">##          mean   sd 2.5%  50% 97.5% Rhat n.eff</span></span>
+<span><span class="co">## lifespan 0.94 0.16 0.68 0.92  1.29    1  2597</span></span>
+<span><span class="co">## theta    0.34 0.06 0.23 0.34  0.46    1  2643</span></span></code></pre></div>
+<p>Evaluating an R function from within NIMBLE slows MCMC sampling down, but if you can live with it, the cost is easily offset by the convenience of being able to use existing R functions.</p>
+<p>Another advantage of using <code><a href="https://rdrr.io/pkg/nimble/man/nimbleRcall.html">nimbleRcall()</a></code> (or <code><a href="https://rdrr.io/pkg/nimble/man/nimbleExternalCall.html">nimbleExternalCall()</a></code>) is that you can keep large objects out of your model, so that NIMBLE does not have to handle them in MCMC sampling. These objects should be constants and not change when you run NIMBLE. Letting R manipulating these objects will save you time, usually more than the time you lose by calling R from within NIMBLE.</p>
+</div>
+<div id="user-defined-distributions" class="section level3" number="2.4.3">
+<h3>
+<span class="header-section-number">2.4.3</span> User-defined distributions<a class="anchor" aria-label="anchor" href="#user-defined-distributions"><i class="fas fa-link"></i></a>
+</h3>
+<p>With <code>nimbleFunctions</code> you can provide user-defined distributions to NIMBLE. You need to write functions for density (<code>d</code>) and simulation (<code>r</code>) for your distribution. As an example, we write our own binomial distribution:</p>
+<div class="sourceCode" id="cb50"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># density</span></span>
+<span><span class="va">dmybinom</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimbleFunction.html">nimbleFunction</a></span><span class="op">(</span></span>
+<span>  run <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">x</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/double.html">double</a></span><span class="op">(</span><span class="fl">0</span><span class="op">)</span>, </span>
+<span>                 <span class="va">size</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/double.html">double</a></span><span class="op">(</span><span class="fl">0</span><span class="op">)</span>, </span>
+<span>                 <span class="va">prob</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/double.html">double</a></span><span class="op">(</span><span class="fl">0</span><span class="op">)</span>, </span>
+<span>                 <span class="va">log</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/integer.html">integer</a></span><span class="op">(</span><span class="fl">0</span>, default <span class="op">=</span> <span class="fl">1</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
+<span>    <span class="fu">returnType</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/double.html">double</a></span><span class="op">(</span><span class="fl">0</span><span class="op">)</span><span class="op">)</span></span>
+<span>    <span class="co"># compute binomial coefficient </span></span>
+<span>    <span class="va">lchoose</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Special.html">lfactorial</a></span><span class="op">(</span><span class="va">size</span><span class="op">)</span> <span class="op">-</span> <span class="fu"><a href="https://rdrr.io/r/base/Special.html">lfactorial</a></span><span class="op">(</span><span class="va">x</span><span class="op">)</span> <span class="op">-</span> <span class="fu"><a href="https://rdrr.io/r/base/Special.html">lfactorial</a></span><span class="op">(</span><span class="va">size</span> <span class="op">-</span> <span class="va">x</span><span class="op">)</span></span>
+<span>    <span class="co"># binomial density function</span></span>
+<span>    <span class="va">logProb</span> <span class="op">&lt;-</span> <span class="va">lchoose</span> <span class="op">+</span> <span class="va">x</span> <span class="op">*</span> <span class="fu"><a href="https://rdrr.io/r/base/Log.html">log</a></span><span class="op">(</span><span class="va">prob</span><span class="op">)</span> <span class="op">+</span> <span class="op">(</span><span class="va">size</span> <span class="op">-</span> <span class="va">x</span><span class="op">)</span> <span class="op">*</span> <span class="fu"><a href="https://rdrr.io/r/base/Log.html">log</a></span><span class="op">(</span><span class="fl">1</span> <span class="op">-</span> <span class="va">prob</span><span class="op">)</span></span>
+<span>    <span class="kw">if</span><span class="op">(</span><span class="va">log</span><span class="op">)</span> <span class="kw"><a href="https://rdrr.io/r/base/function.html">return</a></span><span class="op">(</span><span class="va">logProb</span><span class="op">)</span></span>
+<span>    <span class="kw">else</span> <span class="kw"><a href="https://rdrr.io/r/base/function.html">return</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/Log.html">exp</a></span><span class="op">(</span><span class="va">logProb</span><span class="op">)</span><span class="op">)</span> </span>
+<span>  <span class="op">}</span><span class="op">)</span></span>
+<span><span class="co"># simulation using the coin flip method (p. 524 in Devroye 1986)</span></span>
+<span><span class="va">rmybinom</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimbleFunction.html">nimbleFunction</a></span><span class="op">(</span></span>
+<span>  run <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">n</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/integer.html">integer</a></span><span class="op">(</span><span class="fl">0</span>, default <span class="op">=</span> <span class="fl">1</span><span class="op">)</span>,</span>
+<span>                 <span class="va">size</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/double.html">double</a></span><span class="op">(</span><span class="fl">0</span><span class="op">)</span>,</span>
+<span>                 <span class="va">prob</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/double.html">double</a></span><span class="op">(</span><span class="fl">0</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
+<span>    <span class="fu">returnType</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/double.html">double</a></span><span class="op">(</span><span class="fl">0</span><span class="op">)</span><span class="op">)</span></span>
+<span>    <span class="va">x</span> <span class="op">&lt;-</span> <span class="fl">0</span></span>
+<span>    <span class="va">y</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html">runif</a></span><span class="op">(</span>n <span class="op">=</span> <span class="va">size</span>, min <span class="op">=</span> <span class="fl">0</span>, max <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
+<span>    <span class="kw">for</span> <span class="op">(</span><span class="va">j</span> <span class="kw">in</span> <span class="fl">1</span><span class="op">:</span><span class="va">size</span><span class="op">)</span><span class="op">{</span></span>
+<span>      <span class="kw">if</span> <span class="op">(</span><span class="va">y</span><span class="op">[</span><span class="va">j</span><span class="op">]</span> <span class="op">&lt;</span> <span class="va">prob</span><span class="op">)</span><span class="op">{</span></span>
+<span>        <span class="va">x</span> <span class="op">&lt;-</span> <span class="va">x</span> <span class="op">+</span> <span class="fl">1</span></span>
+<span>      <span class="op">}</span><span class="kw">else</span><span class="op">{</span></span>
+<span>        <span class="va">x</span> <span class="op">&lt;-</span> <span class="va">x</span></span>
+<span>      <span class="op">}</span></span>
+<span>    <span class="op">}</span></span>
+<span>    <span class="kw"><a href="https://rdrr.io/r/base/function.html">return</a></span><span class="op">(</span><span class="va">x</span><span class="op">)</span>    </span>
+<span>  <span class="op">}</span><span class="op">)</span></span></code></pre></div>
+<p>You need to define the <code>nimbleFunctions</code> in R’s global environment for them to be accessed:</p>
+<div class="sourceCode" id="cb51"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/assign.html">assign</a></span><span class="op">(</span><span class="st">'dmybinom'</span>, <span class="va">dmybinom</span>, <span class="va">.GlobalEnv</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/assign.html">assign</a></span><span class="op">(</span><span class="st">'rmybinom'</span>, <span class="va">rmybinom</span>, <span class="va">.GlobalEnv</span><span class="op">)</span></span></code></pre></div>
+<p>You can try out your function and simulate a random value from a binomial distribution with size 5 and probability 0.1:</p>
+<div class="sourceCode" id="cb52"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu">rmybinom</span><span class="op">(</span>n <span class="op">=</span> <span class="fl">1</span>, size <span class="op">=</span> <span class="fl">5</span>, prob <span class="op">=</span> <span class="fl">0.1</span><span class="op">)</span></span>
+<span><span class="co">## [1] 0</span></span></code></pre></div>
+<p>All set. You can run your workflow:</p>
+<div class="sourceCode" id="cb53"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">model</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimbleCode.html">nimbleCode</a></span><span class="op">(</span><span class="op">{</span></span>
+<span> <span class="co"># likelihood</span></span>
+<span> <span class="va">survived</span> <span class="op">~</span> <span class="fu">dmybinom</span><span class="op">(</span>prob <span class="op">=</span> <span class="va">theta</span>, size <span class="op">=</span> <span class="va">released</span><span class="op">)</span></span>
+<span> <span class="co"># prior</span></span>
+<span> <span class="va">theta</span> <span class="op">~</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html">dunif</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1</span><span class="op">)</span></span>
+<span><span class="op">}</span><span class="op">)</span></span>
+<span><span class="va">my.data</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>released <span class="op">=</span> <span class="fl">57</span>, survived <span class="op">=</span> <span class="fl">19</span><span class="op">)</span></span>
+<span><span class="va">initial.values</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>theta <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html">runif</a></span><span class="op">(</span><span class="fl">1</span>,<span class="fl">0</span>,<span class="fl">1</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">n.iter</span> <span class="op">&lt;-</span> <span class="fl">5000</span></span>
+<span><span class="va">n.burnin</span> <span class="op">&lt;-</span> <span class="fl">1000</span></span>
+<span><span class="va">n.chains</span> <span class="op">&lt;-</span> <span class="fl">3</span></span>
+<span><span class="va">mcmc.output</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimbleMCMC.html">nimbleMCMC</a></span><span class="op">(</span>code <span class="op">=</span> <span class="va">model</span>,</span>
+<span> data <span class="op">=</span> <span class="va">my.data</span>,</span>
+<span> inits <span class="op">=</span> <span class="va">initial.values</span>,</span>
+<span> niter <span class="op">=</span> <span class="va">n.iter</span>,</span>
+<span> nburnin <span class="op">=</span> <span class="va">n.burnin</span>,</span>
+<span> nchains <span class="op">=</span> <span class="va">n.chains</span><span class="op">)</span></span>
+<span><span class="co">## |-------------|-------------|-------------|-------------|</span></span>
+<span><span class="co">## |-------------------------------------------------------|</span></span>
+<span><span class="co">## |-------------|-------------|-------------|-------------|</span></span>
+<span><span class="co">## |-------------------------------------------------------|</span></span>
+<span><span class="co">## |-------------|-------------|-------------|-------------|</span></span>
+<span><span class="co">## |-------------------------------------------------------|</span></span>
+<span><span class="fu"><a href="https://rdrr.io/pkg/MCMCvis/man/MCMCsummary.html">MCMCsummary</a></span><span class="op">(</span><span class="va">mcmc.output</span><span class="op">)</span></span>
+<span><span class="co">##       mean      sd   2.5%    50%  97.5% Rhat n.eff</span></span>
+<span><span class="co">## theta 0.34 0.05976 0.2286 0.3378 0.4598    1  2970</span></span></code></pre></div>
+<p>Having <code>nimbleFunctions</code> offers infinite possibilities to customize your models and algorithms. Besides what we covered already, you can write your own samplers. We will see an example in a minute, but I first need to tell you more about the NIMBLE workflow.</p>
+</div>
+</div>
+<div id="under-the-hood" class="section level2" number="2.5">
+<h2>
+<span class="header-section-number">2.5</span> Under the hood<a class="anchor" aria-label="anchor" href="#under-the-hood"><i class="fas fa-link"></i></a>
+</h2>
+<p>So far, you have used <code><a href="https://rdrr.io/pkg/nimble/man/nimbleMCMC.html">nimbleMCMC()</a></code> which runs the default MCMC workflow. This is perfecly fine for most applications. However, in some situations you need to customize the MCMC samplers to improve or fasten convergence. NIMBLE allows you to look under the hood by using a detailed workflow in several steps: <code><a href="https://rdrr.io/pkg/nimble/man/nimbleModel.html">nimbleModel()</a></code>, <code><a href="https://rdrr.io/pkg/nimble/man/configureMCMC.html">configureMCMC()</a></code>, <code><a href="https://rdrr.io/pkg/nimble/man/buildMCMC.html">buildMCMC()</a></code>, <code><a href="https://rdrr.io/pkg/nimble/man/compileNimble.html">compileNimble()</a></code> and <code><a href="https://rdrr.io/pkg/nimble/man/runMCMC.html">runMCMC()</a></code>. Note that <code><a href="https://rdrr.io/pkg/nimble/man/nimbleMCMC.html">nimbleMCMC()</a></code> does all of this at once.</p>
+<p>We write the model code, read in data and pick initial values as before:</p>
+<div class="sourceCode" id="cb54"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">model</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimbleCode.html">nimbleCode</a></span><span class="op">(</span><span class="op">{</span></span>
+<span>  <span class="co"># likelihood</span></span>
+<span>  <span class="va">survived</span> <span class="op">~</span> <span class="fu"><a href="https://rdrr.io/r/stats/Binomial.html">dbinom</a></span><span class="op">(</span><span class="va">theta</span>, <span class="va">released</span><span class="op">)</span></span>
+<span>  <span class="co"># prior</span></span>
+<span>  <span class="va">theta</span> <span class="op">~</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html">dunif</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1</span><span class="op">)</span></span>
+<span>  <span class="co"># derived quantity</span></span>
+<span>  <span class="va">lifespan</span> <span class="op">&lt;-</span> <span class="op">-</span><span class="fl">1</span><span class="op">/</span><span class="fu"><a href="https://rdrr.io/r/base/Log.html">log</a></span><span class="op">(</span><span class="va">theta</span><span class="op">)</span></span>
+<span><span class="op">}</span><span class="op">)</span></span>
+<span><span class="va">my.data</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>survived <span class="op">=</span> <span class="fl">19</span>, released <span class="op">=</span> <span class="fl">57</span><span class="op">)</span></span>
+<span><span class="va">initial.values</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>theta <span class="op">=</span> <span class="fl">0.5</span><span class="op">)</span></span></code></pre></div>
+<p>First step is to create the model as an R object (uncompiled model) with <code><a href="https://rdrr.io/pkg/nimble/man/nimbleModel.html">nimbleModel()</a></code>:</p>
+<div class="sourceCode" id="cb55"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">survival</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimbleModel.html">nimbleModel</a></span><span class="op">(</span>code <span class="op">=</span> <span class="va">model</span>,</span>
+<span>                        data <span class="op">=</span> <span class="va">my.data</span>,</span>
+<span>                        inits <span class="op">=</span> <span class="va">initial.values</span><span class="op">)</span></span></code></pre></div>
+<p>You can look at its nodes:</p>
+<div class="sourceCode" id="cb56"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">survival</span><span class="op">$</span><span class="fu">getNodeNames</span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="co">## [1] "theta"    "lifespan" "survived"</span></span></code></pre></div>
+<p>You can look at the values stored at each node:</p>
+<div class="sourceCode" id="cb57"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">survival</span><span class="op">$</span><span class="va">theta</span></span>
+<span><span class="co">## [1] 0.5</span></span>
+<span><span class="va">survival</span><span class="op">$</span><span class="va">survived</span></span>
+<span><span class="co">## [1] 19</span></span>
+<span><span class="va">survival</span><span class="op">$</span><span class="va">lifespan</span> </span>
+<span><span class="co">## [1] 1.443</span></span>
+<span><span class="co"># this is -1/log(0.5)</span></span></code></pre></div>
+<p>We can also calculate the log-likelihood at the initial value for <code>theta</code>:</p>
+<div class="sourceCode" id="cb58"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">survival</span><span class="op">$</span><span class="fu">calculate</span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="co">## [1] -5.422</span></span>
+<span><span class="co"># this is dbinom(x = 19, size = 57, prob = 0.5, log = TRUE)</span></span></code></pre></div>
+<p>The ability in NIMBLE to access the nodes of your model and to evaluate the model likelihood can help you in identifying bugs in your code. <strong>Give example? Provide negative initial value for theta, or released in data &lt; survived.</strong></p>
+<p>You can obtain the graph of the model as in Figure <a href="intronimble.html#fig:dag-survival">2.2</a> with:</p>
+<div class="sourceCode" id="cb59"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">survival</span><span class="op">$</span><span class="fu">plotGraph</span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
+<div class="inline-figure"><img src="banana-book_files/figure-html/unnamed-chunk-72-1.png" width="672"></div>
+<p>Second we compile the model with <code><a href="https://rdrr.io/pkg/nimble/man/compileNimble.html">compileNimble()</a></code>:</p>
+<div class="sourceCode" id="cb60"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">Csurvival</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/compileNimble.html">compileNimble</a></span><span class="op">(</span><span class="va">survival</span><span class="op">)</span></span></code></pre></div>
+<p>With <code><a href="https://rdrr.io/pkg/nimble/man/compileNimble.html">compileNimble()</a></code>, the C++ code is generated, compiled and loaded back into R so that it can be used in R (compiled model):</p>
+<div class="sourceCode" id="cb61"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">Csurvival</span><span class="op">$</span><span class="va">theta</span></span>
+<span><span class="co">## [1] 0.5</span></span></code></pre></div>
+<p>Now you have two versions of the model, <code>survival</code> is in R and <code>Csurvival</code> in C++. Being able to separate the steps of model building and parameter estimation is a strength of NIMBLE. This gives you a lot of flexibility at both steps. For example, imagine you would like to fit your model with maximum likelihood, then you can do it by wrapping your model in an R function that gets the likelihood and maximise this function. Using the C version of the model, you can write:</p>
+<div class="sourceCode" id="cb62"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># function for negative log-likelihood to minimize</span></span>
+<span><span class="va">f</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">par</span><span class="op">)</span> <span class="op">{</span></span>
+<span>    <span class="va">Csurvival</span><span class="op">[[</span><span class="st">'theta'</span><span class="op">]</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="va">par</span> <span class="co"># assign par to theta </span></span>
+<span>    <span class="va">ll</span> <span class="op">&lt;-</span> <span class="va">Csurvival</span><span class="op">$</span><span class="fu">calculate</span><span class="op">(</span><span class="op">)</span> <span class="co"># update log-likelihood with par value</span></span>
+<span>    <span class="kw"><a href="https://rdrr.io/r/base/function.html">return</a></span><span class="op">(</span><span class="op">-</span><span class="va">ll</span><span class="op">)</span> <span class="co"># return negative log-likelihood</span></span>
+<span><span class="op">}</span></span>
+<span><span class="co"># evaluate function at 0.5 and 0.9</span></span>
+<span><span class="fu">f</span><span class="op">(</span><span class="fl">0.5</span><span class="op">)</span></span>
+<span><span class="co">## [1] 5.422</span></span>
+<span><span class="fu">f</span><span class="op">(</span><span class="fl">0.9</span><span class="op">)</span></span>
+<span><span class="co">## [1] 55.41</span></span>
+<span><span class="co"># minimize function</span></span>
+<span><span class="va">out</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/optimize.html">optimize</a></span><span class="op">(</span><span class="va">f</span>, interval <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="fl">0</span>,<span class="fl">1</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/Round.html">round</a></span><span class="op">(</span><span class="va">out</span><span class="op">$</span><span class="va">minimum</span>, <span class="fl">2</span><span class="op">)</span></span>
+<span><span class="co">## [1] 0.33</span></span></code></pre></div>
+<p>By maximising the likelihood (or minimising the negative log-likelihood), you obtain the maximum likelihood estimate of animal survival, which is exactly 19 surviving animals over 57 released animals or 0.33.</p>
+<p>Third we create a MCMC configuration for our model with <code><a href="https://rdrr.io/pkg/nimble/man/configureMCMC.html">configureMCMC()</a></code>:</p>
+<div class="sourceCode" id="cb63"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">survivalConf</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/configureMCMC.html">configureMCMC</a></span><span class="op">(</span><span class="va">survival</span><span class="op">)</span></span>
+<span><span class="co">## ===== Monitors =====</span></span>
+<span><span class="co">## thin = 1: theta</span></span>
+<span><span class="co">## ===== Samplers =====</span></span>
+<span><span class="co">## RW sampler (1)</span></span>
+<span><span class="co">##   - theta</span></span></code></pre></div>
+<p>This steps tells you the nodes that are monitored by default, and the MCMC samplers than have been assigned to them. Here <code>theta</code> is monitored, and samples from its posterior distribution are simulated with a random walk sampler similar to the Metropolis sampler we coded in the previous chapter in Section <a href="crashcourse.html#metropolis-algorithm">1.5.3</a>.</p>
+<p>To monitor <code>lifespan</code> in addition to <code>theta</code>, you write:</p>
+<div class="sourceCode" id="cb64"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">survivalConf</span><span class="op">$</span><span class="fu">addMonitors</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"lifespan"</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co">## thin = 1: lifespan, theta</span></span>
+<span><span class="va">survivalConf</span></span>
+<span><span class="co">## ===== Monitors =====</span></span>
+<span><span class="co">## thin = 1: lifespan, theta</span></span>
+<span><span class="co">## ===== Samplers =====</span></span>
+<span><span class="co">## RW sampler (1)</span></span>
+<span><span class="co">##   - theta</span></span></code></pre></div>
+<p>Third, we create a MCMC function with <code><a href="https://rdrr.io/pkg/nimble/man/buildMCMC.html">buildMCMC()</a></code> and compile it with <code><a href="https://rdrr.io/pkg/nimble/man/compileNimble.html">compileNimble()</a></code>:</p>
+<div class="sourceCode" id="cb65"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">survivalMCMC</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/buildMCMC.html">buildMCMC</a></span><span class="op">(</span><span class="va">survivalConf</span><span class="op">)</span></span>
+<span><span class="va">CsurvivalMCMC</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/compileNimble.html">compileNimble</a></span><span class="op">(</span><span class="va">survivalMCMC</span>, project <span class="op">=</span> <span class="va">survival</span><span class="op">)</span></span></code></pre></div>
+<p>Note that models and <code>nimbleFunctions</code> need to be compiled before they can be used to specify a project.</p>
+<p>Fourth, we run NIMBLE with <code><a href="https://rdrr.io/pkg/nimble/man/runMCMC.html">runMCMC()</a></code>:</p>
+<div class="sourceCode" id="cb66"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">n.iter</span> <span class="op">&lt;-</span> <span class="fl">5000</span></span>
+<span><span class="va">n.burnin</span> <span class="op">&lt;-</span> <span class="fl">1000</span></span>
+<span><span class="va">samples</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/runMCMC.html">runMCMC</a></span><span class="op">(</span>mcmc <span class="op">=</span> <span class="va">CsurvivalMCMC</span>, </span>
+<span>                   niter <span class="op">=</span> <span class="va">n.iter</span>,</span>
+<span>                   nburnin <span class="op">=</span> <span class="va">n.burnin</span><span class="op">)</span></span>
+<span><span class="co">## |-------------|-------------|-------------|-------------|</span></span>
+<span><span class="co">## |-------------------------------------------------------|</span></span></code></pre></div>
+<p>We run a single chain but <code><a href="https://rdrr.io/pkg/nimble/man/runMCMC.html">runMCMC()</a></code> allows you to use multiple chains as with <code><a href="https://rdrr.io/pkg/nimble/man/nimbleMCMC.html">nimbleMCMC()</a></code>.</p>
+<p>You can look into <code>samples</code> which contains values simulated from the posterior distribution of the parameters we monitor:</p>
+<div class="sourceCode" id="cb67"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/head.html">head</a></span><span class="op">(</span><span class="va">samples</span><span class="op">)</span></span>
+<span><span class="co">##      lifespan  theta</span></span>
+<span><span class="co">## [1,]   0.9093 0.3330</span></span>
+<span><span class="co">## [2,]   0.9093 0.3330</span></span>
+<span><span class="co">## [3,]   0.9093 0.3330</span></span>
+<span><span class="co">## [4,]   1.2095 0.4374</span></span>
+<span><span class="co">## [5,]   1.2095 0.4374</span></span>
+<span><span class="co">## [6,]   1.1835 0.4296</span></span></code></pre></div>
+<p>From here, you can obtain numerical summaries with <code><a href="https://rdrr.io/pkg/nimble/man/nimble-internal.html">samplesSummary()</a></code>:</p>
+<div class="sourceCode" id="cb68"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimble-internal.html">samplesSummary</a></span><span class="op">(</span><span class="va">samples</span><span class="op">)</span></span>
+<span><span class="co">##            Mean Median St.Dev. 95%CI_low 95%CI_upp</span></span>
+<span><span class="co">## lifespan 0.9357 0.9194 0.16117    0.6831    1.2969</span></span>
+<span><span class="co">## theta    0.3386 0.3370 0.06128    0.2313    0.4625</span></span></code></pre></div>
+<p>I have summarized the steps above in the box below.</p>
+<div class="rmdnote">
+<p><strong>Detailed NIMBLE workflow:</strong></p>
+<div class="sourceCode" id="cb69"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># model building</span></span>
+<span><span class="va">model</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimbleCode.html">nimbleCode</a></span><span class="op">(</span><span class="op">{</span></span>
+<span>  <span class="co"># likelihood</span></span>
+<span>  <span class="va">survived</span> <span class="op">~</span> <span class="fu"><a href="https://rdrr.io/r/stats/Binomial.html">dbinom</a></span><span class="op">(</span><span class="va">theta</span>, <span class="va">released</span><span class="op">)</span></span>
+<span>  <span class="co"># prior</span></span>
+<span>  <span class="va">theta</span> <span class="op">~</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html">dunif</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1</span><span class="op">)</span></span>
+<span>  <span class="co"># derived quantity</span></span>
+<span>  <span class="va">lifespan</span> <span class="op">&lt;-</span> <span class="op">-</span><span class="fl">1</span><span class="op">/</span><span class="fu"><a href="https://rdrr.io/r/base/Log.html">log</a></span><span class="op">(</span><span class="va">theta</span><span class="op">)</span></span>
+<span><span class="op">}</span><span class="op">)</span></span>
+<span><span class="co"># read in data</span></span>
+<span><span class="va">my.data</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>released <span class="op">=</span> <span class="fl">57</span>, survived <span class="op">=</span> <span class="fl">19</span><span class="op">)</span></span>
+<span><span class="co"># pick initial values</span></span>
+<span><span class="va">initial.values</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>theta <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html">runif</a></span><span class="op">(</span><span class="fl">1</span>,<span class="fl">0</span>,<span class="fl">1</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co"># create model as an R object (uncompiled model)</span></span>
+<span><span class="va">survival</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimbleModel.html">nimbleModel</a></span><span class="op">(</span>code <span class="op">=</span> <span class="va">model</span>,</span>
+<span>                        data <span class="op">=</span> <span class="va">my.data</span>,</span>
+<span>                        inits <span class="op">=</span> <span class="fu">initial.values</span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co"># compile model</span></span>
+<span><span class="va">Csurvival</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/compileNimble.html">compileNimble</a></span><span class="op">(</span><span class="va">survival</span><span class="op">)</span></span>
+<span><span class="co"># create a MCMC configuration</span></span>
+<span><span class="va">survivalConf</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/configureMCMC.html">configureMCMC</a></span><span class="op">(</span><span class="va">survival</span><span class="op">)</span></span>
+<span><span class="co"># add lifespan to list of parameters to monitor</span></span>
+<span><span class="va">survivalConf</span><span class="op">$</span><span class="fu">addMonitors</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"lifespan"</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co"># create a MCMC function and compile it</span></span>
+<span><span class="va">survivalMCMC</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/buildMCMC.html">buildMCMC</a></span><span class="op">(</span><span class="va">survivalConf</span><span class="op">)</span></span>
+<span><span class="va">CsurvivalMCMC</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/compileNimble.html">compileNimble</a></span><span class="op">(</span><span class="va">survivalMCMC</span>, project <span class="op">=</span> <span class="va">survival</span><span class="op">)</span></span>
+<span><span class="co"># specify MCMC details</span></span>
+<span><span class="va">n.iter</span> <span class="op">&lt;-</span> <span class="fl">5000</span></span>
+<span><span class="va">n.burnin</span> <span class="op">&lt;-</span> <span class="fl">1000</span></span>
+<span><span class="va">n.chains</span> <span class="op">&lt;-</span> <span class="fl">2</span></span>
+<span><span class="co"># run NIMBLE</span></span>
+<span><span class="va">samples</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/runMCMC.html">runMCMC</a></span><span class="op">(</span>mcmc <span class="op">=</span> <span class="va">CsurvivalMCMC</span>, </span>
+<span>                   niter <span class="op">=</span> <span class="va">n.iter</span>,</span>
+<span>                   nburnin <span class="op">=</span> <span class="va">n.burnin</span>,</span>
+<span>                   nchain <span class="op">=</span> <span class="va">n.chains</span><span class="op">)</span></span>
+<span><span class="co"># calculate numerical summaries</span></span>
+<span><span class="fu"><a href="https://rdrr.io/pkg/MCMCvis/man/MCMCsummary.html">MCMCsummary</a></span><span class="op">(</span>object <span class="op">=</span> <span class="va">samples</span>, round <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span>
+<span><span class="co"># visualize parameter posterior distribution</span></span>
+<span><span class="fu"><a href="https://rdrr.io/pkg/MCMCvis/man/MCMCplot.html">MCMCplot</a></span><span class="op">(</span>object <span class="op">=</span> <span class="va">samples</span>, </span>
+<span>         params <span class="op">=</span> <span class="st">'theta'</span><span class="op">)</span></span>
+<span><span class="co"># check convergence</span></span>
+<span><span class="fu"><a href="https://rdrr.io/pkg/MCMCvis/man/MCMCtrace.html">MCMCtrace</a></span><span class="op">(</span>object <span class="op">=</span> <span class="va">samples</span>,</span>
+<span>          pdf <span class="op">=</span> <span class="cn">FALSE</span>, <span class="co"># no export to PDF</span></span>
+<span>          ind <span class="op">=</span> <span class="cn">TRUE</span>, <span class="co"># separate density lines per chain</span></span>
+<span>          params <span class="op">=</span> <span class="st">"theta"</span><span class="op">)</span></span></code></pre></div>
+</div>
+<p>At first glance, using several steps instead of doing all these at once with <code><a href="https://rdrr.io/pkg/nimble/man/nimbleMCMC.html">nimbleMCMC()</a></code> seems odds. Why is it useful? Mastering the whole sequence of steps allows you to play around with samplers, by changing the samplers NIMBLE picks by default, or even writing your own samplers.</p>
+</div>
+<div id="mcmc-samplers" class="section level2" number="2.6">
+<h2>
+<span class="header-section-number">2.6</span> MCMC samplers<a class="anchor" aria-label="anchor" href="#mcmc-samplers"><i class="fas fa-link"></i></a>
+</h2>
+<div id="change-sampler" class="section level3" number="2.6.1">
+<h3>
+<span class="header-section-number">2.6.1</span> Default samplers<a class="anchor" aria-label="anchor" href="#change-sampler"><i class="fas fa-link"></i></a>
+</h3>
+<p>What is the default sampler used by NIMBLE in our example? You can answer this question by inspecting the MCMC configuration obtained with <code><a href="https://rdrr.io/pkg/nimble/man/configureMCMC.html">configureMCMC()</a></code>:</p>
+<div class="sourceCode" id="cb70"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co">#survivalConf &lt;- configureMCMC(survival)</span></span>
+<span><span class="va">survivalConf</span><span class="op">$</span><span class="fu">printSamplers</span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="co">## [1] RW sampler: theta</span></span></code></pre></div>
+<p>Now that we have control on the MCMC configuration, let’s mess it up. We start by removing the default sampler:</p>
+<div class="sourceCode" id="cb71"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">survivalConf</span><span class="op">$</span><span class="fu">removeSamplers</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">'theta'</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">survivalConf</span><span class="op">$</span><span class="fu">printSamplers</span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
+<p>And we change it for a slice sampler:</p>
+<div class="sourceCode" id="cb72"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">survivalConf</span><span class="op">$</span><span class="fu">addSampler</span><span class="op">(</span>target <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">'theta'</span><span class="op">)</span>,</span>
+<span>                        type <span class="op">=</span> <span class="st">'slice'</span><span class="op">)</span></span>
+<span><span class="va">survivalConf</span><span class="op">$</span><span class="fu">printSamplers</span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="co">## [1] slice sampler: theta</span></span></code></pre></div>
+<p>Now you can resume the workflow:</p>
+<div class="sourceCode" id="cb73"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># create a new MCMC function and compile it:</span></span>
+<span><span class="va">survivalMCMC2</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/buildMCMC.html">buildMCMC</a></span><span class="op">(</span><span class="va">survivalConf</span><span class="op">)</span></span>
+<span><span class="va">CsurvivalMCMC2</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/compileNimble.html">compileNimble</a></span><span class="op">(</span><span class="va">survivalMCMC2</span>, </span>
+<span>                                project <span class="op">=</span> <span class="va">survival</span>,</span>
+<span>                                resetFunctions <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span> <span class="co"># to compile new functions </span></span>
+<span>                                                       <span class="co"># into existing project, </span></span>
+<span>                                                       <span class="co"># need to reset nimbleFunctions</span></span>
+<span><span class="co"># run NIMBLE:</span></span>
+<span><span class="va">samples2</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/runMCMC.html">runMCMC</a></span><span class="op">(</span>mcmc <span class="op">=</span> <span class="va">CsurvivalMCMC2</span>, </span>
+<span>                    niter <span class="op">=</span> <span class="va">n.iter</span>,</span>
+<span>                    nburnin <span class="op">=</span> <span class="va">n.burnin</span><span class="op">)</span></span>
+<span><span class="co">## |-------------|-------------|-------------|-------------|</span></span>
+<span><span class="co">## |-------------------------------------------------------|</span></span>
+<span><span class="co"># obtain numerical summaries:</span></span>
+<span><span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimble-internal.html">samplesSummary</a></span><span class="op">(</span><span class="va">samples2</span><span class="op">)</span></span>
+<span><span class="co">##            Mean Median St.Dev. 95%CI_low 95%CI_upp</span></span>
+<span><span class="co">## lifespan 0.9357 0.9231 0.16002    0.6645    1.2826</span></span>
+<span><span class="co">## theta    0.3387 0.3385 0.06098    0.2221    0.4586</span></span></code></pre></div>
+<p>NIMBLE implements many samplers, and a list is available with <code><a href="https://rdrr.io/pkg/nimble/man/samplers.html">?samplers</a></code>. For example, high correlation in (regression) parameters can make independent samplers inefficient. In that situation, block sampling might help which consists in proposing candidate values from a multivariate distribution that acknowledges correlation between parameters. <strong>Say something on how default samplers are chosen by NIMBLE?</strong></p>
+</div>
+<div id="user-defined-samplers" class="section level3" number="2.6.2">
+<h3>
+<span class="header-section-number">2.6.2</span> User-defined samplers<a class="anchor" aria-label="anchor" href="#user-defined-samplers"><i class="fas fa-link"></i></a>
+</h3>
+<p>Allowing you to code your own sampler is another topic on which NIMBLE thrives. As an example, we focus on the Metropolis algorithm of Section <a href="crashcourse.html#metropolis-algorithm">1.5.3</a> which we coded in R. In this section, we make it a <code>nimbleFunction</code> so that we can use it within our model:</p>
+<div class="sourceCode" id="cb74"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">my_metropolis</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimbleFunction.html">nimbleFunction</a></span><span class="op">(</span></span>
+<span>  name <span class="op">=</span> <span class="st">'my_metropolis'</span>, <span class="co"># fancy name for our MCMC sampler</span></span>
+<span>  contains <span class="op">=</span> <span class="va">sampler_BASE</span>,</span>
+<span>  setup <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">model</span>, <span class="va">mvSaved</span>, <span class="va">target</span>, <span class="va">control</span><span class="op">)</span> <span class="op">{</span></span>
+<span>    <span class="co"># i) get dependencies for 'target' in 'model'</span></span>
+<span>    <span class="va">calcNodes</span> <span class="op">&lt;-</span> <span class="va">model</span><span class="op">$</span><span class="fu">getDependencies</span><span class="op">(</span><span class="va">target</span><span class="op">)</span> </span>
+<span>    <span class="co"># ii) get sd of proposal distribution</span></span>
+<span>    <span class="va">scale</span> <span class="op">&lt;-</span> <span class="va">control</span><span class="op">$</span><span class="va">scale</span> </span>
+<span>  <span class="op">}</span>,</span>
+<span>  run <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="op">)</span> <span class="op">{</span></span>
+<span>    <span class="co"># (1) log-lik at current value</span></span>
+<span>    <span class="va">initialLP</span> <span class="op">&lt;-</span> <span class="va">model</span><span class="op">$</span><span class="fu">getLogProb</span><span class="op">(</span><span class="va">calcNodes</span><span class="op">)</span> </span>
+<span>    <span class="co"># (2) current parameter value</span></span>
+<span>    <span class="va">current</span> <span class="op">&lt;-</span> <span class="va">model</span><span class="op">[[</span><span class="va">target</span><span class="op">]</span><span class="op">]</span> </span>
+<span>    <span class="co"># (3) logit transform</span></span>
+<span>    <span class="va">lcurrent</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Log.html">log</a></span><span class="op">(</span><span class="va">current</span> <span class="op">/</span> <span class="op">(</span><span class="fl">1</span> <span class="op">-</span> <span class="va">current</span><span class="op">)</span><span class="op">)</span></span>
+<span>    <span class="co"># (4) propose candidate value</span></span>
+<span>    <span class="va">lproposal</span> <span class="op">&lt;-</span> <span class="va">lcurrent</span>  <span class="op">+</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html">rnorm</a></span><span class="op">(</span><span class="fl">1</span>, mean <span class="op">=</span> <span class="fl">0</span>, <span class="va">scale</span><span class="op">)</span> </span>
+<span>    <span class="co"># (5) back-transform</span></span>
+<span>    <span class="va">proposal</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/Logistic.html">plogis</a></span><span class="op">(</span><span class="va">lproposal</span><span class="op">)</span></span>
+<span>    <span class="co"># (6) plug candidate value in model </span></span>
+<span>    <span class="va">model</span><span class="op">[[</span><span class="va">target</span><span class="op">]</span><span class="op">]</span> <span class="op">&lt;&lt;-</span> <span class="va">proposal</span> </span>
+<span>    <span class="co"># (7) log-lik at candidate value</span></span>
+<span>    <span class="va">proposalLP</span> <span class="op">&lt;-</span> <span class="va">model</span><span class="op">$</span><span class="fu">calculate</span><span class="op">(</span><span class="va">calcNodes</span><span class="op">)</span></span>
+<span>    <span class="co"># (8) compute lik ratio on log scale</span></span>
+<span>    <span class="va">lMHR</span> <span class="op">&lt;-</span> <span class="va">proposalLP</span> <span class="op">-</span> <span class="va">initialLP</span> </span>
+<span>    <span class="co"># (9) spin continuous spinner and compare to ratio</span></span>
+<span>    <span class="kw">if</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html">runif</a></span><span class="op">(</span><span class="fl">1</span>,<span class="fl">0</span>,<span class="fl">1</span><span class="op">)</span> <span class="op">&lt;</span> <span class="fu"><a href="https://rdrr.io/r/base/Log.html">exp</a></span><span class="op">(</span><span class="va">lMHR</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span> </span>
+<span>      <span class="co"># (10) if candidate value is accepted, update current value</span></span>
+<span>      <span class="fu">copy</span><span class="op">(</span>from <span class="op">=</span> <span class="va">model</span>, to <span class="op">=</span> <span class="va">mvSaved</span>, nodes <span class="op">=</span> <span class="va">calcNodes</span>, logProb <span class="op">=</span> <span class="cn">TRUE</span>, row <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
+<span>    <span class="op">}</span> <span class="kw">else</span> <span class="op">{</span></span>
+<span>      <span class="co">## (11) if candidate value is accepted, keep current value</span></span>
+<span>      <span class="fu">copy</span><span class="op">(</span>from <span class="op">=</span> <span class="va">mvSaved</span>, to <span class="op">=</span> <span class="va">model</span>, nodes <span class="op">=</span> <span class="va">calcNodes</span>, logProb <span class="op">=</span> <span class="cn">TRUE</span>, row <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
+<span>    <span class="op">}</span></span>
+<span>  <span class="op">}</span>,</span>
+<span>  methods <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span></span>
+<span>    reset <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="op">)</span> <span class="op">{</span><span class="op">}</span></span>
+<span>  <span class="op">)</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+<p>Compared to <code>nimbleFunctions</code> we wrote earlier, <code>my_metropolis()</code> contains a <code>setup</code> function which i) gets the dependencies of the parameter to update in the <code>run</code> function with Metropolis, the target node, that would be <code>theta</code> in our example and ii) extracts control parameters, that would be <code>scale</code> the standard deviation of the proposal distribution in our example. Then the <code>run</code> function implements the steps of the Metropolis algorithm: (1) get the log-likelihood function evaluated at the current value, (2) get the current value, (3) apply the logit transform to it, (4) propose a candidate value by perturbing the current value with some normal noise controled by the standard deviation <code>scale</code>, (5) back-transform the candidate value and (6) plug it in the model, (7) calculate the log-likelihood function at the candidate value, (8) compute the Metropolis ratio on the log scale, (9) compare output of a spinner and the Metropolis ratio to decide whether to (10) accept the candidate value and copy from the model to <code>mvSaved</code> or (11) reject it and keep the current value by copying from <code>mvSaved</code> to the model. Because this <code>nimbleFunction</code> is to be used as a MCMC sampler, several constraints need to be respected like having a <code>contains = sampler_BASE</code> statement or using the four arguments <code>model</code>, <code>mvSaved</code>, <code>target</code> and <code>control</code> in the <code>setup</code> function. Of course, NIMBLE implements a more advanced and efficient version of the Metropolis algorithm, you can look into it at <a href="https://github.com/cran/nimble/blob/master/R/MCMC_samplers.R#L184" class="uri">https://github.com/cran/nimble/blob/master/R/MCMC_samplers.R#L184</a>.</p>
+<p>Now that we have our user-defined MCMC algorithm, we can change the default sampler for our new sampler as in Section <a href="intronimble.html#change-sampler">2.6.1</a>. We start from scratch:</p>
+<div class="sourceCode" id="cb75"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">model</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimbleCode.html">nimbleCode</a></span><span class="op">(</span><span class="op">{</span></span>
+<span>  <span class="co"># likelihood</span></span>
+<span>  <span class="va">survived</span> <span class="op">~</span> <span class="fu"><a href="https://rdrr.io/r/stats/Binomial.html">dbinom</a></span><span class="op">(</span><span class="va">theta</span>, <span class="va">released</span><span class="op">)</span></span>
+<span>  <span class="co"># prior</span></span>
+<span>  <span class="va">theta</span> <span class="op">~</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html">dunif</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1</span><span class="op">)</span></span>
+<span><span class="op">}</span><span class="op">)</span></span>
+<span><span class="va">my.data</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>survived <span class="op">=</span> <span class="fl">19</span>, released <span class="op">=</span> <span class="fl">57</span><span class="op">)</span></span>
+<span><span class="va">initial.values</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>theta <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html">runif</a></span><span class="op">(</span><span class="fl">1</span>,<span class="fl">0</span>,<span class="fl">1</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">survival</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimbleModel.html">nimbleModel</a></span><span class="op">(</span>code <span class="op">=</span> <span class="va">model</span>, </span>
+<span>                        data <span class="op">=</span> <span class="va">my.data</span>, </span>
+<span>                        inits <span class="op">=</span> <span class="fu">initial.values</span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">Csurvival</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/compileNimble.html">compileNimble</a></span><span class="op">(</span><span class="va">survival</span><span class="op">)</span></span>
+<span><span class="va">survivalConf</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/configureMCMC.html">configureMCMC</a></span><span class="op">(</span><span class="va">survival</span><span class="op">)</span></span>
+<span><span class="co">## ===== Monitors =====</span></span>
+<span><span class="co">## thin = 1: theta</span></span>
+<span><span class="co">## ===== Samplers =====</span></span>
+<span><span class="co">## RW sampler (1)</span></span>
+<span><span class="co">##   - theta</span></span></code></pre></div>
+<p>We print the samplers used by default, remove the default sampler for <code>theta</code>, replace it with our <code>my_metropolis()</code> sampler with the standard deviation of the proposal distribution set to 0.1, and print again to make sure NIMBLE now uses our new sampler:</p>
+<div class="sourceCode" id="cb76"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">survivalConf</span><span class="op">$</span><span class="fu">printSamplers</span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="co">## [1] RW sampler: theta</span></span>
+<span><span class="va">survivalConf</span><span class="op">$</span><span class="fu">removeSamplers</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">'theta'</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">survivalConf</span><span class="op">$</span><span class="fu">addSampler</span><span class="op">(</span>target <span class="op">=</span> <span class="st">'theta'</span>, </span>
+<span>                        type <span class="op">=</span> <span class="st">'my_metropolis'</span>, </span>
+<span>                        control <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>scale <span class="op">=</span> <span class="fl">0.1</span><span class="op">)</span><span class="op">)</span> <span class="co"># standard deviation</span></span>
+<span>                                                     <span class="co"># of proposal distribution</span></span>
+<span><span class="va">survivalConf</span><span class="op">$</span><span class="fu">printSamplers</span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="co">## [1] my_metropolis sampler: theta,  scale: 0.10000000000000001</span></span></code></pre></div>
+<p>The rest of the workflow is unchanged:</p>
+<div class="sourceCode" id="cb77"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">survivalMCMC</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/buildMCMC.html">buildMCMC</a></span><span class="op">(</span><span class="va">survivalConf</span><span class="op">)</span></span>
+<span><span class="va">CsurvivalMCMC</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/compileNimble.html">compileNimble</a></span><span class="op">(</span><span class="va">survivalMCMC</span>, </span>
+<span>                               project <span class="op">=</span> <span class="va">survival</span><span class="op">)</span></span>
+<span><span class="va">samples</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/runMCMC.html">runMCMC</a></span><span class="op">(</span>mcmc <span class="op">=</span> <span class="va">CsurvivalMCMC</span>, </span>
+<span>                   niter <span class="op">=</span> <span class="fl">5000</span>, </span>
+<span>                   nburnin <span class="op">=</span> <span class="fl">1000</span><span class="op">)</span></span>
+<span><span class="co">## |-------------|-------------|-------------|-------------|</span></span>
+<span><span class="co">## |-------------------------------------------------------|</span></span>
+<span><span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimble-internal.html">samplesSummary</a></span><span class="op">(</span><span class="va">samples</span><span class="op">)</span></span>
+<span><span class="co">##        Mean Median St.Dev. 95%CI_low 95%CI_upp</span></span>
+<span><span class="co">## theta 0.339 0.3377 0.05592    0.2374    0.4528</span></span></code></pre></div>
+You can re-run the analysis by setting the standard deviation of the proposal to different values, say 1 and 10, and compare Figure <a href="intronimble.html#fig:traceown">2.3</a> to traceplots we obtained with our R implementation of the Metropolis algorithm in the previous chapter at Figure <a href="crashcourse.html#fig:tracechainlength">1.14</a>:
+<div class="figure" style="text-align: center">
+<span style="display:block;" id="fig:traceown"></span>
+<img src="banana-book_files/figure-html/traceown-1.png" alt="Trace plots for different values of the standard deviation (scale) of the proposal distribution." width="100%"><p class="caption">
+Figure 2.3: Trace plots for different values of the standard deviation (scale) of the proposal distribution.
+</p>
+</div>
+</div>
+</div>
+<div id="tips-and-tricks" class="section level2" number="2.7">
+<h2>
+<span class="header-section-number">2.7</span> Tips and tricks<a class="anchor" aria-label="anchor" href="#tips-and-tricks"><i class="fas fa-link"></i></a>
+</h2>
+<p>Before closing this chapter on NIMBLE, I thought it’d be useful to have a section gathering a few tips and tricks that would make your life easier. <strong>These are my tips and tricks, NIMBLE users, I’d be happy to hear yours: <a href="mailto:olivier.gimenez@cefe.cnrs.fr">email me</a>, <a href="https://github.com/oliviergimenez/banana-book/edit/master/nimble.Rmd">edit the chapter</a> or <a href="https://github.com/oliviergimenez/banana-book/issues">file an issue</a> on GitHub.</strong></p>
+<div id="precision-vs-standard-deviation" class="section level3" number="2.7.1">
+<h3>
+<span class="header-section-number">2.7.1</span> Precision vs standard deviation<a class="anchor" aria-label="anchor" href="#precision-vs-standard-deviation"><i class="fas fa-link"></i></a>
+</h3>
+<p>In other sotware like JAGS, the normal distribution is parameterized with mean <code>mu</code> and a parameter called precision, often denoted <code>tau</code>, the inverse of the variance you are used to. Say we use a normal prior on some parameter <code>epsilon</code> with <code>epsilon ~ dnorm(mu, tau)</code>. We’d like this prior to be vague, therefore <code>tau</code> should be small, say 0.01 so that the variance of the normal distribution is large, 1/0.01 = 100 here. This subtlety is the source of problems (and frustration) when you forget that the second parameter is precision and use <code>epsilon ~ dnorm(mu, 100)</code>, because then the variance is actually 1/100 = 0.01 and the prior is very informative, and peaked on <code>mu</code>. In NIMBLE you can use this parameterisation as well as the more natural parameterisation <code>epsilon ~ dnorm(mu, sd = 100)</code> which avoids confusion.</p>
+</div>
+<div id="indexing" class="section level3" number="2.7.2">
+<h3>
+<span class="header-section-number">2.7.2</span> Indexing<a class="anchor" aria-label="anchor" href="#indexing"><i class="fas fa-link"></i></a>
+</h3>
+<p>NIMBLE does not guess the dimensions of objects. In other software like JAGS you can write <code>sum.x &lt;- sum(x[])</code> to calculate the sum over all components of <code>x</code>. In NIMBLE you need to write <code>sum.x &lt;- sum(x[1:n])</code> to sum the components of <code>x</code> from 1 up to n. Specifying dimensions can be annoying, but I find it useful as it forces me to think of what I am doing and to keep my code self-explaining.</p>
+</div>
+<div id="faster-compilation" class="section level3" number="2.7.3">
+<h3>
+<span class="header-section-number">2.7.3</span> Faster compilation<a class="anchor" aria-label="anchor" href="#faster-compilation"><i class="fas fa-link"></i></a>
+</h3>
+<p>You might have noticed that compilation in NIMBLE takes time. When you have large models (with lots of nodes), compilation can take forever. You can set <code>calculate = FALSE</code> in <code><a href="https://rdrr.io/pkg/nimble/man/nimbleModel.html">nimbleModel()</a></code> to disable the calculation of all deterministic nodes and log-likelihood. You can also use <code>useConjugacy = FALSE</code> in <code><a href="https://rdrr.io/pkg/nimble/man/configureMCMC.html">configureMCMC()</a></code> to disable the search for conjugate samplers. With the animal survival example, you would do:</p>
+<div class="sourceCode" id="cb78"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">model</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimbleCode.html">nimbleCode</a></span><span class="op">(</span><span class="op">{</span></span>
+<span>  <span class="co"># likelihood</span></span>
+<span>  <span class="va">survived</span> <span class="op">~</span> <span class="fu"><a href="https://rdrr.io/r/stats/Binomial.html">dbinom</a></span><span class="op">(</span><span class="va">theta</span>, <span class="va">released</span><span class="op">)</span></span>
+<span>  <span class="co"># prior</span></span>
+<span>  <span class="va">theta</span> <span class="op">~</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html">dunif</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1</span><span class="op">)</span></span>
+<span><span class="op">}</span><span class="op">)</span></span>
+<span><span class="va">my.data</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>survived <span class="op">=</span> <span class="fl">19</span>, released <span class="op">=</span> <span class="fl">57</span><span class="op">)</span></span>
+<span><span class="va">initial.values</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>theta <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html">runif</a></span><span class="op">(</span><span class="fl">1</span>,<span class="fl">0</span>,<span class="fl">1</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">survival</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimbleModel.html">nimbleModel</a></span><span class="op">(</span>code <span class="op">=</span> <span class="va">model</span>, </span>
+<span>                        data <span class="op">=</span> <span class="va">my.data</span>, </span>
+<span>                        inits <span class="op">=</span> <span class="fu">initial.values</span><span class="op">(</span><span class="op">)</span>,</span>
+<span>                        calculate <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span> <span class="co"># first tip</span></span>
+<span><span class="va">Csurvival</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/compileNimble.html">compileNimble</a></span><span class="op">(</span><span class="va">survival</span><span class="op">)</span></span>
+<span><span class="va">survivalConf</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/configureMCMC.html">configureMCMC</a></span><span class="op">(</span><span class="va">survival</span><span class="op">)</span></span>
+<span><span class="co">## ===== Monitors =====</span></span>
+<span><span class="co">## thin = 1: theta</span></span>
+<span><span class="co">## ===== Samplers =====</span></span>
+<span><span class="co">## RW sampler (1)</span></span>
+<span><span class="co">##   - theta</span></span>
+<span><span class="va">survivalMCMC</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/buildMCMC.html">buildMCMC</a></span><span class="op">(</span><span class="va">survivalConf</span>, useConjugacy <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span> <span class="co"># second tip</span></span>
+<span><span class="va">CsurvivalMCMC</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/compileNimble.html">compileNimble</a></span><span class="op">(</span><span class="va">survivalMCMC</span>, </span>
+<span>                               project <span class="op">=</span> <span class="va">survival</span><span class="op">)</span></span>
+<span><span class="va">samples</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/runMCMC.html">runMCMC</a></span><span class="op">(</span>mcmc <span class="op">=</span> <span class="va">CsurvivalMCMC</span>, </span>
+<span>                   niter <span class="op">=</span> <span class="fl">5000</span>, </span>
+<span>                   nburnin <span class="op">=</span> <span class="fl">1000</span><span class="op">)</span></span>
+<span><span class="co">## |-------------|-------------|-------------|-------------|</span></span>
+<span><span class="co">## |-------------------------------------------------------|</span></span>
+<span><span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimble-internal.html">samplesSummary</a></span><span class="op">(</span><span class="va">samples</span><span class="op">)</span></span>
+<span><span class="co">##         Mean Median St.Dev. 95%CI_low 95%CI_upp</span></span>
+<span><span class="co">## theta 0.3402 0.3391 0.06029    0.2258    0.4616</span></span></code></pre></div>
+</div>
+<div id="updating-mcmc-chains" class="section level3" number="2.7.4">
+<h3>
+<span class="header-section-number">2.7.4</span> Updating MCMC chains<a class="anchor" aria-label="anchor" href="#updating-mcmc-chains"><i class="fas fa-link"></i></a>
+</h3>
+<p>Sometimes it is useful to run your MCMC chains a little bit longer to improve convergence. Re-starting from the run in previous section, you can use:</p>
+<div class="sourceCode" id="cb79"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">niter_ad</span> <span class="op">&lt;-</span> <span class="fl">6000</span></span>
+<span><span class="va">CsurvivalMCMC</span><span class="op">$</span><span class="fu">run</span><span class="op">(</span><span class="va">niter_ad</span>, reset <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span><span class="co">## |-------------|-------------|-------------|-------------|</span></span>
+<span><span class="co">## |-------------------------------------------------------|</span></span>
+<span><span class="co">## NULL</span></span></code></pre></div>
+<p>Then you can extract the matrix of previous MCMC samples augmented with new ones and obtain numerical summaries:</p>
+<div class="sourceCode" id="cb80"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">more_samples</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html">as.matrix</a></span><span class="op">(</span><span class="va">CsurvivalMCMC</span><span class="op">$</span><span class="va">mvSamples</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimble-internal.html">samplesSummary</a></span><span class="op">(</span><span class="va">more_samples</span><span class="op">)</span></span>
+<span><span class="co">##         Mean Median St.Dev. 95%CI_low 95%CI_upp</span></span>
+<span><span class="co">## theta 0.3402 0.3382 0.05975    0.2281    0.4632</span></span></code></pre></div>
+<p>You can check that <code>more_samples</code> contains 10000 samples, 4000 from the call to <code><a href="https://rdrr.io/pkg/nimble/man/runMCMC.html">runMCMC()</a></code> plus 6000 additional samples.</p>
+</div>
+<div id="reproducibility" class="section level3" number="2.7.5">
+<h3>
+<span class="header-section-number">2.7.5</span> Reproducibility<a class="anchor" aria-label="anchor" href="#reproducibility"><i class="fas fa-link"></i></a>
+</h3>
+<p>If you want your results to be reproducible, you can control the state of R the random number generator with the <code>setSeed</code> argument in functions <code><a href="https://rdrr.io/pkg/nimble/man/nimbleMCMC.html">nimbleMCMC()</a></code> and <code><a href="https://rdrr.io/pkg/nimble/man/runMCMC.html">runMCMC()</a></code>. Going back to the animal survival example, you can check that two calls to <code><a href="https://rdrr.io/pkg/nimble/man/nimbleMCMC.html">nimbleMCMC()</a></code> give the same results when <code>setSeed</code> is set to the same value:</p>
+<div class="sourceCode" id="cb81"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># first call to nimbleMCMC()</span></span>
+<span><span class="va">mcmc.output1</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimbleMCMC.html">nimbleMCMC</a></span><span class="op">(</span>code <span class="op">=</span> <span class="va">model</span>,</span>
+<span>                           data <span class="op">=</span> <span class="va">my.data</span>,</span>
+<span>                           inits <span class="op">=</span> <span class="va">initial.values</span>,</span>
+<span>                           niter <span class="op">=</span> <span class="fl">5000</span>,</span>
+<span>                           nburnin <span class="op">=</span> <span class="fl">1000</span>,</span>
+<span>                           nchains <span class="op">=</span> <span class="fl">3</span>,</span>
+<span>                           summary <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>                           setSeed <span class="op">=</span> <span class="fl">123</span><span class="op">)</span></span>
+<span><span class="co">## |-------------|-------------|-------------|-------------|</span></span>
+<span><span class="co">## |-------------------------------------------------------|</span></span>
+<span><span class="co">## |-------------|-------------|-------------|-------------|</span></span>
+<span><span class="co">## |-------------------------------------------------------|</span></span>
+<span><span class="co">## |-------------|-------------|-------------|-------------|</span></span>
+<span><span class="co">## |-------------------------------------------------------|</span></span>
+<span><span class="co"># second call to nimbleMCMC()</span></span>
+<span><span class="va">mcmc.output2</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimbleMCMC.html">nimbleMCMC</a></span><span class="op">(</span>code <span class="op">=</span> <span class="va">model</span>,</span>
+<span>                           data <span class="op">=</span> <span class="va">my.data</span>,</span>
+<span>                           inits <span class="op">=</span> <span class="va">initial.values</span>,</span>
+<span>                           niter <span class="op">=</span> <span class="fl">5000</span>,</span>
+<span>                           nburnin <span class="op">=</span> <span class="fl">1000</span>,</span>
+<span>                           nchains <span class="op">=</span> <span class="fl">3</span>,</span>
+<span>                           summary <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>                           setSeed <span class="op">=</span> <span class="fl">123</span><span class="op">)</span></span>
+<span><span class="co">## |-------------|-------------|-------------|-------------|</span></span>
+<span><span class="co">## |-------------------------------------------------------|</span></span>
+<span><span class="co">## |-------------|-------------|-------------|-------------|</span></span>
+<span><span class="co">## |-------------------------------------------------------|</span></span>
+<span><span class="co">## |-------------|-------------|-------------|-------------|</span></span>
+<span><span class="co">## |-------------------------------------------------------|</span></span>
+<span><span class="co"># outputs from both calls are the same</span></span>
+<span><span class="va">mcmc.output1</span><span class="op">$</span><span class="va">summary</span><span class="op">$</span><span class="va">all.chains</span></span>
+<span><span class="co">##         Mean Median St.Dev. 95%CI_low 95%CI_upp</span></span>
+<span><span class="co">## theta 0.3387  0.336 0.05968    0.2282    0.4608</span></span>
+<span><span class="va">mcmc.output2</span><span class="op">$</span><span class="va">summary</span><span class="op">$</span><span class="va">all.chains</span></span>
+<span><span class="co">##         Mean Median St.Dev. 95%CI_low 95%CI_upp</span></span>
+<span><span class="co">## theta 0.3387  0.336 0.05968    0.2282    0.4608</span></span></code></pre></div>
+</div>
+<div id="parallelization" class="section level3" number="2.7.6">
+<h3>
+<span class="header-section-number">2.7.6</span> Parallelization<a class="anchor" aria-label="anchor" href="#parallelization"><i class="fas fa-link"></i></a>
+</h3>
+<p>To speed up your analyses, you can run MCMC chains in parallel. This is what the package <code>jagsUI</code><a class="footnote-ref" tabindex="0" data-toggle="popover" data-content='&lt;p&gt;&lt;a href="https://github.com/kenkellner/jagsUI" class="uri"&gt;https://github.com/kenkellner/jagsUI&lt;/a&gt;&lt;/p&gt;'><sup>22</sup></a> accomplishes for JAGS users. Here, we use the <code>parallel</code> package for parallel computation:</p>
+<div class="sourceCode" id="cb82"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="va">parallel</span><span class="op">)</span></span></code></pre></div>
+<p>First you create a cluster using the total amount of cores you have but one to make sure your computer can go on working:</p>
+<div class="sourceCode" id="cb83"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">nbcores</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/parallel/detectCores.html">detectCores</a></span><span class="op">(</span><span class="op">)</span> <span class="op">-</span> <span class="fl">1</span></span>
+<span><span class="va">my_cluster</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/parallel/makeCluster.html">makeCluster</a></span><span class="op">(</span><span class="va">nbcores</span><span class="op">)</span></span></code></pre></div>
+<p>Then you wrap your workflow in a function to be run in parallel:</p>
+<div class="sourceCode" id="cb84"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">workflow</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">seed</span>, <span class="va">data</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  </span>
+<span>  <span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="va"><a href="https://r-nimble.org">nimble</a></span><span class="op">)</span></span>
+<span>  </span>
+<span>  <span class="va">model</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimbleCode.html">nimbleCode</a></span><span class="op">(</span><span class="op">{</span></span>
+<span>    <span class="co"># likelihood</span></span>
+<span>    <span class="va">survived</span> <span class="op">~</span> <span class="fu"><a href="https://rdrr.io/r/stats/Binomial.html">dbinom</a></span><span class="op">(</span><span class="va">theta</span>, <span class="va">released</span><span class="op">)</span></span>
+<span>    <span class="co"># prior</span></span>
+<span>    <span class="va">theta</span> <span class="op">~</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html">dunif</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1</span><span class="op">)</span></span>
+<span>  <span class="op">}</span><span class="op">)</span></span>
+<span>  </span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/Random.html">set.seed</a></span><span class="op">(</span><span class="fl">123</span><span class="op">)</span> <span class="co"># for reproducibility</span></span>
+<span>  <span class="va">initial.values</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>theta <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html">runif</a></span><span class="op">(</span><span class="fl">1</span>,<span class="fl">0</span>,<span class="fl">1</span><span class="op">)</span><span class="op">)</span></span>
+<span>  </span>
+<span>  <span class="va">survival</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimbleModel.html">nimbleModel</a></span><span class="op">(</span>code <span class="op">=</span> <span class="va">model</span>, </span>
+<span>                          data <span class="op">=</span> <span class="va">data</span>, </span>
+<span>                          inits <span class="op">=</span> <span class="fu">initial.values</span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
+<span>  <span class="va">Csurvival</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/compileNimble.html">compileNimble</a></span><span class="op">(</span><span class="va">survival</span><span class="op">)</span></span>
+<span>  <span class="va">survivalMCMC</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/buildMCMC.html">buildMCMC</a></span><span class="op">(</span><span class="va">Csurvival</span><span class="op">)</span></span>
+<span>  <span class="va">CsurvivalMCMC</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/compileNimble.html">compileNimble</a></span><span class="op">(</span><span class="va">survivalMCMC</span><span class="op">)</span></span>
+<span>  </span>
+<span>  <span class="va">samples</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/runMCMC.html">runMCMC</a></span><span class="op">(</span>mcmc <span class="op">=</span> <span class="va">CsurvivalMCMC</span>, </span>
+<span>                     niter <span class="op">=</span> <span class="fl">5000</span>, </span>
+<span>                     nburnin <span class="op">=</span> <span class="fl">1000</span>,</span>
+<span>                     setSeed <span class="op">=</span> <span class="va">seed</span><span class="op">)</span></span>
+<span>  </span>
+<span>  <span class="kw"><a href="https://rdrr.io/r/base/function.html">return</a></span><span class="op">(</span><span class="va">samples</span><span class="op">)</span></span>
+<span><span class="op">}</span></span></code></pre></div>
+<p>Now we run the code using <code><a href="https://rdrr.io/r/parallel/clusterApply.html">parLapply()</a></code>, which uses cluster nodes to execute our workflow:</p>
+<div class="sourceCode" id="cb85"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">output</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/parallel/clusterApply.html">parLapply</a></span><span class="op">(</span>cl <span class="op">=</span> <span class="va">my_cluster</span>, </span>
+<span>                    X <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="fl">2022</span>, <span class="fl">666</span><span class="op">)</span>,</span>
+<span>                    fun <span class="op">=</span> <span class="va">workflow</span>, </span>
+<span>                    data <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>survived <span class="op">=</span> <span class="fl">19</span>, released <span class="op">=</span> <span class="fl">57</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<p>In the call to <code>parLapply</code>, we specify <code>X = c(2022, 666)</code> to ensure reproducibility. We use two alues 2022 and 666 to set the seed in <code>workflow()</code>, which means we run two instances of our workflow, or two MCMC chains. Note that we also have a line <code>set.seed(123)</code> in the <code>workflow()</code> function to ensure reproducibility while drawing randomly initial values.</p>
+<p>It’s good practice to close the cluster with <code><a href="https://rdrr.io/r/parallel/makeCluster.html">stopCluster()</a></code> so that processes do not continue to run in the background and slow down other processes:</p>
+<div class="sourceCode" id="cb86"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/parallel/makeCluster.html">stopCluster</a></span><span class="op">(</span><span class="va">my_cluster</span><span class="op">)</span></span></code></pre></div>
+<p>By inspecting the results, you can see that the object <code>output</code> is a list with two components, one for each MCMC chain:</p>
+<div class="sourceCode" id="cb87"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/str.html">str</a></span><span class="op">(</span><span class="va">output</span><span class="op">)</span></span>
+<span><span class="co">## List of 2</span></span>
+<span><span class="co">##  $ : num [1:4000, 1] 0.393 0.369 0.346 0.346 0.346 ...</span></span>
+<span><span class="co">##   ..- attr(*, "dimnames")=List of 2</span></span>
+<span><span class="co">##   .. ..$ : NULL</span></span>
+<span><span class="co">##   .. ..$ : chr "theta"</span></span>
+<span><span class="co">##  $ : num [1:4000, 1] 0.435 0.435 0.435 0.435 0.243 ...</span></span>
+<span><span class="co">##   ..- attr(*, "dimnames")=List of 2</span></span>
+<span><span class="co">##   .. ..$ : NULL</span></span>
+<span><span class="co">##   .. ..$ : chr "theta"</span></span></code></pre></div>
+<p>Eventually, you can obtain numerical summaries:</p>
+<div class="sourceCode" id="cb88"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/pkg/MCMCvis/man/MCMCsummary.html">MCMCsummary</a></span><span class="op">(</span><span class="va">output</span><span class="op">)</span></span>
+<span><span class="co">##         mean      sd   2.5%    50%  97.5% Rhat n.eff</span></span>
+<span><span class="co">## theta 0.3361 0.06148 0.2215 0.3335 0.4594    1  1779</span></span></code></pre></div>
+</div>
+<div id="incomplete-initialization" class="section level3" number="2.7.7">
+<h3>
+<span class="header-section-number">2.7.7</span> Incomplete initialization<a class="anchor" aria-label="anchor" href="#incomplete-initialization"><i class="fas fa-link"></i></a>
+</h3>
+<p>When you run <code><a href="https://rdrr.io/pkg/nimble/man/nimbleMCMC.html">nimbleMCMC()</a></code> or <code><a href="https://rdrr.io/pkg/nimble/man/nimbleModel.html">nimbleModel()</a></code>, you may get warnings thrown at you by NIMBLE like ‘This model is not fully initialized’ or ‘value is NA or NaN even after trying to calculate’. This is not necessarily an error, but it ‘reflects missing values in model variables’ (incomplete initialization). In this situation, NIMBLE will initialize nodes with NAs by drawing from priors, and it will work or not. When possible, I try to initialize all nodes (full initialization). The process can be a bit of a headache, but it helps understanding the model structure better. Going back to our animal survival example, let’s purposedly forget to provide an initial value for <code>theta</code>:</p>
+<div class="sourceCode" id="cb89"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">model</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimbleCode.html">nimbleCode</a></span><span class="op">(</span><span class="op">{</span></span>
+<span>  <span class="co"># likelihood</span></span>
+<span>  <span class="va">survived</span> <span class="op">~</span> <span class="fu"><a href="https://rdrr.io/r/stats/Binomial.html">dbinom</a></span><span class="op">(</span><span class="va">theta</span>, <span class="va">released</span><span class="op">)</span></span>
+<span>  <span class="co"># prior</span></span>
+<span>  <span class="va">theta</span> <span class="op">~</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html">dunif</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1</span><span class="op">)</span></span>
+<span><span class="op">}</span><span class="op">)</span></span>
+<span><span class="co">#initial.values &lt;- list(theta = runif(1,0,1))</span></span>
+<span><span class="va">survival</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimbleModel.html">nimbleModel</a></span><span class="op">(</span>code <span class="op">=</span> <span class="va">model</span>, </span>
+<span>                        data <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>survived <span class="op">=</span> <span class="fl">19</span>, released <span class="op">=</span> <span class="fl">57</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<p>To see which variables are not initialized, we use <code>initializeInfo()</code>:</p>
+<div class="sourceCode" id="cb90"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># survival$calculate() # gives NA</span></span>
+<span><span class="va">survival</span><span class="op">$</span><span class="fu">initializeInfo</span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
+<p>Now that we know <code>theta</code> was not initialized, we can fix the issue and resume our workflow:</p>
+<div class="sourceCode" id="cb91"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">survival</span><span class="op">$</span><span class="va">theta</span> <span class="op">&lt;-</span> <span class="fl">0.5</span> <span class="co"># assign initial value to theta</span></span>
+<span><span class="va">survival</span><span class="op">$</span><span class="fu">calculate</span><span class="op">(</span><span class="op">)</span> </span>
+<span><span class="co">## [1] -5.422</span></span>
+<span></span>
+<span><span class="va">Csurvival</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/compileNimble.html">compileNimble</a></span><span class="op">(</span><span class="va">survival</span><span class="op">)</span></span>
+<span><span class="va">survivalMCMC</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/buildMCMC.html">buildMCMC</a></span><span class="op">(</span><span class="va">Csurvival</span><span class="op">)</span></span>
+<span><span class="co">## ===== Monitors =====</span></span>
+<span><span class="co">## thin = 1: theta</span></span>
+<span><span class="co">## ===== Samplers =====</span></span>
+<span><span class="co">## RW sampler (1)</span></span>
+<span><span class="co">##   - theta</span></span>
+<span><span class="va">CsurvivalMCMC</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/compileNimble.html">compileNimble</a></span><span class="op">(</span><span class="va">survivalMCMC</span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">samples</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/runMCMC.html">runMCMC</a></span><span class="op">(</span>mcmc <span class="op">=</span> <span class="va">CsurvivalMCMC</span>, </span>
+<span>                   niter <span class="op">=</span> <span class="fl">5000</span>, </span>
+<span>                   nburnin <span class="op">=</span> <span class="fl">1000</span><span class="op">)</span></span>
+<span><span class="co">## |-------------|-------------|-------------|-------------|</span></span>
+<span><span class="co">## |-------------------------------------------------------|</span></span>
+<span></span>
+<span><span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimble-internal.html">samplesSummary</a></span><span class="op">(</span><span class="va">samples</span><span class="op">)</span></span>
+<span><span class="co">##         Mean Median St.Dev. 95%CI_low 95%CI_upp</span></span>
+<span><span class="co">## theta 0.3359 0.3335 0.06088    0.2191    0.4602</span></span></code></pre></div>
+</div>
+<div id="vectorization" class="section level3" number="2.7.8">
+<h3>
+<span class="header-section-number">2.7.8</span> Vectorization<a class="anchor" aria-label="anchor" href="#vectorization"><i class="fas fa-link"></i></a>
+</h3>
+<p>Vectorization is the process of replacing a loop by a vector so that instead of processing a single value at a time, you process a set of values at once. As an example, instead of writing:</p>
+<div class="sourceCode" id="cb92"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="kw">for</span><span class="op">(</span><span class="va">i</span> <span class="kw">in</span> <span class="fl">1</span><span class="op">:</span><span class="va">n</span><span class="op">)</span><span class="op">{</span> </span>
+<span>  <span class="va">x</span><span class="op">[</span><span class="va">i</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="va">mu</span> <span class="op">+</span> <span class="va">epsilon</span><span class="op">[</span><span class="va">i</span><span class="op">]</span> </span>
+<span><span class="op">}</span></span></code></pre></div>
+<p>you would write:</p>
+<div class="sourceCode" id="cb93"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">x</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="va">n</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="va">mu</span> <span class="op">+</span> <span class="va">epsilon</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="va">n</span><span class="op">]</span></span></code></pre></div>
+<p>Vectorization can make your code more efficient by manipulating one vector node <code>x[1:n]</code> instead of <code>n</code> nodes <code>x[1]</code>, …, <code>x[n]</code>. <strong>Think of an example in relation to animal survival? Illustrate with vectorized Bernoulli or <a href="https://github.com/nimble-dev/nimbleSCR/blob/master/nimbleSCR/R/dbinom_vector.R">vectorized Binomial</a>?</strong></p>
+</div>
+</div>
+<div id="summary-1" class="section level2" number="2.8">
+<h2>
+<span class="header-section-number">2.8</span> Summary<a class="anchor" aria-label="anchor" href="#summary-1"><i class="fas fa-link"></i></a>
+</h2>
+<ul>
+<li><p>NIMBLE is an R package that implements for you MCMC algorithms to generate samples from the posterior distribution of model parameters. You only have to specify a likelihood and priors using the BUGS language to apply the Bayes theorem.</p></li>
+<li><p>NIMBLE is more than just another MCMC engine. It provides a programming environment so that you have full control when building models and estimating parameters.</p></li>
+<li><p>At the core of NIMBLE are <code>nimbleFunctions</code> which you can write and compile for faster computation. With <code>nimbleFunctions</code> you can mimic basic R syntax, work with vectors and matrices, use logical operators and flow control, and specify many distributions.</p></li>
+<li><p>There are two workflows to run NIMBLE. In most situations, <code><a href="https://rdrr.io/pkg/nimble/man/nimbleMCMC.html">nimbleMCMC()</a></code> will serve you well. When you need more control, you can adopt a detailed workflow with <code><a href="https://rdrr.io/pkg/nimble/man/nimbleModel.html">nimbleModel()</a></code>, <code><a href="https://rdrr.io/pkg/nimble/man/configureMCMC.html">configureMCMC()</a></code>, <code><a href="https://rdrr.io/pkg/nimble/man/buildMCMC.html">buildMCMC()</a></code>, <code><a href="https://rdrr.io/pkg/nimble/man/compileNimble.html">compileNimble()</a></code> and <code><a href="https://rdrr.io/pkg/nimble/man/runMCMC.html">runMCMC()</a></code>.</p></li>
+<li><p>By having full control of the workflow, you can change default MCMC samplers and even write your own samplers.</p></li>
+</ul>
+</div>
+<div id="suggested-reading-1" class="section level2" number="2.9">
+<h2>
+<span class="header-section-number">2.9</span> Suggested reading<a class="anchor" aria-label="anchor" href="#suggested-reading-1"><i class="fas fa-link"></i></a>
+</h2>
+<p>In this chapter, I have only scratched the surface of what NIMBLE is capable of. Below is a list of pointers that should help you going further with NIMBLE.</p>
+<ul>
+<li><p>The NIMBLE folks make a lot of useful resources available through the official website <a href="https://r-nimble.org">https://r-nimble.org</a>.</p></li>
+<li><p>The NIMBLE manual <a href="https://r-nimble.org/html_manual/cha-welcome-nimble.html">https://r-nimble.org/html_manual/cha-welcome-nimble.html</a> reads like a book with clear explanations and relevant examples.</p></li>
+<li><p>You can learn a lot by going through examples at <a href="https://r-nimble.org/examples">https://r-nimble.org/examples</a> and training material from NIMBLE workshops at <a href="https://github.com/nimble-training">https://github.com/nimble-training</a>.</p></li>
+<li><p>You can keep the NIMBLE cheatsheet <a href="https://r-nimble.org/cheatsheets/NimbleCheatSheet.pdf">https://r-nimble.org/cheatsheets/NimbleCheatSheet.pdf</a> near you to remind yourself of the workflow, how to write and use models, or which functions and distributions are available.</p></li>
+<li><p>The motivation to write this book comes from a workshop I co-teach with colleagues, including Perry de Valpine and Daniel Turek from the NIMBLE development team. The material (slides and videos) is available at <a href="https://github.com/oliviergimenez/bayesian-cr-workshop">https://github.com/oliviergimenez/bayesian-cr-workshop</a>.</p></li>
+<li><p>If you have questions, feel free to get in touch with the community of NIMBLE users by emailing the discussion group <a href="https://groups.google.com/forum/#!forum/nimble-users">https://groups.google.com/forum/#!forum/nimble-users</a>. This is a great place to learn, and folks who take the time to answer questions are kind and provide constructive answers. When possible, make sure to provide a reproducible example illustrating your problem.</p></li>
+<li><p>Last, you can cite the following reference when using NIMBLE in a publication:</p></li>
+</ul>
+<blockquote>
+<p>de Valpine, P., D. Turek, C. J. Paciorek, C. Anderson-Bergman, D. Temple Lang, and R. Bodik (2017). <a href="https://arxiv.org/pdf/1505.05093.pdf">Programming With Models: Writing Statistical Algorithms for General Model Structures With NIMBLE</a>. <em>Journal of Computational and Graphical Statistics</em> <strong>26</strong> (2): 403–13.</p>
+</blockquote>
+
+</div>
+</div>
+
+  <div class="chapter-nav">
+<div class="prev"><a href="crashcourse.html"><span class="header-section-number">1</span> Bayesian statistics &amp; MCMC</a></div>
+<div class="next"><a href="hmmcapturerecapture.html"><span class="header-section-number">3</span> Hidden Markov models</a></div>
+</div></main><div class="col-md-3 col-lg-2 d-none d-md-block sidebar sidebar-chapter">
+    <nav id="toc" data-toggle="toc" aria-label="On this page"><h2>On this page</h2>
+      <ul class="nav navbar-nav">
+<li><a class="nav-link" href="#intronimble"><span class="header-section-number">2</span> NIMBLE tutorial</a></li>
+<li><a class="nav-link" href="#introduction-2"><span class="header-section-number">2.1</span> Introduction</a></li>
+<li><a class="nav-link" href="#what-is-nimble"><span class="header-section-number">2.2</span> What is NIMBLE?</a></li>
+<li><a class="nav-link" href="#start-nimble"><span class="header-section-number">2.3</span> Getting started</a></li>
+<li>
+<a class="nav-link" href="#functions-in-nimble"><span class="header-section-number">2.4</span> Programming</a><ul class="nav navbar-nav">
+<li><a class="nav-link" href="#nimble-functions"><span class="header-section-number">2.4.1</span> NIMBLE functions</a></li>
+<li><a class="nav-link" href="#callrfninnimble"><span class="header-section-number">2.4.2</span> Calling R/C++ functions</a></li>
+<li><a class="nav-link" href="#user-defined-distributions"><span class="header-section-number">2.4.3</span> User-defined distributions</a></li>
+</ul>
+</li>
+<li><a class="nav-link" href="#under-the-hood"><span class="header-section-number">2.5</span> Under the hood</a></li>
+<li>
+<a class="nav-link" href="#mcmc-samplers"><span class="header-section-number">2.6</span> MCMC samplers</a><ul class="nav navbar-nav">
+<li><a class="nav-link" href="#change-sampler"><span class="header-section-number">2.6.1</span> Default samplers</a></li>
+<li><a class="nav-link" href="#user-defined-samplers"><span class="header-section-number">2.6.2</span> User-defined samplers</a></li>
+</ul>
+</li>
+<li>
+<a class="nav-link" href="#tips-and-tricks"><span class="header-section-number">2.7</span> Tips and tricks</a><ul class="nav navbar-nav">
+<li><a class="nav-link" href="#precision-vs-standard-deviation"><span class="header-section-number">2.7.1</span> Precision vs standard deviation</a></li>
+<li><a class="nav-link" href="#indexing"><span class="header-section-number">2.7.2</span> Indexing</a></li>
+<li><a class="nav-link" href="#faster-compilation"><span class="header-section-number">2.7.3</span> Faster compilation</a></li>
+<li><a class="nav-link" href="#updating-mcmc-chains"><span class="header-section-number">2.7.4</span> Updating MCMC chains</a></li>
+<li><a class="nav-link" href="#reproducibility"><span class="header-section-number">2.7.5</span> Reproducibility</a></li>
+<li><a class="nav-link" href="#parallelization"><span class="header-section-number">2.7.6</span> Parallelization</a></li>
+<li><a class="nav-link" href="#incomplete-initialization"><span class="header-section-number">2.7.7</span> Incomplete initialization</a></li>
+<li><a class="nav-link" href="#vectorization"><span class="header-section-number">2.7.8</span> Vectorization</a></li>
+</ul>
+</li>
+<li><a class="nav-link" href="#summary-1"><span class="header-section-number">2.8</span> Summary</a></li>
+<li><a class="nav-link" href="#suggested-reading-1"><span class="header-section-number">2.9</span> Suggested reading</a></li>
+</ul>
+
+      <div class="book-extra">
+        <ul class="list-unstyled">
+<li><a id="book-source" href="https://github.com/oliviergimenez/banana-book/blob/master/nimble.Rmd">View source <i class="fab fa-github"></i></a></li>
+          <li><a id="book-edit" href="https://github.com/oliviergimenez/banana-book/edit/master/nimble.Rmd">Edit this page <i class="fab fa-github"></i></a></li>
+        </ul>
+</div>
+    </nav>
+</div>
+
+</div>
+</div> <!-- .container -->
+
+<footer class="bg-primary text-light mt-5"><div class="container"><div class="row">
+
+  <div class="col-12 col-md-6 mt-3">
+    <p>"<strong>Bayesian Analysis of Capture-Recapture Data with Hidden Markov Models</strong>: Theory and Case Studies in R" was written by Olivier Gimenez. It was last built on 2023-08-12.</p>
+  </div>
+
+  <div class="col-12 col-md-6 mt-3">
+    <p>This book was built by the <a class="text-light" href="https://bookdown.org">bookdown</a> R package.</p>
+  </div>
+
+</div></div>
+</footer><!-- dynamically load mathjax for compatibility with self-contained --><script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    var src = "true";
+    if (src === "" || src === "true") src = "https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/latest.js?config=TeX-MML-AM_CHTML";
+    if (location.protocol !== "file:")
+      if (/^https?:/.test(src))
+        src = src.replace(/^https?:/, '');
+    script.src = src;
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script><script type="text/x-mathjax-config">const popovers = document.querySelectorAll('a.footnote-ref[data-toggle="popover"]');
+for (let popover of popovers) {
+  const div = document.createElement('div');
+  div.setAttribute('style', 'position: absolute; top: 0, left:0; width:0, height:0, overflow: hidden; visibility: hidden;');
+  div.innerHTML = popover.getAttribute('data-content');
+
+  var has_math = div.querySelector("span.math");
+  if (has_math) {
+    document.body.appendChild(div);
+    MathJax.Hub.Queue(["Typeset", MathJax.Hub, div]);
+    MathJax.Hub.Queue(function() {
+      popover.setAttribute('data-content', div.innerHTML);
+      document.body.removeChild(div);
+    })
+  }
+}
+</script>
+</body>
+</html>
