@@ -308,7 +308,7 @@ You may have heard about the Akaike Information Criterion (AIC) in the Frequenti
 
 While AIC is the predictive measure of choice in the Frequentist framework for ecologists, DIC has been around for some time for Bayesian applications due to its availability in population BUGS pieces of software. However, these methods only utilize a point estimate of the unknown parameters. Also, various difficulties have been noted with DIC which may give nonsensical results when the posterior distribution is not well summarized by its mean. For a more fully Bayesian approach we would like to use the entire posterior distribution to evaluate the predictive performance, which is exactly what WAIC does. 
 
-Conveniently, NIMBLE calculates WAIC for you. The only modifications we need to make are i) to monitor the latent states and ii) to add `WAIC = TRUE` in the call to the `nimbleMCMC()` function. For example, for the CJS model, we would write:
+Conveniently, NIMBLE calculates WAIC for you. The only modifications we need to make are i) to monitor all nodes, including the latent states and ii) to add `WAIC = TRUE` in the call to the `nimbleMCMC()` function. For example, for the CJS model, we write:
 ```{r eval = FALSE}
 parameters.to.save <- c("phi", "p", "z") 
 mcmc.phitpt <- nimbleMCMC(code = hmm.phitpt,
@@ -325,10 +325,10 @@ mcmc.phitpt <- nimbleMCMC(code = hmm.phitpt,
 I re-ran the four models to calculate the WAIC value for each of them
 ```{r echo = FALSE}
 load(here::here("dat","dipper_waic.RData"))
-data.frame(model = c("model with both survival and detection constant",
-                     "model with time-dependent survival, constant detection",
-                     "model with constant survival, time-dependent detection",
-                     "CJS model"),
+data.frame(model = c("both survival & detection constant",
+                     "time-dependent survival, constant detection",
+                     "constant survival, time-dependent detection",
+                     "both survival & detection time-dependent"),
            WAIC = c(mcmc.phip$WAIC,
              mcmc.phitp$WAIC,
              mcmc.phipt$WAIC,
@@ -337,17 +337,21 @@ data.frame(model = c("model with both survival and detection constant",
 
 Lower values of WAIC imply higher predictive accuracy, thefore we would favor model with constant parameters.
 
-## Goodness-of-fit testing
+## Goodness of fit {#gof}
 
-In the previous Section \@ref(waic), we compared models between each other based on their predictive accuracy -- we assessed their *relative* fit. However, even though we were able to rank these models according to predictive accuracy, it could happen that all models actually had poor predictive performance -- this has to do with *absolute* fit. 
+In the previous section, Section \@ref(waic), we compared models between each other based on their predictive accuracy -- we assessed their *relative* fit. However, even though we were able to rank these models according to predictive accuracy, it could happen that all models actually had poor predictive performance -- this has to do with *absolute* fit. 
 
 How to assess the goodness of fit of the CJS model to capture-recapture data? In particular how to assess homogeneity of survival and detection probabilities which is a fundamental assumption for this model?
 
-In the Bayesian framework, we would rely on posterior predictive checks to assess absolute fit. Briefly speaking, the idea is to compare the observed data to replicated data generated from the model. If the model is a good fit to the data, then the replicated data predicted from the model should look similar to the observed data. To simplify the comparison, some summary statistics are generally considered that should be built based on the ecological question of interest. 
+### Posterior predictive checks
 
-For the CJS model, posterior predictive checks can be used. However, there are well established procedures for assessing absolute fit and departures from specific model assumptions that would be a shame to just ignore. 
+In the Bayesian framework, we would rely on posterior predictive checks to assess absolute fit. Briefly speaking, the idea is to compare the observed data to replicated data generated from the model. If the model is a good fit to the data, then the replicated data predicted from the model should look similar to the observed data. To simplify the comparison, some summary statistics are generally used. For the CJS model, we would use the so-called m-array which gathers the elements $m_{ij}$ for the number of marked individuals initially released at time $i$ that were first detected again at time $j$. **Do i include an example? If yes, refer to paper by Paganin & de Valpine and use code in https://github.com/salleuska/fastCPPP**
 
-We focus on two such assumptions that have an ecological interpretation, transience and trap-dependence. The transience procedure assesses whether newly encountered individuals have the same chance to be later re-observed as recaptured (previously encountered) individuals. The trap-dependence procedure assesses whether missed individuals have the same chance to be recaptured at the next occasion as currently captured individuals. Although these procedures are called *test of transience* and *test of trap-dependence*, when it comes to interpretation, you should keep in mind that transience -- an excess of individuals never seen again -- and trap-dependence -- an effect of trapping on detection -- are just two specific reasons why the tests might detect a lack of fit.
+### Classical tests
+
+In the Frequentist literature, there are well established procedures for assessing absolute fit and departures from specific CJS model assumptions that would be a shame to just ignore. 
+
+We focus on two such assumptions that have an ecological interpretation, transience and trap-dependence. The transience procedure assesses whether newly encountered individuals ('new' individuals) have the same chance to be later re-observed as recaptured (previously encountered) individuals ('old' individuals). The trap-dependence procedure assesses whether missed individuals have the same chance to be recaptured at the next occasion as currently captured individuals. Although these procedures are called *test of transience* and *test of trap-dependence*, when it comes to interpretation, you should keep in mind that transience -- an excess of individuals never seen again -- and trap-dependence -- an effect of trapping on detection -- are just two specific reasons why the tests might detect a lack of fit.
 
 These tests are implemented in the package `R2ucare`, and we illustrate its use with the dipper data.
 ```{r}
@@ -389,20 +393,165 @@ Or trap-dependence:
 test2ct(dip.fem.hist, dip.fem.freq)
 ```
 
-**What to do if these tests are significant? If you detect a transient effect, then 2 age classes should be considered on survival probability to account for this issue (fast forward covariate section below). Explain without talking about age effect, and why it is on survival that the effect should be considered. If trap dependence is significant, you could use a time-varying individual covariate to account for this effect. Explain the covariate (fast forward section on covariate below), or consider more complex models. Explain multievent model without talking about states (fast forward case study).**
+What to do if these tests are significant? Transience may occur when animals transit through but do not belong to the study population (true transients), or reproduce only once then die or permanently disperse (cost of first reproduction), or die or permanently disperse due to an effect of marking (marking effect). These transient individuals are never detected again after their initial capture, which means they have a zero probability of local survival after this initial capture. This suggests a way to account for the transience issue that we cover in a case study (see **transience case study**). 
 
-So far, we have addressed assumptions relative to the model. There are also assumptions relative to the design. In particular, survival refers to the study area, and so we need to think carefully about what survival does actually mean. We actually estimate what we usually call *apparent* survival, not exactly *true* survival. Apparent survival probability is the product of true survival and study area fidelity. Consequently, apparent survival is always lower than true survival unless study area fidelity is exactly 1. There are other assumptions relative to the design, which we simply list here. There should be no mark loss, the identity of individuals should be recorded without error (no false positives), and captured animals should be a random sample of the population.
+Trap-dependence may occur when animals are affected (positively or negatively) by trapping (true trap-dependence), when observers tend to visit some parts of the study area more often when individuals have been detected (preferential sampling), when some patches of a heterogeneous habitat are more accessible so that individuals stationed there have higher detection probabilities (access bias), when age, sex or social status are unknown, but determine individual movements or activity patterns so that the susceptibility to be detected varies (individual heterogeneity), or when non random temporary emigration occurs (skipped reproduction). Trap-dependence therefore designates some correlation between detection events. To account for the trap-dependence issue, this correlation needs to be accounted for, and we show how in a case study (see **trap dep case study**). 
+
+### Design considerations
+
+So far, we have addressed assumptions relative to the model. There are also assumptions relative to the design. In particular, survival refers to the study area, and so we need to think carefully about what survival does actually mean. We actually estimate what we usually call *apparent* survival, not exactly *true* survival. Apparent survival probability is the product of true survival and study area fidelity. Consequently, apparent survival is always lower than true survival unless study area fidelity is exactly 1. 
+There are other assumptions relative to the design, which we simply list here. There should be no mark loss, the identity of individuals should be recorded without error (no false positives), and captured animals should be a random sample of the population.
 
 ## Covariates {#covariates}
 
-**Blabla sur le pourquoi des covariables.**
+In the models we have considered so far, survival and detection probabilities may vary over time, but we do not include ecological drivers that might explain these variation. Luckily, in the spirit of generalized linear models, we can make these parameters dependent on external covariates over time, such as environmental conditions for survival or sampling effort for detection. 
+
+Besides variation over time, we will also cover individual variation in these parameters, in which for example survival vary according to sex or some phenotypic characteristics (e.g. size or body mass). 
+
+Let's illustrate the use of covariates with the dipper example.  
 
 ### Temporal covariates
 
-#### Discrete
+#### Discrete 
 
-Also consider flood effect discrete cov. A major flood occurred during the 1983 breeding season. Because captures during the breding season occurred well before and after the flood, survival in the two years 1982-1983 and 1983-1984 were likely to be affected. Indeed survival of a species living along and feeding in the river in these two flood years was most likely lower than in nonflood years. 
+A major flood occurred during the 1983 breeding season (from October 1982 to May 1983). Because captures during the breding season occurred before and after the flood, survival in the two years 1982-1983 and 1983-1984 were likely to be affected. Indeed survival of a species living along and feeding in the river in these two flood years was most likely lower than in nonflood years. 
 
+Let's use a covariate $\text{flood}$ that contains 1s and 2s, indicating whether we are in a flood or nonflood year for each year: 1 if nonflood year, and 2 if flood year. 
+```{r eval = FALSE}
+flood <- c(1, # 1981-1982 (nonflood)
+           2, # 1982-1983 (flood)
+           2, # 1983-1984 (flood)
+           1, # 1984-1985 (nonflood)
+           1, # 1985-1986 (nonflood)
+           1) # 1986-1987 (nonflood)
+```
+
+Then we write the model code: 
+```{r eval = FALSE}
+hmm.phifloodp <- nimbleCode({
+  delta[1] <- 1          # Pr(alive t = 1) = 1
+  delta[2] <- 0          # Pr(dead t = 1) = 0
+  for (t in 1:(T-1)){
+    gamma[1,1,t] <- phi[flood[t]]      # Pr(alive t -> alive t+1)
+    gamma[1,2,t] <- 1 - phi[flood[t]]  # Pr(alive t -> dead t+1)
+    gamma[2,1,t] <- 0        # Pr(dead t -> alive t+1)
+    gamma[2,2,t] <- 1        # Pr(dead t -> dead t+1)
+  }
+  p ~ dunif(0, 1) # prior detection
+  omega[1,1] <- 1 - p    # Pr(alive t -> non-detected t)
+  omega[1,2] <- p        # Pr(alive t -> detected t)
+  omega[2,1] <- 1        # Pr(dead t -> non-detected t)
+  omega[2,2] <- 0        # Pr(dead t -> detected t)
+  phi[1] ~ dunif(0, 1) # prior for survival in nonflood years
+  phi[2] ~ dunif(0, 1) # prior for survival in flood years
+  # likelihood
+  for (i in 1:N){
+    z[i,first[i]] ~ dcat(delta[1:2])
+    for (j in (first[i]+1):T){
+      z[i,j] ~ dcat(gamma[z[i,j-1], 1:2, j-1])
+      y[i,j] ~ dcat(omega[z[i,j], 1:2])
+    }
+  }
+})
+```
+
+We use nested indexing here when specifying survival in the transition matrix. E.g. for year $t = 2$, `phi[flood[t]]` gives `phi[flood[2]]` which will be `phi[2]` because `flood[2]` is 2 that is a flood year.
+
+Let's provide the constants in a list: 
+```{r eval = FALSE}
+my.constants <- list(N = nrow(y),
+                     T = ncol(y),
+                     first = first,
+                     flood = flood)
+```
+
+Our function to generate initial values:
+```{r eval = FALSE}
+initial.values <- function() list(phi = runif(2,0,1),
+                                  p = runif(1,0,1),
+                                  z = zinits)
+```
+
+The parameters to be monitored:
+```{r eval = FALSE}
+parameters.to.save <- c("p", "phi")
+```
+
+We're all set, and ready to run NIMBLE: 
+```{r eval = FALSE}
+mcmc.phifloodp <- nimbleMCMC(code = hmm.phifloodp, 
+                             constants = my.constants,
+                             data = my.data,              
+                             inits = initial.values,
+                             monitors = parameters.to.save,
+                             niter = n.iter,
+                             nburnin = n.burnin, 
+                             nchains = n.chains)
+```
+
+Having a look to the numerical summaries, we see that as expected, survival in flood years (`phi[2]`) is much lower than survival in non-flood years (`phi[1]`):
+```{r, echo = FALSE}
+load(here::here("dat/phifloodpni.RData"))
+MCMCsummary(mcmc.phifloodp, round = 2)
+```
+```{r eval = FALSE}
+MCMCsummary(mcmc.phifloodp, round = 2)
+```
+
+An important point here is that we formulated an ecological hypothesis which we translated into a model. The next step would consist in calculating WAIC for this model and compare it with that of the four other model we have fitted so far (see Section \@ref(waic)). 
+
+Another method to include a discrete covariate consists in considering the effect of the difference between its levels. For example, we could consider survival in nonflood years as the reference and test the difference in survival with flood years. 
+
+To do so, we will write survival as a linear function of our covariate on some scale, e.g. $\text{logit}(\phi_t) = \beta_1 + \beta_2 \;\text{flood}_t$ where the $\beta$'s are regression coefficient we need to estimate (intercept $\beta_1$ and slope $\beta_2$), and $\displaystyle{\text{logit}(x) = \log \left(\frac{x}{1-x}\right)}$ is the logit function. The logit function lives between $-\infty$ and $+\infty$, and sends values between 0 and 1 onto the real line. For example $\log(0.2/(1-0.2))=-1.39$, $\log(0.5/(1-0.5))=0$ and $\log(0.8/(1-0.8))=1.39$. Why use the logit function? Because survival is a probability bounded between 0 and 1, and if we used directly $\phi_t = \beta_1 + \beta_2 \;\text{flood}_t$ we might end up with estimates for the regression coefficients that make survival out of bound. Therefore, we consider survival as a linear function of our covariates on the scale of the logit function, working on the real line, then back-transform using the inverse-logit (reciprocal function) to obtain survival on its natural scale. The inverse-logit function is $\displaystyle{\text{logit}^{-1}(x) = \frac{\exp(x)}{1+\exp(x)} = \frac{1}{1+\exp(-x)}}$. The logit function is often called a link function like in generalized linear models. 
+
+Another point of attention is the prior we will assign to regression coefficients. We no longer assign a prior to survival directly like previously, but we need to assign prior to the $\beta$'s which will induce some prior on survival. And sometimes, your priors on the regression coefficients are non-informative, but the prior on survival is not. Consider for example the case of a single intercept with no covariate. If you assign as a prior to this regression coefficient a normal distribution with mean 0 and large standard deviation, which would be my first reflex, then you end up with a very informative prior on survival with a bathtub shape, putting much importance on low and high values:
+```{r}
+# 1000 random values from a N(0,10)
+intercept <- rnorm(1000, mean = 0, sd = 10) 
+# plogis() is the inverse-logit function in R
+survival <- plogis(intercept) 
+df <- data.frame(intercept = intercept, survival = survival)
+plot1 <- df %>%
+  ggplot(aes(x = intercept)) +
+  geom_density() +
+  labs(x = "prior on intercept")
+plot2 <- df %>%
+  ggplot(aes(x = survival)) +
+  geom_density() +
+  labs(x = "prior on survival")
+plot1 + plot2
+```
+
+Now if you go for a lower standard deviation for the intercept prior, the prior on survival is non-informative, looking like a uniform distribution between 0 and 1:
+```{r}
+set.seed(123)
+# 1000 random values from a N(0,1.5)
+intercept <- rnorm(1000, mean = 0, sd = 1.5) 
+# plogis() is the inverse-logit function in R
+survival <- plogis(intercept) 
+df <- data.frame(intercept = intercept, survival = survival)
+plot1 <- df %>%
+  ggplot(aes(x = intercept)) +
+  geom_density() +
+  labs(x = "prior on intercept")
+plot2 <- df %>%
+  ggplot(aes(x = survival)) +
+  geom_density() +
+  labs(x = "prior on survival")
+plot1 + plot2
+```
+
+Now let's go back to our model. We first define our flood covariate with 0 if nonflood year, and 1 if flood year. 
+```{r eval = FALSE}
+flood <- c(0, # 1981-1982 (nonflood)
+           1, # 1982-1983 (flood)
+           1, # 1983-1984 (flood)
+           0, # 1984-1985 (nonflood)
+           0, # 1985-1986 (nonflood)
+           0) # 1986-1987 (nonflood)
+```
+
+Then we write the NIMBLE code:
 ```{r eval = FALSE}
 hmm.phifloodp <- nimbleCode({
   delta[1] <- 1          # Pr(alive t = 1) = 1
@@ -419,8 +568,8 @@ hmm.phifloodp <- nimbleCode({
   omega[1,2] <- p        # Pr(alive t -> detected t)
   omega[2,1] <- 1        # Pr(dead t -> non-detected t)
   omega[2,2] <- 0        # Pr(dead t -> detected t)
-  beta[1] ~ dnorm(0, 1.5) # prior intercept
-  beta[2] ~ dnorm(0, 1.5) # prior slope
+  beta[1] ~ dnorm(0, sd = 1.5) # prior intercept
+  beta[2] ~ dnorm(0, sd = 1.5) # prior slope
   # likelihood
   for (i in 1:N){
     z[i,first[i]] ~ dcat(delta[1:2])
@@ -432,12 +581,9 @@ hmm.phifloodp <- nimbleCode({
 })
 ```
 
-Flood / nonflood year covariate:
-```{r eval = FALSE}
-flood <- c(0, 1, 1, 0, 0, 0) # 1981-1982, 1982-1983, 1983-1984, 1984-1985, ...
-```
+We wrote $\text{logit}(\phi_t) = \beta_1 + \beta_2 \; \text{flood}_t$, meaning that survival in nonflood years ($\text{flood}_t = 0$) is $\text{logit}(\phi_t) = \beta_1$ and survival in flood years ($\text{flood}_t = 1$) is $\text{logit}(\phi_t) = \beta_1 + \beta_2$. We see that $\beta_1$ is survival in nonflood years (on the logit scale) and $\beta_2$ is the difference between survival in flood years and survival in nonflood years (again, on the logit scale). 
 
-Constants in a list. 
+Let's put our constants in a list:
 ```{r eval = FALSE}
 my.constants <- list(N = nrow(y),
                      T = ncol(y),
@@ -445,99 +591,19 @@ my.constants <- list(N = nrow(y),
                      flood = flood)
 ```
 
-Initial values. 
+Then our function for generating initial values: 
 ```{r eval = FALSE}
 initial.values <- function() list(beta = rnorm(2,0,1),
                                   p = runif(1,0,1),
                                   z = zinits)
 ```
 
-Parameters to be monitored. 
+And the parameters to be monitored. 
 ```{r eval = FALSE}
-parameters.to.save <- c("beta", "p", "phi", "z")
+parameters.to.save <- c("beta", "p", "phi")
 ```
 
-Run nimble. 
-```{r eval = FALSE}
-mcmc.phifloodp <- nimbleMCMC(code = hmm.phifloodp, 
-                          constants = my.constants,
-                          data = my.data,              
-                          inits = initial.values,
-                          monitors = parameters.to.save,
-                          niter = n.iter,
-                          nburnin = n.burnin, 
-                          nchains = n.chains,
-                          WAIC = TRUE)
-```
-
-Regression intercept and slope. Caterpillar plot of the regression parameters. The posterior distribution of the slope is centered on negative values, suggesting the as water flow increases, survival decreases. 
-```{r, echo = FALSE}
-load(here::here("dat/phifloodp.RData"))
-beta1 <- c(mcmc.phifloodp$samples$chain1[,'beta[1]'],mcmc.phifloodp$samples$chain2[,'beta[1]'])
-beta2 <- c(mcmc.phifloodp$samples$chain1[,'beta[2]'],mcmc.phifloodp$samples$chain2[,'beta[2]'])
-```
-
-Which gives survival in nonflood years (inv logit of $\beta_1$) `r round(mean(plogis(beta1)),2)` (`r round(quantile(plogis(beta1), probs = c(2.5, 97.5)/100),2)`) and in flood year (in logit of $\beta_1+\beta_2$) `r round(mean(plogis(beta2+beta1)),2)` (`r round(quantile(plogis(beta1+beta2), probs = c(2.5, 97.5)/100),2)`).
-
-WAIC is `mcmc.phifloodp$WAIC$WAIC`. Survival in flood years lower than in nonflood years. 
-
-Let's use a covariate $\text{flood}$ that contains 1s and 2s, indicating whether we are in a flood or nonflood year for each year: 1 if nonflood year, and 2 if flood year. E.g. for year $t = 2$, `beta[flood[t]]` gives `beta[flood[2]]` which will be `beta[1]` or `beta[2]` depending on whether flood[2] is 1 or 2.
-
-Flood / nonflood year covariate:
-```{r eval = FALSE}
-flood <- c(1, 2, 2, 1, 1, 1) # 1981-1982, 1982-1983, 1983-1984, 1984-1985, ...
-```
-
-```{r eval = FALSE}
-hmm.phifloodp <- nimbleCode({
-  delta[1] <- 1          # Pr(alive t = 1) = 1
-  delta[2] <- 0          # Pr(dead t = 1) = 0
-  for (t in 1:(T-1)){
-    phi[t] <- beta[flood[t]]
-    gamma[1,1,t] <- phi[t]      # Pr(alive t -> alive t+1)
-    gamma[1,2,t] <- 1 - phi[t]  # Pr(alive t -> dead t+1)
-    gamma[2,1,t] <- 0        # Pr(dead t -> alive t+1)
-    gamma[2,2,t] <- 1        # Pr(dead t -> dead t+1)
-  }
-  p ~ dunif(0, 1) # prior detection
-  omega[1,1] <- 1 - p    # Pr(alive t -> non-detected t)
-  omega[1,2] <- p        # Pr(alive t -> detected t)
-  omega[2,1] <- 1        # Pr(dead t -> non-detected t)
-  omega[2,2] <- 0        # Pr(dead t -> detected t)
-  beta[1] ~ dunif(0, 1) # prior intercept
-  beta[2] ~ dunif(0, 1) # prior slope
-  # likelihood
-  for (i in 1:N){
-    z[i,first[i]] ~ dcat(delta[1:2])
-    for (j in (first[i]+1):T){
-      z[i,j] ~ dcat(gamma[z[i,j-1], 1:2, j-1])
-      y[i,j] ~ dcat(omega[z[i,j], 1:2])
-    }
-  }
-})
-```
-
-Constants in a list. 
-```{r eval = FALSE}
-my.constants <- list(N = nrow(y),
-                     T = ncol(y),
-                     first = first,
-                     flood = flood)
-```
-
-Initial values. 
-```{r eval = FALSE}
-initial.values <- function() list(beta = runif(2,0,1),
-                                  p = runif(1,0,1),
-                                  z = zinits)
-```
-
-Parameters to be monitored. 
-```{r eval = FALSE}
-parameters.to.save <- c("beta", "p", "phi", "z")
-```
-
-Run nimble. 
+Finaly, we may run NIMBLE: 
 ```{r eval = FALSE}
 mcmc.phifloodp <- nimbleMCMC(code = hmm.phifloodp, 
                              constants = my.constants,
@@ -546,24 +612,61 @@ mcmc.phifloodp <- nimbleMCMC(code = hmm.phifloodp,
                              monitors = parameters.to.save,
                              niter = n.iter,
                              nburnin = n.burnin, 
-                             nchains = n.chains,
-                             WAIC = TRUE)
+                             nchains = n.chains)
 ```
 
-Regression intercept and slope. Caterpillar plot of the regression parameters. The posterior distribution of the slope is centered on negative values, suggesting the as water flow increases, survival decreases. 
+You may check that we get the same numerical summaries as above for survival in nonflood years (`phi[1]`, `phi[4]`, `phi[5]` and `phi[6]`) and flood years (`phi[2]` and `phi[3]`):
+```{r eval = FALSE}
+MCMCsummary(mcmc.phifloodp, round = 2)
+```
 ```{r, echo = FALSE}
-load(here::here("dat/phifloodpni.RData"))
-beta1 <- c(mcmc.phifloodp$samples$chain1[,'beta[1]'],mcmc.phifloodp$samples$chain2[,'beta[1]'])
-beta2 <- c(mcmc.phifloodp$samples$chain1[,'beta[2]'],mcmc.phifloodp$samples$chain2[,'beta[2]'])
+load(here::here("dat/phifloodp.RData"))
+MCMCsummary(mcmc.phifloodp, round = 2)
 ```
 
-Which gives survival in flood years `r round(mean(beta1),2)` (`r round(quantile(beta1, probs = c(2.5, 97.5)/100),2)`) and in nonflood year `r round(mean(beta2),2)` (`r round(quantile(beta2, probs = c(2.5, 97.5)/100),2)`).
+You may also check how to go from the $\beta$'s to the survival probabilities $\phi$. Let's get the draws from the posterior distribution of the $\beta$'s first: 
+```{r}
+beta1 <- c(mcmc.phifloodp$chain1[,'beta[1]'], # beta1 chain 1
+           mcmc.phifloodp$chain2[,'beta[1]']) # beta1 chain 2
+beta2 <- c(mcmc.phifloodp$chain1[,'beta[2]'], # beta2 chain 1
+           mcmc.phifloodp$chain2[,'beta[2]']) # beta2 chain 2
+```
 
-WAIC is `mcmc.phifloodp$WAIC$WAIC`. Survival in flood years lower than in nonflood years. 
+Then apply the inverse-logit function to get survival in nonflood years, e.g. its posterior mean and credible interval:
+```{r}
+mean(plogis(beta1))
+quantile(plogis(beta1), probs = c(2.5, 97.5)/100)
+```
+
+Same thing for survival in flood years:
+```{r}
+mean(plogis(beta1 + beta2))
+quantile(plogis(beta1 + beta2), probs = c(2.5, 97.5)/100)
+```
 
 #### Continuous
 
-Include temporal covariates, say $x_t$, through $\text{logit}(\phi_t) = \beta_1 + \beta_2 x_t$. **explain logit link function** **a bit of caution with priors**. Let's investigate the effect of water flow on dipper survival ([Marzolin 2002](https://doi.org/10.2307/3802934)). Now we'd like to add a temporal covariate to try and explain annual variation in survival. We pick water flow in river. We specify the relationship on the logit scale. 
+Instead of a discrete covariate varying over time, we may want to consider a continuous covariate, say $x_t$, through $\text{logit}(\phi_t) = \beta_1 + \beta_2 x_t$. For example, let's investigate the effect of water flow on dipper survival, which should reflect the flood that occurred during the 1983 breeding season. 
+
+We build a covariate with water flow in liters per second measured during the March to May period each year, starting with year 1982:
+```{r eval = FALSE}
+# water flow in L/s
+water_flow <- c(443,  # March-May 1982
+                1114, # March-May 1983
+                529,  # March-May 1984
+                434,  # March-May 1985
+                627,  # March-May 1986
+                466)  # March-May 1987
+```
+
+We do not need water flow in 1981 because we will write the probability $\phi_t$ of being alive in year $t + 1$ given a bird was alive in year $t$ as a linear function of the water flow in year $t + 1$. 
+
+You may have noticed the high value of water flow for 1983, twice as much as in the other years, corresponding to the flood. Importantly, we standardize our covariate to improve convergence:
+```{r eval = FALSE}
+water_flow_st <- (water_flow - mean(water_flow))/sd(water_flow)
+```
+
+Now we write the model code:
 ```{r eval = FALSE}
 hmm.phiflowp <- nimbleCode({
   delta[1] <- 1          # Pr(alive t = 1) = 1
@@ -593,14 +696,7 @@ hmm.phiflowp <- nimbleCode({
 })
 ```
 
-We only take the values we need, and standardize the covariate. Insist on think of when covariate operates on time interval.
-```{r eval = FALSE}
-# water flow in L/s
-water_flow <- c(443, 1114, 529, 434, 627, 466) # 1981, 1982, ..., 1987
-water_flow_st <- (water_flow - mean(water_flow))/sd(water_flow)
-```
-
-Constants in a list. 
+We put the constants in a list: 
 ```{r eval = FALSE}
 my.constants <- list(N = nrow(y),
                      T = ncol(y),
@@ -608,19 +704,19 @@ my.constants <- list(N = nrow(y),
                      flow = water_flow_st)
 ```
 
-Initial values. 
+Initial values as usual: 
 ```{r eval = FALSE}
 initial.values <- function() list(beta = rnorm(2,0,1),
                                   p = runif(1,0,1),
                                   z = zinits)
 ```
 
-Parameters to be monitored. 
+And parameters to be monitored:
 ```{r eval = FALSE}
 parameters.to.save <- c("beta", "p", "phi")
 ```
 
-Run nimble. 
+Eventually, we run NIMBLE: 
 ```{r eval = FALSE}
 mcmc.phiflowp <- nimbleMCMC(code = hmm.phiflowp, 
                           constants = my.constants,
@@ -632,136 +728,69 @@ mcmc.phiflowp <- nimbleMCMC(code = hmm.phiflowp,
                           nchains = n.chains)
 ```
 
-Regression intercept and slope. Caterpillar plot of the regression parameters. The posterior distribution of the slope is centered on negative values, suggesting the as water flow increases, survival decreases. 
+We can have a look to the results through a caterpillar plot of the regression parameters: 
+```{r, eval = FALSE}
+MCMCplot(object = mcmc.phiflowp, params = "beta")
+```
 ```{r, echo = FALSE}
 load(here::here("dat/dipperflow.RData"))
-MCMCplot(object = mcmc.phiflowp, params = "beta", ISB = TRUE)
+MCMCplot(object = mcmc.phiflowp, params = "beta")
 ```
-Time-dependent (covariate constrained) survival probability estimates. Caterpillar plot of the survival estimates. Survival between 1982 and 1983 seems to have been affected highly by a huge water flow compared to the other years. Coherent with previous section with flood effect. 
+
+The posterior distribution of the slope (`beta[2]`) is centered on negative values, suggesting that as water flow increases, survival decreases.
+
+Let's inspect the time-dependent survival probability:
+```{r, eval = FALSE}
+MCMCplot(object = mcmc.phiflowp, params = "phi", ISB = TRUE)
+```
 ```{r, echo = FALSE}
 load(here::here("dat/dipperflow.RData"))
 MCMCplot(object = mcmc.phiflowp, params = "phi", ISB = TRUE)
 ```
 
+Survival between 1982 and 1983 (`phi[2]`) was greatly affected and much lower than on average. This decrease corresponds to the high water flow in 1983 and the flood. These results are in line with our previous findings obtained by considering a covariate for nonflood vs. flood years.
+
 ### Individual covariates
 
-+ Discrete covariate like, e.g., sex
-
-+ Continuous covariate like, e.g., mass or size
-
-Sex and wing length in Dipper
-
-```{r echo = FALSE}
-dipper %>%
-  kableExtra::kable() %>%
-  kableExtra::scroll_box(width = "100%", height = "400px")
-```
+In the previous section, we learnt how to explain temporal heterogeneity in survival and detection. Heterogeneity could also originate from individual differences between animals. You may think of a diffence in survival between males and females for a discrete covariate example, or size and body mass for examples of a continuous covariate. Let's illustrate both discrete and continuous covariates on the dipper. 
 
 #### Discrete
 
-Sex effect
-
-+ Let's use a covariate $\text{sex}$ that takes value 0 if male, and 1 if female
-
-+ And write $\text{logit}(\phi_i) = \beta_1 + \beta_2 \; \text{sex}_i$ for bird $i$
-
-+ Then male survival is
-
-$$\text{logit}(\phi_i) = \beta_1$$
-
-+ And female survival is
-
-$$\text{logit}(\phi_i) = \beta_1 + \beta_2$$
-
-Nimble implementation with sex as a covariate
-
-```{r eval = FALSE}
-hmm.phisexp <- nimbleCode({
-...
-  for (i in 1:N){ #<<
-    logit(phi[i]) <- beta[1] + beta[2] * sex[i]
-    gamma[1,1,i] <- phi[i]      # Pr(alive t -> alive t+1)
-    gamma[1,2,i] <- 1 - phi[i]  # Pr(alive t -> dead t+1)
-    gamma[2,1,i] <- 0        # Pr(dead t -> alive t+1)
-    gamma[2,2,i] <- 1        # Pr(dead t -> dead t+1)
-  } #<<
-  beta[1] ~ dnorm(mean = 0, sd = 1.5)
-  beta[2] ~ dnorm(mean = 0, sd = 1.5)
-  phi_male <- 1/(1+exp(-beta[1]))
-  phi_female <- 1/(1+exp(-(beta[1]+beta[2])))
-...
-  # likelihood
-  for (i in 1:N){
-    z[i,first[i]] ~ dcat(delta[1:2])
-    for (j in (first[i]+1):T){
-      z[i,j] ~ dcat(gamma[z[i,j-1], 1:2, i])
-      y[i,j] ~ dcat(omega[z[i,j], 1:2])
-    }
-  }
-})
-```
-
-```{r echo = FALSE}
-load(here::here("dat/phisexp.RData"))
-MCMCsummary(object = mcmc.phisexp, round = 2)
-```
-
-NIMBLE implementation with nested indexing
-
-+ Let's use a covariate $\text{sex}$ that contains 1s and 2s, indicating the sex of each individual: 1 if male, and 2 if female
-
+We first consider a covariate $\text{sex}$ that contains 1's and 2's indicating the sex of each bird: 1 if male, and 2 if female. We implement the model with sex effect using nested indexing, similarly to the model with flood vs. nonflood years. The section of the NIMBLE code that needs to be amended is:
 ```{r eval = FALSE}
 ...
 for (i in 1:N){
-  phi[i] <- beta[sex[i]]
-  gamma[1,1,i] <- phi[i]      # Pr(alive t -> alive t+1)
-  gamma[1,2,i] <- 1 - phi[i]  # Pr(alive t -> dead t+1)
-  gamma[2,1,i] <- 0           # Pr(dead t -> alive t+1)
-  gamma[2,2,i] <- 1           # Pr(dead t -> dead t+1)
+  gamma[1,1,i] <- phi[sex[i]]      # Pr(alive t -> alive t+1)
+  gamma[1,2,i] <- 1 - phi[sex[i]]  # Pr(alive t -> dead t+1)
+  gamma[2,1,i] <- 0                # Pr(dead t -> alive t+1)
+  gamma[2,2,i] <- 1                # Pr(dead t -> dead t+1)
 }
-beta[1] ~ dunif(0,1) # male survival #<<
-beta[2] ~ dunif(0,1) # female survival #<<
+phi[1] ~ dunif(0,1) # male survival
+phi[2] ~ dunif(0,1) # female survival
 ...
 ```
 
-+ E.g. for individual $i = 2$, `beta[sex[i]]` gives `beta[sex[2]]` which will be `beta[1]` or `beta[2]` depending on whether sex[2] is 1 or 2.
-
+After running NIMBLE, we get:
+```{r eval = FALSE}
+MCMCsummary(object = mcmc.phisexp.ni, round = 2)
+```
 ```{r echo = FALSE}
 load(here::here("dat/phisexpni.RData"))
 MCMCsummary(object = mcmc.phisexp.ni, round = 2)
 ```
 
+Male survival (`phi[1]`) looks very similar to female survival (`phi[2]`). **Give the entire NIMBLE code? Alternatively, in this chapter and others, provide fragments of the code to emphasize a specific point or adjustments, and have a file with the whole code elsewhere for convenience, as a R script. This would avoid repeating the data/constants/initial values/MCMC details/nimble run steps, and save space as well.**
+
 #### Continuous 
 
-```{r eval = FALSE}
-...
-  for (i in 1:N){ #<<
-    logit(phi[i]) <- beta[1] + beta[2] * winglength[i] #<<
-    gamma[1,1,i] <- phi[i]      # Pr(alive t -> alive t+1)
-    gamma[1,2,i] <- 1 - phi[i]  # Pr(alive t -> dead t+1)
-    gamma[2,1,i] <- 0        # Pr(dead t -> alive t+1)
-    gamma[2,2,i] <- 1        # Pr(dead t -> dead t+1)
-  }
-  beta[1] ~ dnorm(mean = 0, sd = 1.5) # intercept #<<
-  beta[2] ~ dnorm(mean = 0, sd = 1.5) # slope #<<
-...
-```
-
-```{r}
-dipper <- read_csv("dat/dipper.csv")
-y <- dipper %>%
-  select(year_1981:year_1987) %>%
-  as.matrix()
-```
-
-Besides discrete individual covariates, you might want to have continuous individual covariates, e.g. wing length in the dipper case study. Note that we're considering an individual trait that takes the same value whatever the occasion. If we were to have time-varying individual covariate in the model, we would have to do something about missing values of the covariate when an individual is not recaptured. The easiest way to cope with time-varying individual covariate is to discretize and treat levels of the covariates as states. More in the next live demo. Back to wing length. We first standardize the covariate. 
+Besides discrete individual covariates, you might want to have continuous individual covariates, e.g. wing length in the dipper example. Note that we're considering an individual trait that takes the same value whatever the occasion. We consider wing length here, and more precisely its measurement at first detection. We first standardize the covariate: 
 ```{r}
 wing.length.st <- as.vector(scale(dipper$wing_length))
 head(wing.length.st)
 ```
 
-Now we write the model. Basically we replace sex by wing length in the first method we used in the previous section. Easy. 
-```{r}
+Now we write the model:
+```{r eval = FALSE}
 hmm.phiwlp <- nimbleCode({
     p ~ dunif(0, 1) # prior detection
     omega[1,1] <- 1 - p    # Pr(alive t -> non-detected t)
@@ -790,23 +819,23 @@ hmm.phiwlp <- nimbleCode({
 })
 ```
 
-Constants in a list. 
-```{r}
+We put the constants in a list:
+```{r eval = TRUE}
 my.constants <- list(N = nrow(y), 
                      T = ncol(y), 
                      first = first,
                      winglength = wing.length.st)
 ```
 
-Initial values.
-```{r}
+We write a function for generating initial values:
+```{r eval = FALSE}
 initial.values <- function() list(beta = rnorm(2,0,1),
                                   p = runif(1,0,1),
                                   z = zinits)
 ```
 
-Run nimble.
-```{r}
+And we run NIMBLE:
+```{r eval = FALSE}
 mcmc.phiwlp <- nimbleMCMC(code = hmm.phiwlp, 
                           constants = my.constants,
                           data = my.data,              
@@ -817,29 +846,39 @@ mcmc.phiwlp <- nimbleMCMC(code = hmm.phiwlp,
                           nchains = n.chains)
 ```
 
-Numerical summaries. Wing length does not seem to explain much individual-to-individual variation in survival. See corresponding slope param. 
-```{r}
+Let's inspect the numerical summaries for the regression parameters: 
+```{r eval = FALSE}
+MCMCsummary(mcmc.phiwlp, params = "beta", round = 2)
+```
+```{r echo = FALSE}
 load(here::here("dat/phiwlp.RData"))
 MCMCsummary(mcmc.phiwlp, params = "beta", round = 2)
 ```
 
-Let's plot the relationship. First, we gather the values generated from the posterior distribution of the regression parameters in the two chains. 
+Wing length does not seem to explain much individual-to-individual variation in survival -- the posterior distribution of the slope (`beta[2]`) is centered on 0 as we can see from the credible interval. 
+
+Let's plot the relationship between survival and wing length. First, we gather the values generated from the posterior distribution of the regression parameters in the two chains:
 ```{r}
-beta1 <- c(mcmc.phiwlp$chain1[,'beta[1]'], mcmc.phiwlp$chain2[,'beta[1]'])
-beta2 <- c(mcmc.phiwlp$chain1[,'beta[2]'], mcmc.phiwlp$chain2[,'beta[2]'])
+beta1 <- c(mcmc.phiwlp$chain1[,'beta[1]'], # intercept, chain 1
+           mcmc.phiwlp$chain2[,'beta[1]']) # intercept, chain 2
+beta2 <- c(mcmc.phiwlp$chain1[,'beta[2]'], # slope, chain 1
+           mcmc.phiwlp$chain2[,'beta[2]']) # slope, chain 2
 ```
 
-Then we define a grid of values for wing length, and predict survival for each MCMC iteration. 
+Then we define a grid of values for wing length, and predict survival for each MCMC iteration:
 ```{r}
-predicted_survival <- matrix(NA, nrow = length(beta1), ncol = length(my.constants$winglength))
+predicted_survival <- matrix(NA, 
+                             nrow = length(beta1), 
+                             ncol = length(my.constants$winglength))
 for (i in 1:length(beta1)){
   for (j in 1:length(my.constants$winglength)){
-    predicted_survival[i,j] <- plogis(beta1[i] + beta2[i] * my.constants$winglength[j])
+    predicted_survival[i,j] <- plogis(beta1[i] + 
+                               beta2[i] * my.constants$winglength[j])
   }
 }
 ```
 
-Now we calculate posterior mean and the credible interval. Note the ordering.
+Now we calculate posterior mean and the credible interval (note the ordering):
 ```{r}
 mean_survival <- apply(predicted_survival, 2, mean)
 lci <- apply(predicted_survival, 2, quantile, prob = 2.5/100)
@@ -851,51 +890,26 @@ df <- data.frame(wing_length = my.constants$winglength[ord],
                  uci = uci[ord])
 ```
 
-Now time to visualize. 
+Now time to visualize: 
 ```{r}
 df %>%
   ggplot() + 
   aes(x = wing_length, y = survival) + 
   geom_line() + 
-  geom_ribbon(aes(ymin = lci, ymax = uci), fill = "grey70", alpha = 0.5) + 
+  geom_ribbon(aes(ymin = lci, ymax = uci), 
+              fill = "grey70", 
+              alpha = 0.5) + 
   ylim(0,1) + 
   labs(x = "wing length", y = "estimated survival")
 ```
-Wing length
 
-```{r, echo = FALSE, eval = FALSE}
-load(here::here("dat/phiwingp.RData"))
-beta1 <- c(mcmc.phiwlp$chain1[,'beta[1]'], mcmc.phiwlp$chain2[,'beta[1]'])
-beta2 <- c(mcmc.phiwlp$chain1[,'beta[2]'], mcmc.phiwlp$chain2[,'beta[2]'])
-wing.length.st <- as.vector(scale(dipper$wing_length))
-predicted_survival <- matrix(NA,
-                             nrow = length(beta1),
-                             ncol = length(wing.length.st))
-for (i in 1:length(beta1)){
-  for (j in 1:length(wing.length.st)){
-    predicted_survival[i,j] <- plogis(beta1[i] + beta2[i] * wing.length.st[j])
-  }
-}
-mean_survival <- apply(predicted_survival, 2, mean)
-lci <- apply(predicted_survival, 2, quantile, prob = 2.5/100)
-uci <- apply(predicted_survival, 2, quantile, prob = 97.5/100)
-ord <- order(wing.length.st)
-df <- data.frame(wing_length = wing.length.st[ord],
-                 survival = mean_survival[ord],
-                 lci = lci[ord],
-                 uci = uci[ord])
-df %>%
-  ggplot() +
-  aes(x = wing_length, y = survival) +
-  geom_line() +
-  geom_ribbon(aes(ymin = lci, ymax = uci), fill = "grey70", alpha = 0.5) +
-  ylim(0,1) +
-  labs(x = "wing length", y = "estimated survival")
-```
+The flat relationship between survival and wing length is confirmed. 
 
-### Additive and interaction
+### Several covariates
 
-You may test an effect of both sex and wing length. Write the model. We use nested indexing with the sex index that contains 1 if the bird is a male, and 2 otherwise. We have $\logit(\phi_i) = \beta_1 + \beta_3 * \text{winglength}_i$ for males, and $\logit(\phi_i) = \beta_2 + \beta_3 * \text{winglength}_i$ for females. 
+You may test an effect of both sex and wing length. Let's consider an additive effect of both covariates. We use a covariate $\text{sex}$ that takes value 0 if male, and 1 if female. We have $\text{logit}(\phi_i) = \beta_1 + \beta_2 \text{sex}_i + \beta_3 \text{winglength}_i$ for bird $i$, so that male survival is $\beta_1 + \beta_3 \text{winglength}_i$ and female survival is $\beta_1 + \beta_2 + \beta_3 \text{winglength}_i$ (both on the logit scale). The relationship between survival and wing length is parallel between males and females, on the logit scale, and the gap between the two is measured by $\beta_2$ (hence the term *additive* effect). 
+
+The NIMBLE code is:
 ```{r eval = FALSE}
 hmm.phisexwlp <- nimbleCode({
   p ~ dunif(0, 1) # prior detection
@@ -904,14 +918,14 @@ hmm.phisexwlp <- nimbleCode({
   omega[2,1] <- 1        # Pr(dead t -> non-detected t)
   omega[2,2] <- 0        # Pr(dead t -> detected t)
   for (i in 1:N){
-    logit(phi[i]) <- beta[sex[i]] + beta[3] * winglength[i]
+    logit(phi[i]) <- beta[1] + beta[2] * sex[i] + beta[3] * winglength[i]
     gamma[1,1,i] <- phi[i]      # Pr(alive t -> alive t+1)
     gamma[1,2,i] <- 1 - phi[i]  # Pr(alive t -> dead t+1)
     gamma[2,1,i] <- 0           # Pr(dead t -> alive t+1)
     gamma[2,2,i] <- 1           # Pr(dead t -> dead t+1)
   }
   beta[1] ~ dnorm(mean = 0, sd = 1.5) # intercept male
-  beta[2] ~ dnorm(mean = 0, sd = 1.5) # intercept female
+  beta[2] ~ dnorm(mean = 0, sd = 1.5) # difference bw male and female
   beta[3] ~ dnorm(mean = 0, sd = 1.5) # slope wing length
   delta[1] <- 1          # Pr(alive t = 1) = 1
   delta[2] <- 0          # Pr(dead t = 1) = 0
@@ -926,7 +940,7 @@ hmm.phisexwlp <- nimbleCode({
 })
 ```
 
-Constants in a list. Note we standardise wing length. 
+We put constants and data in lists:
 ```{r eval = FALSE}
 first <- apply(y, 1, function(x) min(which(x !=0)))
 wing.length.st <- as.vector(scale(dipper$wing_length))
@@ -934,37 +948,25 @@ my.constants <- list(N = nrow(y),
                      T = ncol(y), 
                      first = first,
                      winglength = wing.length.st,
-                     sex = if_else(dipper$sex == "M", 1, 2))
+                     sex = if_else(dipper$sex == "M", 0, 1))
 my.data <- list(y = y + 1)
 ```
 
-Data in a list. 
-```{r eval = FALSE}
-my.data <- list(y = y + 1)
-```
-
-Initial values. 
+We write a fuction to generate initial values:
 ```{r eval = FALSE}
 zinits <- y
 zinits[zinits == 0] <- 1
-initial.values <- function() list(beta = rnorm(3,0,5),
+initial.values <- function() list(beta = rnorm(3,0,2),
                                   p = runif(1,0,1),
                                   z = zinits)
 ```
 
-Parameters to be monitored. 
+We specify the parameters to be monitored:
 ```{r eval = FALSE}
 parameters.to.save <- c("beta", "p")
 ```
 
-MCMC details.
-```{r eval = FALSE}
-n.iter <- 5000
-n.burnin <- 2500
-n.chains <- 2
-```
-
-Run nimble.
+And now we run NIMBLE:
 ```{r eval = FALSE}
 mcmc.phisexwlp <- nimbleMCMC(code = hmm.phisexwlp, 
                              constants = my.constants,
@@ -976,34 +978,45 @@ mcmc.phisexwlp <- nimbleMCMC(code = hmm.phisexwlp,
                              nchains = n.chains)
 ```
 
-Display results. 
+Let's display numerical summaries for all parameters:
+```{r eval = FALSE}
+MCMCsummary(mcmc.phisexwlp, round = 2)
+```
 ```{r echo = FALSE}
 load(here::here("dat/phisexwlp.RData"))
 MCMCsummary(mcmc.phisexwlp, round = 2)
 ```
 
-Let's visualise survival as a function of wing length for both sexes. 
+The slope is the same for both males and females. Although its posterior mean is negative, its crebible interval suggest its posterior distribution largely encompasses 0, therefore a very weak signal, if any.
 
-First we put together the values from the two chains we generated in the posterior distributions of the regression parameters. 
+Let's visualize survival as a function of wing length for both sexes. First we put together the values from the two chains we generated in the posterior distributions of the regression parameters: 
 ```{r}
-beta1 <- c(mcmc.phisexwlp$chain1[,'beta[1]'], mcmc.phisexwlp$chain2[,'beta[1]'])
-beta2 <- c(mcmc.phisexwlp$chain1[,'beta[2]'], mcmc.phisexwlp$chain2[,'beta[2]'])
-beta3 <- c(mcmc.phisexwlp$chain1[,'beta[3]'], mcmc.phisexwlp$chain2[,'beta[3]'])
+beta1 <- c(mcmc.phisexwlp$chain1[,'beta[1]'], # beta1 chain 1
+           mcmc.phisexwlp$chain2[,'beta[1]']) # beta1 chain 2
+beta2 <- c(mcmc.phisexwlp$chain1[,'beta[2]'], # beta2 chain 1
+           mcmc.phisexwlp$chain2[,'beta[2]']) # beta2 chain 2
+beta3 <- c(mcmc.phisexwlp$chain1[,'beta[3]'], # beta3 chain 1
+           mcmc.phisexwlp$chain2[,'beta[3]']) # beta3 chain 2
 ```
 
-We get survival estimates for each MCMC iteration. 
+We get survival estimates for each MCMC iteration:
 ```{r}
-predicted_survivalM <- matrix(NA, nrow = length(beta1), ncol = length(my.constants$winglength))
-predicted_survivalF <- matrix(NA, nrow = length(beta1), ncol = length(my.constants$winglength))
+predicted_survivalM <- matrix(NA, nrow = length(beta1), 
+                              ncol = length(my.constants$winglength))
+predicted_survivalF <- matrix(NA, nrow = length(beta1), 
+                              ncol = length(my.constants$winglength))
 for (i in 1:length(beta1)){
   for (j in 1:length(my.constants$winglength)){
-    predicted_survivalM[i,j] <- plogis(beta1[i] + beta3[i] * my.constants$winglength[j]) # males
-    predicted_survivalF[i,j] <- plogis(beta2[i] + beta3[i] * my.constants$winglength[j]) # females
+    predicted_survivalM[i,j] <- plogis(beta1[i] + 
+                                beta3[i] * my.constants$winglength[j]) 
+    predicted_survivalF[i,j] <- plogis(beta1[i] + 
+                                beta2[i] + 
+                                beta3[i] * my.constants$winglength[j])
   }
 }
 ```
 
-From here, we may calculate posterior mean and credible intervals. 
+From here, we may calculate posterior mean and credible intervals:
 ```{r}
 mean_survivalM <- apply(predicted_survivalM, 2, mean)
 lciM <- apply(predicted_survivalM, 2, quantile, prob = 2.5/100)
@@ -1012,14 +1025,17 @@ mean_survivalF <- apply(predicted_survivalF, 2, mean)
 lciF <- apply(predicted_survivalF, 2, quantile, prob = 2.5/100)
 uciF <- apply(predicted_survivalF, 2, quantile, prob = 97.5/100)
 ord <- order(my.constants$winglength)
-df <- data.frame(wing_length = c(my.constants$winglength[ord], my.constants$winglength[ord]),
-                 survival = c(mean_survivalM[ord], mean_survivalF[ord]),
+df <- data.frame(wing_length = c(my.constants$winglength[ord], 
+                                 my.constants$winglength[ord]),
+                 survival = c(mean_survivalM[ord], 
+                              mean_survivalF[ord]),
                  lci = c(lciM[ord],lciF[ord]),
                  uci = c(uciM[ord],uciF[ord]),
-                 sex = c(rep("male", length(mean_survivalM)), rep("female", length(mean_survivalF))))
+                 sex = c(rep("male", length(mean_survivalM)), 
+                         rep("female", length(mean_survivalF))))
 ```
 
-Now on a plot. 
+Now on a plot:
 ```{r}
 df %>%
   ggplot() + 
@@ -1030,88 +1046,48 @@ df %>%
   labs(x = "wing length", y = "estimated survival", color = "", fill = "")
 ```
 
+Note that the two curves are not exactly parallel because we back-transformed the linear part of the relationship between survival and wing length. You may check that parallelism occurs on the logit scale:
+```{r}
+predicted_lsurvivalM <- matrix(NA, nrow = length(beta1), 
+                              ncol = length(my.constants$winglength))
+predicted_lsurvivalF <- matrix(NA, nrow = length(beta1), 
+                              ncol = length(my.constants$winglength))
+for (i in 1:length(beta1)){
+  for (j in 1:length(my.constants$winglength)){
+    predicted_lsurvivalM[i,j] <- beta1[i] + beta3[i] * my.constants$winglength[j] 
+    predicted_lsurvivalF[i,j] <- beta1[i] + beta2[i] + beta3[i] * my.constants$winglength[j]
+  }
+}
+mean_lsurvivalM <- apply(predicted_lsurvivalM, 2, mean)
+mean_lsurvivalF <- apply(predicted_lsurvivalF, 2, mean)
+ord <- order(my.constants$winglength)
+df <- data.frame(wing_length = c(my.constants$winglength[ord], 
+                                 my.constants$winglength[ord]),
+                 survival = c(mean_lsurvivalM[ord], 
+                              mean_lsurvivalF[ord]),
+                 sex = c(rep("male", length(mean_lsurvivalM)), 
+                         rep("female", length(mean_lsurvivalF))))
+df %>%
+  ggplot() + 
+  aes(x = wing_length, y = survival, color = sex) + 
+  geom_line() + 
+  ylim(-2,2) + 
+  labs(x = "wing length", 
+       y = "estimated survival (on the lgit scale)", 
+       color = "")
+```
+
+**Show how to use values of the covariate de-standardized.** 
+
+**Mention interaction bw sex and wing length w/ logit(phi[i]) <- beta[1] + beta[2] * sex[i] + beta[3] * winglength[i] + beta[4] * sex[i] * winglength[i] and explain.**
+
 ### Random effects
 
-#### Temporal
+If individual variation in survival is not fully explained by our covariates, we may add random effects through $\text{logit}(\phi_i) = \beta_1 + \beta_2 x_i + \varepsilon_i$ where $\varepsilon_i \sim N(0,\sigma^2)$. We consider individual variation in this section, but the reasoning holds for temporal variation. In essence, we are treating the individual survival probabilities $\phi_i$ as a sample from a population of survival probabilities, and we assume a normal distribution with mean the linear component (with or without a covariate) and standard deviation $\sigma$. The variation that is unexplained by the covariate $x_i$ is measured by the variation $\sigma$ in the residuals $\varepsilon_i$. Ignoring individual heterogeneity generated by individuals having contrasted performances over life may mask senescence or hamper the understanding of life history trade-offs. 
 
-Include temporal covariates, say $x_t$ with $\text{logit}(\phi_t) = \beta_1 + \beta_2 x_t$. If temporal variation not fully explained by covariates, add random effects $\text{logit}(\phi_t) = \beta_1 + \beta_2 x_t + \varepsilon_t, \; \varepsilon_t \sim N(0,\sigma^2)$. We may wish to allow for extra variation in the survival vs. water flow relationship. To do so, we consider a yearly random effect. The prior on the standard deviation of the random effect is uniform between 0 and 10. 
-```{r eval = FALSE}
-hmm.phiflowREpt <- nimbleCode({
-  delta[1] <- 1          # Pr(alive t = 1) = 1
-  delta[2] <- 0          # Pr(dead t = 1) = 0
-  for (t in 1:(T-1)){
-    logit(phi[t]) <- beta[1] + beta[2] * flow[t] + eps[t] # eps is random effect
-    eps[t] ~ dnorm(0, sd = sdeps) 
-    gamma[1,1,t] <- phi[t]      # Pr(alive t -> alive t+1)
-    gamma[1,2,t] <- 1 - phi[t]  # Pr(alive t -> dead t+1)
-    gamma[2,1,t] <- 0           # Pr(dead t -> alive t+1)
-    gamma[2,2,t] <- 1           # Pr(dead t -> dead t+1)
-    p[t] ~ dunif(0, 1)          # prior detection
-    omega[1,1,t] <- 1 - p[t]    # Pr(alive t -> non-detected t)
-    omega[1,2,t] <- p[t]        # Pr(alive t -> detected t)
-    omega[2,1,t] <- 1           # Pr(dead t -> non-detected t)
-    omega[2,2,t] <- 0           # Pr(dead t -> detected t)
-  }
-  beta[1] ~ dnorm(0, 1.5) # prior intercept
-  beta[2] ~ dnorm(0, 1.5) # prior slope
-  sdeps ~ dunif(0,10)
-  # likelihood
-  for (i in 1:N){
-    z[i,first[i]] ~ dcat(delta[1:2])
-    for (j in (first[i]+1):T){
-      z[i,j] ~ dcat(gamma[z[i,j-1], 1:2, j-1])
-      y[i,j] ~ dcat(omega[z[i,j], 1:2, j-1])
-    }
-  }
-})
-```
+Overall, failing to incorporate unexplained residual variance may induce bias in parameter estimates and lead to detecting an effect of the covariate more often than it should be.
 
-Initial values. 
-```{r eval = FALSE}
-initial.values <- function() list(beta = rnorm(2,0,1),
-                                  p = runif(my.constants$T-1,0,1),
-                                  sdeps = runif(1,0,3),
-                                  z = zinits)
-```
-
-Parameters to be monitored. 
-```{r eval = FALSE}
-parameters.to.save <- c("beta", "p", "phi", "sdeps")
-```
-
-MCMC details. Note that we've increased the number of iterations and the length of the burn-in period.
-```{r eval = FALSE}
-n.iter <- 10000
-n.burnin <- 5000
-n.chains <- 2
-```
-
-Run nimble. 
-```{r eval = FALSE}
-mcmc.phiflowREpt <- nimbleMCMC(code = hmm.phiflowREpt, 
-                             constants = my.constants,
-                             data = my.data,              
-                             inits = initial.values,
-                             monitors = parameters.to.save,
-                             niter = n.iter,
-                             nburnin = n.burnin, 
-                             nchains = n.chains)
-```
-
-Display outputs. Seems that the water flow effect is not so important anymore. 
-```{r}
-load(here::here("dat/phiflowREpt.RData"))
-MCMCsummary(object = mcmc.phiflowREpt, round = 2)
-```
-
-Trace plots for the standard deviation of the random effect.
-```{r}
-MCMCtrace(object = mcmc.phiflowREpt, params = "sdeps", pdf = FALSE)
-```
-
-#### Individual
-
-We add an individual random effect. 
+Let's go back to our dipper example with wing length as a covariate, and write the NIMBLE code: 
 ```{r eval = FALSE}
 hmm.phiwlrep <- nimbleCode({
     p ~ dunif(0, 1) # prior detection
@@ -1143,7 +1119,9 @@ hmm.phiwlrep <- nimbleCode({
 })
 ```
 
-Initial values.
+The prior on the standard deviation of the random effect is uniform between 0 and 10. **Explain how to pick prior for SD.**
+
+We now write a function for generating initial values:
 ```{r eval = FALSE}
 initial.values <- function() list(beta = rnorm(2,0,1.5),
                                   sdeps = runif(1,0,3),
@@ -1151,19 +1129,19 @@ initial.values <- function() list(beta = rnorm(2,0,1.5),
                                   z = zinits)
 ```
 
-Parameters to be monitored. 
+We specify the parameters to be monitored:
 ```{r eval = FALSE}
 parameters.to.save <- c("beta", "sdeps", "p")
 ```
 
-MCMC details. Note that we increase the number of iterations and the length of the burn-in period.
+We increase the number of iterations and the length of the burn-in period to reach better convergence:
 ```{r eval = FALSE}
 n.iter <- 10000
 n.burnin <- 5000
 n.chains <- 2
 ```
 
-Run nimble. 
+And finally, we run NIMBLE:
 ```{r eval = FALSE}
 mcmc.phiwlrep <- nimbleMCMC(code = hmm.phiwlrep, 
                             constants = my.constants,
@@ -1175,103 +1153,51 @@ mcmc.phiwlrep <- nimbleMCMC(code = hmm.phiwlrep,
                             nchains = n.chains)
 ```
 
-Numerical summaries. 
+We inspect the numerical summaries: 
+```{r eval = FALSE}
+MCMCsummary(mcmc.phiwlrep, round = 2)
+```
 ```{r echo = FALSE}
-load(here::here("dat/phiwlrep.RData"))
+load(here::here("dat/phiwlrepbad.RData"))
 MCMCsummary(mcmc.phiwlrep, round = 2)
 ```
 
-Effective sample size for SD very low. Let's try something else. We reparameterize by non-centering. 
+The effective sample size for the standard deviation of the random effect is very low. Let's try something else. We use non-centering to reparameterize our model. **Explain.**
 ```{r eval = FALSE}
-hmm.phiwlrep <- nimbleCode({
-    p ~ dunif(0, 1) # prior detection
-    omega[1,1] <- 1 - p    # Pr(alive t -> non-detected t)
-    omega[1,2] <- p        # Pr(alive t -> detected t)
-    omega[2,1] <- 1        # Pr(dead t -> non-detected t)
-    omega[2,2] <- 0        # Pr(dead t -> detected t)
+...
   for (i in 1:N){
     logit(phi[i]) <- beta[1] + beta[2] * winglength[i] + sdeps * eps[i]
     eps[i] ~ dnorm(mean = 0, sd = 1)
-    gamma[1,1,i] <- phi[i]      # Pr(alive t -> alive t+1)
-    gamma[1,2,i] <- 1 - phi[i]  # Pr(alive t -> dead t+1)
-    gamma[2,1,i] <- 0           # Pr(dead t -> alive t+1)
-    gamma[2,2,i] <- 1           # Pr(dead t -> dead t+1)
-  }
-  beta[1] ~ dnorm(mean = 0, sd = 1.5)
-  beta[2] ~ dnorm(mean = 0, sd = 1.5)
-  sdeps ~ dunif(0, 10)
-  delta[1] <- 1          # Pr(alive t = 1) = 1
-  delta[2] <- 0          # Pr(dead t = 1) = 0
-  # likelihood
-  for (i in 1:N){
-    z[i,first[i]] ~ dcat(delta[1:2])
-    for (j in (first[i]+1):T){
-      z[i,j] ~ dcat(gamma[z[i,j-1], 1:2, i])
-      y[i,j] ~ dcat(omega[z[i,j], 1:2])
-    }
-  }
-})
+...
 ```
 
-Initial values.
+After running NIMBLE, we inspect the numerical summaries, and see that effective sample sizes are much better:
 ```{r eval = FALSE}
-initial.values <- function() list(beta = rnorm(2,0,1.5),
-                                  sdeps = runif(1,0,3),
-                                  p = runif(1,0,1),
-                                  z = zinits)
+MCMCsummary(mcmc.phiwlrep, round = 2)
 ```
-
-Parameters to be monitored. 
-```{r eval = FALSE}
-parameters.to.save <- c("beta", "sdeps", "p")
-```
-
-MCMC details. Note that we increase the number of iterations and the length of the burn-in period.
-```{r eval = FALSE}
-n.iter <- 10000
-n.burnin <- 5000
-n.chains <- 2
-```
-
-Run nimble. 
-```{r eval = FALSE}
-mcmc.phiwlrep <- nimbleMCMC(code = hmm.phiwlrep, 
-                            constants = my.constants,
-                            data = my.data,              
-                            inits = initial.values,
-                            monitors = parameters.to.save,
-                            niter = n.iter,
-                            nburnin = n.burnin, 
-                            nchains = n.chains)
-```
-
-Numerical summaries. Much better. 
 ```{r echo = FALSE}
 load(here::here("dat/phiwlrep.RData"))
 MCMCsummary(mcmc.phiwlrep, round = 2)
 ```
 
-Let's plot the posterior distribution of the standard deviation of the individual random effect. 
-```{r}
-sdeps <- c(mcmc.phiwlrep$chain1[,"sdeps"], mcmc.phiwlrep$chain2[,"sdeps"])
-sdeps %>%
-  as_tibble() %>%
-  ggplot() + 
-  aes(x = value) + 
-  geom_histogram(color = "white", binwidth = .03, fill = "gray70") + 
-  geom_density(aes(y = .03 * ..count..))
-```
+<!-- Let's plot the posterior distribution of the standard deviation of the random effect: -->
+<!-- ```{r} -->
+<!-- sdeps <- c(mcmc.phiwlrep$chain1[,"sdeps"], # chain 1 -->
+<!--            mcmc.phiwlrep$chain2[,"sdeps"]) # chain 2 -->
+<!-- sdeps %>% -->
+<!--   as_tibble() %>% -->
+<!--   ggplot() +  -->
+<!--   aes(x = value) +  -->
+<!--   geom_histogram(color = "white", binwidth = .03, fill = "gray70") -->
+<!-- ``` -->
 
-### What if covariates vary with individual and time?
+### Individual time-varying covariates
 
-#### Age
+So far, we allowed covariates to vary along a single dimension, either time or individual. What if we need to consider a covariate that varies from one animal to the other, and over time. Think of age for example, its value is specific to each individual, and it (sadly) changes over time. 
 
-Think of age for example (see exercises in Worksheets); covariate or nested indexing works fine.
+Age has a particular meaning in the capture-recapture framework. It is the time elapsed since first encounter, which is a proxy of true age, but not true age. If age is known at first encounter, then it is true age. For example, if the dippers were marked as young, then we would have the true biological age of each bird.  
 
-Age in capture-recapture has a particular meaning in capture-recapture analyses. It is the time elapsed since first encounter, which is a proxy of true age obviously, but not true age. Of course, if age is known at first encounter, then it is the true age. 
-
-Another important remark is that age is an individual covariate, but in contrast with the wing length covariate we considered in the previous examples, age varies over time. The cool thing is that it has no missing value as age at $t+1$ is just age at $t$ to which we add 1. This suggests a way to code the age effect in nimble as follows. 
-
+The convenient thing is that age has no missing value because age at $t+1$ is just age at $t$ to which we add 1. This suggests a way to code the age effect in NIMBLE as follows: 
 ```{r eval = FALSE}
 hmm.phiage.in <- nimbleCode({
   p ~ dunif(0, 1) # prior detection
@@ -1281,11 +1207,12 @@ hmm.phiage.in <- nimbleCode({
   omega[2,2] <- 0        # Pr(dead t -> detected t)
   for (i in 1:N){
     for (t in first[i]:(T-1)){
-    logit(phi[i,t]) <- beta[1] + beta[2] * equals(t, first[i]) # phi1 = beta1 + beta2 and phi1+ = beta1
+    # phi1 = beta1 + beta2; phi1+ = beta1
+    logit(phi[i,t]) <- beta[1] + beta[2] * equals(t, first[i]) 
     gamma[1,1,i,t] <- phi[i,t]      # Pr(alive t -> alive t+1)
     gamma[1,2,i,t] <- 1 - phi[i,t]  # Pr(alive t -> dead t+1)
-    gamma[2,1,i,t] <- 0           # Pr(dead t -> alive t+1)
-    gamma[2,2,i,t] <- 1           # Pr(dead t -> dead t+1)
+    gamma[2,1,i,t] <- 0             # Pr(dead t -> alive t+1)
+    gamma[2,2,i,t] <- 1             # Pr(dead t -> dead t+1)
     }
   }
   beta[1] ~ dnorm(mean = 0, sd = 1.5) # phi1+
@@ -1305,7 +1232,9 @@ hmm.phiage.in <- nimbleCode({
 })
 ```
 
-Constants in a list.
+Here we used `equals(t, first[i])` which renders 1 when $t$ is the first encounter and 0 otherwise. Therefore we distinguish survival of the first interval after first encounter $\phi_1$ (`logit(phi[i,t]) <- beta[1] + beta[2]`) from survival afterwards $\phi_{1+}$ (`logit(phi[i,t]) <- beta[1]`).
+
+We put all constants in a list:
 ```{r eval = FALSE}
 first <- apply(y, 1, function(x) min(which(x !=0)))
 my.constants <- list(N = nrow(y), 
@@ -1313,12 +1242,12 @@ my.constants <- list(N = nrow(y),
                      first = first)
 ```
 
-Data in a list. 
+And the data in a list:
 ```{r eval = FALSE}
 my.data <- list(y = y + 1)
 ```
 
-Initial values. 
+We write a function to generate initial values:
 ```{r eval = FALSE}
 zinits <- y
 zinits[zinits == 0] <- 1
@@ -1327,48 +1256,46 @@ initial.values <- function() list(beta = rnorm(2,0,5),
                                   z = zinits)
 ```
 
-Parameters to be monitored. 
+And specify the parameters to be monitored:
 ```{r eval = FALSE}
 parameters.to.save <- c("phi1", "phi1plus", "p")
 ```
 
-MCMC details.
-```{r eval = FALSE}
-n.iter <- 5000
-n.burnin <- 2500
-n.chains <- 2
-```
-
-Run nimble.
+We now run NIMBLE:
 ```{r eval = FALSE}
 mcmc.phi.age.in <- nimbleMCMC(code = hmm.phiage.in, 
-                             constants = my.constants,
-                             data = my.data,              
-                             inits = initial.values,
-                             monitors = parameters.to.save,
-                             niter = n.iter,
-                             nburnin = n.burnin, 
-                             nchains = n.chains)
+                              constants = my.constants,
+                              data = my.data,              
+                              inits = initial.values,
+                              monitors = parameters.to.save,
+                              niter = n.iter,
+                              nburnin = n.burnin, 
+                              nchains = n.chains)
 ```
 
-Display results. 
+We display the results: 
+```{r eval = FALSE}
+MCMCsummary(mcmc.phi.age.in, round = 2)
+```
 ```{r echo = FALSE}
 load(here::here("dat/phiagein.RData"))
 MCMCsummary(mcmc.phi.age.in, round = 2)
 ```
 
-Another method to include an age effect is to create an individual by time covariate and use nested indexing (as in the previous example) to distinguish survival after first detection from survival afterwards. 
+Age or time elapsed since first encounter does not seem to have an effect on survival here. 
+
+Another method to include an age effect is to create an individual by time covariate and use nested indexing (as in the flood/nonflood example) to distinguish survival over the interval after first detection from survival afterwards: 
 ```{r eval = FALSE}
 age <- matrix(NA, nrow = nrow(y), ncol = ncol(y) - 1)
 for (i in 1:nrow(age)){
   for (j in 1:ncol(age)){
-    if (j == first[i]) age[i,j] <- 1
-    if (j > first[i]) age[i,j] <- 2
+    if (j == first[i]) age[i,j] <- 1 # age = 1
+    if (j > first[i]) age[i,j] <- 2  # age > 1
   }
 }
 ```
 
-The model. Careful, now survival is no longer defined on the logit scale as in the previous model, so we use uniform priors.  
+Now we may write the NIMBLE code for this model. We just need to remember that survival is no longer defined on the logit scale as in the previous model, so we use uniform priors:  
 ```{r eval = FALSE}
 hmm.phiage.out <- nimbleCode({
   p ~ dunif(0, 1) # prior detection
@@ -1402,7 +1329,7 @@ hmm.phiage.out <- nimbleCode({
 })
 ```
 
-Constants in a list, inculding the age matrix covariate.
+We put all constants in a list, including the age covariate:
 ```{r eval = FALSE}
 first <- apply(y, 1, function(x) min(which(x !=0)))
 my.constants <- list(N = nrow(y), 
@@ -1411,12 +1338,7 @@ my.constants <- list(N = nrow(y),
                      age = age)
 ```
 
-Data in a list. 
-```{r eval = FALSE}
-my.data <- list(y = y + 1)
-```
-
-Initial values. 
+We re-write a function to generate initial values: 
 ```{r eval = FALSE}
 zinits <- y
 zinits[zinits == 0] <- 1
@@ -1425,19 +1347,7 @@ initial.values <- function() list(beta = runif(2,0,1),
                                   z = zinits)
 ```
 
-Parameters to be monitored. 
-```{r eval = FALSE}
-parameters.to.save <- c("phi1", "phi1plus", "p")
-```
-
-MCMC details.
-```{r eval = FALSE}
-n.iter <- 5000
-n.burnin <- 2500
-n.chains <- 2
-```
-
-Run nimble.
+And we run NIMBLE:
 ```{r eval = FALSE}
 mcmc.phi.age.out <- nimbleMCMC(code = hmm.phiage.out, 
                                constants = my.constants,
@@ -1449,44 +1359,35 @@ mcmc.phi.age.out <- nimbleMCMC(code = hmm.phiage.out,
                                nchains = n.chains)
 ```
 
-Display results. 
-```{r}
+We display numerical summaries for the model parameters, and acknowledge that we obtain similar results to the other parameterization:
+```{r eval = FALSE}
+MCMCsummary(mcmc.phi.age.out, round = 2)
+```
+```{r echo = FALSE}
 load(here::here("dat/phiageout.RData"))
 MCMCsummary(mcmc.phi.age.out, round = 2)
 ```
 
-#### Trap-dependence
-
-Add example for trap-dependence w/ time individual covariate. Move it to case study w/ multievent. 
-
-#### Missing values
-
-Now, think of body size across life. Problem is we cannot record size when animal is non-detected. Discretize in small, medium and large and treat as a state. More later. Assume a model for covariate and fill in missing values (imputation).
+Like I mentioned earlier, age is easy to deal with as it does not contain missing values. Now think of size or body mass for a minute. The problem is that we cannot record size or body mass when an animal is non-detected. The easiest way to cope with individual time-varying covariates is to discretize e.g. in small, medium and large as in Chapter \@ref(dispersal). Another option is to come up with a model for the covariate and fill in missing values by simulating from this model (see **case study**). 
 
 ## Summary
 
-+ Statistical models rely on assumptions, and the CJS model makes no exception. 
++ The CJS model is a HMM with time-varying parameters to account for variation due to environmental conditions in survival or to sampling effort in detection. 
 
-+ Blabla.
++ Covariates can be considered to try and explain temporal and/or individual variation in survival and detection probabilities. If needed, random effects can be added to cope with unexplained variation. 
+
++ For model comparison, the WAIC can be used to evaluate the relative predictive performance of capture-recapture models. 
+
++ Statistical models rely on assumptions, and the CJS model makes no exception. There are procedures to assess the goodness of fit of the CJS model to capture-recapture data. 
 
 ## Suggested reading
 
-+ A bit of history about the CJS model and the people involved in its developements by [S.T. Buckland (2016)](https://research-repository.st-andrews.ac.uk/handle/10023/8869).
++ [Buckland (2016)](https://research-repository.st-andrews.ac.uk/handle/10023/8869) provides a historical perspective on the CJS model and anecdotes. The monography by [Lebreton et al. (1992)](https://esajournals.onlinelibrary.wiley.com/doi/10.2307/2937171) is a must-read to better understand the CJS model and its applications. The HMM formulation of the CJS model was proposed by [Gimenez et al. (2007)](https://oliviergimenez.github.io/pubs/Gimenezetal2007EcologicalModelling.pdf) and [Royle (2008)](https://onlinelibrary.wiley.com/doi/10.1111/j.1541-0420.2007.00891.x).
 
-+ Mettre papier Vlad et Morten pour temps, et mon papier Oikos pour individu. 
++ [Gimenez et al. (2009)](https://oliviergimenez.github.io/pubs/Gimenezetal2009-weakidentifiability.pdf) deals with parameter redundandy in capture-recapture models in a Bayesian framework. For an exhaustive treatment, see [Cole's excellent book](https://www.routledge.com/Parameter-Redundancy-and-Identifiability/Cole/p/book/9781498720878).
 
-+ CJS state-space formulation [Gimenez et al. (2007)](https://oliviergimenez.github.io/pubs/Gimenezetal2007EcologicalModelling.pdf) and [Royle (2008)](https://onlinelibrary.wiley.com/doi/10.1111/j.1541-0420.2007.00891.x). 
++ Relative to model comparison, I warmly recommend [McElreath's book](https://www.routledge.com/Statistical-Rethinking-A-Bayesian-Course-with-Examples-in-R-and-STAN/McElreath/p/book/9780367139919) to better understand WAIC (there is a video as well, see <https://www.youtube.com/watch?v=vSjL2Zc-gEQ>). The paper by [Gelman et al. 2014](https://link.springer.com/article/10.1007/s11222-013-9416-2) is also much helpful. 
 
-+ Also read Lebreton et al. 1992, long monography, but a gem, w/ introduction to AIC, model assumptions, etc.
++ On posterior predictive checks, you may check out [Conn et al. 2018](https://doi.org/10.1002/ecm.1314). The `R2ucare` package is introduced in [Gimenez et al. 2018](https://besjournals.onlinelibrary.wiley.com/doi/10.1111/2041-210X.13014).
 
-+ About WAIC, more in this video <https://www.youtube.com/watch?v=vSjL2Zc-gEQ> by R. McElreath. Cite relevant papers in particular paper by Gelman et al. 2014 Understanding predictive information criteria for Bayesian models.
-
-+ Work on missing values by [Bonner et al. (2006)](https://onlinelibrary.wiley.com/doi/abs/10.1111/j.1541-0420.2005.00399.x) and [Langrock and King (2013)](https://projecteuclid.org/journals/annals-of-applied-statistics/volume-7/issue-3/Maximum-likelihood-estimation-of-markrecapturerecovery-models-in-the-presence-of/10.1214/13-AOAS644.full) and [Worthington et al. (2015)](https://link.springer.com/article/10.1007/s13253-014-0184-z).
-
-+ The example on how to incorporate prior information is in [McCarthy and Masters (2005)](https://besjournals.onlinelibrary.wiley.com/doi/abs/10.1111/j.1365-2664.2005.01101.x).
-
-+ On posterior predictive check, see paper by Chambert https://doi.org/10.1002/ece3.993, or Conn https://doi.org/10.1002/ecm.1314.
-
-+ Combine live recapture w/ dead recoveries by [Lebreton et al. (1999)](https://www.tandfonline.com/doi/pdf/10.1080/00063659909477230) and go spatial to account for emigration [Gilroy et al. (2012)](https://esajournals.onlinelibrary.wiley.com/doi/full/10.1890/12-0124.1) and [Schaub & Royle (2014)](https://besjournals.onlinelibrary.wiley.com/doi/full/10.1111/2041-210X.12134).
-
-+ Non-identifiability in a Bayesian framework, see [Gimenez et al. (2009)](https://oliviergimenez.github.io/pubs/Gimenezetal2009-weakidentifiability.pdf) and [book by Cole (2020)](https://www.routledge.com/Parameter-Redundancy-and-Identifiability/Cole/p/book/9781498720878).
++ Temporal heterogeneity is addressed in papers by [Grosbois et al. 2008](https://oliviergimenez.github.io/pubs/Grosboisetal2008.pdf) and [Frederiksen et al. 2014](https://oliviergimenez.github.io/pubs/Frederiksenetal2013JAE.pdf), while individual heterogeneity is reviewed by [Gimenez et al. 2018](https://oliviergimenez.github.io/pubs/GimenezCamGaillard2017Oikos.pdf).

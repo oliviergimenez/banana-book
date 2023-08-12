@@ -1,3 +1,145 @@
+#----------------------------------- random effects
+
+#### Temporal
+
+Include temporal covariates, say $x_t$ with $\text{logit}(\phi_t) = \beta_1 + \beta_2 x_t$. 
+If temporal variation not fully explained by covariates, add random effects $\text{logit}(\phi_t) 
+= \beta_1 + \beta_2 x_t + \varepsilon_t, \; \varepsilon_t \sim N(0,\sigma^2)$. 
+We may wish to allow for extra variation in the survival vs. water flow relationship. 
+To do so, we consider a yearly random effect. The prior on the standard deviation of 
+the random effect is uniform between 0 and 10. **explain how to pick prior for SD**
+  ```{r eval = FALSE}
+hmm.phiflowREpt <- nimbleCode({
+  delta[1] <- 1          # Pr(alive t = 1) = 1
+  delta[2] <- 0          # Pr(dead t = 1) = 0
+  for (t in 1:(T-1)){
+    logit(phi[t]) <- beta[1] + beta[2] * flow[t] + eps[t] # eps is random effect
+    eps[t] ~ dnorm(0, sd = sdeps) 
+    gamma[1,1,t] <- phi[t]      # Pr(alive t -> alive t+1)
+    gamma[1,2,t] <- 1 - phi[t]  # Pr(alive t -> dead t+1)
+    gamma[2,1,t] <- 0           # Pr(dead t -> alive t+1)
+    gamma[2,2,t] <- 1           # Pr(dead t -> dead t+1)
+    p[t] ~ dunif(0, 1)          # prior detection
+    omega[1,1,t] <- 1 - p[t]    # Pr(alive t -> non-detected t)
+    omega[1,2,t] <- p[t]        # Pr(alive t -> detected t)
+    omega[2,1,t] <- 1           # Pr(dead t -> non-detected t)
+    omega[2,2,t] <- 0           # Pr(dead t -> detected t)
+  }
+  beta[1] ~ dnorm(0, 1.5) # prior intercept
+  beta[2] ~ dnorm(0, 1.5) # prior slope
+  sdeps ~ dunif(0,10)
+  # likelihood
+  for (i in 1:N){
+    z[i,first[i]] ~ dcat(delta[1:2])
+    for (j in (first[i]+1):T){
+      z[i,j] ~ dcat(gamma[z[i,j-1], 1:2, j-1])
+      y[i,j] ~ dcat(omega[z[i,j], 1:2, j-1])
+    }
+  }
+})
+```
+
+Initial values. 
+```{r eval = FALSE}
+initial.values <- function() list(beta = rnorm(2,0,1),
+                                  p = runif(my.constants$T-1,0,1),
+                                  sdeps = runif(1,0,3),
+                                  z = zinits)
+```
+
+Parameters to be monitored. 
+```{r eval = FALSE}
+parameters.to.save <- c("beta", "p", "phi", "sdeps")
+```
+
+MCMC details. Note that we've increased the number of iterations and the length of the burn-in period.
+```{r eval = FALSE}
+n.iter <- 10000
+n.burnin <- 5000
+n.chains <- 2
+```
+
+Run NIMBLE:
+```{r eval = FALSE}
+mcmc.phiflowREpt <- nimbleMCMC(code = hmm.phiflowREpt, 
+                               constants = my.constants,
+                               data = my.data,              
+                               inits = initial.values,
+                               monitors = parameters.to.save,
+                               niter = n.iter,
+                               nburnin = n.burnin, 
+                               nchains = n.chains)
+```
+
+Display outputs. Seems that the water flow effect is not so important anymore. 
+```{r eval = FALSE}
+MCMCsummary(object = mcmc.phiflowREpt, round = 2)
+```
+```{r echo = FALSE}
+load(here::here("dat/phiflowREpt.RData"))
+MCMCsummary(object = mcmc.phiflowREpt, round = 2)
+```
+
+Trace plots for the standard deviation of the random effect.
+```{r}
+MCMCtrace(object = mcmc.phiflowREpt, 
+          params = "sdeps", 
+          pdf = FALSE)
+```
+
+#### Individual
+
+
+#---------------------------------- covariates
+
+Sex effect
+
++ Let's use a covariate $\text{sex}$ that takes value 0 if male, and 1 if female
+
++ And write $\text{logit}(\phi_i) = \beta_1 + \beta_2 \; \text{sex}_i$ for bird $i$
+
++ Then male survival is
+
+$$\text{logit}(\phi_i) = \beta_1$$
+
++ And female survival is
+
+$$\text{logit}(\phi_i) = \beta_1 + \beta_2$$
+
+Nimble implementation with sex as a covariate
+
+```{r eval = FALSE}
+hmm.phisexp <- nimbleCode({
+...
+  for (i in 1:N){
+    logit(phi[i]) <- beta[1] + beta[2] * sex[i]
+    gamma[1,1,i] <- phi[i]      # Pr(alive t -> alive t+1)
+    gamma[1,2,i] <- 1 - phi[i]  # Pr(alive t -> dead t+1)
+    gamma[2,1,i] <- 0        # Pr(dead t -> alive t+1)
+    gamma[2,2,i] <- 1        # Pr(dead t -> dead t+1)
+  }
+  beta[1] ~ dnorm(mean = 0, sd = 1.5)
+  beta[2] ~ dnorm(mean = 0, sd = 1.5)
+  phi_male <- 1/(1+exp(-beta[1]))
+  phi_female <- 1/(1+exp(-(beta[1]+beta[2])))
+...
+  # likelihood
+  for (i in 1:N){
+    z[i,first[i]] ~ dcat(delta[1:2])
+    for (j in (first[i]+1):T){
+      z[i,j] ~ dcat(gamma[z[i,j-1], 1:2, i])
+      y[i,j] ~ dcat(omega[z[i,j], 1:2])
+    }
+  }
+})
+```
+
+```{r echo = FALSE}
+load(here::here("dat/phisexp.RData"))
+MCMCsummary(object = mcmc.phisexp, round = 2)
+```
+
+
 #----------------------------------- further examples multievent
 
 

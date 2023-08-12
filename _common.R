@@ -7,6 +7,7 @@ library(magick)
 library(pdftools)
 library(wesanderson)
 library(RColorBrewer)
+library(patchwork)
 #library(nimbleEcology)
 #library(basicMCMCplots)
 
