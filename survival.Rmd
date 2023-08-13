@@ -226,6 +226,8 @@ MCMCtrace(object = mcmc.phitpt,
 
 Clearly mixing (left panel in the plot above) is bad and there is a big overlap between the prior and the posterior for this parameter (right panel) suggesting that its prior was not well updated with the data. What is going on? If you could inspect the likelihood of the CJS model, you would realise that these two parameters $\phi_6$ and $p_7$ appear only as the product $\phi_6 p_7$ and cannot be estimated separately. In other words, one of these parameters is redundant, and you'd need an extra sampling occasion to be able to disentangle them. This is not a big issue as long as you're aware of it and you do not attempt to ecologically interpret these parameters. 
 
+**Wondering whether I should demonstrate marginalization here, and pooled encounter histories.**
+
 ## CJS model derivatives
 
 Besides the model we considered with constant parameters (see Chapter \@ref(hmmcapturerecapture)) and the CJS model with time-varying parameters, you might want to fit in-between or models with time variation on either detection or survival. 
@@ -335,7 +337,7 @@ data.frame(model = c("both survival & detection constant",
              mcmc.phitpt$WAIC))
 ```
 
-Lower values of WAIC imply higher predictive accuracy, thefore we would favor model with constant parameters.
+Lower values of WAIC imply higher predictive accuracy, thefore we would favor model with constant parameters. **Add WAIC weights.**
 
 ## Goodness of fit {#gof}
 
@@ -345,7 +347,7 @@ How to assess the goodness of fit of the CJS model to capture-recapture data? In
 
 ### Posterior predictive checks
 
-In the Bayesian framework, we would rely on posterior predictive checks to assess absolute fit. Briefly speaking, the idea is to compare the observed data to replicated data generated from the model. If the model is a good fit to the data, then the replicated data predicted from the model should look similar to the observed data. To simplify the comparison, some summary statistics are generally used. For the CJS model, we would use the so-called m-array which gathers the elements $m_{ij}$ for the number of marked individuals initially released at time $i$ that were first detected again at time $j$. **Do i include an example? If yes, refer to paper by Paganin & de Valpine and use code in https://github.com/salleuska/fastCPPP**
+In the Bayesian framework, we would rely on posterior predictive checks to assess absolute fit. Briefly speaking, the idea is to compare the observed data to replicated data generated from the model. If the model is a good fit to the data, then the replicated data predicted from the model should look similar to the observed data. To simplify the comparison, some summary statistics are generally used. For the CJS model, we would use the so-called m-array which gathers the elements $m_{ij}$ for the number of marked individuals initially released at time $i$ that were first detected again at time $j$. **Refer to a case study. With m-array and Nimble functions. Refer to paper by Paganin & de Valpine and use code in https://github.com/salleuska/fastCPPP. Also papers by Chambert et al. (individual performance) and Conn et al. (geometric time, and hidden semi-Markov models).**
 
 ### Classical tests
 
@@ -362,35 +364,26 @@ We get the capture-recapture data:
 ```{r}
 # capture-recapture data
 dipper <- read_csv(here::here("dat", "dipper.csv"))
-dip.hist <- dipper %>%
+y <- dipper %>%
   select(year_1981:year_1987) %>%
   as.matrix()
 # number of birds with that particular capture-recapture history
-dip.freq <- rep(1, nrow(dip.hist))
-# sex of each bird
-dip.group <- dipper$sex
-```
-
-For the sake of illustration, we consider females only:
-```{r}
-mask <- (dip.group == 'F')
-dip.fem.hist <- dip.hist[mask,]
-dip.fem.freq <- dip.freq[mask]
+size <- rep(1, nrow(y))
 ```
 
 The overall test shows that we cannot reject the hypothesis that the CJS models fits the data well:
 ```{r}
-overall_CJS(dip.fem.hist, dip.fem.freq)
+overall_CJS(y, size)
 ```
 
 We may perform a test specifically to assess a transient effect:
 ```{r}
-test3sr(dip.fem.hist, dip.fem.freq)
+test3sr(y, size)
 ```
 
 Or trap-dependence:
 ```{r}
-test2ct(dip.fem.hist, dip.fem.freq)
+test2ct(y, size)
 ```
 
 What to do if these tests are significant? Transience may occur when animals transit through but do not belong to the study population (true transients), or reproduce only once then die or permanently disperse (cost of first reproduction), or die or permanently disperse due to an effect of marking (marking effect). These transient individuals are never detected again after their initial capture, which means they have a zero probability of local survival after this initial capture. This suggests a way to account for the transience issue that we cover in a case study (see **transience case study**). 
@@ -498,7 +491,7 @@ MCMCsummary(mcmc.phifloodp, round = 2)
 MCMCsummary(mcmc.phifloodp, round = 2)
 ```
 
-An important point here is that we formulated an ecological hypothesis which we translated into a model. The next step would consist in calculating WAIC for this model and compare it with that of the four other model we have fitted so far (see Section \@ref(waic)). 
+An important point here is that we formulated an ecological hypothesis which we translated into a model. The next step would consist in calculating WAIC for this model and compare it with that of the four other model we have fitted so far (see Section \@ref(waic)). **Do it, and explain difference between conditional and marginal WAIC.**
 
 Another method to include a discrete covariate consists in considering the effect of the difference between its levels. For example, we could consider survival in nonflood years as the reference and test the difference in survival with flood years. 
 
@@ -1376,7 +1369,7 @@ Like I mentioned earlier, age is easy to deal with as it does not contain missin
 
 + Covariates can be considered to try and explain temporal and/or individual variation in survival and detection probabilities. If needed, random effects can be added to cope with unexplained variation. 
 
-+ For model comparison, the WAIC can be used to evaluate the relative predictive performance of capture-recapture models. 
++ For model comparison, the WAIC can be used to evaluate the relative predictive performance of capture-recapture models. **Refer to case study on RJMCMC.**
 
 + Statistical models rely on assumptions, and the CJS model makes no exception. There are procedures to assess the goodness of fit of the CJS model to capture-recapture data. 
 
