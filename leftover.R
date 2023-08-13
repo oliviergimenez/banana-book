@@ -1,3 +1,247 @@
+#------------------------------ AS model
+
+```{r, echo = FALSE}
+ggplot() +
+  geom_point(aes(1, 1), size = 2.5, alpha = .7) +
+  geom_point(aes(1, 1.5), size = 2.5, alpha = .7) +
+  geom_point(aes(1, 2), size = 2.5, alpha = .7) +
+  geom_text(aes(1, 2, label = 'non-detection'), nudge_x = -0.6, size = 7) +
+  geom_text(aes(1, 1.5, label = 'detection in site A'), nudge_x = -0.6, size = 7) +
+  geom_text(aes(1, 1, label = 'detection in site B'), nudge_x = -0.6, size = 7) +
+  geom_point(aes(2, 1), size = 2.5, alpha = .7) +
+  geom_point(aes(2, 1.5), size = 2.5, alpha = .7) +
+  geom_point(aes(2, 2), size = 2.5, alpha = .7) +
+  geom_text(aes(2, 2, label = 'alive in site A'), nudge_x = 0.5, size = 7) +
+  geom_text(aes(2, 1.5, label = 'alive in site B'), nudge_x = 0.5, size = 7) +
+  geom_text(aes(2, 1, label = 'dead'), nudge_x = 0.5, size = 7) +
+  xlim(0, 3) +
+  ylim(0.5, 3) +
+  annotate('text', x = 1, y = 2.6, label = 'Observations', size = 10) +
+  annotate('text', x = 2, y = 2.6, label = 'States', size = 10) +
+  theme_void()
+```
+
+```{r, echo = FALSE}
+ggplot() +
+  geom_point(aes(1, 1), size = 2.5, alpha = .7) +
+  geom_point(aes(1, 1.5), size = 2.5, alpha = .7) +
+  geom_point(aes(1, 2), size = 2.5, alpha = .7) +
+  geom_text(aes(1, 2, label = 'non-detection'), nudge_x = -0.6, size = 7) +
+  geom_text(aes(1, 1.5, label = 'detection in site A'), nudge_x = -0.6, size = 7) +
+  geom_text(aes(1, 1, label = 'detection in site B'), nudge_x = -0.6, size = 7) +
+  geom_point(aes(2, 1), size = 2.5, alpha = .7) +
+  geom_point(aes(2, 1.5), size = 2.5, alpha = .7) +
+  geom_point(aes(2, 2), size = 2.5, alpha = .7) +
+  geom_text(aes(2, 2, label = 'alive in site A'), nudge_x = 0.5, size = 7) +
+  geom_text(aes(2, 1.5, label = 'alive in site B'), nudge_x = 0.5, size = 7) +
+  geom_text(aes(2, 1, label = 'dead'), nudge_x = 0.5, size = 7) +
+  xlim(0, 3) +
+  ylim(0.5, 3) +
+  annotate('text', x = 1, y = 2.6, label = 'Observations', size = 10) +
+  annotate('text', x = 2, y = 2.6, label = 'States', size = 10) +
+  geom_segment(aes(x = 1, y = 1.5, xend = 2, yend = 2), alpha = 0.7, arrow = arrow(length = unit(0.02, "npc"))) +
+  theme_void()
+```
+
+```{r, echo = FALSE}
+ggplot() +
+  geom_point(aes(1, 1), size = 2.5, alpha = .7) +
+  geom_point(aes(1, 1.5), size = 2.5, alpha = .7) +
+  geom_point(aes(1, 2), size = 2.5, alpha = .7) +
+  geom_text(aes(1, 2, label = 'non-detection'), nudge_x = -0.6, size = 7) +
+  geom_text(aes(1, 1.5, label = 'detection in site A'), nudge_x = -0.6, size = 7) +
+  geom_text(aes(1, 1, label = 'detection in site B'), nudge_x = -0.6, size = 7) +
+  geom_point(aes(2, 1), size = 2.5, alpha = .7) +
+  geom_point(aes(2, 1.5), size = 2.5, alpha = .7) +
+  geom_point(aes(2, 2), size = 2.5, alpha = .7) +
+  geom_text(aes(2, 2, label = 'alive in site A'), nudge_x = 0.5, size = 7) +
+  geom_text(aes(2, 1.5, label = 'alive in site B'), nudge_x = 0.5, size = 7) +
+  geom_text(aes(2, 1, label = 'dead'), nudge_x = 0.5, size = 7) +
+  xlim(0, 3) +
+  ylim(0.5, 3) +
+  annotate('text', x = 1, y = 2.6, label = 'Observations', size = 10) +
+  annotate('text', x = 2, y = 2.6, label = 'States', size = 10) +
+  geom_segment(aes(x = 1, y = 1.5, xend = 2, yend = 2), alpha = 0.7, arrow = arrow(length = unit(0.02, "npc"))) +
+  geom_segment(aes(x = 1, y = 1, xend = 2, yend = 1.5), alpha = 0.7, arrow = arrow(length = unit(0.02, "npc"))) +
+  theme_void()
+```
+
+
+
+```{r, echo = FALSE}
+ggplot() +
+  geom_point(aes(1, 1), size = 2.5, alpha = .7) +
+  geom_point(aes(1, 1.5), size = 2.5, alpha = .7) +
+  geom_point(aes(1, 2), size = 2.5, alpha = .7) +
+  geom_text(aes(2, 2, label = 'non-detection'), nudge_x = 0.5, size = 7) +
+  geom_text(aes(2, 1.5, label = 'detection in site A'), nudge_x = 0.6, size = 7) +
+  geom_text(aes(2, 1, label = 'detection in site B'), nudge_x = 0.6, size = 7) +
+  geom_point(aes(2, 1), size = 2.5, alpha = .7) +
+  geom_point(aes(2, 1.5), size = 2.5, alpha = .7) +
+  geom_point(aes(2, 2), size = 2.5, alpha = .7) +
+  geom_text(aes(1, 2, label = 'alive in site A'), nudge_x = -0.6, size = 7) +
+  geom_text(aes(1, 1.5, label = 'alive in site B'), nudge_x = -0.6, size = 7) +
+  geom_text(aes(1, 1, label = 'dead'), nudge_x = -0.6, size = 7) +
+  xlim(0, 3) +
+  ylim(0.5, 3) +
+  annotate('text', x = 1, y = 2.6, label = 'States', size = 10) +
+  annotate('text', x = 2, y = 2.6, label = 'Observations', size = 10) +
+  theme_void()
+```
+
+### The model construction: How we should think.
+
+```{r, echo = FALSE}
+ggplot() +
+  geom_point(aes(1, 1), size = 2.5, alpha = .7) +
+  geom_point(aes(1, 1.5), size = 2.5, alpha = .7) +
+  geom_point(aes(1, 2), size = 2.5, alpha = .7) +
+  geom_text(aes(2, 2, label = 'non-detection'), nudge_x = 0.5, size = 7) +
+  geom_text(aes(2, 1.5, label = 'detection in site A'), nudge_x = 0.6, size = 7) +
+  geom_text(aes(2, 1, label = 'detection in site B'), nudge_x = 0.6, size = 7) +
+  geom_point(aes(2, 1), size = 2.5, alpha = .7) +
+  geom_point(aes(2, 1.5), size = 2.5, alpha = .7) +
+  geom_point(aes(2, 2), size = 2.5, alpha = .7) +
+  geom_text(aes(1, 2, label = 'alive in site A'), nudge_x = -0.6, size = 7) +
+  geom_text(aes(1, 1.5, label = 'alive in site B'), nudge_x = -0.6, size = 7) +
+  geom_text(aes(1, 1, label = 'dead'), nudge_x = -0.6, size = 7) +
+  xlim(0, 3) +
+  ylim(0.5, 3) +
+  annotate('text', x = 1, y = 2.6, label = 'States', size = 10) +
+  annotate('text', x = 2, y = 2.6, label = 'Observations', size = 10) +
+  geom_segment(aes(x = 1, y = 1, xend = 2, yend = 2), alpha = 0.7, arrow = arrow(length = unit(0.02, "npc"))) +
+  theme_void()
+```
+
+### The model construction: How we should think.
+
+```{r, echo = FALSE}
+ggplot() +
+  geom_point(aes(1, 1), size = 2.5, alpha = .7) +
+  geom_point(aes(1, 1.5), size = 2.5, alpha = .7) +
+  geom_point(aes(1, 2), size = 2.5, alpha = .7) +
+  geom_text(aes(2, 2, label = 'non-detection'), nudge_x = 0.5, size = 7) +
+  geom_text(aes(2, 1.5, label = 'detection in site A'), nudge_x = 0.6, size = 7) +
+  geom_text(aes(2, 1, label = 'detection in site B'), nudge_x = 0.6, size = 7) +
+  geom_point(aes(2, 1), size = 2.5, alpha = .7) +
+  geom_point(aes(2, 1.5), size = 2.5, alpha = .7) +
+  geom_point(aes(2, 2), size = 2.5, alpha = .7) +
+  geom_text(aes(1, 2, label = 'alive in site A'), nudge_x = -0.6, size = 7) +
+  geom_text(aes(1, 1.5, label = 'alive in site B'), nudge_x = -0.6, size = 7) +
+  geom_text(aes(1, 1, label = 'dead'), nudge_x = -0.6, size = 7) +
+  xlim(0, 3) +
+  ylim(0.5, 3) +
+  annotate('text', x = 1, y = 2.6, label = 'States', size = 10) +
+  annotate('text', x = 2, y = 2.6, label = 'Observations', size = 10) +
+  geom_segment(aes(x = 1, y = 2, xend = 2, yend = 2), alpha = 0.7, arrow = arrow(length = unit(0.02, "npc"))) +
+  geom_segment(aes(x = 1, y = 2, xend = 2, yend = 1.5), alpha = 0.7, arrow = arrow(length = unit(0.02, "npc"))) +
+  geom_segment(aes(x = 1, y = 1, xend = 2, yend = 2), alpha = 0.7, arrow = arrow(length = unit(0.02, "npc"))) +
+  theme_void()
+```
+
+
+```{r, echo = FALSE}
+ggplot() +
+  geom_point(aes(1, 1), size = 2.5, alpha = .7) +
+  geom_point(aes(1, 1.5), size = 2.5, alpha = .7) +
+  geom_point(aes(1, 2), size = 2.5, alpha = .7) +
+  geom_text(aes(1.5, 2, label = 'not encountered (0)'), nudge_x = 1, size = 7) +
+  geom_text(aes(1.5, 1.5, label = 'found, ascertained as breeder (1)'), nudge_x = 1.5, size = 7) +
+  geom_text(aes(1.5, 1, label = 'found, ascertained as non-breeder (2)'), nudge_x = 1.7, size = 7) +
+  geom_text(aes(1.5, 0.5, label = 'found, status unknown (3)'), nudge_x = 1.2, size = 7) +
+  geom_point(aes(1.5, 0.5), size = 2.5, alpha = .7) +
+  geom_point(aes(1.5, 1), size = 2.5, alpha = .7) +
+  geom_point(aes(1.5, 1.5), size = 2.5, alpha = .7) +
+  geom_point(aes(1.5, 2), size = 2.5, alpha = .7) +
+  geom_text(aes(.5, 2, label = 'breeding'), nudge_x = 0, size = 7) +
+  geom_text(aes(.5, 1.5, label = 'non-breeding'), nudge_x = -0.2, size = 7) +
+  geom_text(aes(.5, 1, label = 'dead'), nudge_x = 0.1, size = 7) +
+  xlim(0, 4.5) +
+  ylim(0.5, 3) +
+  annotate('text', x = .5, y = 2.6, label = 'States', size = 10) +
+  annotate('text', x = 2.5, y = 2.6, label = 'Observations', size = 10) +
+  theme_void()
+```
+
+```{r, echo = FALSE}
+ggplot() +
+  geom_point(aes(1, 1), size = 2.5, alpha = .7) +
+  geom_point(aes(1, 1.5), size = 2.5, alpha = .7) +
+  geom_point(aes(1, 2), size = 2.5, alpha = .7) +
+  geom_text(aes(1.5, 2, label = 'not encountered (0)'), nudge_x = 1, size = 7) +
+  geom_text(aes(1.5, 1.5, label = 'found, ascertained as breeder (1)'), nudge_x = 1.5, size = 7) +
+  geom_text(aes(1.5, 1, label = 'found, ascertained as non-breeder (2)'), nudge_x = 1.7, size = 7) +
+  geom_text(aes(1.5, 0.5, label = 'found, status unknown (3)'), nudge_x = 1.2, size = 7) +
+  geom_point(aes(1.5, 0.5), size = 2.5, alpha = .7) +
+  geom_point(aes(1.5, 1), size = 2.5, alpha = .7) +
+  geom_point(aes(1.5, 1.5), size = 2.5, alpha = .7) +
+  geom_point(aes(1.5, 2), size = 2.5, alpha = .7) +
+  geom_text(aes(.5, 2, label = 'breeding'), nudge_x = 0, size = 7) +
+  geom_text(aes(.5, 1.5, label = 'non-breeding'), nudge_x = -0.2, size = 7) +
+  geom_text(aes(.5, 1, label = 'dead'), nudge_x = 0.1, size = 7) +
+  xlim(0, 4.5) +
+  ylim(0.5, 3) +
+  annotate('text', x = .5, y = 2.6, label = 'States', size = 10) +
+  annotate('text', x = 2.5, y = 2.6, label = 'Observations', size = 10) +
+  geom_segment(aes(x = 1, y = 1, xend = 1.5, yend = 2), alpha = 0.7, arrow = arrow(length = unit(0.02, "npc"))) +
+  theme_void()
+```
+
+```{r, echo = FALSE}
+ggplot() +
+  geom_point(aes(1, 1), size = 2.5, alpha = .7) +
+  geom_point(aes(1, 1.5), size = 2.5, alpha = .7) +
+  geom_point(aes(1, 2), size = 2.5, alpha = .7) +
+  geom_text(aes(1.5, 2, label = 'not encountered (0)'), nudge_x = 1, size = 7) +
+  geom_text(aes(1.5, 1.5, label = 'found, ascertained as breeder (1)'), nudge_x = 1.5, size = 7) +
+  geom_text(aes(1.5, 1, label = 'found, ascertained as non-breeder (2)'), nudge_x = 1.7, size = 7) +
+  geom_text(aes(1.5, 0.5, label = 'found, status unknown (3)'), nudge_x = 1.2, size = 7) +
+  geom_point(aes(1.5, 0.5), size = 2.5, alpha = .7) +
+  geom_point(aes(1.5, 1), size = 2.5, alpha = .7) +
+  geom_point(aes(1.5, 1.5), size = 2.5, alpha = .7) +
+  geom_point(aes(1.5, 2), size = 2.5, alpha = .7) +
+  geom_text(aes(.5, 2, label = 'breeding'), nudge_x = 0, size = 7) +
+  geom_text(aes(.5, 1.5, label = 'non-breeding'), nudge_x = -0.2, size = 7) +
+  geom_text(aes(.5, 1, label = 'dead'), nudge_x = 0.1, size = 7) +
+  xlim(0, 4.5) +
+  ylim(0.5, 3) +
+  annotate('text', x = .5, y = 2.6, label = 'States', size = 10) +
+  annotate('text', x = 2.5, y = 2.6, label = 'Observations', size = 10) +
+  geom_segment(aes(x = 1, y = 2, xend = 1.5, yend = .5), alpha = 0.7, arrow = arrow(length = unit(0.02, "npc"))) +
+  geom_segment(aes(x = 1, y = 2, xend = 1.5, yend = 1.5), alpha = 0.7, arrow = arrow(length = unit(0.02, "npc"))) +
+  geom_segment(aes(x = 1, y = 2, xend = 1.5, yend = 2), alpha = 0.7, arrow = arrow(length = unit(0.02, "npc"))) +
+  
+  theme_void()
+```
+
+```{r, echo = FALSE}
+ggplot() +
+  geom_point(aes(1, 1), size = 2.5, alpha = .7) +
+  geom_point(aes(1, 1.5), size = 2.5, alpha = .7) +
+  geom_point(aes(1, 2), size = 2.5, alpha = .7) +
+  geom_text(aes(1.5, 2, label = 'not encountered (0)'), nudge_x = 1, size = 7) +
+  geom_text(aes(1.5, 1.5, label = 'found, ascertained as breeder (1)'), nudge_x = 1.5, size = 7) +
+  geom_text(aes(1.5, 1, label = 'found, ascertained as non-breeder (2)'), nudge_x = 1.7, size = 7) +
+  geom_text(aes(1.5, 0.5, label = 'found, status unknown (3)'), nudge_x = 1.2, size = 7) +
+  geom_point(aes(1.5, 0.5), size = 2.5, alpha = .7) +
+  geom_point(aes(1.5, 1), size = 2.5, alpha = .7) +
+  geom_point(aes(1.5, 1.5), size = 2.5, alpha = .7) +
+  geom_point(aes(1.5, 2), size = 2.5, alpha = .7) +
+  geom_text(aes(.5, 2, label = 'breeding'), nudge_x = 0, size = 7) +
+  geom_text(aes(.5, 1.5, label = 'non-breeding'), nudge_x = -0.2, size = 7) +
+  geom_text(aes(.5, 1, label = 'dead'), nudge_x = 0.1, size = 7) +
+  xlim(0, 4.5) +
+  ylim(0.5, 3) +
+  annotate('text', x = .5, y = 2.6, label = 'States', size = 10) +
+  annotate('text', x = 2.5, y = 2.6, label = 'Observations', size = 10) +
+  geom_segment(aes(x = 1, y = 1.5, xend = 1.5, yend = 1), alpha = 0.7, arrow = arrow(length = unit(0.02, "npc"))) +
+  geom_segment(aes(x = 1, y = 1.5, xend = 1.5, yend = 2), alpha = 0.7, arrow = arrow(length = unit(0.02, "npc"))) +
+  geom_segment(aes(x = 1, y = 1.5, xend = 1.5, yend = .5), alpha = 0.7, arrow = arrow(length = unit(0.02, "npc"))) +
+  theme_void()
+```
+
+
+
 #----------------------------------- random effects
 
 #### Temporal
