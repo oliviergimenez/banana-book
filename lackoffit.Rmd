@@ -4,6 +4,148 @@
 
 On wolf, see @cubaynes_importance_2010, @gimenez_individual_2010, or go full non-parametric w/ @turek_bayesian_2021. See @pradel2009 for black-headed gull example. 
 
+Our example is about individual heterogeneity and how to account for it with HMMs. Gray wolf is a social species with hierarchy in packs which may reflect in species demography. As an example, we'll work with gray wolves.
+
+```{r pixwolf, echo=FALSE, fig.cap="Dominance in wolves.", fig.align='center'}
+knitr::include_graphics("images/wolfdominance.jpg")
+```
+
+Gray wolf is a social species with hierarchy in packs which may reflect in demography. Shirley Pledger in a series of papers developed heterogeneity models in which individuals are assigned in two or more classes with class-specific survival/detection probabilities. @cubaynes_importance_2010 used HMMs to account for heterogeneity in the detection process due to social status, see also @pradel2009. Dominant individuals tend to use path more often than others, and these paths are where we look for scats.
+
+Individual heterogeneity
+
++ 3 states
++ alive in class 1 (A1)
++ alive in class 2 (A2)
++ dead (D)
+
++ 4 observations
++ not captured (0)
++ captured (1)
+
+Vector of initial state probabilities
+
+$$
+  \begin{matrix}
+& \\
+\mathbf{\delta} =
+  \left ( \vphantom{ \begin{matrix} 12 \end{matrix} } \right .
+          \end{matrix}
+          \hspace{-1.2em}
+          \begin{matrix}
+          z_t=A1 & z_t=A2 & z_t=D \\ \hdashline
+          \pi & 1 - \pi & 0\\
+          \end{matrix}
+          \hspace{-0.2em}
+          \begin{matrix}
+          & \\
+          \left . \vphantom{ \begin{matrix} 12 \end{matrix} } \right )
+\begin{matrix}
+\end{matrix}
+\end{matrix}
+$$
+  
+$\pi$ is the probability of being alive in class 1. $1 - \pi$ is the probability of being in class 2.
+
+Transition matrix
+
+$$
+  \begin{matrix}
+& \\
+\mathbf{\Gamma} =
+  \left ( \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \end{matrix} } \right .
+          \end{matrix}
+          \hspace{-1.2em}
+          \begin{matrix}
+          z_t=A1 & z_t=A2 & z_t=D \\ \hdashline
+          \phi  & 0 & 1 - \phi\\
+          0 & \phi & 1 - \phi\\
+          0 & 0 & 1
+          \end{matrix}
+          \hspace{-0.2em}
+          \begin{matrix}
+          & \\
+          \left . \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \end{matrix} } \right )
+\begin{matrix}
+z_{t-1}=A1 \\ z_{t-1}=A2 \\ z_{t-1}=D
+\end{matrix}
+\end{matrix}
+$$
+  
+$\phi$ is the survival probability, which could be made heterogeneous.
+
+Transition matrix, with change in heterogeneity class
+
+$$
+  \begin{matrix}
+& \\
+\mathbf{\Gamma} =
+  \left ( \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \end{matrix} } \right .
+          \end{matrix}
+          \hspace{-1.2em}
+          \begin{matrix}
+          z_t=A1 & z_t=A2 & z_t=D \\ \hdashline
+          \phi (1-\psi_{12}) & \phi \psi_{12} & 1 - \phi\\
+          \phi \psi_{21} & \phi (1-\psi_{21}) & 1 - \phi\\
+          0 & 0 & 1
+          \end{matrix}
+          \hspace{-0.2em}
+          \begin{matrix}
+          & \\
+          \left . \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \end{matrix} } \right )
+\begin{matrix}
+z_{t-1}=A1 \\ z_{t-1}=A2 \\ z_{t-1}=D
+\end{matrix}
+\end{matrix}
+$$
+  
+$\psi_{12}$ is the probability for an individual to change class of heterogeneity, from 1 to 2. $\psi_{21}$ is the probability for an individual to change class of heterogeneity, from 2 to 1.
+
+Observation matrix
+
+$$
+  \begin{matrix}
+& \\
+\mathbf{\Omega} =
+  \left ( \vphantom{ \begin{matrix} 12 \\ 12 \\ 12\end{matrix} } \right .
+          \end{matrix}
+          \hspace{-1.2em}
+          \begin{matrix}
+          y_t=0 & y_t=1\\ \hdashline
+          1 - p_1 & p_1\\
+          1 - p_2 & p_2\\
+          1 & 0
+          \end{matrix}
+          \hspace{-0.2em}
+          \begin{matrix}
+          & \\
+          \left . \vphantom{ \begin{matrix} 12 \\ 12 \\ 12\end{matrix} } \right )
+\begin{matrix}
+z_{t}=A1 \\ z_{t}=A2 \\ z_{t}=D
+\end{matrix}
+\end{matrix}
+$$
+  
+$p_1$ is detection for individuals in class 1, and $p_2$ that of individuals in class 2.
+
+Results
+
+```{r echo = FALSE}
+library(MCMCvis)
+load(here::here("dat","wolf_het.RData"))
+MCMCsummary(mcmc.phipmix, round = 2)
+```
+
+We have lowly detectable individuals (class A1 with $p_1$) in proportion 62%. And highly (or so) detectable individuals (class A2 with $p_2$) in proportion 38%. Note that interpretation of classes is made a posteriori. Survival is 81%.
+
+```{r, echo = FALSE}
+library(MCMCvis)
+load(here::here("dat","wolf_het.RData"))
+MCMCplot(mcmc.phipmix)
+```
+
+You may consider more classes, and select among models, see @cubaynes2012. You may also go for a non-parametric approach and let the data tell you how many classes you need. This is relatively easy to do in NIMBLE, see @turek_bayesian_2021. More about individual heterogeneity in @gimenez2018ih.
+
 ## Trap dep
 
 Multievent formulation à la @pradeltrapdep2012. Also add example w/ individual time-varying covariate. 
@@ -16,6 +158,464 @@ Multievent treatment à la @genovart2019.
 
 Multistate treatment as in @schaub2004te.
 
+Transition matrix:
+  
+$$
+  \begin{matrix}
+& \\
+\mathbf{\Gamma} =
+  \left ( \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \end{matrix} } \right .
+          \end{matrix}
+          \hspace{-1.2em}
+          \begin{matrix}
+          z_t=\text{in} & z_t=\text{out} & z_t=\text{D} \\ \hdashline
+          \phi (1-\psi_{\text{in} \rightarrow \text{out}}) & \phi \psi_{\text{in} \rightarrow \text{out}} & 1 - \phi\\
+          \phi \psi_{\text{out} \rightarrow \text{in}} & \phi (1-\psi_{\text{out} \rightarrow \text{in}}) & 1 - \phi\\
+          0 & 0 & 1
+          \end{matrix}
+          \hspace{-0.2em}
+          \begin{matrix}
+          & \\
+          \left . \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \end{matrix} } \right )
+\begin{matrix}
+z_{t-1}=\text{in} \\ z_{t-1}=\text{out} \\ z_{t-1}=\text{D}
+\end{matrix}
+\end{matrix}
+$$
+  
+Observation matrix:
+  
+$$
+  \begin{matrix}
+& \\
+\mathbf{\Omega} =
+  \left ( \vphantom{ \begin{matrix} 12 \\ 12 \end{matrix} } \right .
+          \end{matrix}
+          \hspace{-1.2em}
+          \begin{matrix}
+          y_t=0 & y_t=1 \\ \hdashline
+          1 - p & p\\
+          1 & 0\\
+          1 & 0
+          \end{matrix}
+          \hspace{-0.2em}
+          \begin{matrix}
+          & \\
+          \left . \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \end{matrix} } \right )
+\begin{matrix}
+z_{t}=\text{in} \\ z_{t}=\text{out} \\ z_{t}=\text{D}
+\end{matrix}
+\end{matrix}
+$$
+
+
 ## Memory model
 
-@rouan2009memory
+How to make your models remember? 
+
+So far, the dynamics of the states are first-order Makovian. The site where you will be depends only on the site where you are, and not on the sites you were previously. How to relax this assumption, and go second-order Markovian?
+  
+Memory models were initially proposed by @hestbeck1991estimates and @BrownieEtAl1993, then formulated as HMMs in @rouan2009memory. See also @cole2014.
+
+Remember HMM model for dispersal between 2 sites
+
+Transition matrix
+
+$$
+\begin{matrix}
+& \\
+\mathbf{\Gamma} =
+\left ( \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \end{matrix} } \right .
+\end{matrix}
+\hspace{-1.2em}
+\begin{matrix}
+z_t=A & z_t=B & z_t=D \\ \hdashline
+\phi_A (1-\psi_{AB}) & \phi_A \psi_{AB} & 1 - \phi_A\\
+\phi_B \psi_{BA} & \phi_B (1-\psi_{BA}) & 1 - \phi_B\\
+0 & 0 & 1
+\end{matrix}
+\hspace{-0.2em}
+\begin{matrix}
+& \\
+\left . \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \end{matrix} } \right )
+\begin{matrix}
+z_{t-1}=A \\ z_{t-1}=B \\ z_{t-1}=D
+\end{matrix}
+\end{matrix}
+$$
+
+Observation matrix
+
+$$
+\begin{matrix}
+& \\
+\mathbf{\Omega} =
+\left ( \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \end{matrix} } \right .
+\end{matrix}
+\hspace{-1.2em}
+\begin{matrix}
+y_t=0 & y_t=1 & y_t=2 \\ \hdashline
+1 - p_A & p_A & 0\\
+1 - p_B & 0 & p_B\\
+1 & 0 & 0
+\end{matrix}
+\hspace{-0.2em}
+\begin{matrix}
+& \\
+\left . \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \end{matrix} } \right )
+\begin{matrix}
+z_{t}=A \\ z_{t}=B \\ z_{t}=D
+\end{matrix}
+\end{matrix}
+$$
+
+HMM formulation of the memory model
+
+To keep track of the sites previously visited, the trick is to consider states as being pairs of sites occupied
+
++ States
++ AA is for alive in site A at $t$ and alive in site A at $t-1$
++ AB is for alive in site A at $t$ and alive in site B at $t-1$
++ BA is for alive in site B at $t$ and alive in site A at $t-1$
++ BB is for alive in site B at $t$ and alive in site B at $t-1$
++ D is for dead
+
++ Observations
++ 0 not captured
++ 1 captured at site A
++ 2 captured at site B
+
+Vector of initial state probabilities
+
+$$
+\begin{matrix}
+& \\
+\mathbf{\delta} =
+\left ( \vphantom{ \begin{matrix} 12 \end{matrix} } \right .
+\end{matrix}
+\hspace{-1.2em}
+\begin{matrix}
+z_t=AA & z_t=AB & z_t=BA & z_t=BB &z_t=D \\ \hdashline
+\pi_{AA} & \pi_{AB} & \pi_{BA} & \pi_{BB} & 0\\
+\end{matrix}
+\hspace{-0.2em}
+\begin{matrix}
+& \\
+\left . \vphantom{ \begin{matrix} 12 \end{matrix} } \right )
+\begin{matrix}
+\end{matrix}
+\end{matrix}
+$$
+
+where $\pi_{BB} = 1 - (\pi_{AA} + \pi_{AB} + \pi_{BA})$, and $\pi_{ij}$ at site $j$ when first captured at $t$ and site $i$ at $t - 1$.
+
+Transition matrix
+
+$$
+\begin{matrix}
+& \\
+\mathbf{\Gamma} =
+\left ( \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \\ 12 \\ 12\end{matrix} } \right .
+\end{matrix}
+\hspace{-1.2em}
+\begin{matrix}
+z_t=AA & z_t=AB & z_t=BA & z_t=BB & z_t=D \\ \hdashline
+\phi_{AAA} & \phi_{AAB} & 0 & 0 & 1 - \phi_{AAA} - \phi_{AAB}\\
+0 & 0 & \phi_{ABA} & \phi_{ABB} & 1 - \phi_{ABA} - \phi_{ABB}\\
+\phi_{BAA} & \phi_{BAB} & 0 & 0 & 1 - \phi_{BAA} - \phi_{BAB}\\
+0 & 0 & \phi_{BBA} & \phi_{BBB} & 1 - \phi_{BBA} - \phi_{BBB}\\
+0 & 0 & 0 & 0 & 1
+\end{matrix}
+\hspace{-0.2em}
+\begin{matrix}
+& \\
+\left . \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \\ 12 \\ 12\end{matrix} } \right )
+\begin{matrix}
+z_t=AA \\ z_t=AB \\ z_t=BA \\ z_t=BB \\ z_t=D
+\end{matrix}
+\end{matrix}
+$$
+
+$\phi_{ijk}$ is probability to be in site $k$ at time $t + 1$ for an individual
+present in site $j$ at $t$ and in site $i$ at $t - 1$
+
+Transition matrix, alternate parameterization
+
+$$
+\begin{matrix}
+& \\
+\mathbf{\Gamma} =
+\left ( \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \\ 12 \\ 12\end{matrix} } \right .
+\end{matrix}
+\hspace{-1.2em}
+\begin{matrix}
+z_t=AA & z_t=AB & z_t=BA & z_t=BB & z_t=D \\ \hdashline
+\phi \psi_{AAA} & \phi (1 - \psi_{AAA}) & 0 & 0 & 1 - \phi\\
+0 & 0 & \phi (1 - \psi_{ABB}) & \phi \psi_{ABB} & 1 - \phi\\
+\phi \psi_{BAA} & \phi (1 - \psi_{BAA}) & 0 & 0 & 1 - \phi\\
+0 & 0 & \phi (1-\psi_{BBB}) & \phi \psi_{BBB} & 1 - \phi\\
+0 & 0 & 0 & 0 & 1
+\end{matrix}
+\hspace{-0.2em}
+\begin{matrix}
+& \\
+\left . \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \\ 12 \\ 12\end{matrix} } \right )
+\begin{matrix}
+z_t=AA \\ z_t=AB \\ z_t=BA \\ z_t=BB \\ z_t=D
+\end{matrix}
+\end{matrix}
+$$
+
+$\phi$ is the probability of surviving from one occasion to the next. $\psi_{ijj}$ is the probability an animal stays at the same site $j$ given that it was at site $i$ on the previous occasion.
+
+Observation matrix
+
+$$
+\begin{matrix}
+& \\
+\mathbf{\Omega} =
+\left ( \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \\ 12 \\ 12\end{matrix} } \right .
+\end{matrix}
+\hspace{-1.2em}
+\begin{matrix}
+y_t=0 & y_t=1 & y_t=2 \\ \hdashline
+1 - p_A & p_A & 0\\
+1 - p_B & 0 & p_B\\
+1 - p_A & p_A & 0\\
+1 - p_B & 0 & p_B\\
+1 & 0 & 0
+\end{matrix}
+\hspace{-0.2em}
+\begin{matrix}
+& \\
+\left . \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \\ 12 \\ 12\end{matrix} } \right )
+\begin{matrix}
+z_t=AA \\ z_t=AB \\ z_t=BA \\ z_t=BB \\ z_t=D
+\end{matrix}
+\end{matrix}
+$$
+
+```{r eval = FALSE, echo = FALSE}
+library(tidyverse)
+library(nimble)
+geese <- read_csv(here::here("dat", "geese.csv"), col_names = TRUE)
+#geese <- read_csv2(here::here("slides", "dat", "allgeese.csv"), col_names = TRUE) %>%
+#  uncount(weights = `158`)
+
+y <- geese %>%
+  as.matrix()
+y2 <- y
+y2[y2==3] <- 0
+mask <- apply(y2, 1, sum)
+y <- y2[mask!=0,]
+dim(y)
+first <- apply(y, 1, function(x) min(which(x != 0)))
+
+# memory model
+
+# To fit a model in which the survival-transition probabilities 
+# depend of the two sites previously occupied we have to consider 
+# a specific set of states composed of all the couples of sites 
+# (sites occupied at times t-1 and t) plus the state “dead”. 
+
+
+# Obs = non-detection, detected in site 1, detected in site 2 = 1, 2, 3
+# States = couples of sites occupied: { 11, 12, 21, 22, dead } = {1 2 3 4 5}
+
+memory <- nimbleCode({
+  
+  # -------------------------------------------------
+  # Parameters:
+  # phi111: survival-mov probability from state 11 to state 11
+  # phi112: survival-mov probability from state 11 to state 12
+  # phi121: survival-mov probability from state 12 to state 21
+  # phi122: survival-mov probability from state 12 to state 22
+  # phi211: survival-mov probability from state 21 to state 11
+  # phi212: survival-mov probability from state 21 to state 12
+  # phi221: survival-mov probability from state 22 to state 21
+  # phi222: survival-mov probability from state 22 to state 22
+  # det1: detection probability site 1
+  # det2: detection probability site 2
+  # pi11: init stat prob 11
+  # pi12: init stat prob 12
+  # pi21: init stat prob 21
+  # pi22: init stat prob 22
+  # -------------------------------------------------
+  # States (S):
+  # 1 alive 11
+  # 2 alive 12
+  # 3 alive 21
+  # 4 alive 22
+  # 5 dead
+  # Observations (O):  
+  # 1 not seen
+  # 2 seen at site 1 
+  # 3 seen at site 2
+  # -------------------------------------------------
+  
+  # priors
+  pi[1:4] ~ ddirch(beta[1:4]) # pi11, pi12, pi21, pi22
+  det1 ~ dunif(0, 1)
+  det2 ~ dunif(0, 1)
+  phi11[1:3] ~ ddirch(alpha[1:3]) # phi111, phi112, 1-sum
+  phi12[1:3] ~ ddirch(alpha[1:3]) # phi121, phi122, 1-sum
+  phi21[1:3] ~ ddirch(alpha[1:3]) # phi211, phi212, 1-sum
+  phi22[1:3] ~ ddirch(alpha[1:3]) # phi221, phi222, 1-sum
+  
+  # probabilities of state z(t+1) given z(t)
+  gamma[1,1] <- phi11[1]
+  gamma[1,2] <- phi11[2]
+  gamma[1,3] <- 0
+  gamma[1,4] <- 0
+  gamma[1,5] <- phi11[3]
+  gamma[2,1] <- 0
+  gamma[2,2] <- 0
+  gamma[2,3] <- phi12[1]
+  gamma[2,4] <- phi12[2]
+  gamma[2,5] <- phi12[3]
+  gamma[3,1] <- phi21[1]
+  gamma[3,2] <- phi21[2]
+  gamma[3,3] <- 0
+  gamma[3,4] <- 0
+  gamma[3,5] <- phi21[3]
+  gamma[4,1] <- 0
+  gamma[4,2] <- 0
+  gamma[4,3] <- phi22[1]
+  gamma[4,4] <- phi22[2]
+  gamma[4,5] <- phi22[3]
+  gamma[5,1] <- 0
+  gamma[5,2] <- 0
+  gamma[5,3] <- 0
+  gamma[5,4] <- 0
+  gamma[5,5] <- 1
+  
+  delta[1] <- pi[1]
+  delta[2] <- pi[2]
+  delta[3] <- pi[3]
+  delta[4] <- pi[4]
+  delta[5] <- 0
+  
+  # probabilities of y(t) given z(t)
+  omega[1,1] <- 1 - det1
+  omega[1,2] <- det1
+  omega[1,3] <- 0
+  omega[2,1] <- 1 - det2
+  omega[2,2] <- 0
+  omega[2,3] <- det2
+  omega[3,1] <- 1 - det1
+  omega[3,2] <- det1
+  omega[3,3] <- 0
+  omega[4,1] <- 1 - det2
+  omega[4,2] <- 0
+  omega[4,3] <- det2
+  omega[5,1] <- 1
+  omega[5,2] <- 0
+  omega[5,3] <- 0
+  
+  omega.init[1,1] <- 0
+  omega.init[1,2] <- 1
+  omega.init[1,3] <- 0
+  omega.init[2,1] <- 0
+  omega.init[2,2] <- 0
+  omega.init[2,3] <- 1
+  omega.init[3,1] <- 0
+  omega.init[3,2] <- 1
+  omega.init[3,3] <- 0
+  omega.init[4,1] <- 0
+  omega.init[4,2] <- 0
+  omega.init[4,3] <- 1
+  omega.init[5,1] <- 1
+  omega.init[5,2] <- 0
+  omega.init[5,3] <- 0
+
+  # Likelihood 
+  for (i in 1:N){
+    # Define latent state at first capture
+    z[i,first[i]] ~ dcat(delta[1:5])
+    y[i,first[i]] ~ dcat(omega.init[z[i,first[i]],1:3])
+    for (t in (first[i]+1):K){
+      # State process: draw S(t) given S(t-1)
+      z[i,t] ~ dcat(gamma[z[i,t-1],1:5])
+      # Observation process: draw O(t) given S(t)
+      y[i,t] ~ dcat(omega[z[i,t],1:3])
+    }
+  }
+})
+
+
+# initial values for unknown z 
+# not optimal since it ignores impossible transitions in the surv-mov matrix
+zinit <- y
+for (i in 1:nrow(y)) {
+  for (j in 1:ncol(y)) {
+    if (j > first[i] & y[i,j]==0) {zinit[i,j] <- which(rmultinom(1, 1, c(1/4,1/4,1/4,1/4))==1)}
+    if (j > first[i] & y[i,j]==1) {zinit[i,j] <- which(rmultinom(1, 1, c(1/4,1/4,1/4,1/4))==1)}
+    if (j > first[i] & y[i,j]==2) {zinit[i,j] <- which(rmultinom(1, 1, c(1/4,1/4,1/4,1/4))==1)}
+#    if (j > first[i] & y[i,j]==1) {zinit[i,j] <- which(rmultinom(1, 1, c(1/2,0,1/2,0))==1)}
+#    if (j > first[i] & y[i,j]==2) {zinit[i,j] <- which(rmultinom(1, 1, c(0,1/2,0,1/2))==1)}
+    if (j < first[i]) {zinit[i,j] <- 0}
+  }
+}
+zinit <- as.matrix(zinit)
+
+# constants
+my.constants <- list(first = first, 
+                     K = ncol(y), 
+                     N = nrow(y))
+
+# Initial values
+initial.values <- function(){list(phi11 = rdirch(1, rep(1,3)), 
+                                  phi12 = rdirch(1, rep(1,3)), 
+                                  phi21 = rdirch(1, rep(1,3)), 
+                                  phi22 = rdirch(1, rep(1,3)),
+                                  det1 = runif(1, 0, 1), 
+                                  det2 = runif(1, 0, 1), 
+                                  pi = rdirch(1, rep(1,4)),
+                                  z = zinit)}  
+
+# data
+my.data <- list(y = y + 1,
+                alpha = rep(1,3),
+                beta = rep(1,4))
+
+# MCMC settings
+parameters.to.save <- c("phi11", "phi12","phi21", "phi22", "det1", "det2", "pi")
+n.iter <- 5000
+n.burnin <- 2500
+n.chains <- 2
+
+mcmc.memory <- nimbleMCMC(code = memory,
+                          constants = my.constants,
+                          data = my.data,
+                          inits = initial.values,
+                          monitors = parameters.to.save,
+                          niter = n.iter,
+                          nburnin = n.burnin,
+                          nchains = n.chains)
+
+save(mcmc.memory, file = "dat/memory.RData")
+library(MCMCvis)
+MCMCsummary(mcmc.memory, round = 2)
+MCMCplot(mcmc.memory)
+MCMCtrace(mcmc.memory, params = c("det1","det2"), pdf = FALSE)
+
+## PROBLEM: p1 and p2 seem to be updated, but Rhat  = Inf and neff = 0; 
+# inspecting their posterior distribution
+## it feels like they are not updated, two modes corresp to the two chains. 
+# Usually, it means that these parameters are not used in the model.
+
+# Need to amend the way I simulate initial values!! 
+# If z not needed, use weighted marginaled likelihood? And whole dataset!!
+
+hmm.phip <- nimbleModel(code = memory,
+                        constants = my.constants,
+                        data = my.data,
+                        inits = initial.values())
+phip.mcmc <- buildMCMC(hmm.phip)
+phip.model <- compileNimble(hmm.phip) 
+c.phip.mcmc <- compileNimble(phip.mcmc, project = phip.model)
+c.phip.mcmc$run(10000)
+samples <- as.matrix(c.phip.mcmc$mvSamples)
+summary(samples[,"det1"])
+```
+

@@ -12,17 +12,316 @@
 
 @ConnCooch2009, @cooch2012disease, @MarescotEtAl2018 and @santoro_multi-event_2014.
 
+Let's have a look to another example. Very similar to the previous example. We consider a system of an emerging pathogen *Mycoplasma gallisepticum* Edward and Kanarek and its host the house finch, *Carpodacus mexicanus* Müller.
+
+```{r pixfinch, echo=FALSE, fig.cap="A house finch with a heavy infection (Jim Mondok).", fig.align='center'}
+knitr::include_graphics("images/infectedhousefinch.jpg")
+```
+
+
+We consider a system of an emerging pathogen *Mycoplasma gallisepticum* Edward and Kanarek and its host the house finch, *Carpodacus mexicanus* Müller. [Faustino et al. (2004)](https://besjournals.onlinelibrary.wiley.com/doi/10.1111/j.0021-8790.2004.00840.x) and [Conn & Cooch (2009)](https://besjournals.onlinelibrary.wiley.com/doi/full/10.1111/j.1365-2664.2008.01597.x) studied impact of pathogen on host demographic rates. Problem is true disease state for some encountered individuals is ambiguous because seen at distance. In this context, how to study the dynamics of the disease?
+
+States and observations
+
++ 3 states
+    + healthy (H)
+    + ill (I)
+    + dead (D)
+
++ 4 observations
+    + not seen (0)
+    + captured healthy (1)
+    + captured ill (2)
+    + health status unknown, i.e. seen at distance (3)
+
+How states generate observations.
+
+```{r, echo = FALSE}
+ggplot() +
+  geom_point(aes(1, 1), size = 2.5, alpha = .7) +
+  geom_point(aes(1, 1.5), size = 2.5, alpha = .7) +
+  geom_point(aes(1, 2), size = 2.5, alpha = .7) +
+  geom_text(aes(1.5, 2, label = 'not seen (0)'), nudge_x = 1.2, size = 7) +
+  geom_text(aes(1.5, 1.5, label = 'captured healthy (1)'), nudge_x = 1.5, size = 7) +
+  geom_text(aes(1.5, 1, label = 'captured ill (2)'), nudge_x = 1.3, size = 7) +
+  geom_text(aes(1.5, 0.5, label = 'status unknown (3)'), nudge_x = 1.5, size = 7) +
+  geom_point(aes(2, 0.5), size = 2.5, alpha = .7) +
+  geom_point(aes(2, 1), size = 2.5, alpha = .7) +
+  geom_point(aes(2, 1.5), size = 2.5, alpha = .7) +
+  geom_point(aes(2, 2), size = 2.5, alpha = .7) +
+  geom_text(aes(.5, 2, label = 'healthy'), nudge_x = 0, size = 7) +
+  geom_text(aes(.5, 1.5, label = 'ill'), nudge_x = 0.2, size = 7) +
+  geom_text(aes(.5, 1, label = 'dead'), nudge_x = 0.1, size = 7) +
+  xlim(0, 4.5) +
+  ylim(0.5, 3) +
+  annotate('text', x = .5, y = 2.6, label = 'States', size = 10) +
+  annotate('text', x = 2.7, y = 2.6, label = 'Observations', size = 10) +
+
+  geom_segment(aes(x = 1, y = 1, xend = 2, yend = 2), alpha = 0.7, arrow = arrow(length = unit(0.02, "npc"))) +
+
+  geom_segment(aes(x = 1, y = 1.5, xend = 2, yend = 1), lty = 2, alpha = 0.7, arrow = arrow(length = unit(0.02, "npc"))) +
+  geom_segment(aes(x = 1, y = 1.5, xend = 2, yend = 2), lty = 2, alpha = 0.7, arrow = arrow(length = unit(0.02, "npc"))) +
+  geom_segment(aes(x = 1, y = 1.5, xend = 2, yend = .5), lty = 2, alpha = 0.7, arrow = arrow(length = unit(0.02, "npc"))) +
+
+  geom_segment(aes(x = 1, y = 2, xend = 2, yend = .5), lty = 2, alpha = 0.7, arrow = arrow(length = unit(0.02, "npc"))) +
+  geom_segment(aes(x = 1, y = 2, xend = 2, yend = 1.5), lty = 2, alpha = 0.7, arrow = arrow(length = unit(0.02, "npc"))) +
+  geom_segment(aes(x = 1, y = 2, xend = 2, yend = 2), lty = 2, alpha = 0.7, arrow = arrow(length = unit(0.02, "npc"))) +
+
+  theme_void()
+```
+
+Vector of initial state probabilities
+
+$$
+\begin{matrix}
+& \\
+\mathbf{\delta} =
+    \left ( \vphantom{ \begin{matrix} 12 \end{matrix} } \right .
+\end{matrix}
+\hspace{-1.2em}
+\begin{matrix}
+    z_t=H & z_t=I & z_t=D \\ \hdashline
+\pi_H & 1 - \pi_{H} & 0\\
+\end{matrix}
+\hspace{-0.2em}
+\begin{matrix}
+& \\
+\left . \vphantom{ \begin{matrix} 12 \end{matrix} } \right )
+    \begin{matrix}
+    \end{matrix}
+\end{matrix}
+$$
+
+$\pi_H$ is the probability that a newly encountered individual is healthy. $\pi_{I} = 1 - \pi_H$ is the probability that a newly encountered individual is ill.
+
+Transition matrix
+
+$$
+\begin{matrix}
+& \\
+\mathbf{\Gamma} =
+    \left ( \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \end{matrix} } \right .
+\end{matrix}
+\hspace{-1.2em}
+\begin{matrix}
+    z_t=H & z_t=I & z_t=D \\ \hdashline
+\phi_H (1-\psi_{HI}) & \phi_H \psi_{HI} & 1 - \phi_H\\
+\phi_{I} \psi_{IH} & \phi_{I} (1-\psi_{IH}) & 1 - \phi_{I}\\
+0 & 0 & 1
+\end{matrix}
+\hspace{-0.2em}
+\begin{matrix}
+& \\
+\left . \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \end{matrix} } \right )
+    \begin{matrix}
+    z_{t-1}=H \\ z_{t-1}=I \\ z_{t-1}=D
+    \end{matrix}
+\end{matrix}
+$$
+
+$\phi_H$ is the survival probability of healthy individuals, $\phi_I$ that of ill individuals. $\psi_{HI}$ is the probability of getting sick, $\psi_{IH}$ that of recovering from the disease.
+
+Transition matrix, incurable disease
+
+$$
+\begin{matrix}
+& \\
+\mathbf{\Gamma} =
+    \left ( \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \end{matrix} } \right .
+\end{matrix}
+\hspace{-1.2em}
+\begin{matrix}
+    z_t=H & z_t=I & z_t=D \\ \hdashline
+\phi_H (1-\psi_{HI}) & \phi_H \psi_{HI} & 1 - \phi_H\\
+0 & \phi_{I}  & 1 - \phi_{I}\\
+0 & 0 & 1
+\end{matrix}
+\hspace{-0.2em}
+\begin{matrix}
+& \\
+\left . \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \end{matrix} } \right )
+    \begin{matrix}
+    z_{t-1}=H \\ z_{t-1}=I \\ z_{t-1}=D
+    \end{matrix}
+\end{matrix}
+$$
+
+No possibility of recovering from the disease, that is $\psi_{IH} = 0$. Once you get sick, you remain sick $\psi_{II} = 1 - \psi_{IH} = 1$. For analysing the house finch data, we allow recovering from the disease, and we will use transition matrix from previous slide.
+
+Observation matrix
+
+$$
+\begin{matrix}
+& \\
+\mathbf{\Omega} =
+    \left ( \vphantom{ \begin{matrix} 12 \\ 12 \\ 12\end{matrix} } \right .
+\end{matrix}
+\hspace{-1.2em}
+\begin{matrix}
+    y_t=0 & y_t=1 & y_t=2 & y_t=3\\ \hdashline
+1-p_H & p_H \beta_H & 0 & p_H (1-\beta_H)\\
+1-p_I & 0 & p_{I} \beta_{I} & p_{I} (1-\beta_{I})\\
+1 & 0 & 0 & 0
+\end{matrix}
+\hspace{-0.2em}
+\begin{matrix}
+& \\
+\left . \vphantom{ \begin{matrix} 12 \\ 12 \\ 12\end{matrix} } \right )
+    \begin{matrix}
+    z_{t}=H \\ z_{t}=I \\ z_{t}=D
+    \end{matrix}
+\end{matrix}
+$$
+
+$\beta_H$ is the probability to assign a healthy individual to state H. $\beta_{I}$ is the probability to assign a sick individual to state I. $p_H$ is the detection probability of healthy individuals, $p_I$ that of sick individuals.
+
+Results
+
+```{r echo = FALSE}
+library(MCMCvis)
+load(here::here("dat","disease.RData"))
+MCMCsummary(out, round = 2)
+```
+
+Healthy individuals are correctly assigned, while infected individuals are difficult to ascertain. Sounds like being infected has an effect on detection and survival. Run models without effects and compare with WAIC for formal testing. Infection rate is 22%, recovery rate is 46%.
+
+```{r, echo = FALSE}
+library(MCMCvis)
+load(here::here("dat","disease.RData"))
+MCMCplot(out)
+```
+
 ## Combine live captures and dead recoveries
 
 Combine live recapture w/ dead recoveries by @lebreton1999.
+
+Transition matrix
+
+$$
+\begin{matrix}
+& \\
+\mathbf{\Gamma} =
+  \left ( \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \end{matrix} } \right .
+          \end{matrix}
+          \hspace{-1.2em}
+          \begin{matrix}
+          z_t=A & z_t=JD & z_t=D \\ \hdashline
+          s & 1-s & 0\\
+          0 & 0 & 1\\
+          0 & 0 & 1
+          \end{matrix}
+          \hspace{-0.2em}
+          \begin{matrix}
+          & \\
+          \left . \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \end{matrix} } \right )
+\begin{matrix}
+z_{t-1}=\text{alive} \\ z_{t-1}=\text{just dead} \\ z_{t-1}=\text{dead for good}
+\end{matrix}
+\end{matrix}
+$$
+  
+Observation matrix
+
+$$
+\begin{matrix}
+& \\
+\mathbf{\Omega} =
+  \left ( \vphantom{ \begin{matrix} 12 \\ 12 \\ 12\end{matrix} } \right .
+          \end{matrix}
+          \hspace{-1.2em}
+          \begin{matrix}
+          y_t=0 & y_t=1 & y_t=2 \\ \hdashline
+          1 - p & 0 & p\\
+          1 - r & r & 0\\
+          1 & 0 & 0
+          \end{matrix}
+          \hspace{-0.2em}
+          \begin{matrix}
+          & \\
+          \left . \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \end{matrix} } \right )
+\begin{matrix}
+z_{t}=A \\ z_{t}=JD \\ z_{t}=D
+\end{matrix}
+\end{matrix}
+$$
+
 
 ##  Stopover duration
 
 @guerin_advances_2017
 
-## Prior info
+## Why Bayes? Incorporate prior information
 
 The example on how to incorporate prior information is in @mccarthy2005.
+
+So far, we have assumed a non-informative prior on survival $\text{Beta}(1,1) = \text{Uniform}(0,1)$. With this prior, mean posterior survival is $\phi = 0.56$ with credible interval $[0.52,0.62]$. Graphically we may represent the posterior distribution of survival obtained with two chains with different colors, and our prior in gray dashed line:
+
+```{r, echo = FALSE}
+load(here::here("dat","dipper.RData"))
+PR <- runif(1500, 0, 1)
+MCMCtrace(mcmc.phip,
+          params = c('phi'),
+          ISB = FALSE,
+          exact = TRUE,
+          priors = PR,
+          pdf = FALSE,
+          Rhat = FALSE,
+          n.eff = FALSE,
+          #          post_zm = TRUE,
+          sz_txt = NULL,
+          ind = TRUE,
+          type = "density",
+          lwd_den = 3,
+          lwd_pr = 3,
+          col_pr = "gray70",
+          lty_pr = 2,
+          main_den = "",
+          xlab_den = "survival")
+```
+
+### Prior elicitation
+
+The thing is that we know a lot about passerines and it is a shame not to be able to use this information and act as if we have to start from scratch and know nothing. We illustrate how to incorporate prior information by acknowledging that species with similar body masses have similar survival. By gathering information on several other European passerines than the dipper, let's assume we have built a regression of survival vs. body mass -- allometric relationship. Knowing dippers weigh on average 59.8g, we're now in the position to build a prior for dipper survival probability by predicting its value using the regression. We obtain a predicted survival of 0.57 and a standard deviation of 0.075. Using an informative prior $\text{Normal}(0.57, sd = 0.073)$ in NIMBLE, we get a mean posterior of $0.56$ with credible interval $[0.52, 0.61]$. There's barely no difference with the non-informative prior, quite a disappointment. 
+
+Now let's assume that we had only the three first years of data, what would have happened? We fit the model with constant parameters with both the non-informative and informative priors to the dataset from which we delete the final 4 years of data. Now the benefit of using the prior information becomes clear as the credible interval when prior information is ignored has a width of 0.53, which is more than twice as much as when prior information is used (0.24), illustrating the increased precision provided by the prior. We may assess visually this gain in precision by comparing the survival posterior distributions with and without informative prior:
+  
+```{r, echo = FALSE}
+load(here::here("dat","phip3y.RData"))
+phinoprior <- c(mcmc.phip$chain1[,"phi"], mcmc.phip$chain2[,"phi"])
+load(here::here("dat","phipriorp3y.RData"))
+phiprior <- c(mcmc.phip$chain1[,"phi"], mcmc.phip$chain2[,"phi"])
+df <- data.frame(posterior = c(phinoprior, phiprior),
+                 type = c(rep("w/ vague prior", length(phinoprior)),
+                          rep("w/ informative prior", length(phiprior))))
+df %>%
+  ggplot() +
+  aes(x = posterior, fill = type) +
+  geom_density(aes(y = ..density..),
+               bins = 40,
+               color = "white",
+               alpha = 0.6) +
+  labs(x = "survival", fill = "") +
+  scale_fill_manual(values = wesanderson::wes_palette("Royal1")[2:1])
+```
+
+In brief, if the aim is to get an estimate of survival, Gilbert did not have to conduct further data collection after 3 years, and he could have reached the same precision as with 7 years of data by using prior information derived from body mass. In brief, the prior information was worth 4 years of field data. Of course, this is assuming that the ecological question remains the same whether you have 3 or 7 years of data, which is unlikely to be the case, as with long-term data, there is so much we can ask, more than "just" what annual survival probability is. 
+
+### Moment matching
+
+The prior $\text{Normal}(0.57, sd = 0.073)$ is not entirely satisfying because it is not constrained to be positive or less than one, which is the minimum for a probability (of survival) to be well defined. In our specific example, the prior distribution is centered on positive values far from 0, and the sandard deviation is small enough so that the chances to get values smaller than 0 or higher than 1 are null (to convince yourself, `hist(rnorm(1000, mean = 0.57, sd = 0.073))`). Can we do better? The answer is yes. 
+
+Remember the Beta distribution? Recall that the Beta distribution is a continuous distribution with values between 0 and 1. It is therefore convenient to specify priors for survival and detection probabilities. Plus we know everything about the Beta distribution, in particular its moments. If $X \sim Beta(\alpha,\beta)$, then the first (mean) and second moments (variance) of $X$ are $\mu = \text{E}(X) = \frac{\alpha}{\alpha + \beta}$ and $\sigma^2 = \text{Var}(X) = \frac{\alpha\beta}{(\alpha + \beta)^2 (\alpha + \beta + 1)}$. 
+
+In the capture-recapture example, we know a priori that the mean of the probability we're interested in is $\mu = 0.57$ and its variance is $\sigma^2 = 0.073^2$. Parameters $\mu$ and $\sigma^2$ are seen as the moments of a $Beta(\alpha,\beta)$ distribution. Now we look for values of $\alpha$ and $\beta$ that match the observed moments of the Beta distribution $\mu$ and $\sigma^2$. We need another set of equations:
+$$\alpha = \bigg(\frac{1-\mu}{\sigma^2}- \frac{1}{\mu} \bigg)\mu^2$$
+$$\beta = \alpha \bigg(\frac{1}{\mu}-1\bigg)$$
+For our model, that means:
+```{r echo = TRUE}
+(alpha <- ( (1 - 0.57)/(0.073*0.073) - (1/0.57) )*0.57^2)
+(beta <- alpha * ( (1/0.57) - 1))
+```
+
+Now we simply have to use $\text{Beta}(\alpha = 25.6,\beta = 19.3)$ as a prior instead of our $\text{Normal}(0.57, sd = 0.073)$. 
 
 ## Posterior predictive check
 
