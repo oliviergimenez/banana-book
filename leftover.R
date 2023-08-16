@@ -1,3 +1,54 @@
+#---------------------------- Dirichelt
+
+```{r dirichlet, echo = FALSE, fig.cap = "Dirichlet prior with parameter alpha"}
+library(gtools) # to make the rdirichlet() function available
+library(ggtern) # to visually represent multidim prob distribution 
+set.seed(123)
+n <- 500
+alpha1 <- c(1, 1, 1)
+p1 <- gtools::rdirichlet(n, alpha1)
+alpha2 <- c(5, 5, 5)
+p2 <- rdirichlet(n, alpha2)
+alpha3 <- c(1, 2, 2)
+p3 <- rdirichlet(n, alpha3)
+alpha4 <- c(2, 4, 8)
+p4 <- rdirichlet(n, alpha4)
+df <- cbind(rbind(p1, p2, p3, p4), c(rep("alpha = c(1, 1, 1)", n),
+                                     rep("alpha = c(5, 5, 5)", n),
+                                     rep("alpha = c(1, 2, 2)", n),
+                                     rep("alpha = c(2, 4, 8)", n))) %>%
+  as_tibble() %>%
+  mutate(x = as.numeric(V1),
+         y = as.numeric(V2),
+         z = as.numeric(V3),
+         alpha = V4)
+
+df %>%
+  ggtern(aes(x = x, y = y, z = z)) +
+  stat_density_tern(aes(fill=..level.., alpha=..level..),
+                    geom = 'polygon',
+                    bdl = 0.005) + # a 2D kernel density estimation of the distribution
+  scale_fill_viridis_b() +
+  #  geom_point(alpha = 0.3, pch = "+") +
+  theme_light(base_size = 14) +
+  #  theme_showarrows() +
+  #  scale_T_continuous(breaks = seq(0, 1, by = 0.2),
+  #                     labels = seq(0, 1, by = 0.2)) +
+  #  scale_L_continuous(breaks = seq(0, 1, by = 0.2),
+  #                     labels = seq(0, 1, by = 0.2)) +
+  #  scale_R_continuous(breaks = seq(0, 1, by = 0.2),
+  #                     labels = seq(0, 1, by = 0.2)) +
+  #  labs(x = "",
+  #       y = "",
+  #       z = "",
+  #       Tarrow = "psiAA",
+#       Larrow = "psiAB",
+#       Rarrow = "psiAC") +
+guides(color = "none", fill = "none", alpha = "none") +
+  facet_wrap(~alpha)
+```
+
+
 #------------------------------ AS model
 
 ```{r, echo = FALSE}
