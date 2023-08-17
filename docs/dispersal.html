@@ -113,16 +113,42 @@
 <span class="header-section-number">5.2</span> The Arnason-Schwarz (AS) model<a class="anchor" aria-label="anchor" href="#ASmodel"><i class="fas fa-link"></i></a>
 </h2>
 <p>In Chapter <a href="survival.html#survival">4</a>, we got acquainted with Cormack-Jolly-Seber (CJS) model which accommodates transitions between the states alive and dead while accounting for imperfect detection. It is often the case that besides being alive, more detailed information is collected on the state of animals when they are detected. For example, if the study area is split into several discrete sites, you may record where an animal is detected, the state being now alive in this particular site. The Arnason-Schwarz (AS) model can be viewed as an extension to the CJS model in which we estimate movements between sites on top of survival. The AS model is named after the two statisticians – Neil Arnason and Carl Schwarz – who came up with the idea.</p>
+<div id="theory" class="section level3" number="5.2.1">
+<h3>
+<span class="header-section-number">5.2.1</span> Theory<a class="anchor" aria-label="anchor" href="#theory"><i class="fas fa-link"></i></a>
+</h3>
 <p>Let’s assume for now that we have two sites, say A and B. The way we usually think of analyzing the data is to start from the detections and non-detections and infer the transitions between sites and movements. Schematically, when a bird is detected in site A or site B, it obviously means that it is alive in that site, whereas when it is not detected, it may be dead or alive in either site. Schematically, we have:</p>
 <div class="inline-figure"><img src="banana-book_files/figure-html/unnamed-chunk-280-1.png" width="672"></div>
 <p>Therefore observations and states are indeed closely related, but not entirely, and the HMM framework will help you make the distinction clear, which in turn will make the modelling easier. When we are to build the model, we should think the other way around, and think of the states as generating the observations. When a bird is alive in either site, it may get detected in that site or go undetected. When a bird is dead, then it goes undetected for sure. Schematically, we obtain:</p>
 <div class="inline-figure"><img src="banana-book_files/figure-html/unnamed-chunk-281-1.png" width="672"></div>
-<p>We have <span class="math inline">\(z = 1\)</span> for alive in site A, <span class="math inline">\(z = 2\)</span> for alive in site B and <span class="math inline">\(z = 3\)</span> for dead. We will code <span class="math inline">\(y = 1\)</span> for non-detected, <span class="math inline">\(y = 2\)</span> for detected in site A and <span class="math inline">\(y = 3\)</span> for detected is site B. The parameters are:<br>
+<p>We have <span class="math inline">\(z = 1\)</span> for alive in site A, <span class="math inline">\(z = 2\)</span> for alive in site B and <span class="math inline">\(z = 3\)</span> for dead. We will code <span class="math inline">\(y = 1\)</span> for non-detected, <span class="math inline">\(y = 2\)</span> for detected in site A and <span class="math inline">\(y = 3\)</span> for detected is site B. The parameters are:
+- <span class="math inline">\(\pi^r\)</span> is the probability the a newly encountered individual is in state <span class="math inline">\(r\)</span>;
 - <span class="math inline">\(p_t^r\)</span> is the probability of detection at <span class="math inline">\(t\)</span> for a bird in site <span class="math inline">\(r\)</span> at <span class="math inline">\(t\)</span>;<br>
 - <span class="math inline">\(\phi_t^r\)</span> is the survival probability for birds in site <span class="math inline">\(r\)</span> at between <span class="math inline">\(t\)</span> and <span class="math inline">\(t+1\)</span>;<br>
 - <span class="math inline">\(\psi_t^{rs}\)</span> is the probability of being in site <span class="math inline">\(s\)</span> at time <span class="math inline">\(t+1\)</span> for animals that were in site <span class="math inline">\(r\)</span> at <span class="math inline">\(t\)</span> and have survived to <span class="math inline">\(t+1\)</span>, in short movement conditional on survival.</p>
 <p><strong>Add HMM representation? Make link with observations and latent states. I’m hesitating between using letters for states, which is probably more intuitive, or numbers which would be more rigorous.</strong></p>
-<p>Transition matrix</p>
+<p>We drop the time index.</p>
+<p>Vector of initial states. <strong>Explain.</strong></p>
+<p><span class="math display">\[
+\begin{matrix}
+&amp; \\
+\mathbf{\delta} =
+    \left ( \vphantom{ \begin{matrix} 12 \end{matrix} } \right .
+\end{matrix}
+\hspace{-1.2em}
+\begin{matrix}
+    z_t=A &amp; z_t=B &amp; z_t=D \\ \hdashline
+\pi^A &amp; 1 - \pi^{A} &amp; 0\\
+\end{matrix}
+\hspace{-0.2em}
+\begin{matrix}
+&amp; \\
+\left . \vphantom{ \begin{matrix} 12 \end{matrix} } \right )
+    \begin{matrix}
+    \end{matrix}
+\end{matrix}
+\]</span></p>
+<p>Transition matrix. <strong>Explain.</strong></p>
 <p><span class="math display">\[
 \begin{matrix}
 &amp; \\
@@ -132,8 +158,8 @@
 \hspace{-1.2em}
 \begin{matrix}
     z_{t}=A &amp; z_{t}=B &amp; z_{t}=D \\ \hdashline
-\phi_A (1-\psi_{AB}) &amp; \phi_A \psi_{AB} &amp; 1 - \phi_A\\
-\phi_B \psi_{BA} &amp; \phi_B (1-\psi_{BA}) &amp; 1 - \phi_B\\
+\phi^A (1-\psi^{AB}) &amp; \phi^A \psi^{AB} &amp; 1 - \phi^A\\
+\phi^B \psi^{BA} &amp; \phi^B (1-\psi^{BA}) &amp; 1 - \phi^B\\
 0 &amp; 0 &amp; 1
 \end{matrix}
 \hspace{-0.2em}
@@ -145,7 +171,7 @@
     \end{matrix}
 \end{matrix}
 \]</span></p>
-<p>Observation matrix</p>
+<p>Observation matrix. <strong>Explain.</strong></p>
 <p><span class="math display">\[
 \begin{matrix}
 &amp; \\
@@ -155,8 +181,8 @@
 \hspace{-1.2em}
 \begin{matrix}
     y_t=0 &amp; y_t=1 &amp; y_t=2 \\ \hdashline
-1 - p_A &amp; p_A &amp; 0\\
-1 - p_B &amp; 0 &amp; p_B\\
+1 - p^A &amp; p^A &amp; 0\\
+1 - p^B &amp; 0 &amp; p^B\\
 1 &amp; 0 &amp; 0
 \end{matrix}
 \hspace{-0.2em}
@@ -168,30 +194,29 @@
     \end{matrix}
 \end{matrix}
 \]</span></p>
-<p>Vector of initial states</p>
-<p><span class="math display">\[
-\begin{matrix}
-&amp; \\
-\mathbf{\delta} =
-    \left ( \vphantom{ \begin{matrix} 12 \end{matrix} } \right .
-\end{matrix}
-\hspace{-1.2em}
-\begin{matrix}
-    z_t=A &amp; z_t=B &amp; z_t=D \\ \hdashline
-\pi_A &amp; 1 - \pi_{A} &amp; 0\\
-\end{matrix}
-\hspace{-0.2em}
-\begin{matrix}
-&amp; \\
-\left . \vphantom{ \begin{matrix} 12 \end{matrix} } \right )
-    \begin{matrix}
-    \end{matrix}
-\end{matrix}
-\]</span></p>
+</div>
+<div id="gofas" class="section level3" number="5.2.2">
+<h3>
+<span class="header-section-number">5.2.2</span> Goodness of fit<a class="anchor" aria-label="anchor" href="#gofas"><i class="fas fa-link"></i></a>
+</h3>
+<p><strong>I’m missing a section on gof w/ R2ucare and posterior predictive checks/Bayesian p-values.</strong></p>
+<div class="sourceCode" id="cb244"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">geese.hist</span> <span class="op">&lt;-</span> <span class="va">geese</span><span class="op">$</span><span class="va">encounter_histories</span></span>
+<span><span class="va">geese.freq</span> <span class="op">&lt;-</span> <span class="va">geese</span><span class="op">$</span><span class="va">sample_size</span></span>
+<span><span class="fu"><a href="https://rdrr.io/pkg/R2ucare/man/test3Gsr.html">test3Gsr</a></span><span class="op">(</span><span class="va">geese.hist</span>, <span class="va">geese.freq</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/pkg/R2ucare/man/test3Gsm.html">test3Gsm</a></span><span class="op">(</span><span class="va">geese.hist</span>, <span class="va">geese.freq</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/pkg/R2ucare/man/test3Gwbwa.html">test3Gwbwa</a></span><span class="op">(</span><span class="va">geese.hist</span>, <span class="va">geese.freq</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/pkg/R2ucare/man/testMitec.html">testMitec</a></span><span class="op">(</span><span class="va">geese.hist</span>, <span class="va">geese.freq</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/pkg/R2ucare/man/testMltec.html">testMltec</a></span><span class="op">(</span><span class="va">geese.hist</span>, <span class="va">geese.freq</span><span class="op">)</span></span></code></pre></div>
+<p>All at once:</p>
+<div class="sourceCode" id="cb245"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/pkg/R2ucare/man/overall_JMV.html">overall_JMV</a></span><span class="op">(</span><span class="va">geese.hist</span>, <span class="va">geese.freq</span><span class="op">)</span></span></code></pre></div>
+<p><strong>Refer to case study for posterior predictive check, and how to account for memory. If trap-dependence or transience is significant, you may account for these lacks of fit as in the Cormack-Jolly-Seber model example. If there are signs of a memory effect, it gets a bit trickier but you may fit a model to account for this issue. Check our Animal Biodiversity paper for more.</strong></p>
+</div>
 </div>
 <div id="ASmodelfitting" class="section level2" number="5.3">
 <h2>
-<span class="header-section-number">5.3</span> Fitting the AS model to data<a class="anchor" aria-label="anchor" href="#ASmodelfitting"><i class="fas fa-link"></i></a>
+<span class="header-section-number">5.3</span> Fitting the AS model<a class="anchor" aria-label="anchor" href="#ASmodelfitting"><i class="fas fa-link"></i></a>
 </h2>
 <div id="geese-data" class="section level3" number="5.3.1">
 <h3>
@@ -10235,81 +10260,81 @@ year_1989
 <!-- Note: You may code non-detections as $y_t = 2$, and the first column in the observation matrix should go last. -->
 <!-- Quick answer about the -1 and the important issue of coding states and obs. I did this on purpose, to have folks think about the difference between observations and states (non-detection obs should not be confused with state for dead). This becomes even more crucial when we get to multievent models where several observations may be generated by a single state. I get the intuition argument perfectly, but I’d like them to fight against it at first, then once they’re comfortable with the difference, they may code obs/states as they see fit. Let’s see how it goes. I agree that we should mention that during the multistate lecture, in the spirit of « you’re free to code states and jobs the way you like ». I’ll add something. -->
 <p>We start with comments to define the quantities – parameters, states and observations – we will use in the NIMBLE code:</p>
-<div class="sourceCode" id="cb244"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb244-1"><a href="dispersal.html#cb244-1" tabindex="-1"></a>multisite <span class="ot">&lt;-</span> <span class="fu">nimbleCode</span>({</span>
-<span id="cb244-2"><a href="dispersal.html#cb244-2" tabindex="-1"></a>  <span class="co"># -------------------------------------------------</span></span>
-<span id="cb244-3"><a href="dispersal.html#cb244-3" tabindex="-1"></a>  <span class="co"># Parameters:</span></span>
-<span id="cb244-4"><a href="dispersal.html#cb244-4" tabindex="-1"></a>  <span class="co"># phiA: survival probability site A</span></span>
-<span id="cb244-5"><a href="dispersal.html#cb244-5" tabindex="-1"></a>  <span class="co"># phiB: survival probability site B</span></span>
-<span id="cb244-6"><a href="dispersal.html#cb244-6" tabindex="-1"></a>  <span class="co"># psiAB: movement probability from site A to site B</span></span>
-<span id="cb244-7"><a href="dispersal.html#cb244-7" tabindex="-1"></a>  <span class="co"># psiBA: movement probability from site B to site A</span></span>
-<span id="cb244-8"><a href="dispersal.html#cb244-8" tabindex="-1"></a>  <span class="co"># pA: recapture probability site A</span></span>
-<span id="cb244-9"><a href="dispersal.html#cb244-9" tabindex="-1"></a>  <span class="co"># pB: recapture probability site B</span></span>
-<span id="cb244-10"><a href="dispersal.html#cb244-10" tabindex="-1"></a>  <span class="co"># -------------------------------------------------</span></span>
-<span id="cb244-11"><a href="dispersal.html#cb244-11" tabindex="-1"></a>  <span class="co"># States (z):</span></span>
-<span id="cb244-12"><a href="dispersal.html#cb244-12" tabindex="-1"></a>  <span class="co"># 1 alive at A</span></span>
-<span id="cb244-13"><a href="dispersal.html#cb244-13" tabindex="-1"></a>  <span class="co"># 2 alive at B</span></span>
-<span id="cb244-14"><a href="dispersal.html#cb244-14" tabindex="-1"></a>  <span class="co"># 3 dead</span></span>
-<span id="cb244-15"><a href="dispersal.html#cb244-15" tabindex="-1"></a>  <span class="co"># Observations (y):</span></span>
-<span id="cb244-16"><a href="dispersal.html#cb244-16" tabindex="-1"></a>  <span class="co"># 1 not seen</span></span>
-<span id="cb244-17"><a href="dispersal.html#cb244-17" tabindex="-1"></a>  <span class="co"># 2 seen at A</span></span>
-<span id="cb244-18"><a href="dispersal.html#cb244-18" tabindex="-1"></a>  <span class="co"># 3 seen at B</span></span>
-<span id="cb244-19"><a href="dispersal.html#cb244-19" tabindex="-1"></a>  <span class="co"># -------------------------------------------------</span></span>
-<span id="cb244-20"><a href="dispersal.html#cb244-20" tabindex="-1"></a>...</span></code></pre></div>
-<p>The we specify priors for the survival, transition and detection probabilities:</p>
-<div class="sourceCode" id="cb245"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb245-1"><a href="dispersal.html#cb245-1" tabindex="-1"></a>multisite <span class="ot">&lt;-</span> <span class="fu">nimbleCode</span>({</span>
-<span id="cb245-2"><a href="dispersal.html#cb245-2" tabindex="-1"></a>...</span>
-<span id="cb245-3"><a href="dispersal.html#cb245-3" tabindex="-1"></a>  <span class="co"># Priors</span></span>
-<span id="cb245-4"><a href="dispersal.html#cb245-4" tabindex="-1"></a>  phiA <span class="sc">~</span> <span class="fu">dunif</span>(<span class="dv">0</span>, <span class="dv">1</span>)</span>
-<span id="cb245-5"><a href="dispersal.html#cb245-5" tabindex="-1"></a>  phiB <span class="sc">~</span> <span class="fu">dunif</span>(<span class="dv">0</span>, <span class="dv">1</span>)</span>
-<span id="cb245-6"><a href="dispersal.html#cb245-6" tabindex="-1"></a>  psiAB <span class="sc">~</span> <span class="fu">dunif</span>(<span class="dv">0</span>, <span class="dv">1</span>)</span>
-<span id="cb245-7"><a href="dispersal.html#cb245-7" tabindex="-1"></a>  psiBA <span class="sc">~</span> <span class="fu">dunif</span>(<span class="dv">0</span>, <span class="dv">1</span>)</span>
-<span id="cb245-8"><a href="dispersal.html#cb245-8" tabindex="-1"></a>  pA <span class="sc">~</span> <span class="fu">dunif</span>(<span class="dv">0</span>, <span class="dv">1</span>)</span>
-<span id="cb245-9"><a href="dispersal.html#cb245-9" tabindex="-1"></a>  pB <span class="sc">~</span> <span class="fu">dunif</span>(<span class="dv">0</span>, <span class="dv">1</span>)</span>
-<span id="cb245-10"><a href="dispersal.html#cb245-10" tabindex="-1"></a>...</span></code></pre></div>
-<p>We now write the vector of initial state probabilities:</p>
 <div class="sourceCode" id="cb246"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb246-1"><a href="dispersal.html#cb246-1" tabindex="-1"></a>multisite <span class="ot">&lt;-</span> <span class="fu">nimbleCode</span>({</span>
-<span id="cb246-2"><a href="dispersal.html#cb246-2" tabindex="-1"></a>...</span>
-<span id="cb246-3"><a href="dispersal.html#cb246-3" tabindex="-1"></a>  <span class="co"># initial state probabilities</span></span>
-<span id="cb246-4"><a href="dispersal.html#cb246-4" tabindex="-1"></a>  delta[<span class="dv">1</span>] <span class="ot">&lt;-</span> piA          <span class="co"># Pr(alive in A at t = first)</span></span>
-<span id="cb246-5"><a href="dispersal.html#cb246-5" tabindex="-1"></a>  delta[<span class="dv">2</span>] <span class="ot">&lt;-</span> <span class="dv">1</span> <span class="sc">-</span> piA      <span class="co"># Pr(alive in B at t = first)</span></span>
-<span id="cb246-6"><a href="dispersal.html#cb246-6" tabindex="-1"></a>  delta[<span class="dv">3</span>] <span class="ot">&lt;-</span> <span class="dv">0</span>            <span class="co"># Pr(dead at t = first) = 0</span></span>
-<span id="cb246-7"><a href="dispersal.html#cb246-7" tabindex="-1"></a>...</span></code></pre></div>
-<p>Actually, the initial state is known exactly: It is alive at site of initial capture, and <span class="math inline">\(\pi_A\)</span> is just the proportion of individuals first captured in site A, there is no need to make it explicit in the model and estimate it. Therefore, in the likelihood, instead of <code>z[i,first[i]] ~ dcat(delta[1:3])</code>, you can use <code>z[i,first[i]] &lt;- y[i,first[i]] - 1</code>. <strong>Remind that y &lt;- y + 1. Maybe start by estimating piA, then illustrating the trick.</strong>. Note that the same trick applies to the CJS model.</p>
-<p>We write the transition matrix:</p>
+<span id="cb246-2"><a href="dispersal.html#cb246-2" tabindex="-1"></a>  <span class="co"># -------------------------------------------------</span></span>
+<span id="cb246-3"><a href="dispersal.html#cb246-3" tabindex="-1"></a>  <span class="co"># Parameters:</span></span>
+<span id="cb246-4"><a href="dispersal.html#cb246-4" tabindex="-1"></a>  <span class="co"># phiA: survival probability site A</span></span>
+<span id="cb246-5"><a href="dispersal.html#cb246-5" tabindex="-1"></a>  <span class="co"># phiB: survival probability site B</span></span>
+<span id="cb246-6"><a href="dispersal.html#cb246-6" tabindex="-1"></a>  <span class="co"># psiAB: movement probability from site A to site B</span></span>
+<span id="cb246-7"><a href="dispersal.html#cb246-7" tabindex="-1"></a>  <span class="co"># psiBA: movement probability from site B to site A</span></span>
+<span id="cb246-8"><a href="dispersal.html#cb246-8" tabindex="-1"></a>  <span class="co"># pA: recapture probability site A</span></span>
+<span id="cb246-9"><a href="dispersal.html#cb246-9" tabindex="-1"></a>  <span class="co"># pB: recapture probability site B</span></span>
+<span id="cb246-10"><a href="dispersal.html#cb246-10" tabindex="-1"></a>  <span class="co"># -------------------------------------------------</span></span>
+<span id="cb246-11"><a href="dispersal.html#cb246-11" tabindex="-1"></a>  <span class="co"># States (z):</span></span>
+<span id="cb246-12"><a href="dispersal.html#cb246-12" tabindex="-1"></a>  <span class="co"># 1 alive at A</span></span>
+<span id="cb246-13"><a href="dispersal.html#cb246-13" tabindex="-1"></a>  <span class="co"># 2 alive at B</span></span>
+<span id="cb246-14"><a href="dispersal.html#cb246-14" tabindex="-1"></a>  <span class="co"># 3 dead</span></span>
+<span id="cb246-15"><a href="dispersal.html#cb246-15" tabindex="-1"></a>  <span class="co"># Observations (y):</span></span>
+<span id="cb246-16"><a href="dispersal.html#cb246-16" tabindex="-1"></a>  <span class="co"># 1 not seen</span></span>
+<span id="cb246-17"><a href="dispersal.html#cb246-17" tabindex="-1"></a>  <span class="co"># 2 seen at A</span></span>
+<span id="cb246-18"><a href="dispersal.html#cb246-18" tabindex="-1"></a>  <span class="co"># 3 seen at B</span></span>
+<span id="cb246-19"><a href="dispersal.html#cb246-19" tabindex="-1"></a>  <span class="co"># -------------------------------------------------</span></span>
+<span id="cb246-20"><a href="dispersal.html#cb246-20" tabindex="-1"></a>...</span></code></pre></div>
+<p>The we specify priors for the survival, transition and detection probabilities:</p>
 <div class="sourceCode" id="cb247"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb247-1"><a href="dispersal.html#cb247-1" tabindex="-1"></a>multisite <span class="ot">&lt;-</span> <span class="fu">nimbleCode</span>({</span>
 <span id="cb247-2"><a href="dispersal.html#cb247-2" tabindex="-1"></a>...</span>
-<span id="cb247-3"><a href="dispersal.html#cb247-3" tabindex="-1"></a>  <span class="co"># probabilities of state z(t+1) given z(t)</span></span>
-<span id="cb247-4"><a href="dispersal.html#cb247-4" tabindex="-1"></a>  <span class="co"># (read as gamma[z(t),z(t+1)] = gamma[fromState,toState])</span></span>
-<span id="cb247-5"><a href="dispersal.html#cb247-5" tabindex="-1"></a></span>
-<span id="cb247-6"><a href="dispersal.html#cb247-6" tabindex="-1"></a>  gamma[<span class="dv">1</span>,<span class="dv">1</span>] <span class="ot">&lt;-</span> phiA <span class="sc">*</span> (<span class="dv">1</span> <span class="sc">-</span> psiAB)</span>
-<span id="cb247-7"><a href="dispersal.html#cb247-7" tabindex="-1"></a>  gamma[<span class="dv">1</span>,<span class="dv">2</span>] <span class="ot">&lt;-</span> phiA <span class="sc">*</span> psiAB</span>
-<span id="cb247-8"><a href="dispersal.html#cb247-8" tabindex="-1"></a>  gamma[<span class="dv">1</span>,<span class="dv">3</span>] <span class="ot">&lt;-</span> <span class="dv">1</span> <span class="sc">-</span> phiA</span>
-<span id="cb247-9"><a href="dispersal.html#cb247-9" tabindex="-1"></a>  gamma[<span class="dv">2</span>,<span class="dv">1</span>] <span class="ot">&lt;-</span> phiB <span class="sc">*</span> psiBA</span>
-<span id="cb247-10"><a href="dispersal.html#cb247-10" tabindex="-1"></a>  gamma[<span class="dv">2</span>,<span class="dv">2</span>] <span class="ot">&lt;-</span> phiB <span class="sc">*</span> (<span class="dv">1</span> <span class="sc">-</span> psiBA)</span>
-<span id="cb247-11"><a href="dispersal.html#cb247-11" tabindex="-1"></a>  gamma[<span class="dv">2</span>,<span class="dv">3</span>] <span class="ot">&lt;-</span> <span class="dv">1</span> <span class="sc">-</span> phiB</span>
-<span id="cb247-12"><a href="dispersal.html#cb247-12" tabindex="-1"></a>  gamma[<span class="dv">3</span>,<span class="dv">1</span>] <span class="ot">&lt;-</span> <span class="dv">0</span></span>
-<span id="cb247-13"><a href="dispersal.html#cb247-13" tabindex="-1"></a>  gamma[<span class="dv">3</span>,<span class="dv">2</span>] <span class="ot">&lt;-</span> <span class="dv">0</span></span>
-<span id="cb247-14"><a href="dispersal.html#cb247-14" tabindex="-1"></a>  gamma[<span class="dv">3</span>,<span class="dv">3</span>] <span class="ot">&lt;-</span> <span class="dv">1</span></span>
-<span id="cb247-15"><a href="dispersal.html#cb247-15" tabindex="-1"></a>...</span></code></pre></div>
-<p><strong>Say something about parameterization in psiAB and psiBA and complementary probabilities that do not need to be estimated. Mutually exclusive event, therefore sum on a row is 1. </strong></p>
-<p>In the same way, the observation matrix is:</p>
+<span id="cb247-3"><a href="dispersal.html#cb247-3" tabindex="-1"></a>  <span class="co"># Priors</span></span>
+<span id="cb247-4"><a href="dispersal.html#cb247-4" tabindex="-1"></a>  phiA <span class="sc">~</span> <span class="fu">dunif</span>(<span class="dv">0</span>, <span class="dv">1</span>)</span>
+<span id="cb247-5"><a href="dispersal.html#cb247-5" tabindex="-1"></a>  phiB <span class="sc">~</span> <span class="fu">dunif</span>(<span class="dv">0</span>, <span class="dv">1</span>)</span>
+<span id="cb247-6"><a href="dispersal.html#cb247-6" tabindex="-1"></a>  psiAB <span class="sc">~</span> <span class="fu">dunif</span>(<span class="dv">0</span>, <span class="dv">1</span>)</span>
+<span id="cb247-7"><a href="dispersal.html#cb247-7" tabindex="-1"></a>  psiBA <span class="sc">~</span> <span class="fu">dunif</span>(<span class="dv">0</span>, <span class="dv">1</span>)</span>
+<span id="cb247-8"><a href="dispersal.html#cb247-8" tabindex="-1"></a>  pA <span class="sc">~</span> <span class="fu">dunif</span>(<span class="dv">0</span>, <span class="dv">1</span>)</span>
+<span id="cb247-9"><a href="dispersal.html#cb247-9" tabindex="-1"></a>  pB <span class="sc">~</span> <span class="fu">dunif</span>(<span class="dv">0</span>, <span class="dv">1</span>)</span>
+<span id="cb247-10"><a href="dispersal.html#cb247-10" tabindex="-1"></a>...</span></code></pre></div>
+<p>We now write the vector of initial state probabilities:</p>
 <div class="sourceCode" id="cb248"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb248-1"><a href="dispersal.html#cb248-1" tabindex="-1"></a>multisite <span class="ot">&lt;-</span> <span class="fu">nimbleCode</span>({</span>
 <span id="cb248-2"><a href="dispersal.html#cb248-2" tabindex="-1"></a>...</span>
-<span id="cb248-3"><a href="dispersal.html#cb248-3" tabindex="-1"></a>  <span class="co"># probabilities of y(t) given z(t)</span></span>
-<span id="cb248-4"><a href="dispersal.html#cb248-4" tabindex="-1"></a>  <span class="co"># (read as omega[y(t),z(t)] = omega[Observation,State])</span></span>
-<span id="cb248-5"><a href="dispersal.html#cb248-5" tabindex="-1"></a></span>
-<span id="cb248-6"><a href="dispersal.html#cb248-6" tabindex="-1"></a>  omega[<span class="dv">1</span>,<span class="dv">1</span>] <span class="ot">&lt;-</span> <span class="dv">1</span> <span class="sc">-</span> pA     <span class="co"># Pr(alive A t -&gt; non-detected t)</span></span>
-<span id="cb248-7"><a href="dispersal.html#cb248-7" tabindex="-1"></a>  omega[<span class="dv">1</span>,<span class="dv">2</span>] <span class="ot">&lt;-</span> pA         <span class="co"># Pr(alive A t -&gt; detected A t)</span></span>
-<span id="cb248-8"><a href="dispersal.html#cb248-8" tabindex="-1"></a>  omega[<span class="dv">1</span>,<span class="dv">3</span>] <span class="ot">&lt;-</span> <span class="dv">0</span>          <span class="co"># Pr(alive A t -&gt; detected B t)</span></span>
-<span id="cb248-9"><a href="dispersal.html#cb248-9" tabindex="-1"></a>  omega[<span class="dv">2</span>,<span class="dv">1</span>] <span class="ot">&lt;-</span> <span class="dv">1</span> <span class="sc">-</span> pB     <span class="co"># Pr(alive B t -&gt; non-detected t)</span></span>
-<span id="cb248-10"><a href="dispersal.html#cb248-10" tabindex="-1"></a>  omega[<span class="dv">2</span>,<span class="dv">2</span>] <span class="ot">&lt;-</span> <span class="dv">0</span>          <span class="co"># Pr(alive B t -&gt; detected A t)</span></span>
-<span id="cb248-11"><a href="dispersal.html#cb248-11" tabindex="-1"></a>  omega[<span class="dv">2</span>,<span class="dv">3</span>] <span class="ot">&lt;-</span> pB         <span class="co"># Pr(alive B t -&gt; detected B t)</span></span>
-<span id="cb248-12"><a href="dispersal.html#cb248-12" tabindex="-1"></a>  omega[<span class="dv">3</span>,<span class="dv">1</span>] <span class="ot">&lt;-</span> <span class="dv">1</span>          <span class="co"># Pr(dead t -&gt; non-detected t)</span></span>
-<span id="cb248-13"><a href="dispersal.html#cb248-13" tabindex="-1"></a>  omega[<span class="dv">3</span>,<span class="dv">2</span>] <span class="ot">&lt;-</span> <span class="dv">0</span>          <span class="co"># Pr(dead t -&gt; detected A t)</span></span>
-<span id="cb248-14"><a href="dispersal.html#cb248-14" tabindex="-1"></a>  omega[<span class="dv">3</span>,<span class="dv">3</span>] <span class="ot">&lt;-</span> <span class="dv">0</span>          <span class="co"># Pr(dead t -&gt; detected B t)</span></span>
-<span id="cb248-15"><a href="dispersal.html#cb248-15" tabindex="-1"></a>...</span></code></pre></div>
+<span id="cb248-3"><a href="dispersal.html#cb248-3" tabindex="-1"></a>  <span class="co"># initial state probabilities</span></span>
+<span id="cb248-4"><a href="dispersal.html#cb248-4" tabindex="-1"></a>  delta[<span class="dv">1</span>] <span class="ot">&lt;-</span> piA          <span class="co"># Pr(alive in A at t = first)</span></span>
+<span id="cb248-5"><a href="dispersal.html#cb248-5" tabindex="-1"></a>  delta[<span class="dv">2</span>] <span class="ot">&lt;-</span> <span class="dv">1</span> <span class="sc">-</span> piA      <span class="co"># Pr(alive in B at t = first)</span></span>
+<span id="cb248-6"><a href="dispersal.html#cb248-6" tabindex="-1"></a>  delta[<span class="dv">3</span>] <span class="ot">&lt;-</span> <span class="dv">0</span>            <span class="co"># Pr(dead at t = first) = 0</span></span>
+<span id="cb248-7"><a href="dispersal.html#cb248-7" tabindex="-1"></a>...</span></code></pre></div>
+<p>Actually, the initial state is known exactly: It is alive at site of initial capture, and <span class="math inline">\(\pi^A\)</span> is just the proportion of individuals first captured in site A, there is no need to make it explicit in the model and estimate it. Therefore, in the likelihood, instead of <code>z[i,first[i]] ~ dcat(delta[1:3])</code>, you can use <code>z[i,first[i]] &lt;- y[i,first[i]] - 1</code>. <strong>Remind that y &lt;- y + 1. Maybe start by estimating piA, then illustrating the trick.</strong>. Note that the same trick applies to the CJS model.</p>
+<p>We write the transition matrix:</p>
+<div class="sourceCode" id="cb249"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb249-1"><a href="dispersal.html#cb249-1" tabindex="-1"></a>multisite <span class="ot">&lt;-</span> <span class="fu">nimbleCode</span>({</span>
+<span id="cb249-2"><a href="dispersal.html#cb249-2" tabindex="-1"></a>...</span>
+<span id="cb249-3"><a href="dispersal.html#cb249-3" tabindex="-1"></a>  <span class="co"># probabilities of state z(t+1) given z(t)</span></span>
+<span id="cb249-4"><a href="dispersal.html#cb249-4" tabindex="-1"></a>  <span class="co"># (read as gamma[z(t),z(t+1)] = gamma[fromState,toState])</span></span>
+<span id="cb249-5"><a href="dispersal.html#cb249-5" tabindex="-1"></a></span>
+<span id="cb249-6"><a href="dispersal.html#cb249-6" tabindex="-1"></a>  gamma[<span class="dv">1</span>,<span class="dv">1</span>] <span class="ot">&lt;-</span> phiA <span class="sc">*</span> (<span class="dv">1</span> <span class="sc">-</span> psiAB)</span>
+<span id="cb249-7"><a href="dispersal.html#cb249-7" tabindex="-1"></a>  gamma[<span class="dv">1</span>,<span class="dv">2</span>] <span class="ot">&lt;-</span> phiA <span class="sc">*</span> psiAB</span>
+<span id="cb249-8"><a href="dispersal.html#cb249-8" tabindex="-1"></a>  gamma[<span class="dv">1</span>,<span class="dv">3</span>] <span class="ot">&lt;-</span> <span class="dv">1</span> <span class="sc">-</span> phiA</span>
+<span id="cb249-9"><a href="dispersal.html#cb249-9" tabindex="-1"></a>  gamma[<span class="dv">2</span>,<span class="dv">1</span>] <span class="ot">&lt;-</span> phiB <span class="sc">*</span> psiBA</span>
+<span id="cb249-10"><a href="dispersal.html#cb249-10" tabindex="-1"></a>  gamma[<span class="dv">2</span>,<span class="dv">2</span>] <span class="ot">&lt;-</span> phiB <span class="sc">*</span> (<span class="dv">1</span> <span class="sc">-</span> psiBA)</span>
+<span id="cb249-11"><a href="dispersal.html#cb249-11" tabindex="-1"></a>  gamma[<span class="dv">2</span>,<span class="dv">3</span>] <span class="ot">&lt;-</span> <span class="dv">1</span> <span class="sc">-</span> phiB</span>
+<span id="cb249-12"><a href="dispersal.html#cb249-12" tabindex="-1"></a>  gamma[<span class="dv">3</span>,<span class="dv">1</span>] <span class="ot">&lt;-</span> <span class="dv">0</span></span>
+<span id="cb249-13"><a href="dispersal.html#cb249-13" tabindex="-1"></a>  gamma[<span class="dv">3</span>,<span class="dv">2</span>] <span class="ot">&lt;-</span> <span class="dv">0</span></span>
+<span id="cb249-14"><a href="dispersal.html#cb249-14" tabindex="-1"></a>  gamma[<span class="dv">3</span>,<span class="dv">3</span>] <span class="ot">&lt;-</span> <span class="dv">1</span></span>
+<span id="cb249-15"><a href="dispersal.html#cb249-15" tabindex="-1"></a>...</span></code></pre></div>
+<p><strong>Say something about parameterization in psiAB and psiBA and complementary probabilities that do not need to be estimated. Mutually exclusive event, therefore sum on a row is 1. </strong></p>
+<p>In the same way, the observation matrix is:</p>
+<div class="sourceCode" id="cb250"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb250-1"><a href="dispersal.html#cb250-1" tabindex="-1"></a>multisite <span class="ot">&lt;-</span> <span class="fu">nimbleCode</span>({</span>
+<span id="cb250-2"><a href="dispersal.html#cb250-2" tabindex="-1"></a>...</span>
+<span id="cb250-3"><a href="dispersal.html#cb250-3" tabindex="-1"></a>  <span class="co"># probabilities of y(t) given z(t)</span></span>
+<span id="cb250-4"><a href="dispersal.html#cb250-4" tabindex="-1"></a>  <span class="co"># (read as omega[y(t),z(t)] = omega[Observation,State])</span></span>
+<span id="cb250-5"><a href="dispersal.html#cb250-5" tabindex="-1"></a></span>
+<span id="cb250-6"><a href="dispersal.html#cb250-6" tabindex="-1"></a>  omega[<span class="dv">1</span>,<span class="dv">1</span>] <span class="ot">&lt;-</span> <span class="dv">1</span> <span class="sc">-</span> pA     <span class="co"># Pr(alive A t -&gt; non-detected t)</span></span>
+<span id="cb250-7"><a href="dispersal.html#cb250-7" tabindex="-1"></a>  omega[<span class="dv">1</span>,<span class="dv">2</span>] <span class="ot">&lt;-</span> pA         <span class="co"># Pr(alive A t -&gt; detected A t)</span></span>
+<span id="cb250-8"><a href="dispersal.html#cb250-8" tabindex="-1"></a>  omega[<span class="dv">1</span>,<span class="dv">3</span>] <span class="ot">&lt;-</span> <span class="dv">0</span>          <span class="co"># Pr(alive A t -&gt; detected B t)</span></span>
+<span id="cb250-9"><a href="dispersal.html#cb250-9" tabindex="-1"></a>  omega[<span class="dv">2</span>,<span class="dv">1</span>] <span class="ot">&lt;-</span> <span class="dv">1</span> <span class="sc">-</span> pB     <span class="co"># Pr(alive B t -&gt; non-detected t)</span></span>
+<span id="cb250-10"><a href="dispersal.html#cb250-10" tabindex="-1"></a>  omega[<span class="dv">2</span>,<span class="dv">2</span>] <span class="ot">&lt;-</span> <span class="dv">0</span>          <span class="co"># Pr(alive B t -&gt; detected A t)</span></span>
+<span id="cb250-11"><a href="dispersal.html#cb250-11" tabindex="-1"></a>  omega[<span class="dv">2</span>,<span class="dv">3</span>] <span class="ot">&lt;-</span> pB         <span class="co"># Pr(alive B t -&gt; detected B t)</span></span>
+<span id="cb250-12"><a href="dispersal.html#cb250-12" tabindex="-1"></a>  omega[<span class="dv">3</span>,<span class="dv">1</span>] <span class="ot">&lt;-</span> <span class="dv">1</span>          <span class="co"># Pr(dead t -&gt; non-detected t)</span></span>
+<span id="cb250-13"><a href="dispersal.html#cb250-13" tabindex="-1"></a>  omega[<span class="dv">3</span>,<span class="dv">2</span>] <span class="ot">&lt;-</span> <span class="dv">0</span>          <span class="co"># Pr(dead t -&gt; detected A t)</span></span>
+<span id="cb250-14"><a href="dispersal.html#cb250-14" tabindex="-1"></a>  omega[<span class="dv">3</span>,<span class="dv">3</span>] <span class="ot">&lt;-</span> <span class="dv">0</span>          <span class="co"># Pr(dead t -&gt; detected B t)</span></span>
+<span id="cb250-15"><a href="dispersal.html#cb250-15" tabindex="-1"></a>...</span></code></pre></div>
 <p>At last, we are ready to specify the likelihood which, and this this the magic of HMM, is the same as the likelihood of the CJS model, only the vector of initial states, the transition and observation matrices were changed:</p>
-<div class="sourceCode" id="cb249"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb251"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">multisite</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimbleCode.html">nimbleCode</a></span><span class="op">(</span><span class="op">{</span></span>
 <span><span class="va">...</span></span>
 <span>  <span class="co"># likelihood</span></span>
@@ -10326,13 +10351,13 @@ year_1989
 <span><span class="op">}</span><span class="op">)</span></span></code></pre></div>
 <p>Now we may run NIMBLE. <strong>Provide whol code w/ inits, etc.</strong></p>
 <p>We may have a look to the results via a caterpillar plot:</p>
-<div class="sourceCode" id="cb250"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb252"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/pkg/MCMCvis/man/MCMCplot.html">MCMCplot</a></span><span class="op">(</span><span class="va">mcmc.multisite</span><span class="op">)</span></span></code></pre></div>
-<div class="inline-figure"><img src="banana-book_files/figure-html/unnamed-chunk-290-1.png" width="672"></div>
+<div class="inline-figure"><img src="banana-book_files/figure-html/unnamed-chunk-292-1.png" width="672"></div>
 <p>Remember mid–Atlantic is site A, and Chesapeake site B. Detection in mid–Atlantic (around 0.5) is higher than in Cheasapeake (around 0.4) although it comes with more uncertainty (wider credible interval). Survival in both sites are similar estimated at around 0.6–0.7. Note that by going multisite, we could make these parameters site-specific and differences might reflect habitat quality for example. Now the novelty lies in our capability to estimate movements from site A to site B and from site B to site A from a winter to the next. The annual probability of remaining in the same site for two successive
 winters, used as a measure of site fidelity, was lower in the mid–Atlantic (around 0.7) than in the Chesapeake (0.9). The estimated probability of moving to the Chesapeake from the mid–Atlantic was three times as high as the probability of moving in the opposite direction.</p>
 <p>We may also have a look to numerical summaries, which confirm our ecological interpretation of the model parameters:</p>
-<div class="sourceCode" id="cb251"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb253"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/pkg/MCMCvis/man/MCMCsummary.html">MCMCsummary</a></span><span class="op">(</span><span class="va">mcmc.multisite</span>, round <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span>
 <span><span class="co">##       mean   sd 2.5%  50% 97.5% Rhat n.eff</span></span>
 <span><span class="co">## pA    0.53 0.09 0.36 0.52  0.73 1.04   122</span></span>
@@ -10344,9 +10369,9 @@ winters, used as a measure of site fidelity, was lower in the mid–Atlantic (ar
 <p><strong>Add time-dependence and comment on the harshness of winters? Also this is only a subsample of the whole dataset, I shall introduce the pooled (marginalized) likelihood, probably at the end of the section/chapter.</strong></p>
 </div>
 </div>
-<div id="what-if-there-are-more-than-2-sites" class="section level2" number="5.4">
+<div id="what-if-more-than-2-sites" class="section level2" number="5.4">
 <h2>
-<span class="header-section-number">5.4</span> What if there are more than 2 sites?<a class="anchor" aria-label="anchor" href="#what-if-there-are-more-than-2-sites"><i class="fas fa-link"></i></a>
+<span class="header-section-number">5.4</span> What if more than 2 sites?<a class="anchor" aria-label="anchor" href="#what-if-more-than-2-sites"><i class="fas fa-link"></i></a>
 </h2>
 <p>So far we have considered two sites only, for the sake of simplicity. Indeed when going for three sites and more, a difficulty arises. While the movement probabilities still need to be between 0 and 1, the sum of all probabilities of moving from a site should also sum to one. This is because an individual alive in site A for example, has to stay in A, move to B or move to C, it has no other choice. <strong>not sure it is clear enough, nor whether i need to mention mutually exclusive events.</strong></p>
 <p>There are basically two methods to fulfill both constraints, either to assign a Dirichlet (it is pronounced deer-eesh-lay) prior to the movement probabilities, or to use a multinomial logit link function.</p>
@@ -10358,7 +10383,7 @@ winters, used as a measure of site fidelity, was lower in the mid–Atlantic (ar
 <!-- The probability density function for dirichlet is $f(x) = \displaystyle{\frac{1}{\text{B}({\mathbf \alpha})} \prod_{i=1}^K{x_i^{\alpha_i-1}}}$ where $\text{B}({\mathbf \alpha}) = \displaystyle{\frac{\prod_{i=1}^K{\Gamma({\alpha_i})}}{\Gamma(\sum_{i=1}^K{\alpha_i})}}$ and ${\mathbf \alpha} = (\alpha_1, \ldots, \alpha_K)$ the concentration parameters and $K$ the dimension of the space where $x$ takes values (Figure \@ref(fig:dirichlet)). -->
 <!-- <https://en.wikipedia.org/wiki/Dirichlet_distribution#Occurrence_and_applications> -->
 <!-- <https://stats.stackexchange.com/questions/130248/what-is-a-dirichlet-prior> <https://mc-stan.org/docs/functions-reference/dirichlet-distribution.html> <https://www.cs.helsinki.fi/u/ahonkela/dippa/node95.html> <https://rpubs.com/JanpuHou/295096> <https://www.biorxiv.org/content/10.1101/711317v2.full.pdf> <https://www.statisticshowto.com/dirichlet-distribution/> <https://research.wu.ac.at/ws/portalfiles/portal/17761231/Report125.pdf> -->
-<div class="sourceCode" id="cb252"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb254"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/r-gregmisc/gtools">gtools</a></span><span class="op">)</span> <span class="co"># to make the rdirichlet() function available</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="va"><a href="http://www.ggtern.com">ggtern</a></span><span class="op">)</span> <span class="co"># to visually represent multidim prob distribution </span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/Random.html">set.seed</a></span><span class="op">(</span><span class="fl">123</span><span class="op">)</span></span>
@@ -10408,36 +10433,36 @@ Figure 5.1: Dirichlet prior with parameter alpha
 </p>
 </div>
 <p>Going back to our example, in NIMBLE, we consider a Dirichlet prior for each triplet of movement parameters, from site A (<span class="math inline">\(\psi^{AA}\)</span>, <span class="math inline">\(\psi^{AB}\)</span> and <span class="math inline">\(\psi^{AC}\)</span>), from site B (<span class="math inline">\(\psi^{BA}\)</span>, <span class="math inline">\(\psi^{BB}\)</span> and <span class="math inline">\(\psi^{BC}\)</span>) and from site C (<span class="math inline">\(\psi^{CA}\)</span>, <span class="math inline">\(\psi^{CB}\)</span> and <span class="math inline">\(\psi^{CC}\)</span>):</p>
-<div class="sourceCode" id="cb253"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb253-1"><a href="dispersal.html#cb253-1" tabindex="-1"></a>multisite <span class="ot">&lt;-</span> <span class="fu">nimbleCode</span>({</span>
-<span id="cb253-2"><a href="dispersal.html#cb253-2" tabindex="-1"></a>...</span>
-<span id="cb253-3"><a href="dispersal.html#cb253-3" tabindex="-1"></a>  <span class="co"># transitions: Dirichlet priors</span></span>
-<span id="cb253-4"><a href="dispersal.html#cb253-4" tabindex="-1"></a>  psiA[<span class="dv">1</span><span class="sc">:</span><span class="dv">3</span>] <span class="sc">~</span> <span class="fu">ddirch</span>(alpha[<span class="dv">1</span><span class="sc">:</span><span class="dv">3</span>]) <span class="co"># psiAA, psiAB, psiAC</span></span>
-<span id="cb253-5"><a href="dispersal.html#cb253-5" tabindex="-1"></a>  psiB[<span class="dv">1</span><span class="sc">:</span><span class="dv">3</span>] <span class="sc">~</span> <span class="fu">ddirch</span>(alpha[<span class="dv">1</span><span class="sc">:</span><span class="dv">3</span>]) <span class="co"># psiBA, psiBB, psiCC</span></span>
-<span id="cb253-6"><a href="dispersal.html#cb253-6" tabindex="-1"></a>  psiC[<span class="dv">1</span><span class="sc">:</span><span class="dv">3</span>] <span class="sc">~</span> <span class="fu">ddirch</span>(alpha[<span class="dv">1</span><span class="sc">:</span><span class="dv">3</span>]) <span class="co"># psiCA, psiCB, psiCC</span></span>
-<span id="cb253-7"><a href="dispersal.html#cb253-7" tabindex="-1"></a>...</span></code></pre></div>
+<div class="sourceCode" id="cb255"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb255-1"><a href="dispersal.html#cb255-1" tabindex="-1"></a>multisite <span class="ot">&lt;-</span> <span class="fu">nimbleCode</span>({</span>
+<span id="cb255-2"><a href="dispersal.html#cb255-2" tabindex="-1"></a>...</span>
+<span id="cb255-3"><a href="dispersal.html#cb255-3" tabindex="-1"></a>  <span class="co"># transitions: Dirichlet priors</span></span>
+<span id="cb255-4"><a href="dispersal.html#cb255-4" tabindex="-1"></a>  psiA[<span class="dv">1</span><span class="sc">:</span><span class="dv">3</span>] <span class="sc">~</span> <span class="fu">ddirch</span>(alpha[<span class="dv">1</span><span class="sc">:</span><span class="dv">3</span>]) <span class="co"># psiAA, psiAB, psiAC</span></span>
+<span id="cb255-5"><a href="dispersal.html#cb255-5" tabindex="-1"></a>  psiB[<span class="dv">1</span><span class="sc">:</span><span class="dv">3</span>] <span class="sc">~</span> <span class="fu">ddirch</span>(alpha[<span class="dv">1</span><span class="sc">:</span><span class="dv">3</span>]) <span class="co"># psiBA, psiBB, psiCC</span></span>
+<span id="cb255-6"><a href="dispersal.html#cb255-6" tabindex="-1"></a>  psiC[<span class="dv">1</span><span class="sc">:</span><span class="dv">3</span>] <span class="sc">~</span> <span class="fu">ddirch</span>(alpha[<span class="dv">1</span><span class="sc">:</span><span class="dv">3</span>]) <span class="co"># psiCA, psiCB, psiCC</span></span>
+<span id="cb255-7"><a href="dispersal.html#cb255-7" tabindex="-1"></a>...</span></code></pre></div>
 <p>Then we use these parameters (which now respect the constraints) to define the transition matrix:</p>
-<div class="sourceCode" id="cb254"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb254-1"><a href="dispersal.html#cb254-1" tabindex="-1"></a>multisite <span class="ot">&lt;-</span> <span class="fu">nimbleCode</span>({</span>
-<span id="cb254-2"><a href="dispersal.html#cb254-2" tabindex="-1"></a>...</span>
-<span id="cb254-3"><a href="dispersal.html#cb254-3" tabindex="-1"></a>  <span class="co"># probabilities of state z(t+1) given z(t)</span></span>
-<span id="cb254-4"><a href="dispersal.html#cb254-4" tabindex="-1"></a>  gamma[<span class="dv">1</span>,<span class="dv">1</span>] <span class="ot">&lt;-</span> phiA <span class="sc">*</span> psiA[<span class="dv">1</span>]</span>
-<span id="cb254-5"><a href="dispersal.html#cb254-5" tabindex="-1"></a>  gamma[<span class="dv">1</span>,<span class="dv">2</span>] <span class="ot">&lt;-</span> phiA <span class="sc">*</span> psiA[<span class="dv">2</span>]</span>
-<span id="cb254-6"><a href="dispersal.html#cb254-6" tabindex="-1"></a>  gamma[<span class="dv">1</span>,<span class="dv">3</span>] <span class="ot">&lt;-</span> phiA <span class="sc">*</span> psiA[<span class="dv">3</span>]</span>
-<span id="cb254-7"><a href="dispersal.html#cb254-7" tabindex="-1"></a>  gamma[<span class="dv">1</span>,<span class="dv">4</span>] <span class="ot">&lt;-</span> <span class="dv">1</span> <span class="sc">-</span> phiA</span>
-<span id="cb254-8"><a href="dispersal.html#cb254-8" tabindex="-1"></a>  gamma[<span class="dv">2</span>,<span class="dv">1</span>] <span class="ot">&lt;-</span> phiB <span class="sc">*</span> psiB[<span class="dv">1</span>]</span>
-<span id="cb254-9"><a href="dispersal.html#cb254-9" tabindex="-1"></a>  gamma[<span class="dv">2</span>,<span class="dv">2</span>] <span class="ot">&lt;-</span> phiB <span class="sc">*</span> psiB[<span class="dv">2</span>]</span>
-<span id="cb254-10"><a href="dispersal.html#cb254-10" tabindex="-1"></a>  gamma[<span class="dv">2</span>,<span class="dv">3</span>] <span class="ot">&lt;-</span> phiB <span class="sc">*</span> psiB[<span class="dv">3</span>]</span>
-<span id="cb254-11"><a href="dispersal.html#cb254-11" tabindex="-1"></a>  gamma[<span class="dv">2</span>,<span class="dv">4</span>] <span class="ot">&lt;-</span> <span class="dv">1</span> <span class="sc">-</span> phiB</span>
-<span id="cb254-12"><a href="dispersal.html#cb254-12" tabindex="-1"></a>  gamma[<span class="dv">3</span>,<span class="dv">1</span>] <span class="ot">&lt;-</span> phiC <span class="sc">*</span> psiC[<span class="dv">1</span>]</span>
-<span id="cb254-13"><a href="dispersal.html#cb254-13" tabindex="-1"></a>  gamma[<span class="dv">3</span>,<span class="dv">2</span>] <span class="ot">&lt;-</span> phiC <span class="sc">*</span> psiC[<span class="dv">2</span>]</span>
-<span id="cb254-14"><a href="dispersal.html#cb254-14" tabindex="-1"></a>  gamma[<span class="dv">3</span>,<span class="dv">3</span>] <span class="ot">&lt;-</span> phiC <span class="sc">*</span> psiC[<span class="dv">3</span>]</span>
-<span id="cb254-15"><a href="dispersal.html#cb254-15" tabindex="-1"></a>  gamma[<span class="dv">3</span>,<span class="dv">4</span>] <span class="ot">&lt;-</span> <span class="dv">1</span> <span class="sc">-</span> phiC</span>
-<span id="cb254-16"><a href="dispersal.html#cb254-16" tabindex="-1"></a>  gamma[<span class="dv">4</span>,<span class="dv">1</span>] <span class="ot">&lt;-</span> <span class="dv">0</span></span>
-<span id="cb254-17"><a href="dispersal.html#cb254-17" tabindex="-1"></a>  gamma[<span class="dv">4</span>,<span class="dv">2</span>] <span class="ot">&lt;-</span> <span class="dv">0</span></span>
-<span id="cb254-18"><a href="dispersal.html#cb254-18" tabindex="-1"></a>  gamma[<span class="dv">4</span>,<span class="dv">3</span>] <span class="ot">&lt;-</span> <span class="dv">0</span></span>
-<span id="cb254-19"><a href="dispersal.html#cb254-19" tabindex="-1"></a>  gamma[<span class="dv">4</span>,<span class="dv">4</span>] <span class="ot">&lt;-</span> <span class="dv">1</span></span>
-<span id="cb254-20"><a href="dispersal.html#cb254-20" tabindex="-1"></a>...</span></code></pre></div>
+<div class="sourceCode" id="cb256"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb256-1"><a href="dispersal.html#cb256-1" tabindex="-1"></a>multisite <span class="ot">&lt;-</span> <span class="fu">nimbleCode</span>({</span>
+<span id="cb256-2"><a href="dispersal.html#cb256-2" tabindex="-1"></a>...</span>
+<span id="cb256-3"><a href="dispersal.html#cb256-3" tabindex="-1"></a>  <span class="co"># probabilities of state z(t+1) given z(t)</span></span>
+<span id="cb256-4"><a href="dispersal.html#cb256-4" tabindex="-1"></a>  gamma[<span class="dv">1</span>,<span class="dv">1</span>] <span class="ot">&lt;-</span> phiA <span class="sc">*</span> psiA[<span class="dv">1</span>]</span>
+<span id="cb256-5"><a href="dispersal.html#cb256-5" tabindex="-1"></a>  gamma[<span class="dv">1</span>,<span class="dv">2</span>] <span class="ot">&lt;-</span> phiA <span class="sc">*</span> psiA[<span class="dv">2</span>]</span>
+<span id="cb256-6"><a href="dispersal.html#cb256-6" tabindex="-1"></a>  gamma[<span class="dv">1</span>,<span class="dv">3</span>] <span class="ot">&lt;-</span> phiA <span class="sc">*</span> psiA[<span class="dv">3</span>]</span>
+<span id="cb256-7"><a href="dispersal.html#cb256-7" tabindex="-1"></a>  gamma[<span class="dv">1</span>,<span class="dv">4</span>] <span class="ot">&lt;-</span> <span class="dv">1</span> <span class="sc">-</span> phiA</span>
+<span id="cb256-8"><a href="dispersal.html#cb256-8" tabindex="-1"></a>  gamma[<span class="dv">2</span>,<span class="dv">1</span>] <span class="ot">&lt;-</span> phiB <span class="sc">*</span> psiB[<span class="dv">1</span>]</span>
+<span id="cb256-9"><a href="dispersal.html#cb256-9" tabindex="-1"></a>  gamma[<span class="dv">2</span>,<span class="dv">2</span>] <span class="ot">&lt;-</span> phiB <span class="sc">*</span> psiB[<span class="dv">2</span>]</span>
+<span id="cb256-10"><a href="dispersal.html#cb256-10" tabindex="-1"></a>  gamma[<span class="dv">2</span>,<span class="dv">3</span>] <span class="ot">&lt;-</span> phiB <span class="sc">*</span> psiB[<span class="dv">3</span>]</span>
+<span id="cb256-11"><a href="dispersal.html#cb256-11" tabindex="-1"></a>  gamma[<span class="dv">2</span>,<span class="dv">4</span>] <span class="ot">&lt;-</span> <span class="dv">1</span> <span class="sc">-</span> phiB</span>
+<span id="cb256-12"><a href="dispersal.html#cb256-12" tabindex="-1"></a>  gamma[<span class="dv">3</span>,<span class="dv">1</span>] <span class="ot">&lt;-</span> phiC <span class="sc">*</span> psiC[<span class="dv">1</span>]</span>
+<span id="cb256-13"><a href="dispersal.html#cb256-13" tabindex="-1"></a>  gamma[<span class="dv">3</span>,<span class="dv">2</span>] <span class="ot">&lt;-</span> phiC <span class="sc">*</span> psiC[<span class="dv">2</span>]</span>
+<span id="cb256-14"><a href="dispersal.html#cb256-14" tabindex="-1"></a>  gamma[<span class="dv">3</span>,<span class="dv">3</span>] <span class="ot">&lt;-</span> phiC <span class="sc">*</span> psiC[<span class="dv">3</span>]</span>
+<span id="cb256-15"><a href="dispersal.html#cb256-15" tabindex="-1"></a>  gamma[<span class="dv">3</span>,<span class="dv">4</span>] <span class="ot">&lt;-</span> <span class="dv">1</span> <span class="sc">-</span> phiC</span>
+<span id="cb256-16"><a href="dispersal.html#cb256-16" tabindex="-1"></a>  gamma[<span class="dv">4</span>,<span class="dv">1</span>] <span class="ot">&lt;-</span> <span class="dv">0</span></span>
+<span id="cb256-17"><a href="dispersal.html#cb256-17" tabindex="-1"></a>  gamma[<span class="dv">4</span>,<span class="dv">2</span>] <span class="ot">&lt;-</span> <span class="dv">0</span></span>
+<span id="cb256-18"><a href="dispersal.html#cb256-18" tabindex="-1"></a>  gamma[<span class="dv">4</span>,<span class="dv">3</span>] <span class="ot">&lt;-</span> <span class="dv">0</span></span>
+<span id="cb256-19"><a href="dispersal.html#cb256-19" tabindex="-1"></a>  gamma[<span class="dv">4</span>,<span class="dv">4</span>] <span class="ot">&lt;-</span> <span class="dv">1</span></span>
+<span id="cb256-20"><a href="dispersal.html#cb256-20" tabindex="-1"></a>...</span></code></pre></div>
 <p>When we fit this model to the geese dataset with the detections in the Carolinas wintering site back in, and with <code>alpha &lt;- c(1, 1, 1)</code> passed to the constants, we obtain the following results:</p>
-<div class="sourceCode" id="cb255"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb257"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/pkg/MCMCvis/man/MCMCsummary.html">MCMCsummary</a></span><span class="op">(</span><span class="va">mcmc.multisite</span>, round <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span>
 <span><span class="co">##         mean   sd 2.5%  50% 97.5% Rhat n.eff</span></span>
 <span><span class="co">## pA      0.50 0.09 0.34 0.50  0.70 1.00   153</span></span>
@@ -10458,7 +10483,7 @@ Figure 5.1: Dirichlet prior with parameter alpha
 <p>Survival probabilities are similar among sites, but the detection probability in Carolinas seems much lower than in the two other wintering sites. The estimated probability of moving to the Chesapeake from the Carolinas is 2 times as high as the probability of moving in the opposite direction.</p>
 <p>In theory, you could include covariates as in <a href="survival.html#covariates">4.8</a> through the <span class="math inline">\(\alpha\)</span> parameters and the use a log link function (to ensure <span class="math inline">\(\alpha &gt; 0\)</span>), e.g. <span class="math inline">\(\log(\alpha) = \beta_1 + \beta_2 x\)</span>. However, NIMBLE does not allow that <strong>Is it certain that we can go hierarchical here?</strong>. Fortunately, there is another way to specify the Dirichlet distribution through a ratio of gamma distributions that allows to incorporate covariates.</p>
 <p>If we have three independent random variables <span class="math inline">\(Y_1, Y_2\)</span> and <span class="math inline">\(Y_3\)</span> distributed as gamma distributions with shape parameters the <span class="math inline">\(\alpha\)</span>’s and same scale parameter <span class="math inline">\(\theta\)</span>, that is <span class="math inline">\(Y_j \sim \text{Gamma}(\alpha_j, \theta)\)</span>, then it can be shown that the vector <span class="math inline">\((Y_1/V, Y_2/V, Y_3/V)\)</span> is Dirichlet with vector of parameters the <span class="math inline">\(\alpha\)</span>’s, where <span class="math inline">\(V\)</span> is the sum of the <span class="math inline">\(Y\)</span>’s (which is also gamma distributed). <strong>Do I want to go down that path and define the Gamma distribution.</strong> In NIMBLE, this suggests using <span class="math inline">\(\theta = 1\)</span> to get a uniform prior:</p>
-<div class="sourceCode" id="cb256"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb258"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">...</span></span>
 <span><span class="co"># transitions: Dirichlet priors with Gamma formulation</span></span>
 <span><span class="kw">for</span> <span class="op">(</span><span class="va">s</span> <span class="kw">in</span> <span class="fl">1</span><span class="op">:</span><span class="va">ns</span><span class="op">)</span><span class="op">{</span></span>
@@ -10485,47 +10510,47 @@ Figure 5.1: Dirichlet prior with parameter alpha
 <p>Going back to our example with <span class="math inline">\(3\)</span> sites, and focusing on the movement probabilities say, from site A, we first choose a reference (or pivot) site, say A, then <span class="math inline">\(\log\left(\displaystyle{\frac{\psi^{AB}}{\psi^{AA}}}\right) = \beta_B\)</span> and <span class="math inline">\(\log\left(\displaystyle{\frac{\psi^{AC}}{\psi^{AA}}}\right) = \beta_C\)</span>. Interestingly, when exponentiated, the <span class="math inline">\(\beta\)</span>’s here can be interpreted as the increase in the odds of moving versus staying on site resulting from a one-unit increase in the covariate. <strong>give an example.</strong> Any of the sites can be chosen to be the reference, this will not change the likelihood and you will get the same results. <strong>It works because the sites are unordered levels. Check out Roger’s HDR for other link functions.</strong> Now we specify a normal prior distribution for the <span class="math inline">\(\beta\)</span>’s. Eventually, to back-transform, we use <span class="math inline">\(\psi^{AB} = \displaystyle{\frac{\exp(\beta_B)}{1+\displaystyle{\exp(\beta_B)+\displaystyle{\exp(\beta_C)}}}}\)</span> and <span class="math inline">\(\psi^{AC} = \displaystyle{\frac{\exp(\beta_C)}{1+\displaystyle{\exp(\beta_B)+\displaystyle{\exp(\beta_C)}}}}\)</span>. The reference parameter, here <span class="math inline">\(\psi^{AA}\)</span>, is calculated as <span class="math inline">\(\psi^{AA} = \displaystyle{\frac{1}{1 + \displaystyle{\exp(\beta_B)+\displaystyle{\exp(\beta_C)}}}}\)</span>, or simply as the complementary probability <span class="math inline">\(\psi^{AA} = 1 - \psi^{AB} - \psi^{AC}\)</span>.</p>
 <p>Note that when there are only 2 sites instead of 3 or more, then the multinomial logit reduces to the logit link.</p>
 <p>In NIMBLE, we write:</p>
-<div class="sourceCode" id="cb257"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb257-1"><a href="dispersal.html#cb257-1" tabindex="-1"></a>multisite <span class="ot">&lt;-</span> <span class="fu">nimbleCode</span>({</span>
-<span id="cb257-2"><a href="dispersal.html#cb257-2" tabindex="-1"></a>...</span>
-<span id="cb257-3"><a href="dispersal.html#cb257-3" tabindex="-1"></a>  <span class="co"># transitions: multinomial logit</span></span>
-<span id="cb257-4"><a href="dispersal.html#cb257-4" tabindex="-1"></a>  <span class="cf">for</span> (i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">2</span>){</span>
-<span id="cb257-5"><a href="dispersal.html#cb257-5" tabindex="-1"></a>  <span class="co"># normal priors on logit of all but one movement prob</span></span>
-<span id="cb257-6"><a href="dispersal.html#cb257-6" tabindex="-1"></a>    betaA[i] <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>, <span class="at">sd =</span> <span class="fl">1.5</span>)</span>
-<span id="cb257-7"><a href="dispersal.html#cb257-7" tabindex="-1"></a>    betaB[i] <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>, <span class="at">sd =</span> <span class="fl">1.5</span>)</span>
-<span id="cb257-8"><a href="dispersal.html#cb257-8" tabindex="-1"></a>    betaC[i] <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>, <span class="at">sd =</span> <span class="fl">1.5</span>)</span>
-<span id="cb257-9"><a href="dispersal.html#cb257-9" tabindex="-1"></a>  <span class="co"># constrain the transitions such that their sum is &lt; 1</span></span>
-<span id="cb257-10"><a href="dispersal.html#cb257-10" tabindex="-1"></a>    psiA[i] <span class="ot">&lt;-</span> <span class="fu">exp</span>(betaA[i]) <span class="sc">/</span> (<span class="dv">1</span> <span class="sc">+</span> <span class="fu">exp</span>(betaA[<span class="dv">1</span>]) <span class="sc">+</span> <span class="fu">exp</span>(betaA[<span class="dv">2</span>]))</span>
-<span id="cb257-11"><a href="dispersal.html#cb257-11" tabindex="-1"></a>    psiB[i] <span class="ot">&lt;-</span> <span class="fu">exp</span>(betaB[i]) <span class="sc">/</span> (<span class="dv">1</span> <span class="sc">+</span> <span class="fu">exp</span>(betaB[<span class="dv">1</span>]) <span class="sc">+</span> <span class="fu">exp</span>(betaB[<span class="dv">2</span>]))</span>
-<span id="cb257-12"><a href="dispersal.html#cb257-12" tabindex="-1"></a>    psiC[i] <span class="ot">&lt;-</span> <span class="fu">exp</span>(betaC[i]) <span class="sc">/</span> (<span class="dv">1</span> <span class="sc">+</span> <span class="fu">exp</span>(betaC[<span class="dv">1</span>]) <span class="sc">+</span> <span class="fu">exp</span>(betaC[<span class="dv">2</span>]))</span>
-<span id="cb257-13"><a href="dispersal.html#cb257-13" tabindex="-1"></a>  }</span>
-<span id="cb257-14"><a href="dispersal.html#cb257-14" tabindex="-1"></a>  <span class="co"># reference movement probability</span></span>
-<span id="cb257-15"><a href="dispersal.html#cb257-15" tabindex="-1"></a>  psiA[<span class="dv">3</span>] <span class="ot">&lt;-</span> <span class="dv">1</span> <span class="sc">-</span> psiA[<span class="dv">1</span>] <span class="sc">-</span> psiA[<span class="dv">2</span>]</span>
-<span id="cb257-16"><a href="dispersal.html#cb257-16" tabindex="-1"></a>  psiB[<span class="dv">3</span>] <span class="ot">&lt;-</span> <span class="dv">1</span> <span class="sc">-</span> psiB[<span class="dv">1</span>] <span class="sc">-</span> psiB[<span class="dv">2</span>]</span>
-<span id="cb257-17"><a href="dispersal.html#cb257-17" tabindex="-1"></a>  psiC[<span class="dv">3</span>] <span class="ot">&lt;-</span> <span class="dv">1</span> <span class="sc">-</span> psiC[<span class="dv">1</span>] <span class="sc">-</span> psiC[<span class="dv">2</span>]</span>
-<span id="cb257-18"><a href="dispersal.html#cb257-18" tabindex="-1"></a>...</span></code></pre></div>
+<div class="sourceCode" id="cb259"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb259-1"><a href="dispersal.html#cb259-1" tabindex="-1"></a>multisite <span class="ot">&lt;-</span> <span class="fu">nimbleCode</span>({</span>
+<span id="cb259-2"><a href="dispersal.html#cb259-2" tabindex="-1"></a>...</span>
+<span id="cb259-3"><a href="dispersal.html#cb259-3" tabindex="-1"></a>  <span class="co"># transitions: multinomial logit</span></span>
+<span id="cb259-4"><a href="dispersal.html#cb259-4" tabindex="-1"></a>  <span class="cf">for</span> (i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">2</span>){</span>
+<span id="cb259-5"><a href="dispersal.html#cb259-5" tabindex="-1"></a>  <span class="co"># normal priors on logit of all but one movement prob</span></span>
+<span id="cb259-6"><a href="dispersal.html#cb259-6" tabindex="-1"></a>    betaA[i] <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>, <span class="at">sd =</span> <span class="fl">1.5</span>)</span>
+<span id="cb259-7"><a href="dispersal.html#cb259-7" tabindex="-1"></a>    betaB[i] <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>, <span class="at">sd =</span> <span class="fl">1.5</span>)</span>
+<span id="cb259-8"><a href="dispersal.html#cb259-8" tabindex="-1"></a>    betaC[i] <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>, <span class="at">sd =</span> <span class="fl">1.5</span>)</span>
+<span id="cb259-9"><a href="dispersal.html#cb259-9" tabindex="-1"></a>  <span class="co"># constrain the transitions such that their sum is &lt; 1</span></span>
+<span id="cb259-10"><a href="dispersal.html#cb259-10" tabindex="-1"></a>    psiA[i] <span class="ot">&lt;-</span> <span class="fu">exp</span>(betaA[i]) <span class="sc">/</span> (<span class="dv">1</span> <span class="sc">+</span> <span class="fu">exp</span>(betaA[<span class="dv">1</span>]) <span class="sc">+</span> <span class="fu">exp</span>(betaA[<span class="dv">2</span>]))</span>
+<span id="cb259-11"><a href="dispersal.html#cb259-11" tabindex="-1"></a>    psiB[i] <span class="ot">&lt;-</span> <span class="fu">exp</span>(betaB[i]) <span class="sc">/</span> (<span class="dv">1</span> <span class="sc">+</span> <span class="fu">exp</span>(betaB[<span class="dv">1</span>]) <span class="sc">+</span> <span class="fu">exp</span>(betaB[<span class="dv">2</span>]))</span>
+<span id="cb259-12"><a href="dispersal.html#cb259-12" tabindex="-1"></a>    psiC[i] <span class="ot">&lt;-</span> <span class="fu">exp</span>(betaC[i]) <span class="sc">/</span> (<span class="dv">1</span> <span class="sc">+</span> <span class="fu">exp</span>(betaC[<span class="dv">1</span>]) <span class="sc">+</span> <span class="fu">exp</span>(betaC[<span class="dv">2</span>]))</span>
+<span id="cb259-13"><a href="dispersal.html#cb259-13" tabindex="-1"></a>  }</span>
+<span id="cb259-14"><a href="dispersal.html#cb259-14" tabindex="-1"></a>  <span class="co"># reference movement probability</span></span>
+<span id="cb259-15"><a href="dispersal.html#cb259-15" tabindex="-1"></a>  psiA[<span class="dv">3</span>] <span class="ot">&lt;-</span> <span class="dv">1</span> <span class="sc">-</span> psiA[<span class="dv">1</span>] <span class="sc">-</span> psiA[<span class="dv">2</span>]</span>
+<span id="cb259-16"><a href="dispersal.html#cb259-16" tabindex="-1"></a>  psiB[<span class="dv">3</span>] <span class="ot">&lt;-</span> <span class="dv">1</span> <span class="sc">-</span> psiB[<span class="dv">1</span>] <span class="sc">-</span> psiB[<span class="dv">2</span>]</span>
+<span id="cb259-17"><a href="dispersal.html#cb259-17" tabindex="-1"></a>  psiC[<span class="dv">3</span>] <span class="ot">&lt;-</span> <span class="dv">1</span> <span class="sc">-</span> psiC[<span class="dv">1</span>] <span class="sc">-</span> psiC[<span class="dv">2</span>]</span>
+<span id="cb259-18"><a href="dispersal.html#cb259-18" tabindex="-1"></a>...</span></code></pre></div>
 <p>Then we use these parameters (which now respect the constraints) to define the transition matrix:</p>
-<div class="sourceCode" id="cb258"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb258-1"><a href="dispersal.html#cb258-1" tabindex="-1"></a>multisite <span class="ot">&lt;-</span> <span class="fu">nimbleCode</span>({</span>
-<span id="cb258-2"><a href="dispersal.html#cb258-2" tabindex="-1"></a>...</span>
-<span id="cb258-3"><a href="dispersal.html#cb258-3" tabindex="-1"></a>  <span class="co"># probabilities of state z(t+1) given z(t)</span></span>
-<span id="cb258-4"><a href="dispersal.html#cb258-4" tabindex="-1"></a>  gamma[<span class="dv">1</span>,<span class="dv">1</span>] <span class="ot">&lt;-</span> phiA <span class="sc">*</span> psiA[<span class="dv">1</span>]</span>
-<span id="cb258-5"><a href="dispersal.html#cb258-5" tabindex="-1"></a>  gamma[<span class="dv">1</span>,<span class="dv">2</span>] <span class="ot">&lt;-</span> phiA <span class="sc">*</span> psiA[<span class="dv">2</span>]</span>
-<span id="cb258-6"><a href="dispersal.html#cb258-6" tabindex="-1"></a>  gamma[<span class="dv">1</span>,<span class="dv">3</span>] <span class="ot">&lt;-</span> phiA <span class="sc">*</span> psiA[<span class="dv">3</span>]</span>
-<span id="cb258-7"><a href="dispersal.html#cb258-7" tabindex="-1"></a>  gamma[<span class="dv">1</span>,<span class="dv">4</span>] <span class="ot">&lt;-</span> <span class="dv">1</span> <span class="sc">-</span> phiA</span>
-<span id="cb258-8"><a href="dispersal.html#cb258-8" tabindex="-1"></a>  gamma[<span class="dv">2</span>,<span class="dv">1</span>] <span class="ot">&lt;-</span> phiB <span class="sc">*</span> psiB[<span class="dv">1</span>]</span>
-<span id="cb258-9"><a href="dispersal.html#cb258-9" tabindex="-1"></a>  gamma[<span class="dv">2</span>,<span class="dv">2</span>] <span class="ot">&lt;-</span> phiB <span class="sc">*</span> psiB[<span class="dv">2</span>]</span>
-<span id="cb258-10"><a href="dispersal.html#cb258-10" tabindex="-1"></a>  gamma[<span class="dv">2</span>,<span class="dv">3</span>] <span class="ot">&lt;-</span> phiB <span class="sc">*</span> psiB[<span class="dv">3</span>]</span>
-<span id="cb258-11"><a href="dispersal.html#cb258-11" tabindex="-1"></a>  gamma[<span class="dv">2</span>,<span class="dv">4</span>] <span class="ot">&lt;-</span> <span class="dv">1</span> <span class="sc">-</span> phiB</span>
-<span id="cb258-12"><a href="dispersal.html#cb258-12" tabindex="-1"></a>  gamma[<span class="dv">3</span>,<span class="dv">1</span>] <span class="ot">&lt;-</span> phiC <span class="sc">*</span> psiC[<span class="dv">1</span>]</span>
-<span id="cb258-13"><a href="dispersal.html#cb258-13" tabindex="-1"></a>  gamma[<span class="dv">3</span>,<span class="dv">2</span>] <span class="ot">&lt;-</span> phiC <span class="sc">*</span> psiC[<span class="dv">2</span>]</span>
-<span id="cb258-14"><a href="dispersal.html#cb258-14" tabindex="-1"></a>  gamma[<span class="dv">3</span>,<span class="dv">3</span>] <span class="ot">&lt;-</span> phiC <span class="sc">*</span> psiC[<span class="dv">3</span>]</span>
-<span id="cb258-15"><a href="dispersal.html#cb258-15" tabindex="-1"></a>  gamma[<span class="dv">3</span>,<span class="dv">4</span>] <span class="ot">&lt;-</span> <span class="dv">1</span> <span class="sc">-</span> phiC</span>
-<span id="cb258-16"><a href="dispersal.html#cb258-16" tabindex="-1"></a>  gamma[<span class="dv">4</span>,<span class="dv">1</span>] <span class="ot">&lt;-</span> <span class="dv">0</span></span>
-<span id="cb258-17"><a href="dispersal.html#cb258-17" tabindex="-1"></a>  gamma[<span class="dv">4</span>,<span class="dv">2</span>] <span class="ot">&lt;-</span> <span class="dv">0</span></span>
-<span id="cb258-18"><a href="dispersal.html#cb258-18" tabindex="-1"></a>  gamma[<span class="dv">4</span>,<span class="dv">3</span>] <span class="ot">&lt;-</span> <span class="dv">0</span></span>
-<span id="cb258-19"><a href="dispersal.html#cb258-19" tabindex="-1"></a>  gamma[<span class="dv">4</span>,<span class="dv">4</span>] <span class="ot">&lt;-</span> <span class="dv">1</span></span>
-<span id="cb258-20"><a href="dispersal.html#cb258-20" tabindex="-1"></a>...</span></code></pre></div>
+<div class="sourceCode" id="cb260"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb260-1"><a href="dispersal.html#cb260-1" tabindex="-1"></a>multisite <span class="ot">&lt;-</span> <span class="fu">nimbleCode</span>({</span>
+<span id="cb260-2"><a href="dispersal.html#cb260-2" tabindex="-1"></a>...</span>
+<span id="cb260-3"><a href="dispersal.html#cb260-3" tabindex="-1"></a>  <span class="co"># probabilities of state z(t+1) given z(t)</span></span>
+<span id="cb260-4"><a href="dispersal.html#cb260-4" tabindex="-1"></a>  gamma[<span class="dv">1</span>,<span class="dv">1</span>] <span class="ot">&lt;-</span> phiA <span class="sc">*</span> psiA[<span class="dv">1</span>]</span>
+<span id="cb260-5"><a href="dispersal.html#cb260-5" tabindex="-1"></a>  gamma[<span class="dv">1</span>,<span class="dv">2</span>] <span class="ot">&lt;-</span> phiA <span class="sc">*</span> psiA[<span class="dv">2</span>]</span>
+<span id="cb260-6"><a href="dispersal.html#cb260-6" tabindex="-1"></a>  gamma[<span class="dv">1</span>,<span class="dv">3</span>] <span class="ot">&lt;-</span> phiA <span class="sc">*</span> psiA[<span class="dv">3</span>]</span>
+<span id="cb260-7"><a href="dispersal.html#cb260-7" tabindex="-1"></a>  gamma[<span class="dv">1</span>,<span class="dv">4</span>] <span class="ot">&lt;-</span> <span class="dv">1</span> <span class="sc">-</span> phiA</span>
+<span id="cb260-8"><a href="dispersal.html#cb260-8" tabindex="-1"></a>  gamma[<span class="dv">2</span>,<span class="dv">1</span>] <span class="ot">&lt;-</span> phiB <span class="sc">*</span> psiB[<span class="dv">1</span>]</span>
+<span id="cb260-9"><a href="dispersal.html#cb260-9" tabindex="-1"></a>  gamma[<span class="dv">2</span>,<span class="dv">2</span>] <span class="ot">&lt;-</span> phiB <span class="sc">*</span> psiB[<span class="dv">2</span>]</span>
+<span id="cb260-10"><a href="dispersal.html#cb260-10" tabindex="-1"></a>  gamma[<span class="dv">2</span>,<span class="dv">3</span>] <span class="ot">&lt;-</span> phiB <span class="sc">*</span> psiB[<span class="dv">3</span>]</span>
+<span id="cb260-11"><a href="dispersal.html#cb260-11" tabindex="-1"></a>  gamma[<span class="dv">2</span>,<span class="dv">4</span>] <span class="ot">&lt;-</span> <span class="dv">1</span> <span class="sc">-</span> phiB</span>
+<span id="cb260-12"><a href="dispersal.html#cb260-12" tabindex="-1"></a>  gamma[<span class="dv">3</span>,<span class="dv">1</span>] <span class="ot">&lt;-</span> phiC <span class="sc">*</span> psiC[<span class="dv">1</span>]</span>
+<span id="cb260-13"><a href="dispersal.html#cb260-13" tabindex="-1"></a>  gamma[<span class="dv">3</span>,<span class="dv">2</span>] <span class="ot">&lt;-</span> phiC <span class="sc">*</span> psiC[<span class="dv">2</span>]</span>
+<span id="cb260-14"><a href="dispersal.html#cb260-14" tabindex="-1"></a>  gamma[<span class="dv">3</span>,<span class="dv">3</span>] <span class="ot">&lt;-</span> phiC <span class="sc">*</span> psiC[<span class="dv">3</span>]</span>
+<span id="cb260-15"><a href="dispersal.html#cb260-15" tabindex="-1"></a>  gamma[<span class="dv">3</span>,<span class="dv">4</span>] <span class="ot">&lt;-</span> <span class="dv">1</span> <span class="sc">-</span> phiC</span>
+<span id="cb260-16"><a href="dispersal.html#cb260-16" tabindex="-1"></a>  gamma[<span class="dv">4</span>,<span class="dv">1</span>] <span class="ot">&lt;-</span> <span class="dv">0</span></span>
+<span id="cb260-17"><a href="dispersal.html#cb260-17" tabindex="-1"></a>  gamma[<span class="dv">4</span>,<span class="dv">2</span>] <span class="ot">&lt;-</span> <span class="dv">0</span></span>
+<span id="cb260-18"><a href="dispersal.html#cb260-18" tabindex="-1"></a>  gamma[<span class="dv">4</span>,<span class="dv">3</span>] <span class="ot">&lt;-</span> <span class="dv">0</span></span>
+<span id="cb260-19"><a href="dispersal.html#cb260-19" tabindex="-1"></a>  gamma[<span class="dv">4</span>,<span class="dv">4</span>] <span class="ot">&lt;-</span> <span class="dv">1</span></span>
+<span id="cb260-20"><a href="dispersal.html#cb260-20" tabindex="-1"></a>...</span></code></pre></div>
 <p>You may check that the results are very similar to those we obtained with the Dirichlet prior:</p>
-<div class="sourceCode" id="cb259"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb261"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/pkg/MCMCvis/man/MCMCsummary.html">MCMCsummary</a></span><span class="op">(</span><span class="va">mcmc.multisite</span>, round <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span>
 <span><span class="co">##         mean   sd 2.5%  50% 97.5% Rhat n.eff</span></span>
 <span><span class="co">## pA      0.52 0.08 0.36 0.52  0.69 1.02   154</span></span>
@@ -10545,9 +10570,9 @@ Figure 5.1: Dirichlet prior with parameter alpha
 <span><span class="co">## psiC[3] 0.78 0.06 0.65 0.78  0.88 1.00   270</span></span></code></pre></div>
 </div>
 </div>
-<div id="sites-may-be-states" class="section level2" number="5.5">
+<div id="states" class="section level2" number="5.5">
 <h2>
-<span class="header-section-number">5.5</span> Sites may be states<a class="anchor" aria-label="anchor" href="#sites-may-be-states"><i class="fas fa-link"></i></a>
+<span class="header-section-number">5.5</span> Sites may be states<a class="anchor" aria-label="anchor" href="#states"><i class="fas fa-link"></i></a>
 </h2>
 <p>So far, we have considered geographical locations (or sites) to refine the alive information when an animal is detected. However, it was quickly realized that sites could actually be states or classes defined by physiology or behavior, hence opening up an avenue for applications of capture-recapture models in many fields of ecology.</p>
 <p>Examples of states include:</p>
@@ -33921,8 +33946,8 @@ year_1956
 \hspace{-1.2em}
 \begin{matrix}
     z_t=B &amp; z_t=NB &amp; z_t=D \\ \hdashline
-\phi_B (1-\psi_{BNB}) &amp; \phi_B \psi_{BNB} &amp; 1 - \phi_B\\
-\phi_{NB} \psi_{NBB} &amp; \phi_{NB} (1-\psi_{NBB}) &amp; 1 - \phi_{NB}\\
+\phi^B (1-\psi^{BNB}) &amp; \phi^B \psi^{BNB} &amp; 1 - \phi^B\\
+\phi^{NB} \psi^{NBB} &amp; \phi^{NB} (1-\psi^{NBB}) &amp; 1 - \phi^{NB}\\
 0 &amp; 0 &amp; 1
 \end{matrix}
 \hspace{-0.2em}
@@ -33934,7 +33959,7 @@ year_1956
     \end{matrix}
 \end{matrix}
 \]</span></p>
-<p>The costs or reproduction would reflect in future reproduction if breeders have a lower probability of breed next year than non-breeders <span class="math inline">\(\psi_{BB} = 1 - \psi_{BNB} &lt; \psi_{NBB}\)</span> or in survival if the survival of breeders is lower than that of non-breeders <span class="math inline">\(\phi_B &lt; \phi_{NB}\)</span>.</p>
+<p>The costs or reproduction would reflect in future reproduction if breeders have a lower probability of breed next year than non-breeders <span class="math inline">\(\psi^{BB} = 1 - \psi^{BNB} &lt; \psi^{NBB}\)</span> or in survival if the survival of breeders is lower than that of non-breeders <span class="math inline">\(\phi^B &lt; \phi^{NB}\)</span>.</p>
 <p>Observation matrix</p>
 <p><span class="math display">\[
 \begin{matrix}
@@ -33945,8 +33970,8 @@ year_1956
 \hspace{-1.2em}
 \begin{matrix}
     y_t=0 &amp; y_t=1 &amp; y_t=2 \\ \hdashline
-1 - p_B &amp; p_B &amp; 0\\
-1 - p_{NB} &amp; 0 &amp; p_{NB}\\
+1 - p^B &amp; p^B &amp; 0\\
+1 - p^{NB} &amp; 0 &amp; p^{NB}\\
 1 &amp; 0 &amp; 0
 \end{matrix}
 \hspace{-0.2em}
@@ -33965,67 +33990,67 @@ year_1956
 </h3>
 <p>We first write the NIMBLE code, which is exactly the same as in the geese example with two sites, see Section <a href="dispersal.html#ASmodelfitting">5.3</a>.</p>
 <p>First some definitions which we comment:</p>
-<div class="sourceCode" id="cb260"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb260-1"><a href="dispersal.html#cb260-1" tabindex="-1"></a>multistate <span class="ot">&lt;-</span> <span class="fu">nimbleCode</span>({</span>
-<span id="cb260-2"><a href="dispersal.html#cb260-2" tabindex="-1"></a>  <span class="co"># -------------------------------------------------</span></span>
-<span id="cb260-3"><a href="dispersal.html#cb260-3" tabindex="-1"></a>  <span class="co"># Parameters:</span></span>
-<span id="cb260-4"><a href="dispersal.html#cb260-4" tabindex="-1"></a>  <span class="co"># phiB: survival probability state B</span></span>
-<span id="cb260-5"><a href="dispersal.html#cb260-5" tabindex="-1"></a>  <span class="co"># phiNB: survival probability state NB</span></span>
-<span id="cb260-6"><a href="dispersal.html#cb260-6" tabindex="-1"></a>  <span class="co"># psiBNB: transition probability from B to NB</span></span>
-<span id="cb260-7"><a href="dispersal.html#cb260-7" tabindex="-1"></a>  <span class="co"># psiNBB: transition probability from NB to B</span></span>
-<span id="cb260-8"><a href="dispersal.html#cb260-8" tabindex="-1"></a>  <span class="co"># pB: recapture probability B</span></span>
-<span id="cb260-9"><a href="dispersal.html#cb260-9" tabindex="-1"></a>  <span class="co"># pNB: recapture probability NB</span></span>
-<span id="cb260-10"><a href="dispersal.html#cb260-10" tabindex="-1"></a>  <span class="co"># -------------------------------------------------</span></span>
-<span id="cb260-11"><a href="dispersal.html#cb260-11" tabindex="-1"></a>  <span class="co"># States (z):</span></span>
-<span id="cb260-12"><a href="dispersal.html#cb260-12" tabindex="-1"></a>  <span class="co"># 1 alive B</span></span>
-<span id="cb260-13"><a href="dispersal.html#cb260-13" tabindex="-1"></a>  <span class="co"># 2 alive NB</span></span>
-<span id="cb260-14"><a href="dispersal.html#cb260-14" tabindex="-1"></a>  <span class="co"># 3 dead</span></span>
-<span id="cb260-15"><a href="dispersal.html#cb260-15" tabindex="-1"></a>  <span class="co"># Observations (y):</span></span>
-<span id="cb260-16"><a href="dispersal.html#cb260-16" tabindex="-1"></a>  <span class="co"># 1 not seen</span></span>
-<span id="cb260-17"><a href="dispersal.html#cb260-17" tabindex="-1"></a>  <span class="co"># 2 seen as B</span></span>
-<span id="cb260-18"><a href="dispersal.html#cb260-18" tabindex="-1"></a>  <span class="co"># 3 seen as NB</span></span>
-<span id="cb260-19"><a href="dispersal.html#cb260-19" tabindex="-1"></a>  <span class="co"># -------------------------------------------------</span></span>
-<span id="cb260-20"><a href="dispersal.html#cb260-20" tabindex="-1"></a>...</span></code></pre></div>
-<p>Then the priors:</p>
-<div class="sourceCode" id="cb261"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb261-1"><a href="dispersal.html#cb261-1" tabindex="-1"></a>multistate <span class="ot">&lt;-</span> <span class="fu">nimbleCode</span>({</span>
-<span id="cb261-2"><a href="dispersal.html#cb261-2" tabindex="-1"></a>...</span>
-<span id="cb261-3"><a href="dispersal.html#cb261-3" tabindex="-1"></a>  <span class="co"># Priors</span></span>
-<span id="cb261-4"><a href="dispersal.html#cb261-4" tabindex="-1"></a>  phiB <span class="sc">~</span> <span class="fu">dunif</span>(<span class="dv">0</span>, <span class="dv">1</span>)</span>
-<span id="cb261-5"><a href="dispersal.html#cb261-5" tabindex="-1"></a>  phiNB <span class="sc">~</span> <span class="fu">dunif</span>(<span class="dv">0</span>, <span class="dv">1</span>)</span>
-<span id="cb261-6"><a href="dispersal.html#cb261-6" tabindex="-1"></a>  psiBNB <span class="sc">~</span> <span class="fu">dunif</span>(<span class="dv">0</span>, <span class="dv">1</span>)</span>
-<span id="cb261-7"><a href="dispersal.html#cb261-7" tabindex="-1"></a>  psiNBB <span class="sc">~</span> <span class="fu">dunif</span>(<span class="dv">0</span>, <span class="dv">1</span>)</span>
-<span id="cb261-8"><a href="dispersal.html#cb261-8" tabindex="-1"></a>  pB <span class="sc">~</span> <span class="fu">dunif</span>(<span class="dv">0</span>, <span class="dv">1</span>)</span>
-<span id="cb261-9"><a href="dispersal.html#cb261-9" tabindex="-1"></a>  pNB <span class="sc">~</span> <span class="fu">dunif</span>(<span class="dv">0</span>, <span class="dv">1</span>)</span>
-<span id="cb261-10"><a href="dispersal.html#cb261-10" tabindex="-1"></a>...</span></code></pre></div>
-<p>The transition matrix:</p>
 <div class="sourceCode" id="cb262"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb262-1"><a href="dispersal.html#cb262-1" tabindex="-1"></a>multistate <span class="ot">&lt;-</span> <span class="fu">nimbleCode</span>({</span>
-<span id="cb262-2"><a href="dispersal.html#cb262-2" tabindex="-1"></a>...</span>
-<span id="cb262-3"><a href="dispersal.html#cb262-3" tabindex="-1"></a>  <span class="co"># probabilities of state z(t+1) given z(t)</span></span>
-<span id="cb262-4"><a href="dispersal.html#cb262-4" tabindex="-1"></a>  gamma[<span class="dv">1</span>,<span class="dv">1</span>] <span class="ot">&lt;-</span> phiB <span class="sc">*</span> (<span class="dv">1</span> <span class="sc">-</span> psiBNB)</span>
-<span id="cb262-5"><a href="dispersal.html#cb262-5" tabindex="-1"></a>  gamma[<span class="dv">1</span>,<span class="dv">2</span>] <span class="ot">&lt;-</span> phiB <span class="sc">*</span> psiBNB</span>
-<span id="cb262-6"><a href="dispersal.html#cb262-6" tabindex="-1"></a>  gamma[<span class="dv">1</span>,<span class="dv">3</span>] <span class="ot">&lt;-</span> <span class="dv">1</span> <span class="sc">-</span> phiB</span>
-<span id="cb262-7"><a href="dispersal.html#cb262-7" tabindex="-1"></a>  gamma[<span class="dv">2</span>,<span class="dv">1</span>] <span class="ot">&lt;-</span> phiNB <span class="sc">*</span> psiNBB</span>
-<span id="cb262-8"><a href="dispersal.html#cb262-8" tabindex="-1"></a>  gamma[<span class="dv">2</span>,<span class="dv">2</span>] <span class="ot">&lt;-</span> phiNB <span class="sc">*</span> (<span class="dv">1</span> <span class="sc">-</span> psiNBB)</span>
-<span id="cb262-9"><a href="dispersal.html#cb262-9" tabindex="-1"></a>  gamma[<span class="dv">2</span>,<span class="dv">3</span>] <span class="ot">&lt;-</span> <span class="dv">1</span> <span class="sc">-</span> phiNB</span>
-<span id="cb262-10"><a href="dispersal.html#cb262-10" tabindex="-1"></a>  gamma[<span class="dv">3</span>,<span class="dv">1</span>] <span class="ot">&lt;-</span> <span class="dv">0</span></span>
-<span id="cb262-11"><a href="dispersal.html#cb262-11" tabindex="-1"></a>  gamma[<span class="dv">3</span>,<span class="dv">2</span>] <span class="ot">&lt;-</span> <span class="dv">0</span></span>
-<span id="cb262-12"><a href="dispersal.html#cb262-12" tabindex="-1"></a>  gamma[<span class="dv">3</span>,<span class="dv">3</span>] <span class="ot">&lt;-</span> <span class="dv">1</span></span>
-<span id="cb262-13"><a href="dispersal.html#cb262-13" tabindex="-1"></a>...</span></code></pre></div>
-<p>The observation matrix:</p>
+<span id="cb262-2"><a href="dispersal.html#cb262-2" tabindex="-1"></a>  <span class="co"># -------------------------------------------------</span></span>
+<span id="cb262-3"><a href="dispersal.html#cb262-3" tabindex="-1"></a>  <span class="co"># Parameters:</span></span>
+<span id="cb262-4"><a href="dispersal.html#cb262-4" tabindex="-1"></a>  <span class="co"># phiB: survival probability state B</span></span>
+<span id="cb262-5"><a href="dispersal.html#cb262-5" tabindex="-1"></a>  <span class="co"># phiNB: survival probability state NB</span></span>
+<span id="cb262-6"><a href="dispersal.html#cb262-6" tabindex="-1"></a>  <span class="co"># psiBNB: transition probability from B to NB</span></span>
+<span id="cb262-7"><a href="dispersal.html#cb262-7" tabindex="-1"></a>  <span class="co"># psiNBB: transition probability from NB to B</span></span>
+<span id="cb262-8"><a href="dispersal.html#cb262-8" tabindex="-1"></a>  <span class="co"># pB: recapture probability B</span></span>
+<span id="cb262-9"><a href="dispersal.html#cb262-9" tabindex="-1"></a>  <span class="co"># pNB: recapture probability NB</span></span>
+<span id="cb262-10"><a href="dispersal.html#cb262-10" tabindex="-1"></a>  <span class="co"># -------------------------------------------------</span></span>
+<span id="cb262-11"><a href="dispersal.html#cb262-11" tabindex="-1"></a>  <span class="co"># States (z):</span></span>
+<span id="cb262-12"><a href="dispersal.html#cb262-12" tabindex="-1"></a>  <span class="co"># 1 alive B</span></span>
+<span id="cb262-13"><a href="dispersal.html#cb262-13" tabindex="-1"></a>  <span class="co"># 2 alive NB</span></span>
+<span id="cb262-14"><a href="dispersal.html#cb262-14" tabindex="-1"></a>  <span class="co"># 3 dead</span></span>
+<span id="cb262-15"><a href="dispersal.html#cb262-15" tabindex="-1"></a>  <span class="co"># Observations (y):</span></span>
+<span id="cb262-16"><a href="dispersal.html#cb262-16" tabindex="-1"></a>  <span class="co"># 1 not seen</span></span>
+<span id="cb262-17"><a href="dispersal.html#cb262-17" tabindex="-1"></a>  <span class="co"># 2 seen as B</span></span>
+<span id="cb262-18"><a href="dispersal.html#cb262-18" tabindex="-1"></a>  <span class="co"># 3 seen as NB</span></span>
+<span id="cb262-19"><a href="dispersal.html#cb262-19" tabindex="-1"></a>  <span class="co"># -------------------------------------------------</span></span>
+<span id="cb262-20"><a href="dispersal.html#cb262-20" tabindex="-1"></a>...</span></code></pre></div>
+<p>Then the priors:</p>
 <div class="sourceCode" id="cb263"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb263-1"><a href="dispersal.html#cb263-1" tabindex="-1"></a>multistate <span class="ot">&lt;-</span> <span class="fu">nimbleCode</span>({</span>
 <span id="cb263-2"><a href="dispersal.html#cb263-2" tabindex="-1"></a>...</span>
-<span id="cb263-3"><a href="dispersal.html#cb263-3" tabindex="-1"></a>  <span class="co"># probabilities of y(t) given z(t)</span></span>
-<span id="cb263-4"><a href="dispersal.html#cb263-4" tabindex="-1"></a>  omega[<span class="dv">1</span>,<span class="dv">1</span>] <span class="ot">&lt;-</span> <span class="dv">1</span> <span class="sc">-</span> pB    <span class="co"># Pr(alive B t -&gt; non-detected t)</span></span>
-<span id="cb263-5"><a href="dispersal.html#cb263-5" tabindex="-1"></a>  omega[<span class="dv">1</span>,<span class="dv">2</span>] <span class="ot">&lt;-</span> pB        <span class="co"># Pr(alive B t -&gt; detected B t)</span></span>
-<span id="cb263-6"><a href="dispersal.html#cb263-6" tabindex="-1"></a>  omega[<span class="dv">1</span>,<span class="dv">3</span>] <span class="ot">&lt;-</span> <span class="dv">0</span>         <span class="co"># Pr(alive B t -&gt; detected NB t)</span></span>
-<span id="cb263-7"><a href="dispersal.html#cb263-7" tabindex="-1"></a>  omega[<span class="dv">2</span>,<span class="dv">1</span>] <span class="ot">&lt;-</span> <span class="dv">1</span> <span class="sc">-</span> pNB   <span class="co"># Pr(alive NB t -&gt; non-detected t)</span></span>
-<span id="cb263-8"><a href="dispersal.html#cb263-8" tabindex="-1"></a>  omega[<span class="dv">2</span>,<span class="dv">2</span>] <span class="ot">&lt;-</span> <span class="dv">0</span>         <span class="co"># Pr(alive NB t -&gt; detected B t)</span></span>
-<span id="cb263-9"><a href="dispersal.html#cb263-9" tabindex="-1"></a>  omega[<span class="dv">2</span>,<span class="dv">3</span>] <span class="ot">&lt;-</span> pNB       <span class="co"># Pr(alive NB t -&gt; detected NB t)</span></span>
-<span id="cb263-10"><a href="dispersal.html#cb263-10" tabindex="-1"></a>  omega[<span class="dv">3</span>,<span class="dv">1</span>] <span class="ot">&lt;-</span> <span class="dv">1</span>         <span class="co"># Pr(dead t -&gt; non-detected t)</span></span>
-<span id="cb263-11"><a href="dispersal.html#cb263-11" tabindex="-1"></a>  omega[<span class="dv">3</span>,<span class="dv">2</span>] <span class="ot">&lt;-</span> <span class="dv">0</span>         <span class="co"># Pr(dead t -&gt; detected N t)</span></span>
-<span id="cb263-12"><a href="dispersal.html#cb263-12" tabindex="-1"></a>  omega[<span class="dv">3</span>,<span class="dv">3</span>] <span class="ot">&lt;-</span> <span class="dv">0</span>         <span class="co"># Pr(dead t -&gt; detected NB t)</span></span>
-<span id="cb263-13"><a href="dispersal.html#cb263-13" tabindex="-1"></a>...</span></code></pre></div>
+<span id="cb263-3"><a href="dispersal.html#cb263-3" tabindex="-1"></a>  <span class="co"># Priors</span></span>
+<span id="cb263-4"><a href="dispersal.html#cb263-4" tabindex="-1"></a>  phiB <span class="sc">~</span> <span class="fu">dunif</span>(<span class="dv">0</span>, <span class="dv">1</span>)</span>
+<span id="cb263-5"><a href="dispersal.html#cb263-5" tabindex="-1"></a>  phiNB <span class="sc">~</span> <span class="fu">dunif</span>(<span class="dv">0</span>, <span class="dv">1</span>)</span>
+<span id="cb263-6"><a href="dispersal.html#cb263-6" tabindex="-1"></a>  psiBNB <span class="sc">~</span> <span class="fu">dunif</span>(<span class="dv">0</span>, <span class="dv">1</span>)</span>
+<span id="cb263-7"><a href="dispersal.html#cb263-7" tabindex="-1"></a>  psiNBB <span class="sc">~</span> <span class="fu">dunif</span>(<span class="dv">0</span>, <span class="dv">1</span>)</span>
+<span id="cb263-8"><a href="dispersal.html#cb263-8" tabindex="-1"></a>  pB <span class="sc">~</span> <span class="fu">dunif</span>(<span class="dv">0</span>, <span class="dv">1</span>)</span>
+<span id="cb263-9"><a href="dispersal.html#cb263-9" tabindex="-1"></a>  pNB <span class="sc">~</span> <span class="fu">dunif</span>(<span class="dv">0</span>, <span class="dv">1</span>)</span>
+<span id="cb263-10"><a href="dispersal.html#cb263-10" tabindex="-1"></a>...</span></code></pre></div>
+<p>The transition matrix:</p>
+<div class="sourceCode" id="cb264"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb264-1"><a href="dispersal.html#cb264-1" tabindex="-1"></a>multistate <span class="ot">&lt;-</span> <span class="fu">nimbleCode</span>({</span>
+<span id="cb264-2"><a href="dispersal.html#cb264-2" tabindex="-1"></a>...</span>
+<span id="cb264-3"><a href="dispersal.html#cb264-3" tabindex="-1"></a>  <span class="co"># probabilities of state z(t+1) given z(t)</span></span>
+<span id="cb264-4"><a href="dispersal.html#cb264-4" tabindex="-1"></a>  gamma[<span class="dv">1</span>,<span class="dv">1</span>] <span class="ot">&lt;-</span> phiB <span class="sc">*</span> (<span class="dv">1</span> <span class="sc">-</span> psiBNB)</span>
+<span id="cb264-5"><a href="dispersal.html#cb264-5" tabindex="-1"></a>  gamma[<span class="dv">1</span>,<span class="dv">2</span>] <span class="ot">&lt;-</span> phiB <span class="sc">*</span> psiBNB</span>
+<span id="cb264-6"><a href="dispersal.html#cb264-6" tabindex="-1"></a>  gamma[<span class="dv">1</span>,<span class="dv">3</span>] <span class="ot">&lt;-</span> <span class="dv">1</span> <span class="sc">-</span> phiB</span>
+<span id="cb264-7"><a href="dispersal.html#cb264-7" tabindex="-1"></a>  gamma[<span class="dv">2</span>,<span class="dv">1</span>] <span class="ot">&lt;-</span> phiNB <span class="sc">*</span> psiNBB</span>
+<span id="cb264-8"><a href="dispersal.html#cb264-8" tabindex="-1"></a>  gamma[<span class="dv">2</span>,<span class="dv">2</span>] <span class="ot">&lt;-</span> phiNB <span class="sc">*</span> (<span class="dv">1</span> <span class="sc">-</span> psiNBB)</span>
+<span id="cb264-9"><a href="dispersal.html#cb264-9" tabindex="-1"></a>  gamma[<span class="dv">2</span>,<span class="dv">3</span>] <span class="ot">&lt;-</span> <span class="dv">1</span> <span class="sc">-</span> phiNB</span>
+<span id="cb264-10"><a href="dispersal.html#cb264-10" tabindex="-1"></a>  gamma[<span class="dv">3</span>,<span class="dv">1</span>] <span class="ot">&lt;-</span> <span class="dv">0</span></span>
+<span id="cb264-11"><a href="dispersal.html#cb264-11" tabindex="-1"></a>  gamma[<span class="dv">3</span>,<span class="dv">2</span>] <span class="ot">&lt;-</span> <span class="dv">0</span></span>
+<span id="cb264-12"><a href="dispersal.html#cb264-12" tabindex="-1"></a>  gamma[<span class="dv">3</span>,<span class="dv">3</span>] <span class="ot">&lt;-</span> <span class="dv">1</span></span>
+<span id="cb264-13"><a href="dispersal.html#cb264-13" tabindex="-1"></a>...</span></code></pre></div>
+<p>The observation matrix:</p>
+<div class="sourceCode" id="cb265"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb265-1"><a href="dispersal.html#cb265-1" tabindex="-1"></a>multistate <span class="ot">&lt;-</span> <span class="fu">nimbleCode</span>({</span>
+<span id="cb265-2"><a href="dispersal.html#cb265-2" tabindex="-1"></a>...</span>
+<span id="cb265-3"><a href="dispersal.html#cb265-3" tabindex="-1"></a>  <span class="co"># probabilities of y(t) given z(t)</span></span>
+<span id="cb265-4"><a href="dispersal.html#cb265-4" tabindex="-1"></a>  omega[<span class="dv">1</span>,<span class="dv">1</span>] <span class="ot">&lt;-</span> <span class="dv">1</span> <span class="sc">-</span> pB    <span class="co"># Pr(alive B t -&gt; non-detected t)</span></span>
+<span id="cb265-5"><a href="dispersal.html#cb265-5" tabindex="-1"></a>  omega[<span class="dv">1</span>,<span class="dv">2</span>] <span class="ot">&lt;-</span> pB        <span class="co"># Pr(alive B t -&gt; detected B t)</span></span>
+<span id="cb265-6"><a href="dispersal.html#cb265-6" tabindex="-1"></a>  omega[<span class="dv">1</span>,<span class="dv">3</span>] <span class="ot">&lt;-</span> <span class="dv">0</span>         <span class="co"># Pr(alive B t -&gt; detected NB t)</span></span>
+<span id="cb265-7"><a href="dispersal.html#cb265-7" tabindex="-1"></a>  omega[<span class="dv">2</span>,<span class="dv">1</span>] <span class="ot">&lt;-</span> <span class="dv">1</span> <span class="sc">-</span> pNB   <span class="co"># Pr(alive NB t -&gt; non-detected t)</span></span>
+<span id="cb265-8"><a href="dispersal.html#cb265-8" tabindex="-1"></a>  omega[<span class="dv">2</span>,<span class="dv">2</span>] <span class="ot">&lt;-</span> <span class="dv">0</span>         <span class="co"># Pr(alive NB t -&gt; detected B t)</span></span>
+<span id="cb265-9"><a href="dispersal.html#cb265-9" tabindex="-1"></a>  omega[<span class="dv">2</span>,<span class="dv">3</span>] <span class="ot">&lt;-</span> pNB       <span class="co"># Pr(alive NB t -&gt; detected NB t)</span></span>
+<span id="cb265-10"><a href="dispersal.html#cb265-10" tabindex="-1"></a>  omega[<span class="dv">3</span>,<span class="dv">1</span>] <span class="ot">&lt;-</span> <span class="dv">1</span>         <span class="co"># Pr(dead t -&gt; non-detected t)</span></span>
+<span id="cb265-11"><a href="dispersal.html#cb265-11" tabindex="-1"></a>  omega[<span class="dv">3</span>,<span class="dv">2</span>] <span class="ot">&lt;-</span> <span class="dv">0</span>         <span class="co"># Pr(dead t -&gt; detected N t)</span></span>
+<span id="cb265-12"><a href="dispersal.html#cb265-12" tabindex="-1"></a>  omega[<span class="dv">3</span>,<span class="dv">3</span>] <span class="ot">&lt;-</span> <span class="dv">0</span>         <span class="co"># Pr(dead t -&gt; detected NB t)</span></span>
+<span id="cb265-13"><a href="dispersal.html#cb265-13" tabindex="-1"></a>...</span></code></pre></div>
 <p>And the likelihood:</p>
-<div class="sourceCode" id="cb264"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb266"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">multistate</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimbleCode.html">nimbleCode</a></span><span class="op">(</span><span class="op">{</span></span>
 <span><span class="va">...</span></span>
 <span>  <span class="co"># likelihood</span></span>
@@ -34041,7 +34066,7 @@ year_1956
 <span>  <span class="op">}</span></span>
 <span><span class="op">}</span><span class="op">)</span></span></code></pre></div>
 <p>You may run NIMBLE and get the following results:</p>
-<div class="sourceCode" id="cb265"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb267"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/pkg/MCMCvis/man/MCMCsummary.html">MCMCsummary</a></span><span class="op">(</span><span class="va">mcmc.multistate</span>, round <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span>
 <span><span class="co">##        mean   sd 2.5%  50% 97.5% Rhat n.eff</span></span>
 <span><span class="co">## pB     0.60 0.03 0.54 0.59  0.66 1.00   202</span></span>
@@ -34050,8 +34075,8 @@ year_1956
 <span><span class="co">## phiNB  0.85 0.02 0.82 0.85  0.88 1.00   404</span></span>
 <span><span class="co">## psiBNB 0.25 0.02 0.21 0.25  0.30 1.00   434</span></span>
 <span><span class="co">## psiNBB 0.24 0.02 0.20 0.24  0.29 1.03   478</span></span></code></pre></div>
-<p>Non-breeder individuals seem to have a survival higher than breeder individuals, suggesting a trade-off between reproduction and survival. Let’s compare graphically the survival of breeder and non-breeder individuals. First we gather the values generated for <span class="math inline">\(\phi_B\)</span> and <span class="math inline">\(\phi_{NB}\)</span> for the two chains.</p>
-<div class="sourceCode" id="cb266"><pre class="downlit sourceCode r">
+<p>Non-breeder individuals seem to have a survival higher than breeder individuals, suggesting a trade-off between reproduction and survival. Let’s compare graphically the survival of breeder and non-breeder individuals. First we gather the values generated for <span class="math inline">\(\phi^B\)</span> and <span class="math inline">\(\phi^{NB}\)</span> for the two chains.</p>
+<div class="sourceCode" id="cb268"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">phiB</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="va">mcmc.multistate</span><span class="op">$</span><span class="va">chain1</span><span class="op">[</span>,<span class="st">"phiB"</span><span class="op">]</span>, <span class="va">mcmc.multistate</span><span class="op">$</span><span class="va">chain2</span><span class="op">[</span>,<span class="st">"phiB"</span><span class="op">]</span><span class="op">)</span></span>
 <span><span class="va">phiNB</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="va">mcmc.multistate</span><span class="op">$</span><span class="va">chain1</span><span class="op">[</span>,<span class="st">"phiNB"</span><span class="op">]</span>, <span class="va">mcmc.multistate</span><span class="op">$</span><span class="va">chain2</span><span class="op">[</span>,<span class="st">"phiNB"</span><span class="op">]</span><span class="op">)</span></span>
 <span><span class="va">df</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html">data.frame</a></span><span class="op">(</span>param <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/rep.html">rep</a></span><span class="op">(</span><span class="st">"phiB"</span>, <span class="fu"><a href="https://rdrr.io/r/base/length.html">length</a></span><span class="op">(</span><span class="va">phiB</span><span class="op">)</span><span class="op">)</span>, </span>
@@ -34066,16 +34091,16 @@ year_1956
 <span><span class="co">## 5  phiB 0.8051</span></span>
 <span><span class="co">## 6  phiB 0.8051</span></span></code></pre></div>
 <p>Then, we plot a histogram of the two posterior distributions:</p>
-<div class="sourceCode" id="cb267"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb269"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">df</span> <span class="op">%&gt;%</span></span>
 <span>  <span class="fu">ggplot</span><span class="op">(</span><span class="fu">aes</span><span class="op">(</span>x <span class="op">=</span> <span class="va">value</span>, fill <span class="op">=</span> <span class="va">param</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
 <span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_density.html">geom_density</a></span><span class="op">(</span>color <span class="op">=</span> <span class="st">"white"</span>, alpha <span class="op">=</span> <span class="fl">0.6</span>, position <span class="op">=</span> <span class="st">'identity'</span><span class="op">)</span> <span class="op">+</span></span>
 <span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/scale_manual.html">scale_fill_manual</a></span><span class="op">(</span>values <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"#69b3a2"</span>, <span class="st">"#404080"</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
 <span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html">labs</a></span><span class="op">(</span>fill <span class="op">=</span> <span class="st">""</span>, x <span class="op">=</span> <span class="st">"survival"</span><span class="op">)</span></span></code></pre></div>
-<div class="inline-figure"><img src="banana-book_files/figure-html/unnamed-chunk-311-1.png" width="672"></div>
+<div class="inline-figure"><img src="banana-book_files/figure-html/unnamed-chunk-313-1.png" width="672"></div>
 <p>A formal test of the trade-off would consist in fitting the model with survival irrespective of the state, and compare its WAIC value to the model we just fitted.</p>
 <p>What about a potential trade-off on reproduction?</p>
-<div class="sourceCode" id="cb268"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb270"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">psiBNB</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="va">mcmc.multistate</span><span class="op">$</span><span class="va">chain1</span><span class="op">[</span>,<span class="st">"psiBNB"</span><span class="op">]</span>, <span class="va">mcmc.multistate</span><span class="op">$</span><span class="va">chain2</span><span class="op">[</span>,<span class="st">"psiBNB"</span><span class="op">]</span><span class="op">)</span></span>
 <span><span class="va">psiBB</span> <span class="op">&lt;-</span> <span class="fl">1</span> <span class="op">-</span> <span class="va">psiBNB</span></span>
 <span><span class="va">psiNBB</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="va">mcmc.multistate</span><span class="op">$</span><span class="va">chain1</span><span class="op">[</span>,<span class="st">"psiNBB"</span><span class="op">]</span>, <span class="va">mcmc.multistate</span><span class="op">$</span><span class="va">chain2</span><span class="op">[</span>,<span class="st">"psiNBB"</span><span class="op">]</span><span class="op">)</span></span>
@@ -34087,35 +34112,15 @@ year_1956
 <span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_density.html">geom_density</a></span><span class="op">(</span>color <span class="op">=</span> <span class="st">"white"</span>, alpha <span class="op">=</span> <span class="fl">0.6</span>, position <span class="op">=</span> <span class="st">'identity'</span><span class="op">)</span> <span class="op">+</span></span>
 <span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/scale_manual.html">scale_fill_manual</a></span><span class="op">(</span>values <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"#69b3a2"</span>, <span class="st">"#404080"</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
 <span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html">labs</a></span><span class="op">(</span>fill <span class="op">=</span> <span class="st">""</span>, x <span class="op">=</span> <span class="st">"breeding probabilities"</span><span class="op">)</span></span></code></pre></div>
-<div class="inline-figure"><img src="banana-book_files/figure-html/unnamed-chunk-312-1.png" width="672"></div>
+<div class="inline-figure"><img src="banana-book_files/figure-html/unnamed-chunk-314-1.png" width="672"></div>
 <p>Interestingly, breeder individuals do much better than non-breeder individuals. This failure at detecting a trade-off is probably due to individual heterogeneity that should be accounted for. <strong>Case study with simulations as in Oikos paper, see Figure 1 and Table 2. Would be a nice example of the use of simulations. Another example could the statistical power analyses.</strong></p>
 </div>
 </div>
-<div id="gofas" class="section level2" number="5.6">
+<div id="localminima" class="section level2" number="5.6">
 <h2>
-<span class="header-section-number">5.6</span> Goodness of fit<a class="anchor" aria-label="anchor" href="#gofas"><i class="fas fa-link"></i></a>
+<span class="header-section-number">5.6</span> Issue of local minima<a class="anchor" aria-label="anchor" href="#localminima"><i class="fas fa-link"></i></a>
 </h2>
-<p><strong>I’m missing a section on gof w/ R2ucare and posterior predictive checks/Bayesian p-values.</strong></p>
-<div class="sourceCode" id="cb269"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">geese.hist</span> <span class="op">&lt;-</span> <span class="va">geese</span><span class="op">$</span><span class="va">encounter_histories</span></span>
-<span><span class="va">geese.freq</span> <span class="op">&lt;-</span> <span class="va">geese</span><span class="op">$</span><span class="va">sample_size</span></span>
-<span><span class="fu"><a href="https://rdrr.io/pkg/R2ucare/man/test3Gsr.html">test3Gsr</a></span><span class="op">(</span><span class="va">geese.hist</span>, <span class="va">geese.freq</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/pkg/R2ucare/man/test3Gsm.html">test3Gsm</a></span><span class="op">(</span><span class="va">geese.hist</span>, <span class="va">geese.freq</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/pkg/R2ucare/man/test3Gwbwa.html">test3Gwbwa</a></span><span class="op">(</span><span class="va">geese.hist</span>, <span class="va">geese.freq</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/pkg/R2ucare/man/testMitec.html">testMitec</a></span><span class="op">(</span><span class="va">geese.hist</span>, <span class="va">geese.freq</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/pkg/R2ucare/man/testMltec.html">testMltec</a></span><span class="op">(</span><span class="va">geese.hist</span>, <span class="va">geese.freq</span><span class="op">)</span></span></code></pre></div>
-<p>All at once:</p>
-<div class="sourceCode" id="cb270"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/pkg/R2ucare/man/overall_JMV.html">overall_JMV</a></span><span class="op">(</span><span class="va">geese.hist</span>, <span class="va">geese.freq</span><span class="op">)</span></span></code></pre></div>
-<p><strong>Refer to case study for posterior predictive check, and how to account for memory. If trap-dependence or transience is significant, you may account for these lacks of fit as in the Cormack-Jolly-Seber model example. If there are signs of a memory effect, it gets a bit trickier but you may fit a model to account for this issue. Check our Animal Biodiversity paper for more.</strong></p>
-</div>
-<div id="issue-of-local-minima" class="section level2" number="5.7">
-<h2>
-<span class="header-section-number">5.7</span> Issue of local minima<a class="anchor" aria-label="anchor" href="#issue-of-local-minima"><i class="fas fa-link"></i></a>
-</h2>
-<p>Simulated data: 2 sites or states, and 7 occasions, Survival <span class="math inline">\(\phi = 1\)</span>, detection <span class="math inline">\(p = 0.6\)</span>, Transition <span class="math inline">\(\psi_{12} = 0.6\)</span>, Transition <span class="math inline">\(\psi_{21} = 0.85\)</span>.</p>
-<p>Courtesy of Jérôme Dupuis, used in <span class="citation">Gimenez et al. (<a href="references.html#ref-gimenez2005profile">2005</a>)</span>.</p>
-Data:
+<p>In the Frequentist approach, we use the maximum likelihood theory to estimate parameters. The maximum likelihood estimates are the values that get you to the maximum of the model likelihood. To find out the maximum of the likelihood, we use iterative optimization algorithms. However, sometimes, our model likelihood contains several maxima and there is no guarantee that the algorithms will find the global maximum corresponding to the maximum likelihood estimates, and it may get stuck in a local maximum. Let’s illustrate this issue with some simulated data that were kindly provided by Jérôme Dupuis. We consider 2 sites or states, say 1 and 2, and 7 sampling occasions. The survival probability is constant <span class="math inline">\(\phi = 1\)</span> as well as the detection probability <span class="math inline">\(p = 0.6\)</span>. The probability of moving from 1 to 2 is <span class="math inline">\(\psi^{12} = 0.6\)</span> and <span class="math inline">\(\psi^{21} = 0.85\)</span> in the opposite direction. Here are the encounter histories of the 27 individuals that were simulated: <strong>refer to HMM chapter for simulations?</strong></p>
 <div style="border: 1px solid #ddd; padding: 0px; overflow-y: scroll; height:400px; overflow-x: scroll; width:100%; ">
 <div class="inline-table"><table class="table table-sm">
 <thead><tr>
@@ -34881,82 +34886,43 @@ V7
 </tbody>
 </table></div>
 </div>
-<p>Initial values lead to local and global minimum, here rofile deviance of transition from 2 to 1:</p>
+<p>In Figure <a href="dispersal.html#fig:inits">5.2</a>, we provide an illustration of the influence of the choice of initial values when trying to minimize the deviance (which is minus two times the log of the likelihood). The black curve is the what we called the profile deviance for <span class="math inline">\(\psi^{21}\)</span>. In brief, the profile deviance consists in taking a slice of the deviance in the direction of a parameter of interest and treating the other parameters as nuisance parameters. In our example, we set <span class="math inline">\(\psi^{21}\)</span> to a value (on the x-axis) an minimize the deviance with respect to the other parameters (on the y-axis). There are two minima, but only the global minimum corresponding to <span class="math inline">\(\psi^{21}\)</span> around 0.8 is of interest to us. The thing is that if you start your optimization algorithm by picking value in the red area, then it will get stuck in the local minimum and tells you the maximum likelihood estimate of <span class="math inline">\(\psi^{21}\)</span> is around 0.35, which is obviously far from the value we used to simulate the data. In contrast, if you pick initial values in the green area, then the algorithm will converge to the global minimum.</p>
 <div class="figure">
 <span style="display:block;" id="fig:inits"></span>
-<img src="images/multistate_local_minimav2_Page_06.png" alt="Influence of initial values on convergence in max lik. Left: inits lead to local min; Right: inits lead to global min" width="50%"><img src="images/multistate_local_minimav2_Page_07.png" alt="Influence of initial values on convergence in max lik. Left: inits lead to local min; Right: inits lead to global min" width="50%"><p class="caption">
-Figure 5.2: Influence of initial values on convergence in max lik. Left: inits lead to local min; Right: inits lead to global min
+<img src="images/multistate_local_minimav2_Page_07.png" alt="Influence of the choice of initial values on the convergence to the global minimum of the deviance illustrated with simulated data" width="100%"><p class="caption">
+Figure 5.2: Influence of the choice of initial values on the convergence to the global minimum of the deviance illustrated with simulated data
 </p>
 </div>
-<p>When it comes to MCMC, here are the trace:</p>
+<p>You might argue that this is a problem of the optimization algorithm and therefore inherent to the Frequentist approach. Well, it turns out that MCMC algorithms are not immune to the issue. If you fit the AS model with constant parameters to the simulated data, here is the trace for the probability of moving from 2 to 1.</p>
 <div class="inline-figure"><img src="banana-book_files/figure-html/unnamed-chunk-316-1.png" width="672"></div>
-<p>And the posterior distributions:</p>
+<p>Clearly, there are two regimes which might appear as if convergence was not reached. The chain spends most of its time around high values of <span class="math inline">\(\psi^{21}\)</span> close to the true value represented by the blue dashed line. But sometimes, the chain jumps to values around 0.3-0.4. This behavior translates into two modes in the posterior distribution for <span class="math inline">\(\psi^{21}\)</span> where the mode on the right is closer to the truth represented by the dashed blue vertical line.</p>
 <div class="inline-figure"><img src="banana-book_files/figure-html/unnamed-chunk-317-1.png" width="672"></div>
+<p><strong>So what? In Freq appraoch, you would just compare the lik evaluated at both max and could tell the local vs the global max.</strong> The issue of local minima is a difficult problem, and the key to handle posteriors with multiple modes is sampling with efficiently. This is why specific MCMC algorithms have been developed. Assuming the chains we run in NIMBLE spend more time in the region of the parameter space corresponding to the global minimum, then we recommend using the median or the mode to summarize the posterior distribution. <strong>Do it on the example. Is it enough as a recommendation?</strong></p>
 </div>
-<div id="uncertainty" class="section level2" number="5.8">
+<div id="multievent" class="section level2" number="5.7">
 <h2>
-<span class="header-section-number">5.8</span> Uncertainty<a class="anchor" aria-label="anchor" href="#uncertainty"><i class="fas fa-link"></i></a>
+<span class="header-section-number">5.7</span> Uncertainty<a class="anchor" aria-label="anchor" href="#multievent"><i class="fas fa-link"></i></a>
 </h2>
-<p>We’re going to talk about multievent models. Multievent models extend multistate models with uncertainty in state assignment. Let’s see some examples to fix ideas. These examples are from published papers which used multievent models.</p>
-<div id="examples" class="section level3" number="5.8.1">
-<h3>
-<span class="header-section-number">5.8.1</span> Examples<a class="anchor" aria-label="anchor" href="#examples"><i class="fas fa-link"></i></a>
-</h3>
-<ul>
-<li><p>Breeding status in female roe deer is ascertained based on fawn detection</p></li>
-<li><p>Sex status is ascertained based on morphological criteria in Audouin’s gulls</p></li>
-<li><p>Disease status in house finches is ascertained based on birds’ eyes examination</p></li>
-<li><p>Hybrid status in wolves is ascertained based on genetics</p></li>
-<li><p>Dominance status in wolves is ascertained based on heterogeneity in detection</p></li>
-</ul>
-<p>The common thing to all these examples is that. We need to explicitly consider state assignment in a model. HMMs to the rescue! And to do that, we’ll use HMMs again!</p>
-<p>Questions:</p>
-<ul>
-<li><p>Testing life-history trade-offs while accounting for uncertainty in breeding status</p></li>
-<li><p>Quantifying disease dynamics while accounting for uncertainty in disease status</p></li>
-<li><p>Estimating survival while accounting for individual heterogeneity in detection</p></li>
-<li><p>In this module, I’ll go through 3 examples.</p></li>
-<li><p>Testing life-history trade-offs while accounting for uncertainty in breeding status.</p></li>
-<li><p>Quantifying disease dynamics while accounting for uncertainty in disease status.</p></li>
-<li><p>Estimating survival while accounting for individual heterogeneity in detection.</p></li>
-<li><p>Testing life-history trade-offs while accounting for uncertainty in breeding status.</p></li>
-<li><p>Quantifying disease dynamics while accounting for uncertainty in disease status</p></li>
-<li><p>Estimating survival while accounting for individual heterogeneity in detection</p></li>
-</ul>
-</div>
-<div id="breeding-status" class="section level3" number="5.8.2">
-<h3>
-<span class="header-section-number">5.8.2</span> Breeding status<a class="anchor" aria-label="anchor" href="#breeding-status"><i class="fas fa-link"></i></a>
-</h3>
-<p>Testing life-history trade-offs while accounting for uncertainty in breeding status.</p>
-<p>Ingredients</p>
-<ul>
-<li>3 states
-<ul>
-<li>breeding (B)</li>
-<li>non-breeding (NB)</li>
-<li>dead (D)</li>
-</ul>
-</li>
-<li>4 observations
-<ul>
-<li>not encountered (0)</li>
-<li>found, ascertained as breeder (1)</li>
-<li>found, ascertained as non-breeder (2)</li>
-<li>found, status unknown (3)</li>
-</ul>
-</li>
-</ul>
-<p>We still have 3 states, breeding, non-breeding and dead. With regard to observations, a bird may be not encountered. It may also be encountered, but in contrast with multistate CR data, we don’t know its state for sure. It may be found and ascertained or classified as breeder. It may be found and ascertained or classified as non-breeder. It may be found be we are unable to determine whether it’s breeding or non-breeding.</p>
-<p>Now how do the states generate the observations?</p>
+<p>In the AS model, we assume that we can without a doubt assign a site or a state to an animal whenever it is detected. But this is not always the case. For example, when the breeding status in mammals or birds is ascertained based on the presence of offspring or eggs, we are uncertain of whether a female is breeding or not when the offspring or eggs are not seen. <strong>Refine explanation.</strong></p>
+<p>We will revisit the titis example <a href="dispersal.html#states">5.5</a> and try to assess life-history trade-offs while accounting for uncertainty in breeding status. We still have 3 states, which are alive and breeding, alive and non-breeding and dead. With regard to observations, a bird may be not encountered. It may also be encountered, but in contrast with our previous analysis of the titis data, we don’t know its state for sure. It may be found and ascertained (or classified) as breeder. It may be found and ascertained as non-breeder. It may be found be we are unable to determine whether it’s breeding or non-breeding. <strong>Say a bit more on how it is done on the field.</strong></p>
+<!-- Ingredients -->
+<!-- + 3 states -->
+<!--     + breeding (B) -->
+<!--     + non-breeding (NB) -->
+<!--     + dead (D) -->
+<!-- + 4 observations -->
+<!--     + not encountered (0) -->
+<!--     + found, ascertained as breeder (1) -->
+<!--     + found, ascertained as non-breeder (2) -->
+<!--     + found, status unknown (3) -->
+<p>How do the states generate the observations?</p>
 <div class="inline-figure"><img src="banana-book_files/figure-html/unnamed-chunk-318-1.png" width="672"></div>
-<p>To wrap up each live state can generate 3 observations. The only deterministic link is that between the dead state and the observation non-encountered. Cause if you’re dead, you cannot be detected for sure.</p>
-</div>
-<div id="model" class="section level3" number="5.8.3">
+<p>Each alive state can generate 3 observations. The only deterministic link is that between the dead state and the observation non-encountered, because if a bird is dead, it cannot be detected for sure.</p>
+<div id="model" class="section level3" number="5.7.1">
 <h3>
-<span class="header-section-number">5.8.3</span> Model<a class="anchor" aria-label="anchor" href="#model"><i class="fas fa-link"></i></a>
+<span class="header-section-number">5.7.1</span> Model<a class="anchor" aria-label="anchor" href="#model"><i class="fas fa-link"></i></a>
 </h3>
-<p>Vector of initial state probabilities</p>
+<p>Let’s specify the model. First thing we need, and it’s a big difference with the AS model, we need initial state probabilities because we cannot assign states to individuals with certainty <strong>assumes we got rid of them in the multistate section, is it true?</strong>. We write down the probability for each state at first encounter, or the vector of initial state probabilities:</p>
 <p><span class="math display">\[
 \begin{matrix}
 &amp; \\
@@ -34966,7 +34932,7 @@ Figure 5.2: Influence of initial values on convergence in max lik. Left: inits l
 \hspace{-1.2em}
 \begin{matrix}
     z_t=B &amp; z_t=NB &amp; z_t=D \\ \hdashline
-\pi_B &amp; 1 - \pi_{B} &amp; 0\\
+\pi^B &amp; 1 - \pi^{B} &amp; 0\\
 \end{matrix}
 \hspace{-0.2em}
 \begin{matrix}
@@ -34976,9 +34942,8 @@ Figure 5.2: Influence of initial values on convergence in max lik. Left: inits l
     \end{matrix}
 \end{matrix}
 \]</span></p>
-<p><span class="math inline">\(\pi_B\)</span> is the probability that a newly encountered individual is a breeder. <span class="math inline">\(\pi_{NB} = 1 - \pi_B\)</span> is the probability that a newly encountered individual is a non-breeder</p>
-<p>OK now let’s specify the model. First thing we need, and it’s a big difference with multistate models, we need initial state probabilities cause we cannot assign states to individuals w/ certainty. Let’s define pi_B the prob that a newly encountered individual is a breeding individual. We write down the prob for each state at first encounter. We have pi_B, then the prob of being a NB is the complementary. And the prob of being dead at first encounter is 0 of course.</p>
-<p>Transition matrix</p>
+<p>where <span class="math inline">\(\pi^B\)</span> is the probability that a newly encountered individual is a breeder, and <span class="math inline">\(\pi^{NB} = 1 - \pi^B\)</span> is the probability that a newly encountered individual is a non-breeder (the complementary probability of <span class="math inline">\(\pi^B\)</span>. The probability of being dead at first encounter is 0 (a bird is alive when it is first encountered).</p>
+<p>Now the transition matrix, this is the easy part as it doesn’t change. We have:</p>
 <p><span class="math display">\[
 \begin{matrix}
 &amp; \\
@@ -34988,8 +34953,8 @@ Figure 5.2: Influence of initial values on convergence in max lik. Left: inits l
 \hspace{-1.2em}
 \begin{matrix}
     z_t=B &amp; z_t=NB &amp; z_t=D \\ \hdashline
-\phi_B (1-\psi_{BNB}) &amp; \phi_B \psi_{BNB} &amp; 1 - \phi_B\\
-\phi_{NB} \psi_{NBB} &amp; \phi_{NB} (1-\psi_{NBB}) &amp; 1 - \phi_{NB}\\
+\phi^B (1-\psi^{BNB}) &amp; \phi^B \psi^{BNB} &amp; 1 - \phi^B\\
+\phi^{NB} \psi^{NBB} &amp; \phi^{NB} (1-\psi^{NBB}) &amp; 1 - \phi^{NB}\\
 0 &amp; 0 &amp; 1
 \end{matrix}
 \hspace{-0.2em}
@@ -35001,8 +34966,8 @@ Figure 5.2: Influence of initial values on convergence in max lik. Left: inits l
     \end{matrix}
 \end{matrix}
 \]</span></p>
-<p><span class="math inline">\(\phi_B\)</span> is breeder survival, <span class="math inline">\(\phi_{NB}\)</span> that of non-breeders. <span class="math inline">\(\psi_{BNB}\)</span> is the probability for an individual breeding a year to be a non-breeder the next year. <span class="math inline">\(\psi_{NBB}\)</span> is the probability for an non-breeder individual to breeder the next year. The transition parameters are in a matrix similar to the one we used for multistate models.</p>
-<p>Observation matrix</p>
+<p>where <span class="math inline">\(\phi^B\)</span> is the breeder survival, <span class="math inline">\(\phi_ {NB}\)</span> that of non-breeders, <span class="math inline">\(\psi^{BNB}\)</span> is the probability for an individual breeding a year to be a non-breeder the next year, and <span class="math inline">\(\psi^{NBB}\)</span> is the probability for an non-breeder individual to breeder the next year.</p>
+<p>Last, the observation matrix. The main difference between multistate and multievent models is here, in the observation parameters. Besides <span class="math inline">\(p^B\)</span> the detection probability of breeders and <span class="math inline">\(p^{NB}\)</span> that of non-breeders, we introduce two new parameters: <span class="math inline">\(\beta^B\)</span> is the probability to correctly assign an individual that is in state B to state B, and <span class="math inline">\(\beta^{NB}\)</span> is the probability to correctly assign an individual that is in state NB to state NB. We put everything in a matrix, as usual. In rows we have the states: breeding, non-breeding and dead. In columns, at the same occasion, we have the observations: detected and ascertained B, detected and ascertained NB, detected and state unknown, and not detected.</p>
 <p><span class="math display">\[
 \begin{matrix}
 &amp; \\
@@ -35024,11 +34989,9 @@ Figure 5.2: Influence of initial values on convergence in max lik. Left: inits l
     z_{t}=B \\ z_{t}=NB \\ z_{t}=D
     \end{matrix}
 \end{matrix}
-\]</span></p>
-<p><span class="math inline">\(\beta_B\)</span> is the probability to assign an individual in state B to state B. <span class="math inline">\(\beta_{NB}\)</span> is the probability to assign an individual in state NB to state NB. <span class="math inline">\(p_B\)</span> is the detection probability of breeders, <span class="math inline">\(p_{NB}\)</span> that of non-breeders.</p>
-<p>The main difference between multistate and multievent models is here, in the observation parameters. We introduce two new parameters. <span class="math inline">\(\delta_B\)</span>: prob. to correctly assign an indiv. that is in state B to state B, <span class="math inline">\(\delta_{NB}\)</span>: prob. to correctly assign an indiv. that is in state NB to state NB. We put everything in a matrix, as usual. The observation matrix. In rows we have the states, breeding, non-breeding and dead. In columns, at the same occasion, we have the observation, detected and ascertained B,
-detected and ascertained NB, detected and state unknown, and not detected. For example, the prob of being detected and assigned to the state B, given that you’re in state B is the product of the detection prob in B and delta the prob of correctly assigning a B individual to state B.</p>
-<p>Because animals are all captured, <span class="math inline">\(p_B = p_{NB} = 1\)</span> at first encounter:</p>
+\]</span>
+For example, the probability of being detected and assigned to state B, given that you’re in state B is the product of the detection probability in B and the probability of correctly assigning a breeding individual to state B.</p>
+<p>At first encounter, all individuals are captured, but you still need to assign them a state. This means that we should set <span class="math inline">\(p^B = p^{NB} = 1\)</span> and use:</p>
 <p><span class="math display">\[
 \begin{matrix}
 &amp; \\
@@ -35036,9 +34999,9 @@ detected and ascertained NB, detected and state unknown, and not detected. For e
 \end{matrix}
 \hspace{-1.2em}
 \begin{matrix}
-    y_t=0 &amp; y_t=1 &amp; y_t=2 &amp; y_t=3\\ \hdashline
-0 &amp; \beta_B &amp; 0 &amp; (1-\beta_B)\\
-0 &amp; 0 &amp; \beta_{NB} &amp; (1-\beta_{NB})\\
+    y_{t = \text{first}}=0 &amp; y_{t = \text{first}}=1 &amp; y_{t = \text{first}}=2 &amp; y_{t = \text{first}}=3\\ \hdashline
+0 &amp; \beta^B &amp; 0 &amp; (1-\beta^B)\\
+0 &amp; 0 &amp; \beta^{NB} &amp; (1-\beta^{NB})\\
 1 &amp; 0 &amp; 0 &amp; 0
 \end{matrix}
 \hspace{-0.2em}
@@ -35046,17 +35009,17 @@ detected and ascertained NB, detected and state unknown, and not detected. For e
 &amp; \\
 \left . \vphantom{ \begin{matrix} 12 \\ 12 \\ 12\end{matrix} } \right )
     \begin{matrix}
-    z_{t}=B \\ z_{t}=NB \\ z_{t}=D
+    z_{t = \text{first}}=B \\ z_{t = \text{first}}=NB \\ z_{t = \text{first}}=D
     \end{matrix}
 \end{matrix}
-\]</span></p>
-<p>Note: Breeding assessment is unaffected. Then at first encounter, what happens is that step 1 of encounter is degenerate because individuals are all captured. Just set all the p’s to 1 in the encounter matrix. The breeding assessment matrix remains unchanged.</p>
+\]</span>
+<strong>Show how to split into capture then assignment? Matrix product and all.</strong></p>
 </div>
-<div id="nimble-implementation-4" class="section level3" number="5.8.4">
+<div id="nimble-implementation-4" class="section level3" number="5.7.2">
 <h3>
-<span class="header-section-number">5.8.4</span> NIMBLE implementation<a class="anchor" aria-label="anchor" href="#nimble-implementation-4"><i class="fas fa-link"></i></a>
+<span class="header-section-number">5.7.2</span> NIMBLE implementation<a class="anchor" aria-label="anchor" href="#nimble-implementation-4"><i class="fas fa-link"></i></a>
 </h3>
-<p>Step 1:</p>
+<p>We start by using comments to define the parameters, states and observations in the header of the NIMBLE code:</p>
 <div class="sourceCode" id="cb271"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb271-1"><a href="dispersal.html#cb271-1" tabindex="-1"></a>multievent <span class="ot">&lt;-</span> <span class="fu">nimbleCode</span>({</span>
 <span id="cb271-2"><a href="dispersal.html#cb271-2" tabindex="-1"></a>  <span class="co"># -------------------------------------------------</span></span>
 <span id="cb271-3"><a href="dispersal.html#cb271-3" tabindex="-1"></a>  <span class="co"># Parameters:</span></span>
@@ -35081,7 +35044,7 @@ detected and ascertained NB, detected and state unknown, and not detected. For e
 <span id="cb271-22"><a href="dispersal.html#cb271-22" tabindex="-1"></a>  <span class="co"># 4 = not ascertained</span></span>
 <span id="cb271-23"><a href="dispersal.html#cb271-23" tabindex="-1"></a>  <span class="co"># -------------------------------------------------</span></span>
 <span id="cb271-24"><a href="dispersal.html#cb271-24" tabindex="-1"></a>...</span></code></pre></div>
-<p>Step 2:</p>
+<p>Then we assign prior to all parameters to be estimated. Because we deal with probabilities, the uniform distribution between 0 and 1 will do the job:</p>
 <div class="sourceCode" id="cb272"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb272-1"><a href="dispersal.html#cb272-1" tabindex="-1"></a>multievent <span class="ot">&lt;-</span> <span class="fu">nimbleCode</span>({</span>
 <span id="cb272-2"><a href="dispersal.html#cb272-2" tabindex="-1"></a>...</span>
 <span id="cb272-3"><a href="dispersal.html#cb272-3" tabindex="-1"></a>  <span class="co"># Priors</span></span>
@@ -35095,7 +35058,7 @@ detected and ascertained NB, detected and state unknown, and not detected. For e
 <span id="cb272-11"><a href="dispersal.html#cb272-11" tabindex="-1"></a>  betaNB <span class="sc">~</span> <span class="fu">dunif</span>(<span class="dv">0</span>, <span class="dv">1</span>)</span>
 <span id="cb272-12"><a href="dispersal.html#cb272-12" tabindex="-1"></a>  betaB <span class="sc">~</span> <span class="fu">dunif</span>(<span class="dv">0</span>, <span class="dv">1</span>)</span>
 <span id="cb272-13"><a href="dispersal.html#cb272-13" tabindex="-1"></a>...</span></code></pre></div>
-<p>Step 3:</p>
+<p>Now we write the vector of initial state probabilities:</p>
 <div class="sourceCode" id="cb273"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb273-1"><a href="dispersal.html#cb273-1" tabindex="-1"></a>multievent <span class="ot">&lt;-</span> <span class="fu">nimbleCode</span>({</span>
 <span id="cb273-2"><a href="dispersal.html#cb273-2" tabindex="-1"></a>...</span>
 <span id="cb273-3"><a href="dispersal.html#cb273-3" tabindex="-1"></a>  <span class="co"># vector of initial stats probs</span></span>
@@ -35103,7 +35066,7 @@ detected and ascertained NB, detected and state unknown, and not detected. For e
 <span id="cb273-5"><a href="dispersal.html#cb273-5" tabindex="-1"></a>  delta[<span class="dv">2</span>] <span class="ot">&lt;-</span> <span class="dv">1</span> <span class="sc">-</span> piB <span class="co"># prob. of being in initial state NB</span></span>
 <span id="cb273-6"><a href="dispersal.html#cb273-6" tabindex="-1"></a>  delta[<span class="dv">3</span>] <span class="ot">&lt;-</span> <span class="dv">0</span> <span class="co"># prob. of being in initial state dead</span></span>
 <span id="cb273-7"><a href="dispersal.html#cb273-7" tabindex="-1"></a>...</span></code></pre></div>
-<p>Step 4:</p>
+<p>The transition matrix:</p>
 <div class="sourceCode" id="cb274"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb274-1"><a href="dispersal.html#cb274-1" tabindex="-1"></a>multievent <span class="ot">&lt;-</span> <span class="fu">nimbleCode</span>({</span>
 <span id="cb274-2"><a href="dispersal.html#cb274-2" tabindex="-1"></a>...</span>
 <span id="cb274-3"><a href="dispersal.html#cb274-3" tabindex="-1"></a>  <span class="co"># probabilities of state z(t+1) given z(t)</span></span>
@@ -35117,7 +35080,7 @@ detected and ascertained NB, detected and state unknown, and not detected. For e
 <span id="cb274-11"><a href="dispersal.html#cb274-11" tabindex="-1"></a>  gamma[<span class="dv">3</span>,<span class="dv">2</span>] <span class="ot">&lt;-</span> <span class="dv">0</span></span>
 <span id="cb274-12"><a href="dispersal.html#cb274-12" tabindex="-1"></a>  gamma[<span class="dv">3</span>,<span class="dv">3</span>] <span class="ot">&lt;-</span> <span class="dv">1</span></span>
 <span id="cb274-13"><a href="dispersal.html#cb274-13" tabindex="-1"></a>...</span></code></pre></div>
-<p>Step 5:</p>
+<p>And the observation matrix:</p>
 <div class="sourceCode" id="cb275"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb275-1"><a href="dispersal.html#cb275-1" tabindex="-1"></a>multievent <span class="ot">&lt;-</span> <span class="fu">nimbleCode</span>({</span>
 <span id="cb275-2"><a href="dispersal.html#cb275-2" tabindex="-1"></a>...</span>
 <span id="cb275-3"><a href="dispersal.html#cb275-3" tabindex="-1"></a>  <span class="co"># probabilities of y(t) given z(t)</span></span>
@@ -35134,24 +35097,25 @@ detected and ascertained NB, detected and state unknown, and not detected. For e
 <span id="cb275-14"><a href="dispersal.html#cb275-14" tabindex="-1"></a>  omega[<span class="dv">3</span>,<span class="dv">3</span>] <span class="ot">&lt;-</span> <span class="dv">0</span>                  <span class="co"># Pr(dead t -&gt; detected NB t)</span></span>
 <span id="cb275-15"><a href="dispersal.html#cb275-15" tabindex="-1"></a>  omega[<span class="dv">3</span>,<span class="dv">4</span>] <span class="ot">&lt;-</span> <span class="dv">0</span>                  <span class="co"># Pr(dead t -&gt; detected U t)</span></span>
 <span id="cb275-16"><a href="dispersal.html#cb275-16" tabindex="-1"></a>...</span></code></pre></div>
-<p>Step 6:</p>
+<p><strong>Show the matrix product? Say it’s inefficient to compute the product, but could be useful when modelling. Case study?</strong></p>
+<p>The observation matrix at first encounter:</p>
 <div class="sourceCode" id="cb276"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb276-1"><a href="dispersal.html#cb276-1" tabindex="-1"></a>multievent <span class="ot">&lt;-</span> <span class="fu">nimbleCode</span>({</span>
 <span id="cb276-2"><a href="dispersal.html#cb276-2" tabindex="-1"></a>...</span>
 <span id="cb276-3"><a href="dispersal.html#cb276-3" tabindex="-1"></a>  <span class="co"># probabilities of y(first) given z(first)</span></span>
-<span id="cb276-4"><a href="dispersal.html#cb276-4" tabindex="-1"></a>  omega.init[<span class="dv">1</span>,<span class="dv">1</span>] <span class="ot">&lt;-</span> <span class="dv">0</span>          <span class="co"># Pr(alive B t = 1 -&gt; non-detected t = 1)</span></span>
-<span id="cb276-5"><a href="dispersal.html#cb276-5" tabindex="-1"></a>  omega.init[<span class="dv">1</span>,<span class="dv">2</span>] <span class="ot">&lt;-</span> betaB      <span class="co"># Pr(alive B t = 1 -&gt; detected B t = 1)</span></span>
-<span id="cb276-6"><a href="dispersal.html#cb276-6" tabindex="-1"></a>  omega.init[<span class="dv">1</span>,<span class="dv">3</span>] <span class="ot">&lt;-</span> <span class="dv">0</span>          <span class="co"># Pr(alive B t = 1 -&gt; detected NB t = 1)</span></span>
-<span id="cb276-7"><a href="dispersal.html#cb276-7" tabindex="-1"></a>  omega.init[<span class="dv">1</span>,<span class="dv">4</span>] <span class="ot">&lt;-</span> <span class="dv">1</span> <span class="sc">-</span> betaB  <span class="co"># Pr(alive B t = 1 -&gt; detected U t = 1)</span></span>
-<span id="cb276-8"><a href="dispersal.html#cb276-8" tabindex="-1"></a>  omega.init[<span class="dv">2</span>,<span class="dv">1</span>] <span class="ot">&lt;-</span> <span class="dv">0</span>          <span class="co"># Pr(alive NB t = 1 -&gt; non-detected t = 1)</span></span>
-<span id="cb276-9"><a href="dispersal.html#cb276-9" tabindex="-1"></a>  omega.init[<span class="dv">2</span>,<span class="dv">2</span>] <span class="ot">&lt;-</span> <span class="dv">0</span>          <span class="co"># Pr(alive NB t = 1 -&gt; detected B t = 1)</span></span>
-<span id="cb276-10"><a href="dispersal.html#cb276-10" tabindex="-1"></a>  omega.init[<span class="dv">2</span>,<span class="dv">3</span>] <span class="ot">&lt;-</span> betaNB     <span class="co"># Pr(alive NB t = 1 -&gt; detected NB t = 1)</span></span>
-<span id="cb276-11"><a href="dispersal.html#cb276-11" tabindex="-1"></a>  omega.init[<span class="dv">2</span>,<span class="dv">4</span>] <span class="ot">&lt;-</span> <span class="dv">1</span> <span class="sc">-</span> betaNB <span class="co"># Pr(alive NB t = 1 -&gt; detected U t = 1)</span></span>
-<span id="cb276-12"><a href="dispersal.html#cb276-12" tabindex="-1"></a>  omega.init[<span class="dv">3</span>,<span class="dv">1</span>] <span class="ot">&lt;-</span> <span class="dv">1</span>          <span class="co"># Pr(dead t = 1 -&gt; non-detected t = 1)</span></span>
-<span id="cb276-13"><a href="dispersal.html#cb276-13" tabindex="-1"></a>  omega.init[<span class="dv">3</span>,<span class="dv">2</span>] <span class="ot">&lt;-</span> <span class="dv">0</span>          <span class="co"># Pr(dead t = 1 -&gt; detected N t = 1)</span></span>
-<span id="cb276-14"><a href="dispersal.html#cb276-14" tabindex="-1"></a>  omega.init[<span class="dv">3</span>,<span class="dv">3</span>] <span class="ot">&lt;-</span> <span class="dv">0</span>          <span class="co"># Pr(dead t = 1 -&gt; detected NB t = 1)</span></span>
-<span id="cb276-15"><a href="dispersal.html#cb276-15" tabindex="-1"></a>  omega.init[<span class="dv">3</span>,<span class="dv">4</span>] <span class="ot">&lt;-</span> <span class="dv">0</span>          <span class="co"># Pr(dead t = 1 -&gt; detected U t = 1)</span></span>
+<span id="cb276-4"><a href="dispersal.html#cb276-4" tabindex="-1"></a>  omega.init[<span class="dv">1</span>,<span class="dv">1</span>] <span class="ot">&lt;-</span> <span class="dv">0</span>          <span class="co"># Pr(alive B t = first -&gt; non-detected t = first)</span></span>
+<span id="cb276-5"><a href="dispersal.html#cb276-5" tabindex="-1"></a>  omega.init[<span class="dv">1</span>,<span class="dv">2</span>] <span class="ot">&lt;-</span> betaB      <span class="co"># Pr(alive B t = first -&gt; detected B t = first)</span></span>
+<span id="cb276-6"><a href="dispersal.html#cb276-6" tabindex="-1"></a>  omega.init[<span class="dv">1</span>,<span class="dv">3</span>] <span class="ot">&lt;-</span> <span class="dv">0</span>          <span class="co"># Pr(alive B t = first -&gt; detected NB t = first)</span></span>
+<span id="cb276-7"><a href="dispersal.html#cb276-7" tabindex="-1"></a>  omega.init[<span class="dv">1</span>,<span class="dv">4</span>] <span class="ot">&lt;-</span> <span class="dv">1</span> <span class="sc">-</span> betaB  <span class="co"># Pr(alive B t = first -&gt; detected U t = first)</span></span>
+<span id="cb276-8"><a href="dispersal.html#cb276-8" tabindex="-1"></a>  omega.init[<span class="dv">2</span>,<span class="dv">1</span>] <span class="ot">&lt;-</span> <span class="dv">0</span>          <span class="co"># Pr(alive NB t = first -&gt; non-detected t = first)</span></span>
+<span id="cb276-9"><a href="dispersal.html#cb276-9" tabindex="-1"></a>  omega.init[<span class="dv">2</span>,<span class="dv">2</span>] <span class="ot">&lt;-</span> <span class="dv">0</span>          <span class="co"># Pr(alive NB t = first -&gt; detected B t = first)</span></span>
+<span id="cb276-10"><a href="dispersal.html#cb276-10" tabindex="-1"></a>  omega.init[<span class="dv">2</span>,<span class="dv">3</span>] <span class="ot">&lt;-</span> betaNB     <span class="co"># Pr(alive NB t = first -&gt; detected NB t = first)</span></span>
+<span id="cb276-11"><a href="dispersal.html#cb276-11" tabindex="-1"></a>  omega.init[<span class="dv">2</span>,<span class="dv">4</span>] <span class="ot">&lt;-</span> <span class="dv">1</span> <span class="sc">-</span> betaNB <span class="co"># Pr(alive NB t = first -&gt; detected U t = first)</span></span>
+<span id="cb276-12"><a href="dispersal.html#cb276-12" tabindex="-1"></a>  omega.init[<span class="dv">3</span>,<span class="dv">1</span>] <span class="ot">&lt;-</span> <span class="dv">1</span>          <span class="co"># Pr(dead t = first -&gt; non-detected t = first)</span></span>
+<span id="cb276-13"><a href="dispersal.html#cb276-13" tabindex="-1"></a>  omega.init[<span class="dv">3</span>,<span class="dv">2</span>] <span class="ot">&lt;-</span> <span class="dv">0</span>          <span class="co"># Pr(dead t = first -&gt; detected N t = first)</span></span>
+<span id="cb276-14"><a href="dispersal.html#cb276-14" tabindex="-1"></a>  omega.init[<span class="dv">3</span>,<span class="dv">3</span>] <span class="ot">&lt;-</span> <span class="dv">0</span>          <span class="co"># Pr(dead t = first -&gt; detected NB t = first)</span></span>
+<span id="cb276-15"><a href="dispersal.html#cb276-15" tabindex="-1"></a>  omega.init[<span class="dv">3</span>,<span class="dv">4</span>] <span class="ot">&lt;-</span> <span class="dv">0</span>          <span class="co"># Pr(dead t = first -&gt; detected U t = first)</span></span>
 <span id="cb276-16"><a href="dispersal.html#cb276-16" tabindex="-1"></a>...</span></code></pre></div>
-<p>Step 7:</p>
+<p>Eventually, we get to the likelihood:</p>
 <div class="sourceCode" id="cb277"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">multievent</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimbleCode.html">nimbleCode</a></span><span class="op">(</span><span class="op">{</span></span>
 <span><span class="va">...</span></span>
@@ -35159,7 +35123,7 @@ detected and ascertained NB, detected and state unknown, and not detected. For e
 <span>  <span class="kw">for</span> <span class="op">(</span><span class="va">i</span> <span class="kw">in</span> <span class="fl">1</span><span class="op">:</span><span class="va">N</span><span class="op">)</span><span class="op">{</span></span>
 <span>    <span class="co"># latent state at first capture</span></span>
 <span>    <span class="va">z</span><span class="op">[</span><span class="va">i</span>,<span class="va">first</span><span class="op">[</span><span class="va">i</span><span class="op">]</span><span class="op">]</span> <span class="op">~</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/Categorical.html">dcat</a></span><span class="op">(</span><span class="va">delta</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">3</span><span class="op">]</span><span class="op">)</span></span>
-<span>    <span class="va">y</span><span class="op">[</span><span class="va">i</span>,<span class="va">first</span><span class="op">[</span><span class="va">i</span><span class="op">]</span><span class="op">]</span> <span class="op">~</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/Categorical.html">dcat</a></span><span class="op">(</span><span class="va">omega.init</span><span class="op">[</span><span class="va">z</span><span class="op">[</span><span class="va">i</span>,<span class="va">first</span><span class="op">[</span><span class="va">i</span><span class="op">]</span><span class="op">]</span>,<span class="fl">1</span><span class="op">:</span><span class="fl">4</span><span class="op">]</span><span class="op">)</span></span>
+<span>    <span class="va">y</span><span class="op">[</span><span class="va">i</span>,<span class="va">first</span><span class="op">[</span><span class="va">i</span><span class="op">]</span><span class="op">]</span> <span class="op">~</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/Categorical.html">dcat</a></span><span class="op">(</span><span class="va">omega.init</span><span class="op">[</span><span class="va">z</span><span class="op">[</span><span class="va">i</span>,<span class="va">first</span><span class="op">[</span><span class="va">i</span><span class="op">]</span><span class="op">]</span>,<span class="fl">1</span><span class="op">:</span><span class="fl">4</span><span class="op">]</span><span class="op">)</span> <span class="co"># obs at first encounter</span></span>
 <span>    <span class="kw">for</span> <span class="op">(</span><span class="va">t</span> <span class="kw">in</span> <span class="op">(</span><span class="va">first</span><span class="op">[</span><span class="va">i</span><span class="op">]</span><span class="op">+</span><span class="fl">1</span><span class="op">)</span><span class="op">:</span><span class="va">K</span><span class="op">)</span><span class="op">{</span></span>
 <span>      <span class="co"># z(t) given z(t-1)</span></span>
 <span>      <span class="va">z</span><span class="op">[</span><span class="va">i</span>,<span class="va">t</span><span class="op">]</span> <span class="op">~</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/Categorical.html">dcat</a></span><span class="op">(</span><span class="va">gamma</span><span class="op">[</span><span class="va">z</span><span class="op">[</span><span class="va">i</span>,<span class="va">t</span><span class="op">-</span><span class="fl">1</span><span class="op">]</span>,<span class="fl">1</span><span class="op">:</span><span class="fl">3</span><span class="op">]</span><span class="op">)</span></span>
@@ -35168,7 +35132,8 @@ detected and ascertained NB, detected and state unknown, and not detected. For e
 <span>    <span class="op">}</span></span>
 <span>  <span class="op">}</span></span>
 <span><span class="op">}</span><span class="op">)</span></span></code></pre></div>
-<p>Results:</p>
+<p>The only change is in the line <code>y[i,first[i]] ~ dcat(omega.init[z[i,first[i]],1:4])</code> where we use the observation matrix at first encounter.</p>
+<p>We run NIMBLE and get the following numerical summaries for the model parameters:</p>
 <div class="sourceCode" id="cb278"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/pkg/MCMCvis/man/MCMCsummary.html">MCMCsummary</a></span><span class="op">(</span><span class="va">mcmc.multievent</span>, round <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span>
 <span><span class="co">##        mean   sd 2.5%  50% 97.5% Rhat n.eff</span></span>
@@ -35181,28 +35146,34 @@ detected and ascertained NB, detected and state unknown, and not detected. For e
 <span><span class="co">## piB    0.71 0.03 0.66 0.71  0.76 1.02   115</span></span>
 <span><span class="co">## psiBNB 0.23 0.02 0.18 0.22  0.27 1.00   214</span></span>
 <span><span class="co">## psiNBB 0.25 0.04 0.17 0.25  0.34 1.00    95</span></span></code></pre></div>
-<p>Breeders are difficult to assigned to the correct state. Non-breeders are relatively well classified as non-breeders. No cost of breeding, neither on survival, nor on future reproduction.</p>
+<p>Breeders are difficult to assign to the correct state <span class="math inline">\(\beta^B\)</span>, while non-breeders are relatively well classified as non-breeders <span class="math inline">\(\beta^{NB}\)</span>. There is again no cost of current reproduction on future reproduction. We no longer detect a cost of breeding on survival. <strong>Uncertainty was simulated, so no ecological interpretation to be found. Say it was simulated though.</strong></p>
 <p><strong>How to give the intuition of how/why it works. Use simulations?</strong></p>
+<p><strong>Refer to case studies on sex, age, disease and hybridization</strong></p>
 </div>
 </div>
-<div id="summary-4" class="section level2" number="5.9">
+<div id="summary-4" class="section level2" number="5.8">
 <h2>
-<span class="header-section-number">5.9</span> Summary<a class="anchor" aria-label="anchor" href="#summary-4"><i class="fas fa-link"></i></a>
+<span class="header-section-number">5.8</span> Summary<a class="anchor" aria-label="anchor" href="#summary-4"><i class="fas fa-link"></i></a>
 </h2>
 <ul>
-<li><p>Blabla.</p></li>
-<li><p>Blabla.</p></li>
+<li><p>The AS model is a HMM that extends the CJS model by allowing the estimation of movements between sites (e.g. geographical locations) or transitions between states (e.g. breeding status). This flexibility allows addressing all sorts of questions in ecology and evolution.</p></li>
+<li><p>Covariates can be considered, and appropriate priors or link functions need to be used when there are more than 2 (alive) sites or states.</p></li>
+<li><p>Model comparison can be achieved with the WAIC and the goodness of fit of the AS model to capture-recapture data can be assessed with classical procedures or posterior predictive checks.</p></li>
+<li><p>Importantly, the HMM framework allows to account for uncertainty when assigning states to individuals.</p></li>
+<li><p>The models covered in this chapter haven been called multistratum/strata models, multisite models (section <a href="dispersal.html#ASmodel">5.2</a>), multistate models (section <a href="dispersal.html#states">5.5</a>) and multievent models (section <a href="dispersal.html#multievent">5.7</a>). These models are all HMMs.</p></li>
 </ul>
 </div>
-<div id="suggested-reading-4" class="section level2" number="5.10">
+<div id="suggested-reading-4" class="section level2" number="5.9">
 <h2>
-<span class="header-section-number">5.10</span> Suggested reading<a class="anchor" aria-label="anchor" href="#suggested-reading-4"><i class="fas fa-link"></i></a>
+<span class="header-section-number">5.9</span> Suggested reading<a class="anchor" aria-label="anchor" href="#suggested-reading-4"><i class="fas fa-link"></i></a>
 </h2>
 <ul>
-<li><p>Sites: <span class="citation">Arnason (<a href="references.html#ref-arnason1972">1972</a>)</span>, <span class="citation">Arnason (<a href="references.html#ref-arnason1973">1973</a>)</span>, <span class="citation">Schwarz, Schweigert, and Arnason (<a href="references.html#ref-SchwarzEtAl1993">1993</a>)</span>. States: <span class="citation">Nichols et al. (<a href="references.html#ref-NicholsEtAl1992">1992</a>)</span> (microtus and mass as state); <span class="citation">Nichols et al. (<a href="references.html#ref-NicholsEtAl1994">1994</a>)</span> (microtus and reproductive costs). For a review of multistate models, see <span class="citation">Lebreton et al. (<a href="references.html#ref-LebretonEtAl2009">2009</a>)</span>. Titi paper <span class="citation">Scofield, Fletcher, and Robertson (<a href="references.html#ref-scofield2001titi">2001</a>)</span>.</p></li>
-<li><p><span class="citation">Evans, Guttman, and Li (<a href="references.html#ref-evans2017elicit">2017</a>)</span> explain and provide Shiny app to elicit prior with Dirichlet.</p></li>
-<li><p>Uncertainty: Seminal paper by <span class="citation">Pradel (<a href="references.html#ref-pradel_multievent_2005">2005</a>)</span>. <span class="citation">Dupuis (<a href="references.html#ref-dupuis_bayesian_1995">1995</a>)</span> had a similar idea for the Arnason-Schwarz model. See also for a review <span class="citation">Gimenez et al. (<a href="references.html#ref-gimenez_estimating_2012">2012</a>)</span>.</p></li>
+<li><p>The AS model was introduced in <span class="citation">Arnason (<a href="references.html#ref-arnason1972">1972</a>)</span>, <span class="citation">Arnason (<a href="references.html#ref-arnason1973">1973</a>)</span> and <span class="citation">Schwarz, Schweigert, and Arnason (<a href="references.html#ref-SchwarzEtAl1993">1993</a>)</span>. Very soon clever folks realised that sites could be replaced by states as in <span class="citation">Nichols et al. (<a href="references.html#ref-NicholsEtAl1992">1992</a>)</span> and <span class="citation">Nichols et al. (<a href="references.html#ref-NicholsEtAl1994">1994</a>)</span>. For a review of models with sites and states, see <span class="citation">Lebreton et al. (<a href="references.html#ref-LebretonEtAl2009">2009</a>)</span>.</p></li>
+<li><p>The geese data were analyzed in <span class="citation">Hestbeck, Nichols, and Malecki (<a href="references.html#ref-hestbeck1991estimates">1991</a>)</span> and <span class="citation">Brownie et al. (<a href="references.html#ref-BrownieEtAl1993">1993</a>)</span>, and the titis data in <span class="citation">Scofield, Fletcher, and Robertson (<a href="references.html#ref-scofield2001titi">2001</a>)</span>.</p></li>
+<li><p>Models with uncertainty were introduced in <span class="citation">Pradel (<a href="references.html#ref-pradel_multievent_2005">2005</a>)</span>. <span class="citation">Dupuis (<a href="references.html#ref-dupuis_bayesian_1995">1995</a>)</span> had a similar idea for the AS model. For a review, see <span class="citation">Gimenez et al. (<a href="references.html#ref-gimenez_estimating_2012">2012</a>)</span>.</p></li>
+<li><p>The section <a href="dispersal.html#localminima">5.6</a> on local minima was inspired by chapter 10 of <span class="citation">Cooch and White (<a href="references.html#ref-cooch2017intromark">2017</a>)</span>.</p></li>
 </ul>
+<!-- Several papers propose adapted MCMC algo. Also Gelman advice: "Say you have already found several distinct modes of the posterior and you are happy that these are the most important modes, and if the posterior around these modes is reasonably normal. Then you can calculate the hessian at these modes (say, using optim in R with hessian=T) and you can approximate the posterior as a mixture of normals (or t distributions). See p318-319 in Gelman et al. (2003) "Bayesian Data Analysis" for details. Then you can use the normal/t-mixture approximation as the proposal distribution in an independence sampler to obtain samples from the full posterior." --><!-- + @evans2017elicit explain and provide Shiny app to elicit prior with Dirichlet.  -->
 </div>
 </div>
 
@@ -35216,38 +35187,40 @@ detected and ascertained NB, detected and state unknown, and not detected. For e
       <ul class="nav navbar-nav">
 <li><a class="nav-link" href="#dispersal"><span class="header-section-number">5</span> Sites and states</a></li>
 <li><a class="nav-link" href="#introduction-6"><span class="header-section-number">5.1</span> Introduction</a></li>
-<li><a class="nav-link" href="#ASmodel"><span class="header-section-number">5.2</span> The Arnason-Schwarz (AS) model</a></li>
 <li>
-<a class="nav-link" href="#ASmodelfitting"><span class="header-section-number">5.3</span> Fitting the AS model to data</a><ul class="nav navbar-nav">
+<a class="nav-link" href="#ASmodel"><span class="header-section-number">5.2</span> The Arnason-Schwarz (AS) model</a><ul class="nav navbar-nav">
+<li><a class="nav-link" href="#theory"><span class="header-section-number">5.2.1</span> Theory</a></li>
+<li><a class="nav-link" href="#gofas"><span class="header-section-number">5.2.2</span> Goodness of fit</a></li>
+</ul>
+</li>
+<li>
+<a class="nav-link" href="#ASmodelfitting"><span class="header-section-number">5.3</span> Fitting the AS model</a><ul class="nav navbar-nav">
 <li><a class="nav-link" href="#geese-data"><span class="header-section-number">5.3.1</span> Geese data</a></li>
 <li><a class="nav-link" href="#nimble-implementation-2"><span class="header-section-number">5.3.2</span> NIMBLE implementation</a></li>
 </ul>
 </li>
 <li>
-<a class="nav-link" href="#what-if-there-are-more-than-2-sites"><span class="header-section-number">5.4</span> What if there are more than 2 sites?</a><ul class="nav navbar-nav">
+<a class="nav-link" href="#what-if-more-than-2-sites"><span class="header-section-number">5.4</span> What if more than 2 sites?</a><ul class="nav navbar-nav">
 <li><a class="nav-link" href="#dirichlet-prior"><span class="header-section-number">5.4.1</span> Dirichlet prior</a></li>
 <li><a class="nav-link" href="#multinomial-logit"><span class="header-section-number">5.4.2</span> Multinomial logit</a></li>
 </ul>
 </li>
 <li>
-<a class="nav-link" href="#sites-may-be-states"><span class="header-section-number">5.5</span> Sites may be states</a><ul class="nav navbar-nav">
+<a class="nav-link" href="#states"><span class="header-section-number">5.5</span> Sites may be states</a><ul class="nav navbar-nav">
 <li><a class="nav-link" href="#titis-data"><span class="header-section-number">5.5.1</span> Titis data</a></li>
 <li><a class="nav-link" href="#the-as-model-for-states"><span class="header-section-number">5.5.2</span> The AS model for states</a></li>
 <li><a class="nav-link" href="#nimble-implementation-3"><span class="header-section-number">5.5.3</span> NIMBLE implementation</a></li>
 </ul>
 </li>
-<li><a class="nav-link" href="#gofas"><span class="header-section-number">5.6</span> Goodness of fit</a></li>
-<li><a class="nav-link" href="#issue-of-local-minima"><span class="header-section-number">5.7</span> Issue of local minima</a></li>
+<li><a class="nav-link" href="#localminima"><span class="header-section-number">5.6</span> Issue of local minima</a></li>
 <li>
-<a class="nav-link" href="#uncertainty"><span class="header-section-number">5.8</span> Uncertainty</a><ul class="nav navbar-nav">
-<li><a class="nav-link" href="#examples"><span class="header-section-number">5.8.1</span> Examples</a></li>
-<li><a class="nav-link" href="#breeding-status"><span class="header-section-number">5.8.2</span> Breeding status</a></li>
-<li><a class="nav-link" href="#model"><span class="header-section-number">5.8.3</span> Model</a></li>
-<li><a class="nav-link" href="#nimble-implementation-4"><span class="header-section-number">5.8.4</span> NIMBLE implementation</a></li>
+<a class="nav-link" href="#multievent"><span class="header-section-number">5.7</span> Uncertainty</a><ul class="nav navbar-nav">
+<li><a class="nav-link" href="#model"><span class="header-section-number">5.7.1</span> Model</a></li>
+<li><a class="nav-link" href="#nimble-implementation-4"><span class="header-section-number">5.7.2</span> NIMBLE implementation</a></li>
 </ul>
 </li>
-<li><a class="nav-link" href="#summary-4"><span class="header-section-number">5.9</span> Summary</a></li>
-<li><a class="nav-link" href="#suggested-reading-4"><span class="header-section-number">5.10</span> Suggested reading</a></li>
+<li><a class="nav-link" href="#summary-4"><span class="header-section-number">5.8</span> Summary</a></li>
+<li><a class="nav-link" href="#suggested-reading-4"><span class="header-section-number">5.9</span> Suggested reading</a></li>
 </ul>
 
       <div class="book-extra">
@@ -35265,7 +35238,7 @@ detected and ascertained NB, detected and state unknown, and not detected. For e
 <footer class="bg-primary text-light mt-5"><div class="container"><div class="row">
 
   <div class="col-12 col-md-6 mt-3">
-    <p>"<strong>Bayesian Analysis of Capture-Recapture Data with Hidden Markov Models</strong>: Theory and Case Studies in R" was written by Olivier Gimenez. It was last built on 2023-08-16.</p>
+    <p>"<strong>Bayesian Analysis of Capture-Recapture Data with Hidden Markov Models</strong>: Theory and Case Studies in R" was written by Olivier Gimenez. It was last built on 2023-08-17.</p>
   </div>
 
   <div class="col-12 col-md-6 mt-3">

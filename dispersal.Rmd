@@ -10,6 +10,8 @@ In this fifth chapter, you will learn about the Arnason-Schwarz model that allow
 
 In Chapter \@ref(survival), we got acquainted with Cormack-Jolly-Seber (CJS) model which accommodates transitions between the states alive and dead while accounting for imperfect detection. It is often the case that besides being alive, more detailed information is collected on the state of animals when they are detected. For example, if the study area is split into several discrete sites, you may record where an animal is detected, the state being now alive in this particular site. The Arnason-Schwarz (AS) model can be viewed as an extension to the CJS model in which we estimate movements between sites on top of survival. The AS model is named after the two statisticians -- Neil Arnason and Carl Schwarz -- who came up with the idea. 
 
+### Theory
+
 Let's assume for now that we have two sites, say A and B. The way we usually think of analyzing the data is to start from the detections and non-detections and infer the transitions between sites and movements. Schematically, when a bird is detected in site A or site B, it obviously means that it is alive in that site, whereas when it is not detected, it may be dead or alive in either site. Schematically, we have:
 
 ```{r, echo = FALSE}
@@ -66,14 +68,39 @@ ggplot() +
   theme_void()
 ```
 
-We have $z = 1$ for alive in site A, $z = 2$ for alive in site B and $z = 3$ for dead. We will code $y = 1$ for non-detected, $y = 2$ for detected in site A and $y = 3$ for detected is site B. The parameters are:  
+We have $z = 1$ for alive in site A, $z = 2$ for alive in site B and $z = 3$ for dead. We will code $y = 1$ for non-detected, $y = 2$ for detected in site A and $y = 3$ for detected is site B. The parameters are: 
+- $\pi^r$ is the probability the a newly encountered individual is in state $r$;
 - $p_t^r$ is the probability of detection at $t$ for a bird in site $r$ at $t$;  
 - $\phi_t^r$ is the survival probability for birds in site $r$ at between $t$ and $t+1$;  
 - $\psi_t^{rs}$ is the probability of being in site $s$ at time $t+1$ for animals that were in site $r$ at $t$ and have survived to $t+1$, in short movement conditional on survival.
 
 **Add HMM representation? Make link with observations and latent states. I'm hesitating between using letters for states, which is probably more intuitive, or numbers which would be more rigorous.**
 
-Transition matrix
+We drop the time index.
+
+Vector of initial states. **Explain.**
+
+$$
+\begin{matrix}
+& \\
+\mathbf{\delta} =
+    \left ( \vphantom{ \begin{matrix} 12 \end{matrix} } \right .
+\end{matrix}
+\hspace{-1.2em}
+\begin{matrix}
+    z_t=A & z_t=B & z_t=D \\ \hdashline
+\pi^A & 1 - \pi^{A} & 0\\
+\end{matrix}
+\hspace{-0.2em}
+\begin{matrix}
+& \\
+\left . \vphantom{ \begin{matrix} 12 \end{matrix} } \right )
+    \begin{matrix}
+    \end{matrix}
+\end{matrix}
+$$
+
+Transition matrix. **Explain.**
 
 $$
 \begin{matrix}
@@ -84,8 +111,8 @@ $$
 \hspace{-1.2em}
 \begin{matrix}
     z_{t}=A & z_{t}=B & z_{t}=D \\ \hdashline
-\phi_A (1-\psi_{AB}) & \phi_A \psi_{AB} & 1 - \phi_A\\
-\phi_B \psi_{BA} & \phi_B (1-\psi_{BA}) & 1 - \phi_B\\
+\phi^A (1-\psi^{AB}) & \phi^A \psi^{AB} & 1 - \phi^A\\
+\phi^B \psi^{BA} & \phi^B (1-\psi^{BA}) & 1 - \phi^B\\
 0 & 0 & 1
 \end{matrix}
 \hspace{-0.2em}
@@ -98,7 +125,7 @@ $$
 \end{matrix}
 $$
 
-Observation matrix
+Observation matrix. **Explain.**
 
 $$
 \begin{matrix}
@@ -109,8 +136,8 @@ $$
 \hspace{-1.2em}
 \begin{matrix}
     y_t=0 & y_t=1 & y_t=2 \\ \hdashline
-1 - p_A & p_A & 0\\
-1 - p_B & 0 & p_B\\
+1 - p^A & p^A & 0\\
+1 - p^B & 0 & p^B\\
 1 & 0 & 0
 \end{matrix}
 \hspace{-0.2em}
@@ -123,29 +150,28 @@ $$
 \end{matrix}
 $$
 
-Vector of initial states
+### Goodness of fit {#gofas}
+  
+**I'm missing a section on gof w/ R2ucare and posterior predictive checks/Bayesian p-values.**
 
-$$
-\begin{matrix}
-& \\
-\mathbf{\delta} =
-    \left ( \vphantom{ \begin{matrix} 12 \end{matrix} } \right .
-\end{matrix}
-\hspace{-1.2em}
-\begin{matrix}
-    z_t=A & z_t=B & z_t=D \\ \hdashline
-\pi_A & 1 - \pi_{A} & 0\\
-\end{matrix}
-\hspace{-0.2em}
-\begin{matrix}
-& \\
-\left . \vphantom{ \begin{matrix} 12 \end{matrix} } \right )
-    \begin{matrix}
-    \end{matrix}
-\end{matrix}
-$$
+```{r eval = FALSE}
+geese.hist <- geese$encounter_histories
+geese.freq <- geese$sample_size
+test3Gsr(geese.hist, geese.freq)
+test3Gsm(geese.hist, geese.freq)
+test3Gwbwa(geese.hist, geese.freq)
+testMitec(geese.hist, geese.freq)
+testMltec(geese.hist, geese.freq)
+```
 
-## Fitting the AS model to data {#ASmodelfitting}
+All at once:
+```{r eval = FALSE}
+overall_JMV(geese.hist, geese.freq)
+```
+
+**Refer to case study for posterior predictive check, and how to account for memory. If trap-dependence or transience is significant, you may account for these lacks of fit as in the Cormack-Jolly-Seber model example. If there are signs of a memory effect, it gets a bit trickier but you may fit a model to account for this issue. Check our Animal Biodiversity paper for more.**
+
+## Fitting the AS model {#ASmodelfitting}
 
 ### Geese data
 
@@ -221,7 +247,7 @@ multisite <- nimbleCode({
 ...
 ```
 
-Actually, the initial state is known exactly: It is alive at site of initial capture, and $\pi_A$ is just the proportion of individuals first captured in site A, there is no need to make it explicit in the model and estimate it. Therefore, in the likelihood, instead of `z[i,first[i]] ~ dcat(delta[1:3])`, you can use `z[i,first[i]] <- y[i,first[i]] - 1`. **Remind that y <- y + 1. Maybe start by estimating piA, then illustrating the trick.**. Note that the same trick applies to the CJS model.
+Actually, the initial state is known exactly: It is alive at site of initial capture, and $\pi^A$ is just the proportion of individuals first captured in site A, there is no need to make it explicit in the model and estimate it. Therefore, in the likelihood, instead of `z[i,first[i]] ~ dcat(delta[1:3])`, you can use `z[i,first[i]] <- y[i,first[i]] - 1`. **Remind that y <- y + 1. Maybe start by estimating piA, then illustrating the trick.**. Note that the same trick applies to the CJS model.
 
 We write the transition matrix:
 ```{r eval = FALSE}
@@ -304,7 +330,7 @@ MCMCsummary(mcmc.multisite, round = 2)
 
 **Add time-dependence and comment on the harshness of winters? Also this is only a subsample of the whole dataset, I shall introduce the pooled (marginalized) likelihood, probably at the end of the section/chapter.**
 
-## What if there are more than 2 sites?
+## What if more than 2 sites?
 
 So far we have considered two sites only, for the sake of simplicity. Indeed when going for three sites and more, a difficulty arises. While the movement probabilities still need to be between 0 and 1, the sum of all probabilities of moving from a site should also sum to one. This is because an individual alive in site A for example, has to stay in A, move to B or move to C, it has no other choice. **not sure it is clear enough, nor whether i need to mention mutually exclusive events.**
 
@@ -503,7 +529,7 @@ load(here::here("dat","geese_3sites_logit.RData"))
 MCMCsummary(mcmc.multisite, round = 2)
 ```
 
-## Sites may be states
+## Sites may be states {#states}
 
 So far, we have considered geographical locations (or sites) to refine the alive information when an animal is detected. However, it was quickly realized that sites could actually be states or classes defined by physiology or behavior, hence opening up an avenue for applications of capture-recapture models in many fields of ecology. 
 
@@ -518,7 +544,7 @@ Examples of states include:
 
 In brief, states are individual, time-specific discrete covariates.
 
-### Titis data
+### Titis data 
 
 To illustrate this section, we will consider data collected between 1940 and 1957 by Lance Richdale on the Sooty shearwaters (aka titis). **More details. Plus a picture of titi.**
 
@@ -564,8 +590,8 @@ $$
 \hspace{-1.2em}
 \begin{matrix}
     z_t=B & z_t=NB & z_t=D \\ \hdashline
-\phi_B (1-\psi_{BNB}) & \phi_B \psi_{BNB} & 1 - \phi_B\\
-\phi_{NB} \psi_{NBB} & \phi_{NB} (1-\psi_{NBB}) & 1 - \phi_{NB}\\
+\phi^B (1-\psi^{BNB}) & \phi^B \psi^{BNB} & 1 - \phi^B\\
+\phi^{NB} \psi^{NBB} & \phi^{NB} (1-\psi^{NBB}) & 1 - \phi^{NB}\\
 0 & 0 & 1
 \end{matrix}
 \hspace{-0.2em}
@@ -578,7 +604,7 @@ $$
 \end{matrix}
 $$
 
-The costs or reproduction would reflect in future reproduction if breeders have a lower probability of breed next year than non-breeders $\psi_{BB} = 1 - \psi_{BNB} < \psi_{NBB}$ or in survival if the survival of breeders is lower than that of non-breeders $\phi_B < \phi_{NB}$.
+The costs or reproduction would reflect in future reproduction if breeders have a lower probability of breed next year than non-breeders $\psi^{BB} = 1 - \psi^{BNB} < \psi^{NBB}$ or in survival if the survival of breeders is lower than that of non-breeders $\phi^B < \phi^{NB}$.
 
 Observation matrix
 
@@ -591,8 +617,8 @@ $$
 \hspace{-1.2em}
 \begin{matrix}
     y_t=0 & y_t=1 & y_t=2 \\ \hdashline
-1 - p_B & p_B & 0\\
-1 - p_{NB} & 0 & p_{NB}\\
+1 - p^B & p^B & 0\\
+1 - p^{NB} & 0 & p^{NB}\\
 1 & 0 & 0
 \end{matrix}
 \hspace{-0.2em}
@@ -707,7 +733,7 @@ load(here::here("dat","titis.RData"))
 MCMCsummary(mcmc.multistate, round = 2)
 ```
 
-Non-breeder individuals seem to have a survival higher than breeder individuals, suggesting a trade-off between reproduction and survival. Let's compare graphically the survival of breeder and non-breeder individuals. First we gather the values generated for $\phi_B$ and $\phi_{NB}$ for the two chains.
+Non-breeder individuals seem to have a survival higher than breeder individuals, suggesting a trade-off between reproduction and survival. Let's compare graphically the survival of breeder and non-breeder individuals. First we gather the values generated for $\phi^B$ and $\phi^{NB}$ for the two chains.
 
 ```{r}
 phiB <- c(mcmc.multistate$chain1[,"phiB"], mcmc.multistate$chain2[,"phiB"])
@@ -749,34 +775,10 @@ df %>%
 
 Interestingly, breeder individuals do much better than non-breeder individuals. This failure at detecting a trade-off is probably due to individual heterogeneity that should be accounted for. **Case study with simulations as in Oikos paper, see Figure 1 and Table 2. Would be a nice example of the use of simulations. Another example could the statistical power analyses.**
   
-## Goodness of fit {#gofas}
-  
-**I'm missing a section on gof w/ R2ucare and posterior predictive checks/Bayesian p-values.**
+## Issue of local minima {#localminima}
 
-```{r eval = FALSE}
-geese.hist <- geese$encounter_histories
-geese.freq <- geese$sample_size
-test3Gsr(geese.hist, geese.freq)
-test3Gsm(geese.hist, geese.freq)
-test3Gwbwa(geese.hist, geese.freq)
-testMitec(geese.hist, geese.freq)
-testMltec(geese.hist, geese.freq)
-```
+In the Frequentist approach, we use the maximum likelihood theory to estimate parameters. The maximum likelihood estimates are the values that get you to the maximum of the model likelihood. To find out the maximum of the likelihood, we use iterative optimization algorithms. However, sometimes, our model likelihood contains several maxima and there is no guarantee that the algorithms will find the global maximum corresponding to the maximum likelihood estimates, and it may get stuck in a local maximum. Let's illustrate this issue with some simulated data that were kindly provided by Jérôme Dupuis. We consider 2 sites or states, say 1 and 2, and 7 sampling occasions. The survival probability is constant $\phi = 1$ as well as the detection probability $p = 0.6$. The probability of moving from 1 to 2 is $\psi^{12} = 0.6$ and $\psi^{21} = 0.85$ in the opposite direction. Here are the encounter histories of the 27 individuals that were simulated: **refer to HMM chapter for simulations?**
 
-All at once:
-```{r eval = FALSE}
-overall_JMV(geese.hist, geese.freq)
-```
-
-**Refer to case study for posterior predictive check, and how to account for memory. If trap-dependence or transience is significant, you may account for these lacks of fit as in the Cormack-Jolly-Seber model example. If there are signs of a memory effect, it gets a bit trickier but you may fit a model to account for this issue. Check our Animal Biodiversity paper for more.**
-
-## Issue of local minima
-
-Simulated data: 2 sites or states, and 7 occasions, Survival $\phi = 1$, detection $p = 0.6$, Transition $\psi_{12} = 0.6$, Transition $\psi_{21} = 0.85$.
-
-Courtesy of Jérôme Dupuis, used in @gimenez2005profile.
-
-Data:
 ```{r echo = FALSE}
 dat <- matrix(c(2, 0, 2, 1, 2, 0, 2,
                 2, 0, 2, 1, 2, 0, 2,
@@ -818,14 +820,13 @@ dat %>%
   kableExtra::scroll_box(width = "100%", height = "400px")
 ```
 
-Initial values lead to local and global minimum, here rofile deviance of transition from 2 to 1:
+In Figure \@ref(fig:inits), we provide an illustration of the influence of the choice of initial values when trying to minimize the deviance (which is minus two times the log of the likelihood). The black curve is the what we called the profile deviance for $\psi^{21}$. In brief, the profile deviance consists in taking a slice of the deviance in the direction of a parameter of interest and treating the other parameters as nuisance parameters. In our example, we set $\psi^{21}$ to a value (on the x-axis) an minimize the deviance with respect to the other parameters (on the y-axis). There are two minima, but only the global minimum corresponding to $\psi^{21}$ around 0.8 is of interest to us. The thing is that if you start your optimization algorithm by picking value in the red area, then it will get stuck in the local minimum and tells you the maximum likelihood estimate of $\psi^{21}$ is around 0.35, which is obviously far from the value we used to simulate the data. In contrast, if you pick initial values in the green area, then the algorithm will converge to the global minimum. 
 
-```{r inits, fig.ncol = 2, echo = FALSE, fig.cap = "Influence of initial values on convergence in max lik. Left: inits lead to local min; Right: inits lead to global min", fig.show = "hold", fig.subcap = c("left", "right"), out.width="50%"}
-knitr::include_graphics(c("images/multistate_local_minimav2_Page_06.png", 
-                   "images/multistate_local_minimav2_Page_07.png"))
+```{r inits, echo = FALSE, fig.cap = "Influence of the choice of initial values on the convergence to the global minimum of the deviance illustrated with simulated data", fig.show = "hold", out.width="100%"}
+knitr::include_graphics("images/multistate_local_minimav2_Page_07.png")
 ```
 
-When it comes to MCMC, here are the trace:
+You might argue that this is a problem of the optimization algorithm and therefore inherent to the Frequentist approach. Well, it turns out that MCMC algorithms are not immune to the issue. If you fit the AS model with constant parameters to the simulated data, here is the trace for the probability of moving from 2 to 1. 
 
 ```{r, echo = FALSE}
 load(here::here("dat","localminima.RData"))
@@ -859,10 +860,12 @@ plotdet <- det %>%
   theme_light(base_size = 14) +
   geom_hline(yintercept = 0.6, lty = 2, color = "blue")
 
-plotdet / (plotpsiAB + plotpsiBA)
+#plotdet / (plotpsiAB + plotpsiBA)
+
+plotpsiBA
 ```
 
-And the posterior distributions:
+Clearly, there are two regimes which might appear as if convergence was not reached. The chain spends most of its time around high values of $\psi^{21}$ close to the true value represented by the blue dashed line. But sometimes, the chain jumps to values around 0.3-0.4. This behavior translates into two modes in the posterior distribution for $\psi^{21}$ where the mode on the right is closer to the truth represented by the dashed blue vertical line. 
 
 ```{r, echo = FALSE}
 load(here::here("dat","localminima.RData"))
@@ -900,68 +903,34 @@ plotdet <- det %>%
   theme_light(base_size = 14) +
   geom_vline(xintercept = 0.6, lty = 2, color = "blue")
 
-library(patchwork)
+#library(patchwork)
+#plotdet / (plotpsiAB + plotpsiBA)
 
-plotdet / (plotpsiAB + plotpsiBA)
+plotpsiBA
 ```
 
-## Uncertainty
+**So what? In Freq appraoch, you would just compare the lik evaluated at both max and could tell the local vs the global max.** The issue of local minima is a difficult problem, and the key to handle posteriors with multiple modes is sampling with efficiently. This is why specific MCMC algorithms have been developed. Assuming the chains we run in NIMBLE spend more time in the region of the parameter space corresponding to the global minimum, then we recommend using the median or the mode to summarize the posterior distribution. **Do it on the example. Is it enough as a recommendation?**
 
-We're going to talk about multievent models. Multievent models extend multistate models with uncertainty in state assignment. Let's see some examples to fix ideas. These examples are from published papers which used multievent models.
+## Uncertainty {#multievent}
 
-### Examples
+In the AS model, we assume that we can without a doubt assign a site or a state to an animal whenever it is detected. But this is not always the case. For example, when the breeding status in mammals or birds is ascertained based on the presence of offspring or eggs, we are uncertain of whether a female is breeding or not when the offspring or eggs are not seen. **Refine explanation.**
 
-+ Breeding status in female roe deer is ascertained based on fawn detection
+We will revisit the titis example \@ref(states) and try to assess life-history trade-offs while accounting for uncertainty in breeding status. We still have 3 states, which are alive and breeding, alive and non-breeding and dead. With regard to observations, a bird may be not encountered. It may also be encountered, but in contrast with our previous analysis of the titis data, we don't know its state for sure. It may be found and ascertained (or classified) as breeder. It may be found and ascertained as non-breeder. It may be found be we are unable to determine whether it's breeding or non-breeding. **Say a bit more on how it is done on the field.**
 
-+ Sex status is ascertained based on morphological criteria in Audouin's gulls
+<!-- Ingredients -->
 
-+ Disease status in house finches is ascertained based on birds' eyes examination
+<!-- + 3 states -->
+<!--     + breeding (B) -->
+<!--     + non-breeding (NB) -->
+<!--     + dead (D) -->
 
-+ Hybrid status in wolves is ascertained based on genetics
+<!-- + 4 observations -->
+<!--     + not encountered (0) -->
+<!--     + found, ascertained as breeder (1) -->
+<!--     + found, ascertained as non-breeder (2) -->
+<!--     + found, status unknown (3) -->
 
-+ Dominance status in wolves is ascertained based on heterogeneity in detection
-
-The common thing to all these examples is that. We need to explicitly consider state assignment in a model. HMMs to the rescue! And to do that, we'll use HMMs again!
-
-Questions:
-
-+ Testing life-history trade-offs while accounting for uncertainty in breeding status
-
-+ Quantifying disease dynamics while accounting for uncertainty in disease status
-
-+ Estimating survival while accounting for individual heterogeneity in detection
-
-+ In this module, I'll go through 3 examples.
-+ Testing life-history trade-offs while accounting for uncertainty in breeding status.
-+ Quantifying disease dynamics while accounting for uncertainty in disease status.
-+ Estimating survival while accounting for individual heterogeneity in detection.
-
-+ Testing life-history trade-offs while accounting for uncertainty in breeding status.
-
-+ Quantifying disease dynamics while accounting for uncertainty in disease status
-
-+ Estimating survival while accounting for individual heterogeneity in detection
-
-### Breeding status
-
-Testing life-history trade-offs while accounting for uncertainty in breeding status.
-
-Ingredients
-
-+ 3 states
-    + breeding (B)
-    + non-breeding (NB)
-    + dead (D)
-
-+ 4 observations
-    + not encountered (0)
-    + found, ascertained as breeder (1)
-    + found, ascertained as non-breeder (2)
-    + found, status unknown (3)
-
-We still have 3 states, breeding, non-breeding and dead. With regard to observations, a bird may be not encountered. It may also be encountered, but in contrast with multistate CR data, we don't know its state for sure. It may be found and ascertained or classified as breeder. It may be found and ascertained or classified as non-breeder. It may be found be we are unable to determine whether it's breeding or non-breeding.
-
-Now how do the states generate the observations?
+How do the states generate the observations?
 
 ```{r, echo = FALSE}
 ggplot() +
@@ -997,11 +966,11 @@ ggplot() +
   theme_void()
 ```
 
-To wrap up each live state can generate 3 observations. The only deterministic link is that between the dead state and the observation non-encountered. Cause if you're dead, you cannot be detected for sure.
+Each alive state can generate 3 observations. The only deterministic link is that between the dead state and the observation non-encountered, because if a bird is dead, it cannot be detected for sure.
 
 ### Model
 
-Vector of initial state probabilities
+Let's specify the model. First thing we need, and it's a big difference with the AS model, we need initial state probabilities because we cannot assign states to individuals with certainty **assumes we got rid of them in the multistate section, is it true?**. We write down the probability for each state at first encounter, or the vector of initial state probabilities:
 
 $$
 \begin{matrix}
@@ -1012,7 +981,7 @@ $$
 \hspace{-1.2em}
 \begin{matrix}
     z_t=B & z_t=NB & z_t=D \\ \hdashline
-\pi_B & 1 - \pi_{B} & 0\\
+\pi^B & 1 - \pi^{B} & 0\\
 \end{matrix}
 \hspace{-0.2em}
 \begin{matrix}
@@ -1023,12 +992,9 @@ $$
 \end{matrix}
 $$
 
-$\pi_B$ is the probability that a newly encountered individual is a breeder. $\pi_{NB} = 1 - \pi_B$ is the probability that a newly encountered individual is a non-breeder
+where $\pi^B$ is the probability that a newly encountered individual is a breeder, and $\pi^{NB} = 1 - \pi^B$ is the probability that a newly encountered individual is a non-breeder (the complementary probability of $\pi^B$. The probability of being dead at first encounter is 0 (a bird is alive when it is first encountered).
 
-OK now let’s specify the model. First thing we need, and it’s a big difference with multistate models, we need initial state probabilities cause we cannot assign states to individuals w/ certainty. Let's define pi_B the prob that a newly encountered individual is a breeding individual. We write down the prob for each state at first encounter. We have pi_B, then the prob of being a NB is the complementary. And the prob of being dead at first encounter is 0 of course.
-
-
-Transition matrix
+Now the transition matrix, this is the easy part as it doesn't change. We have:
 
 $$
 \begin{matrix}
@@ -1039,8 +1005,8 @@ $$
 \hspace{-1.2em}
 \begin{matrix}
     z_t=B & z_t=NB & z_t=D \\ \hdashline
-\phi_B (1-\psi_{BNB}) & \phi_B \psi_{BNB} & 1 - \phi_B\\
-\phi_{NB} \psi_{NBB} & \phi_{NB} (1-\psi_{NBB}) & 1 - \phi_{NB}\\
+\phi^B (1-\psi^{BNB}) & \phi^B \psi^{BNB} & 1 - \phi^B\\
+\phi^{NB} \psi^{NBB} & \phi^{NB} (1-\psi^{NBB}) & 1 - \phi^{NB}\\
 0 & 0 & 1
 \end{matrix}
 \hspace{-0.2em}
@@ -1053,9 +1019,9 @@ $$
 \end{matrix}
 $$
 
-$\phi_B$ is breeder survival, $\phi_{NB}$ that of non-breeders. $\psi_{BNB}$ is the probability for an individual breeding a year to be a non-breeder the next year. $\psi_{NBB}$ is the probability for an non-breeder individual to breeder the next year. The transition parameters are in a matrix similar to the one we used for multistate models.
+where $\phi^B$ is the breeder survival, $\phi_ {NB}$ that of non-breeders, $\psi^{BNB}$ is the probability for an individual breeding a year to be a non-breeder the next year, and $\psi^{NBB}$ is the probability for an non-breeder individual to breeder the next year. 
 
-Observation matrix
+Last, the observation matrix. The main difference between multistate and multievent models is here, in the observation parameters. Besides $p^B$ the detection probability of breeders and $p^{NB}$ that of non-breeders, we introduce two new parameters: $\beta^B$ is the probability to correctly assign an individual that is in state B to state B, and $\beta^{NB}$ is the probability to correctly assign an individual that is in state NB to state NB. We put everything in a matrix, as usual. In rows we have the states: breeding, non-breeding and dead. In columns, at the same occasion, we have the observations: detected and ascertained B, detected and ascertained NB, detected and state unknown, and not detected. 
 
 $$
 \begin{matrix}
@@ -1079,13 +1045,9 @@ $$
     \end{matrix}
 \end{matrix}
 $$
+For example, the probability of being detected and assigned to state B, given that you're in state B is the product of the detection probability in B and the probability of correctly assigning a breeding individual to state B.
 
-$\beta_B$ is the probability to assign an individual in state B to state B. $\beta_{NB}$ is the probability to assign an individual in state NB to state NB. $p_B$ is the detection probability of breeders, $p_{NB}$ that of non-breeders.
-
-The main difference between multistate and multievent models is here, in the observation parameters. We introduce two new parameters. $\delta_B$: prob. to correctly assign an indiv. that is in state B to state B, $\delta_{NB}$: prob. to correctly assign an indiv. that is in state NB to state NB. We put everything in a matrix, as usual. The observation matrix. In rows we have the states, breeding, non-breeding and dead. In columns, at the same occasion, we have the observation, detected and ascertained B,
-detected and ascertained NB, detected and state unknown, and not detected. For example, the prob of being detected and assigned to the state B, given that you’re in state B is the product of the detection prob in B and delta the prob of correctly assigning a B individual to state B.
-
-Because animals are all captured, $p_B = p_{NB} = 1$ at first encounter:
+At first encounter, all individuals are captured, but you still need to assign them a state. This means that we should set $p^B = p^{NB} = 1$ and use:
 
 $$
 \begin{matrix}
@@ -1094,9 +1056,9 @@ $$
 \end{matrix}
 \hspace{-1.2em}
 \begin{matrix}
-    y_t=0 & y_t=1 & y_t=2 & y_t=3\\ \hdashline
- 0 & \beta_B & 0 & (1-\beta_B)\\
-0 & 0 & \beta_{NB} & (1-\beta_{NB})\\
+    y_{t = \text{first}}=0 & y_{t = \text{first}}=1 & y_{t = \text{first}}=2 & y_{t = \text{first}}=3\\ \hdashline
+ 0 & \beta^B & 0 & (1-\beta^B)\\
+0 & 0 & \beta^{NB} & (1-\beta^{NB})\\
 1 & 0 & 0 & 0
 \end{matrix}
 \hspace{-0.2em}
@@ -1104,16 +1066,16 @@ $$
 & \\
 \left . \vphantom{ \begin{matrix} 12 \\ 12 \\ 12\end{matrix} } \right )
     \begin{matrix}
-    z_{t}=B \\ z_{t}=NB \\ z_{t}=D
+    z_{t = \text{first}}=B \\ z_{t = \text{first}}=NB \\ z_{t = \text{first}}=D
     \end{matrix}
 \end{matrix}
 $$
-
-Note: Breeding assessment is unaffected. Then at first encounter, what happens is that step 1 of encounter is degenerate because individuals are all captured. Just set all the p’s to 1 in the encounter matrix. The breeding assessment matrix remains unchanged.
+**Show how to split into capture then assignment? Matrix product and all.**
 
 ### NIMBLE implementation
 
-Step 1:
+We start by using comments to define the parameters, states and observations in the header of the NIMBLE code:
+
 ```{r eval = FALSE}
 multievent <- nimbleCode({
   # -------------------------------------------------
@@ -1141,7 +1103,8 @@ multievent <- nimbleCode({
 ...
 ```
 
-Step 2:
+Then we assign prior to all parameters to be estimated. Because we deal with probabilities, the uniform distribution between 0 and 1 will do the job:
+
 ```{r eval = FALSE}
 multievent <- nimbleCode({
 ...
@@ -1158,7 +1121,7 @@ multievent <- nimbleCode({
 ...
 ```
 
-Step 3:
+Now we write the vector of initial state probabilities:
 ```{r eval = FALSE}
 multievent <- nimbleCode({
 ...
@@ -1169,7 +1132,8 @@ multievent <- nimbleCode({
 ...
 ```
 
-Step 4:
+The transition matrix:
+
 ```{r eval = FALSE}
 multievent <- nimbleCode({
 ...
@@ -1186,7 +1150,8 @@ multievent <- nimbleCode({
 ...
 ```
 
-Step 5:
+And the observation matrix:
+
 ```{r eval = FALSE}
 multievent <- nimbleCode({
 ...
@@ -1206,27 +1171,29 @@ multievent <- nimbleCode({
 ...
 ```
 
-Step 6:
+**Show the matrix product? Say it's inefficient to compute the product, but could be useful when modelling. Case study?**
+
+The observation matrix at first encounter:
 ```{r eval = FALSE}
 multievent <- nimbleCode({
 ...
   # probabilities of y(first) given z(first)
-  omega.init[1,1] <- 0          # Pr(alive B t = 1 -> non-detected t = 1)
-  omega.init[1,2] <- betaB      # Pr(alive B t = 1 -> detected B t = 1)
-  omega.init[1,3] <- 0          # Pr(alive B t = 1 -> detected NB t = 1)
-  omega.init[1,4] <- 1 - betaB  # Pr(alive B t = 1 -> detected U t = 1)
-  omega.init[2,1] <- 0          # Pr(alive NB t = 1 -> non-detected t = 1)
-  omega.init[2,2] <- 0          # Pr(alive NB t = 1 -> detected B t = 1)
-  omega.init[2,3] <- betaNB     # Pr(alive NB t = 1 -> detected NB t = 1)
-  omega.init[2,4] <- 1 - betaNB # Pr(alive NB t = 1 -> detected U t = 1)
-  omega.init[3,1] <- 1          # Pr(dead t = 1 -> non-detected t = 1)
-  omega.init[3,2] <- 0          # Pr(dead t = 1 -> detected N t = 1)
-  omega.init[3,3] <- 0          # Pr(dead t = 1 -> detected NB t = 1)
-  omega.init[3,4] <- 0          # Pr(dead t = 1 -> detected U t = 1)
+  omega.init[1,1] <- 0          # Pr(alive B t = first -> non-detected t = first)
+  omega.init[1,2] <- betaB      # Pr(alive B t = first -> detected B t = first)
+  omega.init[1,3] <- 0          # Pr(alive B t = first -> detected NB t = first)
+  omega.init[1,4] <- 1 - betaB  # Pr(alive B t = first -> detected U t = first)
+  omega.init[2,1] <- 0          # Pr(alive NB t = first -> non-detected t = first)
+  omega.init[2,2] <- 0          # Pr(alive NB t = first -> detected B t = first)
+  omega.init[2,3] <- betaNB     # Pr(alive NB t = first -> detected NB t = first)
+  omega.init[2,4] <- 1 - betaNB # Pr(alive NB t = first -> detected U t = first)
+  omega.init[3,1] <- 1          # Pr(dead t = first -> non-detected t = first)
+  omega.init[3,2] <- 0          # Pr(dead t = first -> detected N t = first)
+  omega.init[3,3] <- 0          # Pr(dead t = first -> detected NB t = first)
+  omega.init[3,4] <- 0          # Pr(dead t = first -> detected U t = first)
 ...
 ```
 
-Step 7:
+Eventually, we get to the likelihood:
 ```{r eval = FALSE}
 multievent <- nimbleCode({
 ...
@@ -1234,7 +1201,7 @@ multievent <- nimbleCode({
   for (i in 1:N){
     # latent state at first capture
     z[i,first[i]] ~ dcat(delta[1:3])
-    y[i,first[i]] ~ dcat(omega.init[z[i,first[i]],1:4])
+    y[i,first[i]] ~ dcat(omega.init[z[i,first[i]],1:4]) # obs at first encounter
     for (t in (first[i]+1):K){
       # z(t) given z(t-1)
       z[i,t] ~ dcat(gamma[z[i,t-1],1:3])
@@ -1245,8 +1212,9 @@ multievent <- nimbleCode({
 })
 ```
 
-Results:
+The only change is in the line `y[i,first[i]] ~ dcat(omega.init[z[i,first[i]],1:4])` where we use the observation matrix at first encounter. 
 
+We run NIMBLE and get the following numerical summaries for the model parameters:
 ```{r echo = FALSE}
 load(here::here("dat","titisuncertain.RData"))
 ```
@@ -1254,21 +1222,36 @@ load(here::here("dat","titisuncertain.RData"))
 MCMCsummary(mcmc.multievent, round = 2)
 ```
 
-Breeders are difficult to assigned to the correct state. Non-breeders are relatively well classified as non-breeders. No cost of breeding, neither on survival, nor on future reproduction.
+Breeders are difficult to assign to the correct state $\beta^B$, while non-breeders are relatively well classified as non-breeders $\beta^{NB}$. There is again no cost of current reproduction on future reproduction. We no longer detect a cost of breeding on survival. **Uncertainty was simulated, so no ecological interpretation to be found. Say it was simulated though.**
 
 **How to give the intuition of how/why it works. Use simulations?**
 
+**Refer to case studies on sex, age, disease and hybridization**
+
 ## Summary
 
-+ Blabla.
++ The AS model is a HMM that extends the CJS model by allowing the estimation of movements between sites (e.g. geographical locations) or transitions between states (e.g. breeding status). This flexibility allows addressing all sorts of questions in ecology and evolution. 
 
-+ Blabla.
++ Covariates can be considered, and appropriate priors or link functions need to be used when there are more than 2 (alive) sites or states. 
+
++ Model comparison can be achieved with the WAIC and the goodness of fit of the AS model to capture-recapture data can be assessed with classical procedures or posterior predictive checks.
+
++ Importantly, the HMM framework allows to account for uncertainty when assigning states to individuals. 
+
++ The models covered in this chapter haven been called multistratum/strata models, multisite models (section \@ref(ASmodel)), multistate models (section \@ref(states)) and multievent models (section \@ref(multievent)). These models are all HMMs.  
 
 ## Suggested reading
 
-+ Sites: @arnason1972, @arnason1973, @SchwarzEtAl1993. States: @NicholsEtAl1992 (microtus and mass as state); @NicholsEtAl1994 (microtus and reproductive costs). For a review of multistate models, see @LebretonEtAl2009. Titi paper @scofield2001titi. 
++ The AS model was introduced in @arnason1972, @arnason1973 and @SchwarzEtAl1993. Very soon clever folks realised that sites could be replaced by states as in @NicholsEtAl1992 and @NicholsEtAl1994. For a review of models with sites and states, see @LebretonEtAl2009. 
 
-+ @evans2017elicit explain and provide Shiny app to elicit prior with Dirichlet. 
++ The geese data were analyzed in @hestbeck1991estimates and @BrownieEtAl1993, and the titis data in @scofield2001titi. 
 
-+ Uncertainty: Seminal paper by @pradel_multievent_2005. @dupuis_bayesian_1995 had a similar idea for the Arnason-Schwarz model. See also for a review @gimenez_estimating_2012.
++ Models with uncertainty were introduced in @pradel_multievent_2005. @dupuis_bayesian_1995 had a similar idea for the AS model. For a review, see @gimenez_estimating_2012.
+
++ The section \@ref(localminima) on local minima was inspired by chapter 10 of @cooch2017intromark.  
+
+<!-- Several papers propose adapted MCMC algo. Also Gelman advice: "Say you have already found several distinct modes of the posterior and you are happy that these are the most important modes, and if the posterior around these modes is reasonably normal. Then you can calculate the hessian at these modes (say, using optim in R with hessian=T) and you can approximate the posterior as a mixture of normals (or t distributions). See p318-319 in Gelman et al. (2003) "Bayesian Data Analysis" for details. Then you can use the normal/t-mixture approximation as the proposal distribution in an independence sampler to obtain samples from the full posterior." -->
+
+<!-- + @evans2017elicit explain and provide Shiny app to elicit prior with Dirichlet.  -->
+
 
