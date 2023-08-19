@@ -207,7 +207,7 @@ Figure 9.1: A house finch with a heavy infection (Jim Mondok).
 </li>
 </ul>
 <p>How states generate observations.</p>
-<div class="inline-figure"><img src="banana-book_files/figure-html/unnamed-chunk-336-1.png" width="672"></div>
+<div class="inline-figure"><img src="banana-book_files/figure-html/unnamed-chunk-343-1.png" width="672"></div>
 <p>Vector of initial state probabilities</p>
 <p><span class="math display">\[
 \begin{matrix}
@@ -313,7 +313,7 @@ Figure 9.1: A house finch with a heavy infection (Jim Mondok).
 ## psiHI 0.22 0.04 0.16 0.22  0.32 1.02   311
 ## psiIH 0.46 0.08 0.32 0.45  0.63 1.02   392</code></pre>
 <p>Healthy individuals are correctly assigned, while infected individuals are difficult to ascertain. Sounds like being infected has an effect on detection and survival. Run models without effects and compare with WAIC for formal testing. Infection rate is 22%, recovery rate is 46%.</p>
-<div class="inline-figure"><img src="banana-book_files/figure-html/unnamed-chunk-338-1.png" width="672"></div>
+<div class="inline-figure"><img src="banana-book_files/figure-html/unnamed-chunk-345-1.png" width="672"></div>
 </div>
 <div id="stopover-duration" class="section level2" number="9.4">
 <h2>
@@ -327,14 +327,14 @@ Figure 9.1: A house finch with a heavy infection (Jim Mondok).
 </h2>
 <p>The example on how to incorporate prior information is in <span class="citation">McCarthy and Masters (<a href="references.html#ref-mccarthy2005">2005</a>)</span>.</p>
 <p>So far, we have assumed a non-informative prior on survival <span class="math inline">\(\text{Beta}(1,1) = \text{Uniform}(0,1)\)</span>. With this prior, mean posterior survival is <span class="math inline">\(\phi = 0.56\)</span> with credible interval <span class="math inline">\([0.52,0.62]\)</span>. Graphically we may represent the posterior distribution of survival obtained with two chains with different colors, and our prior in gray dashed line:</p>
-<div class="inline-figure"><img src="banana-book_files/figure-html/unnamed-chunk-339-1.png" width="672"></div>
+<div class="inline-figure"><img src="banana-book_files/figure-html/unnamed-chunk-346-1.png" width="672"></div>
 <div id="prior-elicitation" class="section level3" number="9.5.1">
 <h3>
 <span class="header-section-number">9.5.1</span> Prior elicitation<a class="anchor" aria-label="anchor" href="#prior-elicitation"><i class="fas fa-link"></i></a>
 </h3>
 <p>The thing is that we know a lot about passerines and it is a shame not to be able to use this information and act as if we have to start from scratch and know nothing. We illustrate how to incorporate prior information by acknowledging that species with similar body masses have similar survival. By gathering information on several other European passerines than the dipper, let’s assume we have built a regression of survival vs. body mass – allometric relationship. Knowing dippers weigh on average 59.8g, we’re now in the position to build a prior for dipper survival probability by predicting its value using the regression. We obtain a predicted survival of 0.57 and a standard deviation of 0.075. Using an informative prior <span class="math inline">\(\text{Normal}(0.57, sd = 0.073)\)</span> in NIMBLE, we get a mean posterior of <span class="math inline">\(0.56\)</span> with credible interval <span class="math inline">\([0.52, 0.61]\)</span>. There’s barely no difference with the non-informative prior, quite a disappointment.</p>
 <p>Now let’s assume that we had only the three first years of data, what would have happened? We fit the model with constant parameters with both the non-informative and informative priors to the dataset from which we delete the final 4 years of data. Now the benefit of using the prior information becomes clear as the credible interval when prior information is ignored has a width of 0.53, which is more than twice as much as when prior information is used (0.24), illustrating the increased precision provided by the prior. We may assess visually this gain in precision by comparing the survival posterior distributions with and without informative prior:</p>
-<div class="inline-figure"><img src="banana-book_files/figure-html/unnamed-chunk-340-1.png" width="672"></div>
+<div class="inline-figure"><img src="banana-book_files/figure-html/unnamed-chunk-347-1.png" width="672"></div>
 <p>In brief, if the aim is to get an estimate of survival, Gilbert did not have to conduct further data collection after 3 years, and he could have reached the same precision as with 7 years of data by using prior information derived from body mass. In brief, the prior information was worth 4 years of field data. Of course, this is assuming that the ecological question remains the same whether you have 3 or 7 years of data, which is unlikely to be the case, as with long-term data, there is so much we can ask, more than “just” what annual survival probability is.</p>
 </div>
 <div id="moment-matching" class="section level3" number="9.5.2">
@@ -347,7 +347,7 @@ Figure 9.1: A house finch with a heavy infection (Jim Mondok).
 <span class="math display">\[\alpha = \bigg(\frac{1-\mu}{\sigma^2}- \frac{1}{\mu} \bigg)\mu^2\]</span>
 <span class="math display">\[\beta = \alpha \bigg(\frac{1}{\mu}-1\bigg)\]</span>
 For our model, that means:</p>
-<div class="sourceCode" id="cb281"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb288"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="op">(</span><span class="va">alpha</span> <span class="op">&lt;-</span> <span class="op">(</span> <span class="op">(</span><span class="fl">1</span> <span class="op">-</span> <span class="fl">0.57</span><span class="op">)</span><span class="op">/</span><span class="op">(</span><span class="fl">0.073</span><span class="op">*</span><span class="fl">0.073</span><span class="op">)</span> <span class="op">-</span> <span class="op">(</span><span class="fl">1</span><span class="op">/</span><span class="fl">0.57</span><span class="op">)</span> <span class="op">)</span><span class="op">*</span><span class="fl">0.57</span><span class="op">^</span><span class="fl">2</span><span class="op">)</span></span>
 <span><span class="co">## [1] 25.65</span></span>
 <span><span class="op">(</span><span class="va">beta</span> <span class="op">&lt;-</span> <span class="va">alpha</span> <span class="op">*</span> <span class="op">(</span> <span class="op">(</span><span class="fl">1</span><span class="op">/</span><span class="fl">0.57</span><span class="op">)</span> <span class="op">-</span> <span class="fl">1</span><span class="op">)</span><span class="op">)</span></span>
@@ -359,8 +359,9 @@ For our model, that means:</p>
 <h2>
 <span class="header-section-number">9.6</span> Posterior predictive check<a class="anchor" aria-label="anchor" href="#posterior-predictive-check"><i class="fas fa-link"></i></a>
 </h2>
-<p>Classical m-array (minimal sufficient statistics for CJS model) as in <span class="citation">Paganin and de Valpine (<a href="references.html#ref-paganin2023computational">2023</a>)</span>. Individual performance in <span class="citation">Chambert, Rotella, and Higgs (<a href="references.html#ref-chambert2014">2014</a>)</span>. Sojourn time is geometric assumption in <span class="citation">Conn et al. (<a href="references.html#ref-conn2018">2018</a>)</span>.</p>
+<p>Classical m-array (minimal sufficient statistics for CJS model) as in <span class="citation">Paganin and de Valpine (<a href="references.html#ref-paganin2023computational">2023</a>)</span>. Individual performance in <span class="citation">Chambert, Rotella, and Higgs (<a href="references.html#ref-chambert2014">2014</a>)</span> and <span class="citation">Nater et al. (<a href="references.html#ref-nater2020trout">2020</a>)</span>. Sojourn time is geometric assumption in <span class="citation">Conn et al. (<a href="references.html#ref-conn2018">2018</a>)</span>.</p>
 <!-- This has an m-array structure. The number of individuals released at occasion $i$ ($R_i$) and the number of first recaptures at occasion $j$, given release at occasion $i$ ($m_{ij}$) are provided. For example, 38 birds were released in 1969 among which, 22 were first recaptured in 1970, and 16 (= 38 - 22) were never observed again. -->
+<p>Check out <a href="https://r-nimble.org/nimbleExamples/posterior_predictive.html" class="uri">https://r-nimble.org/nimbleExamples/posterior_predictive.html</a>.</p>
 </div>
 <div id="others" class="section level2" number="9.7">
 <h2>
@@ -415,7 +416,7 @@ For our model, that means:</p>
 <footer class="bg-primary text-light mt-5"><div class="container"><div class="row">
 
   <div class="col-12 col-md-6 mt-3">
-    <p>"<strong>Bayesian Analysis of Capture-Recapture Data with Hidden Markov Models</strong>: Theory and Case Studies in R" was written by Olivier Gimenez. It was last built on 2023-08-17.</p>
+    <p>"<strong>Bayesian Analysis of Capture-Recapture Data with Hidden Markov Models</strong>: Theory and Case Studies in R" was written by Olivier Gimenez. It was last built on 2023-08-19.</p>
   </div>
 
   <div class="col-12 col-md-6 mt-3">

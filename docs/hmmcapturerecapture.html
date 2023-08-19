@@ -5345,7 +5345,7 @@ A hidden Markov model is just two time series running in parallel. One for the s
 <span>                          nchains <span class="op">=</span> <span class="va">n.chains</span><span class="op">)</span></span>
 <span><span class="va">end_time</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Sys.time.html">Sys.time</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="va">end_time</span> <span class="op">-</span> <span class="va">start_time</span></span></code></pre></div>
-<pre><code>## Time difference of 19.69 secs</code></pre>
+<pre><code>## Time difference of 11.63 secs</code></pre>
 <p>We can have a look to numerical summaries:</p>
 <div class="sourceCode" id="cb120"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/pkg/MCMCvis/man/MCMCsummary.html">MCMCsummary</a></span><span class="op">(</span><span class="va">mcmc.output</span>, round <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span>
@@ -5453,6 +5453,7 @@ A hidden Markov model is just two time series running in parallel. One for the s
 \end{align*}\]</span></p>
 <p>You end up with <span class="math inline">\(\Pr(y_1 = 2, y_2 = 2, y_3 = 1) = \phi p (1 - p\phi)\)</span>.</p>
 <p>The latent states are no longer involved in the likelihood for this individual. However, even on a rather simple example, the marginal likelihood is quite complex to evaluate because it involves many operations. If <span class="math inline">\(T\)</span> is the length of our encounter histories and <span class="math inline">\(N\)</span> is the number of hidden states (two for alive and dead, but we will deal with more states in some chapters to come), then we need to calculate the sum of <span class="math inline">\(N^T\)</span> terms (the sums in the formula above), each of which has two products of <span class="math inline">\(T\)</span> factors (the products in the formula above), hence <span class="math inline">\(2TN^T\)</span> calculations in total. You can check that in the simple example above, we have <span class="math inline">\(T^N = 2^3 = 8\)</span> terms that are summed, each of which is a product of <span class="math inline">\(2T = 2 \times 3 = 6\)</span> terms. This means that the number of operations increases exponentially as the number of states increases. In most cases, this complexity precludes using this method to get rid of the states. Fortunately, we have another algorithm in the HMM toolbox that is useful to calculate the marginal likelihood efficiently.</p>
+<p><strong>Explain somewhere that we condition on first encounter, therefore p at first encounter is 1! </strong></p>
 </div>
 <div id="forward-algorithm" class="section level3" number="3.8.2">
 <h3>
@@ -5528,6 +5529,10 @@ A hidden Markov model is just two time series running in parallel. One for the s
 <h3>
 <span class="header-section-number">3.8.3</span> NIMBLE implementation<a class="anchor" aria-label="anchor" href="#nimble-implementation-1"><i class="fas fa-link"></i></a>
 </h3>
+<div id="do-it-yourself" class="section level4" number="3.8.3.1">
+<h4>
+<span class="header-section-number">3.8.3.1</span> Do it yourself<a class="anchor" aria-label="anchor" href="#do-it-yourself"><i class="fas fa-link"></i></a>
+</h4>
 <p>In NIMBLE, we use functions to implement the forward algorithm. The only differences with the theory above is that i) we work on the log scale for numerical stability and ii) we use a matrix formulation of the recurrence.
 First we write the density function:</p>
 <div class="sourceCode" id="cb122"><pre class="downlit sourceCode r">
@@ -5627,7 +5632,7 @@ First we write the density function:</p>
 <span><span class="co">## |-------------------------------------------------------|</span></span>
 <span><span class="va">end_time</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Sys.time.html">Sys.time</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="va">end_time</span> <span class="op">-</span> <span class="va">start_time</span></span>
-<span><span class="co">## Time difference of 17.51 secs</span></span></code></pre></div>
+<span><span class="co">## Time difference of 11.16 secs</span></span></code></pre></div>
 <p>The numerical summaries are similar to those we obtained with the complete likelihood, and effective samples sizes are larger denoting better mixing:</p>
 <div class="sourceCode" id="cb127"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/pkg/MCMCvis/man/MCMCsummary.html">MCMCsummary</a></span><span class="op">(</span><span class="va">mcmc.output</span>, round <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span>
@@ -5635,15 +5640,97 @@ First we write the density function:</p>
 <span><span class="co">## p   0.61 0.06 0.49 0.61  0.72    1  1211</span></span>
 <span><span class="co">## phi 0.76 0.04 0.67 0.76  0.84    1  1483</span></span></code></pre></div>
 </div>
+<div id="do-it-with-nimbleecology" class="section level4" number="3.8.3.2">
+<h4>
+<span class="header-section-number">3.8.3.2</span> Do it with <code>nimbleEcology</code><a class="anchor" aria-label="anchor" href="#do-it-with-nimbleecology"><i class="fas fa-link"></i></a>
+</h4>
+<p>Writing NIMBLE functions is not easy. Fortunately, the NIMBLE folks got you covered. They developed the package <code>nimbleEcology</code> that implements some of the most popular ecological models with latent states. <strong>Develop. Give ref in Suggested reading.</strong></p>
+<p>We will use the function <code>dHMMo</code> which provides the distribution of a hidden Markov model with time-independent transition matrix and time-dependent observation matrix. Why time-dependent observation matrix? We need to tell NIMBLE that capture at first encounter is 1. <strong>More details.</strong></p>
+<div class="sourceCode" id="cb128"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/nimble-dev/nimbleEcology">nimbleEcology</a></span><span class="op">)</span></span></code></pre></div>
+<p>NIMBLE code:</p>
+<div class="sourceCode" id="cb129"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">hmm.survival</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimbleCode.html">nimbleCode</a></span><span class="op">(</span><span class="op">{</span></span>
+<span>  <span class="va">phi</span> <span class="op">~</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html">dunif</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1</span><span class="op">)</span> <span class="co"># prior survival</span></span>
+<span>  <span class="va">p</span> <span class="op">~</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html">dunif</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1</span><span class="op">)</span> <span class="co"># prior detection</span></span>
+<span>  <span class="co"># likelihood</span></span>
+<span>  <span class="va">delta</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span>          <span class="co"># Pr(alive t = 1) = 1</span></span>
+<span>  <span class="va">delta</span><span class="op">[</span><span class="fl">2</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0</span>          <span class="co"># Pr(dead t = 1) = 0</span></span>
+<span>  <span class="va">gamma</span><span class="op">[</span><span class="fl">1</span>,<span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="va">phi</span>      <span class="co"># Pr(alive t -&gt; alive t+1)</span></span>
+<span>  <span class="va">gamma</span><span class="op">[</span><span class="fl">1</span>,<span class="fl">2</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span> <span class="op">-</span> <span class="va">phi</span>  <span class="co"># Pr(alive t -&gt; dead t+1)</span></span>
+<span>  <span class="va">gamma</span><span class="op">[</span><span class="fl">2</span>,<span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0</span>        <span class="co"># Pr(dead t -&gt; alive t+1)</span></span>
+<span>  <span class="va">gamma</span><span class="op">[</span><span class="fl">2</span>,<span class="fl">2</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span>        <span class="co"># Pr(dead t -&gt; dead t+1)</span></span>
+<span>  <span class="va">omega</span><span class="op">[</span><span class="fl">1</span>,<span class="fl">1</span>,<span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0</span>        <span class="co"># Pr(alive first -&gt; non-detected first)</span></span>
+<span>  <span class="va">omega</span><span class="op">[</span><span class="fl">1</span>,<span class="fl">2</span>,<span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span>        <span class="co"># Pr(alive first -&gt; detected first)</span></span>
+<span>  <span class="va">omega</span><span class="op">[</span><span class="fl">2</span>,<span class="fl">1</span>,<span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span>        <span class="co"># Pr(dead first -&gt; non-detected first)</span></span>
+<span>  <span class="va">omega</span><span class="op">[</span><span class="fl">2</span>,<span class="fl">2</span>,<span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0</span>        <span class="co"># Pr(dead first -&gt; detected first)</span></span>
+<span>  <span class="kw">for</span> <span class="op">(</span><span class="va">t</span> <span class="kw">in</span> <span class="fl">2</span><span class="op">:</span><span class="fl">5</span><span class="op">)</span><span class="op">{</span></span>
+<span>    <span class="va">omega</span><span class="op">[</span><span class="fl">1</span>,<span class="fl">1</span>,<span class="va">t</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span> <span class="op">-</span> <span class="va">p</span>    <span class="co"># Pr(alive t -&gt; non-detected t)</span></span>
+<span>    <span class="va">omega</span><span class="op">[</span><span class="fl">1</span>,<span class="fl">2</span>,<span class="va">t</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="va">p</span>        <span class="co"># Pr(alive t -&gt; detected t)</span></span>
+<span>    <span class="va">omega</span><span class="op">[</span><span class="fl">2</span>,<span class="fl">1</span>,<span class="va">t</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span>        <span class="co"># Pr(dead t -&gt; non-detected t)</span></span>
+<span>    <span class="va">omega</span><span class="op">[</span><span class="fl">2</span>,<span class="fl">2</span>,<span class="va">t</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0</span>        <span class="co"># Pr(dead t -&gt; detected t)</span></span>
+<span>  <span class="op">}</span></span>
+<span>  <span class="kw">for</span> <span class="op">(</span><span class="va">i</span> <span class="kw">in</span> <span class="fl">1</span><span class="op">:</span><span class="va">N</span><span class="op">)</span><span class="op">{</span></span>
+<span>    <span class="va">y</span><span class="op">[</span><span class="va">i</span>,<span class="fl">1</span><span class="op">:</span><span class="fl">5</span><span class="op">]</span> <span class="op">~</span> <span class="fu"><a href="https://rdrr.io/pkg/nimbleEcology/man/dHMM.html">dHMMo</a></span><span class="op">(</span>init <span class="op">=</span> <span class="va">delta</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">2</span><span class="op">]</span>, <span class="co"># vector of initial state probabilities</span></span>
+<span>                     probObs <span class="op">=</span> <span class="va">omega</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">2</span>,<span class="fl">1</span><span class="op">:</span><span class="fl">2</span>,<span class="fl">1</span><span class="op">:</span><span class="fl">5</span><span class="op">]</span>, <span class="co"># observation matrix</span></span>
+<span>                     probTrans <span class="op">=</span> <span class="va">gamma</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">2</span>,<span class="fl">1</span><span class="op">:</span><span class="fl">2</span><span class="op">]</span>, <span class="co"># transition matrix</span></span>
+<span>                     len <span class="op">=</span> <span class="fl">5</span>, <span class="co"># nb of sampling occasions</span></span>
+<span>                     checkRowSums <span class="op">=</span> <span class="fl">0</span><span class="op">)</span> <span class="co"># skip validity checks</span></span>
+<span>  <span class="op">}</span></span>
+<span><span class="op">}</span><span class="op">)</span></span></code></pre></div>
+<p>Next steps are similar to the workflow we used before:</p>
+<div class="sourceCode" id="cb130"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># constants</span></span>
+<span><span class="va">my.constants</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>N <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html">nrow</a></span><span class="op">(</span><span class="va">y</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co"># data</span></span>
+<span><span class="va">my.data</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>y <span class="op">=</span> <span class="va">y</span> <span class="op">+</span> <span class="fl">1</span><span class="op">)</span></span>
+<span><span class="co"># initial values - no need to specify values for z anymore</span></span>
+<span><span class="va">initial.values</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>phi <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html">runif</a></span><span class="op">(</span><span class="fl">1</span>,<span class="fl">0</span>,<span class="fl">1</span><span class="op">)</span>,</span>
+<span>                                  p <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html">runif</a></span><span class="op">(</span><span class="fl">1</span>,<span class="fl">0</span>,<span class="fl">1</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co"># parameters to save</span></span>
+<span><span class="va">parameters.to.save</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"phi"</span>, <span class="st">"p"</span><span class="op">)</span></span>
+<span><span class="co"># MCMC details</span></span>
+<span><span class="va">n.iter</span> <span class="op">&lt;-</span> <span class="fl">5000</span></span>
+<span><span class="va">n.burnin</span> <span class="op">&lt;-</span> <span class="fl">1000</span></span>
+<span><span class="va">n.chains</span> <span class="op">&lt;-</span> <span class="fl">2</span></span></code></pre></div>
+<p>Now we run NIMBLE:</p>
+<div class="sourceCode" id="cb131"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">start_time</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Sys.time.html">Sys.time</a></span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="va">mcmc.output</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimbleMCMC.html">nimbleMCMC</a></span><span class="op">(</span>code <span class="op">=</span> <span class="va">hmm.survival</span>,</span>
+<span>                          constants <span class="op">=</span> <span class="va">my.constants</span>,</span>
+<span>                          data <span class="op">=</span> <span class="va">my.data</span>,</span>
+<span>                          inits <span class="op">=</span> <span class="va">initial.values</span>,</span>
+<span>                          monitors <span class="op">=</span> <span class="va">parameters.to.save</span>,</span>
+<span>                          niter <span class="op">=</span> <span class="va">n.iter</span>,</span>
+<span>                          nburnin <span class="op">=</span> <span class="va">n.burnin</span>,</span>
+<span>                          nchains <span class="op">=</span> <span class="va">n.chains</span><span class="op">)</span></span>
+<span><span class="co">## |-------------|-------------|-------------|-------------|</span></span>
+<span><span class="co">## |-------------------------------------------------------|</span></span>
+<span><span class="co">## |-------------|-------------|-------------|-------------|</span></span>
+<span><span class="co">## |-------------------------------------------------------|</span></span>
+<span><span class="va">end_time</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Sys.time.html">Sys.time</a></span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="va">end_time</span> <span class="op">-</span> <span class="va">start_time</span></span>
+<span><span class="co">## Time difference of 11.83 secs</span></span></code></pre></div>
+<div class="sourceCode" id="cb132"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/pkg/MCMCvis/man/MCMCsummary.html">MCMCsummary</a></span><span class="op">(</span><span class="va">mcmc.output</span>, round <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span>
+<span><span class="co">##     mean   sd 2.5%  50% 97.5% Rhat n.eff</span></span>
+<span><span class="co">## p   0.61 0.06 0.49 0.61  0.72    1  1453</span></span>
+<span><span class="co">## phi 0.76 0.04 0.67 0.76  0.84    1  1359</span></span></code></pre></div>
+</div>
+</div>
 </div>
 <div id="pooled-likelihood" class="section level2" number="3.9">
 <h2>
 <span class="header-section-number">3.9</span> Pooled encounter histories<a class="anchor" aria-label="anchor" href="#pooled-likelihood"><i class="fas fa-link"></i></a>
 </h2>
+<div id="do-it-yourself-1" class="section level3" number="3.9.1">
+<h3>
+<span class="header-section-number">3.9.1</span> Do it yourself<a class="anchor" aria-label="anchor" href="#do-it-yourself-1"><i class="fas fa-link"></i></a>
+</h3>
 <p>We can go one step further to make convergence even faster. As mentionned earlier in Section <a href="hmmcapturerecapture.html#likelihoodhmm">3.6.4</a>, the likelihood of an HMM fitted to capture-recapture data often involves individuals that share the same encounter histories. Instead of repeating the same calculations several times, the likelihood contribution that is shared by say <span class="math inline">\(x\)</span> individuals is raised to the power <span class="math inline">\(x\)</span> in the likelihood of the whole dataset, hence making the same operations only once<a class="footnote-ref" tabindex="0" data-toggle="popover" data-content="&lt;p&gt;This idea is used in routine in capture-recapture software like MARK or E-SURGE. For Bayesian software however, it is only recently that the trick was tested in NIMBLE (in Turek, de Valpine, and Paciorek (2016). Efficient Markov chain Monte Carlo sampling for hierarchical hidden Markov models. &lt;em&gt;Environmental and Ecological Statistics&lt;/em&gt; 23: 549-564. Many thanks to Chloé Nater for showing me how to implement it.&lt;/p&gt;"><sup>29</sup></a>.</p>
 <p>In this section, we amend the NIMBLE functions we wrote for marginalizing latent states in Section <a href="hmmcapturerecapture.html#marginalization">3.8</a> to express the likelihood using pooled encounter histories. We use a vector <code>size</code> that contains the number of individuals with the same encounter history.</p>
 <p>The density function is the function <code>dHMM</code> to which we add a <code>size</code> argument, and raise the individual likelihood to the power <code>size</code>, or multiply by <code>size</code> as we work on the log scale <code>log(sum(alpha[1:2])) * size</code>:</p>
-<div class="sourceCode" id="cb128"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb133"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">dHMMpooled</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimbleFunction.html">nimbleFunction</a></span><span class="op">(</span></span>
 <span>  run <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">x</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/double.html">double</a></span><span class="op">(</span><span class="fl">1</span><span class="op">)</span>, </span>
 <span>                 <span class="va">probInit</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/double.html">double</a></span><span class="op">(</span><span class="fl">1</span><span class="op">)</span>,</span>
@@ -5663,7 +5750,7 @@ First we write the density function:</p>
 <span>  <span class="op">}</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 <p>The <code>rHMM</code> function is renamed <code>rHMMpooled</code> for compatibility but remains unchanged:</p>
-<div class="sourceCode" id="cb129"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb134"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">rHMMpooled</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimbleFunction.html">nimbleFunction</a></span><span class="op">(</span></span>
 <span>  run <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">n</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/integer.html">integer</a></span><span class="op">(</span><span class="op">)</span>,</span>
 <span>                 <span class="va">probInit</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/double.html">double</a></span><span class="op">(</span><span class="fl">1</span><span class="op">)</span>,</span>
@@ -5685,11 +5772,11 @@ First we write the density function:</p>
 <span>    <span class="kw"><a href="https://rdrr.io/r/base/function.html">return</a></span><span class="op">(</span><span class="va">y</span><span class="op">)</span></span>
 <span>  <span class="op">}</span><span class="op">)</span></span></code></pre></div>
 <p>We assign these two function to the global R environment so that we can use them:</p>
-<div class="sourceCode" id="cb130"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb135"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/assign.html">assign</a></span><span class="op">(</span><span class="st">'dHMMpooled'</span>, <span class="va">dHMMpooled</span>, <span class="va">.GlobalEnv</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/assign.html">assign</a></span><span class="op">(</span><span class="st">'rHMMpooled'</span>, <span class="va">rHMMpooled</span>, <span class="va">.GlobalEnv</span><span class="op">)</span></span></code></pre></div>
 <p>You can now plug your pooled HMM density function in your NIMBLE code:</p>
-<div class="sourceCode" id="cb131"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb136"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">hmm.survival</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimbleCode.html">nimbleCode</a></span><span class="op">(</span><span class="op">{</span></span>
 <span>  <span class="va">phi</span> <span class="op">~</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html">dunif</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1</span><span class="op">)</span> <span class="co"># prior survival</span></span>
 <span>  <span class="va">p</span> <span class="op">~</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html">dunif</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1</span><span class="op">)</span> <span class="co"># prior detection</span></span>
@@ -5713,7 +5800,7 @@ First we write the density function:</p>
 <span>  <span class="op">}</span></span>
 <span><span class="op">}</span><span class="op">)</span></span></code></pre></div>
 <p>Before running NIMBLE, we need to actually pool individuals with the same encounter history together:</p>
-<div class="sourceCode" id="cb132"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb137"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">y_pooled</span> <span class="op">&lt;-</span> <span class="va">y</span> <span class="op">%&gt;%</span> </span>
 <span>  <span class="fu">as_tibble</span><span class="op">(</span><span class="op">)</span> <span class="op">%&gt;%</span> </span>
 <span>  <span class="fu">group_by_all</span><span class="op">(</span><span class="op">)</span> <span class="op">%&gt;%</span> <span class="co"># group</span></span>
@@ -5739,7 +5826,7 @@ First we write the density function:</p>
 <span><span class="co">## [14,]    1        1        1        1        1        1</span></span></code></pre></div>
 <p>For example, we have 21 individuals with encounter history (1, 0, 0, 0, 0).</p>
 <p>Now you can resume the NIMBLE workflow:</p>
-<div class="sourceCode" id="cb133"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb138"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">my.constants</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>N <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html">nrow</a></span><span class="op">(</span><span class="va">y_pooled</span><span class="op">)</span>, T <span class="op">=</span> <span class="fl">5</span>, size <span class="op">=</span> <span class="va">y_pooled</span><span class="op">[</span>,<span class="st">'size'</span><span class="op">]</span><span class="op">)</span></span>
 <span><span class="va">my.data</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>y <span class="op">=</span> <span class="va">y_pooled</span><span class="op">[</span>,<span class="op">-</span><span class="fl">1</span><span class="op">]</span> <span class="op">+</span> <span class="fl">1</span><span class="op">)</span> <span class="co"># delete size from dataset</span></span>
 <span><span class="va">initial.values</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>phi <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html">runif</a></span><span class="op">(</span><span class="fl">1</span>,<span class="fl">0</span>,<span class="fl">1</span><span class="op">)</span>,</span>
@@ -5763,11 +5850,11 @@ First we write the density function:</p>
 <span><span class="co">## |-------------------------------------------------------|</span></span>
 <span><span class="va">end_time</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Sys.time.html">Sys.time</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="va">end_time</span> <span class="op">-</span> <span class="va">start_time</span></span>
-<span><span class="co">## Time difference of 17.57 secs</span></span>
+<span><span class="co">## Time difference of 10.76 secs</span></span>
 <span><span class="fu"><a href="https://rdrr.io/pkg/MCMCvis/man/MCMCsummary.html">MCMCsummary</a></span><span class="op">(</span><span class="va">mcmc.output</span>, round <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span>
 <span><span class="co">##     mean   sd 2.5%  50% 97.5% Rhat n.eff</span></span>
-<span><span class="co">## p   0.61 0.06 0.49 0.61  0.72    1  1453</span></span>
-<span><span class="co">## phi 0.76 0.04 0.67 0.76  0.84    1  1359</span></span></code></pre></div>
+<span><span class="co">## p   0.61 0.06 0.49 0.61  0.72    1  1455</span></span>
+<span><span class="co">## phi 0.76 0.04 0.67 0.76  0.84    1  1524</span></span></code></pre></div>
 <p>The results are the same as those obtained previously. The gain in computation times will be bigger for more complex models as we will see in the next chapters.</p>
 <!-- Works preeeeeety well ;-) two small issues though: -->
 <!-- 1. I get this warning:  -->
@@ -5779,6 +5866,244 @@ First we write the density function:</p>
 <!--    len = 5, lower_ = -Inf,     upper_ = Inf). Ignore this warning  -->
 <!--    if the user-provided distribution has multivariate parameters  -->
 <!--    with distinct sizes or if size of variable differs from sizes of parameters. -->
+</div>
+<div id="do-it-with-nimbleecology-1" class="section level3" number="3.9.2">
+<h3>
+<span class="header-section-number">3.9.2</span> Do it with <code>nimbleEcology</code><a class="anchor" aria-label="anchor" href="#do-it-with-nimbleecology-1"><i class="fas fa-link"></i></a>
+</h3>
+<p><strong>Pooled likelihood not implemented at the moment in nimbleEcology, but you can hack the code for the function dHMMo to implement it yourself. Get functions in nimbleEcology GitHub <a href="https://github.com/nimble-dev/nimbleEcology/blob/master/R/dHMM.R" class="uri">https://github.com/nimble-dev/nimbleEcology/blob/master/R/dHMM.R</a> and add size. That gives</strong></p>
+<div class="sourceCode" id="cb139"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="va"><a href="https://r-nimble.org">nimble</a></span><span class="op">)</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/caseyyoungflesh/MCMCvis">MCMCvis</a></span><span class="op">)</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="va"><a href="https://tidyverse.tidyverse.org">tidyverse</a></span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">dHMMopooled</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimbleFunction.html">nimbleFunction</a></span><span class="op">(</span></span>
+<span>  run <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">x</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/double.html">double</a></span><span class="op">(</span><span class="fl">1</span><span class="op">)</span>,    <span class="co">## Observed capture (state) history</span></span>
+<span>                 <span class="va">init</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/double.html">double</a></span><span class="op">(</span><span class="fl">1</span><span class="op">)</span>,<span class="co">##</span></span>
+<span>                 <span class="va">probObs</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/double.html">double</a></span><span class="op">(</span><span class="fl">3</span><span class="op">)</span>,</span>
+<span>                 <span class="va">probTrans</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/double.html">double</a></span><span class="op">(</span><span class="fl">2</span><span class="op">)</span>,</span>
+<span>                 <span class="va">len</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/double.html">double</a></span><span class="op">(</span><span class="fl">0</span>, default <span class="op">=</span> <span class="fl">0</span><span class="op">)</span>,<span class="co">## length of x (needed as a separate param for rDHMM)</span></span>
+<span>                 <span class="va">size</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/double.html">double</a></span><span class="op">(</span><span class="fl">0</span><span class="op">)</span>,</span>
+<span>                 <span class="va">checkRowSums</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/double.html">double</a></span><span class="op">(</span><span class="fl">0</span>, default <span class="op">=</span> <span class="fl">1</span><span class="op">)</span>,</span>
+<span>                 <span class="va">log</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/integer.html">integer</a></span><span class="op">(</span><span class="fl">0</span>, default <span class="op">=</span> <span class="fl">0</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
+<span>    <span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/length.html">length</a></span><span class="op">(</span><span class="va">x</span><span class="op">)</span> <span class="op">!=</span> <span class="va">len</span><span class="op">)</span> <span class="kw"><a href="https://rdrr.io/r/base/stop.html">stop</a></span><span class="op">(</span><span class="st">"In dHMMo: Argument len must be length of x or 0."</span><span class="op">)</span></span>
+<span>    <span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/dim.html">dim</a></span><span class="op">(</span><span class="va">probObs</span><span class="op">)</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span> <span class="op">!=</span> <span class="fu"><a href="https://rdrr.io/r/base/dim.html">dim</a></span><span class="op">(</span><span class="va">probTrans</span><span class="op">)</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span><span class="op">)</span> <span class="kw"><a href="https://rdrr.io/r/base/stop.html">stop</a></span><span class="op">(</span><span class="st">"In dHMMo: In dHMM: Length of dimension 1 in probObs must equal length of dimension 1 in probTrans."</span><span class="op">)</span></span>
+<span>    <span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/dim.html">dim</a></span><span class="op">(</span><span class="va">probTrans</span><span class="op">)</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span> <span class="op">!=</span> <span class="fu"><a href="https://rdrr.io/r/base/dim.html">dim</a></span><span class="op">(</span><span class="va">probTrans</span><span class="op">)</span><span class="op">[</span><span class="fl">2</span><span class="op">]</span><span class="op">)</span> <span class="kw"><a href="https://rdrr.io/r/base/stop.html">stop</a></span><span class="op">(</span><span class="st">"In dHMMo: probTrans must be a square matrix."</span><span class="op">)</span></span>
+<span>    <span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/dim.html">dim</a></span><span class="op">(</span><span class="va">probObs</span><span class="op">)</span><span class="op">[</span><span class="fl">3</span><span class="op">]</span> <span class="op">!=</span> <span class="va">len</span><span class="op">)</span> <span class="op">{</span></span>
+<span>      <span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/dim.html">dim</a></span><span class="op">(</span><span class="va">probObs</span><span class="op">)</span><span class="op">[</span><span class="fl">3</span><span class="op">]</span> <span class="op">==</span> <span class="fl">1</span><span class="op">)</span> <span class="kw"><a href="https://rdrr.io/r/base/stop.html">stop</a></span><span class="op">(</span><span class="st">"In dHMMo: Time dimension of probObs must match length of data. Did you mean dHMM?"</span><span class="op">)</span></span>
+<span>      <span class="kw"><a href="https://rdrr.io/r/base/stop.html">stop</a></span><span class="op">(</span><span class="st">"In dHMMo: Length of time dimension of probObs must match length of data."</span><span class="op">)</span></span>
+<span>    <span class="op">}</span></span>
+<span>    <span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/MathFun.html">abs</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/sum.html">sum</a></span><span class="op">(</span><span class="va">init</span><span class="op">)</span> <span class="op">-</span> <span class="fl">1</span><span class="op">)</span> <span class="op">&gt;</span> <span class="fl">1e-6</span><span class="op">)</span> <span class="kw"><a href="https://rdrr.io/r/base/stop.html">stop</a></span><span class="op">(</span><span class="st">"In dHMMo: Initial probabilities must sum to 1."</span><span class="op">)</span></span>
+<span></span>
+<span>    <span class="kw">if</span> <span class="op">(</span><span class="va">checkRowSums</span><span class="op">)</span> <span class="op">{</span></span>
+<span>      <span class="va">transCheckPasses</span> <span class="op">&lt;-</span> <span class="cn">TRUE</span></span>
+<span>      <span class="kw">for</span> <span class="op">(</span><span class="va">i</span> <span class="kw">in</span> <span class="fl">1</span><span class="op">:</span><span class="fu"><a href="https://rdrr.io/r/base/dim.html">dim</a></span><span class="op">(</span><span class="va">probTrans</span><span class="op">)</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span><span class="op">)</span> <span class="op">{</span></span>
+<span>        <span class="va">thisCheckSum</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/sum.html">sum</a></span><span class="op">(</span><span class="va">probTrans</span><span class="op">[</span><span class="va">i</span>,<span class="op">]</span><span class="op">)</span></span>
+<span>        <span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/MathFun.html">abs</a></span><span class="op">(</span><span class="va">thisCheckSum</span> <span class="op">-</span> <span class="fl">1</span><span class="op">)</span> <span class="op">&gt;</span> <span class="fl">1e-6</span><span class="op">)</span> <span class="op">{</span></span>
+<span>          <span class="co">## Compilation doesn't support more than a simple string for stop()</span></span>
+<span>          <span class="co">## so we provide more detail using a print().</span></span>
+<span>          <span class="fu"><a href="https://rdrr.io/r/base/print.html">print</a></span><span class="op">(</span><span class="st">"In dHMMo: Problem with sum(probTrans[i,]) with i = "</span>, <span class="va">i</span>, <span class="st">". The sum should be 1 but is "</span>, <span class="va">thisCheckSum</span><span class="op">)</span></span>
+<span>          <span class="va">transCheckPasses</span> <span class="op">&lt;-</span> <span class="cn">FALSE</span></span>
+<span>        <span class="op">}</span></span>
+<span>      <span class="op">}</span></span>
+<span>      <span class="va">obsCheckPasses</span> <span class="op">&lt;-</span> <span class="cn">TRUE</span></span>
+<span>      <span class="kw">for</span> <span class="op">(</span><span class="va">i</span> <span class="kw">in</span> <span class="fl">1</span><span class="op">:</span><span class="fu"><a href="https://rdrr.io/r/base/dim.html">dim</a></span><span class="op">(</span><span class="va">probObs</span><span class="op">)</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span><span class="op">)</span> <span class="op">{</span></span>
+<span>        <span class="kw">for</span> <span class="op">(</span><span class="va">k</span> <span class="kw">in</span> <span class="fl">1</span><span class="op">:</span><span class="fu"><a href="https://rdrr.io/r/base/dim.html">dim</a></span><span class="op">(</span><span class="va">probObs</span><span class="op">)</span><span class="op">[</span><span class="fl">3</span><span class="op">]</span><span class="op">)</span> <span class="op">{</span></span>
+<span>          <span class="va">thisCheckSum</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/sum.html">sum</a></span><span class="op">(</span><span class="va">probObs</span><span class="op">[</span><span class="va">i</span>,,<span class="va">k</span><span class="op">]</span><span class="op">)</span></span>
+<span>          <span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/MathFun.html">abs</a></span><span class="op">(</span><span class="va">thisCheckSum</span> <span class="op">-</span> <span class="fl">1</span><span class="op">)</span> <span class="op">&gt;</span> <span class="fl">1e-6</span><span class="op">)</span> <span class="op">{</span></span>
+<span>            <span class="fu"><a href="https://rdrr.io/r/base/print.html">print</a></span><span class="op">(</span><span class="st">"In dHMMo: Problem with sum(probObs[i,,k]) with i = "</span>, <span class="va">i</span>, <span class="st">" k = "</span> , <span class="va">k</span>, <span class="st">". The sum should be 1 but is "</span>, <span class="va">thisCheckSum</span><span class="op">)</span></span>
+<span>            <span class="va">obsCheckPasses</span> <span class="op">&lt;-</span> <span class="cn">FALSE</span></span>
+<span>          <span class="op">}</span></span>
+<span>        <span class="op">}</span></span>
+<span>      <span class="op">}</span></span>
+<span>      <span class="kw">if</span><span class="op">(</span><span class="op">!</span><span class="op">(</span><span class="va">transCheckPasses</span> <span class="op">|</span> <span class="va">obsCheckPasses</span><span class="op">)</span><span class="op">)</span></span>
+<span>        <span class="kw"><a href="https://rdrr.io/r/base/stop.html">stop</a></span><span class="op">(</span><span class="st">"In dHMMo: probTrans and probObs were not specified correctly.  Probabilities in each row (second dimension) must sum to 1."</span><span class="op">)</span></span>
+<span>      <span class="kw">if</span><span class="op">(</span><span class="op">!</span><span class="va">transCheckPasses</span><span class="op">)</span></span>
+<span>        <span class="kw"><a href="https://rdrr.io/r/base/stop.html">stop</a></span><span class="op">(</span><span class="st">"In dHMMo: probTrans was not specified correctly.  Probabilities in each row (second dimension) must sum to 1."</span><span class="op">)</span></span>
+<span>      <span class="kw">if</span><span class="op">(</span><span class="op">!</span><span class="va">obsCheckPasses</span><span class="op">)</span></span>
+<span>        <span class="kw"><a href="https://rdrr.io/r/base/stop.html">stop</a></span><span class="op">(</span><span class="st">"In dHMMo: probObs was not specified correctly. Probabilities in each row must sum to 1."</span><span class="op">)</span></span>
+<span>    <span class="op">}</span></span>
+<span>    <span class="va">pi</span> <span class="op">&lt;-</span> <span class="va">init</span> <span class="co"># State probabilities at time t=1</span></span>
+<span>    <span class="va">logL</span> <span class="op">&lt;-</span> <span class="fl">0</span></span>
+<span>    <span class="va">nObsClasses</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/dim.html">dim</a></span><span class="op">(</span><span class="va">probObs</span><span class="op">)</span><span class="op">[</span><span class="fl">2</span><span class="op">]</span></span>
+<span>    <span class="kw">for</span> <span class="op">(</span><span class="va">t</span> <span class="kw">in</span> <span class="fl">1</span><span class="op">:</span><span class="va">len</span><span class="op">)</span> <span class="op">{</span></span>
+<span>      <span class="kw">if</span> <span class="op">(</span><span class="va">x</span><span class="op">[</span><span class="va">t</span><span class="op">]</span> <span class="op">&gt;</span> <span class="va">nObsClasses</span> <span class="op">|</span> <span class="va">x</span><span class="op">[</span><span class="va">t</span><span class="op">]</span> <span class="op">&lt;</span> <span class="fl">1</span><span class="op">)</span> <span class="kw"><a href="https://rdrr.io/r/base/stop.html">stop</a></span><span class="op">(</span><span class="st">"In dHMMo: Invalid value of x[t]."</span><span class="op">)</span></span>
+<span>      <span class="va">Zpi</span> <span class="op">&lt;-</span> <span class="va">probObs</span><span class="op">[</span>,<span class="va">x</span><span class="op">[</span><span class="va">t</span><span class="op">]</span>,<span class="va">t</span><span class="op">]</span> <span class="op">*</span> <span class="va">pi</span> <span class="co"># Vector of P(state) * P(observation class x[t] | state)</span></span>
+<span>      <span class="va">sumZpi</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/sum.html">sum</a></span><span class="op">(</span><span class="va">Zpi</span><span class="op">)</span>    <span class="co"># Total P(observed as class x[t])</span></span>
+<span>      <span class="va">logL</span> <span class="op">&lt;-</span> <span class="va">logL</span> <span class="op">+</span> <span class="fu"><a href="https://rdrr.io/r/base/Log.html">log</a></span><span class="op">(</span><span class="va">sumZpi</span><span class="op">)</span> <span class="op">*</span> <span class="va">size</span>  <span class="co"># Accumulate log probabilities through timeÍ</span></span>
+<span>      <span class="kw">if</span> <span class="op">(</span><span class="va">t</span> <span class="op">!=</span> <span class="va">len</span><span class="op">)</span> <span class="va">pi</span> <span class="op">&lt;-</span> <span class="op">(</span><span class="op">(</span><span class="va">Zpi</span> <span class="op"><a href="https://rdrr.io/r/base/matmult.html">%*%</a></span> <span class="va">probTrans</span><span class="op">)</span> <span class="op">/</span> <span class="va">sumZpi</span><span class="op">)</span><span class="op">[</span><span class="fl">1</span>, <span class="op">]</span> <span class="co"># State probabilities at t+1</span></span>
+<span>    <span class="op">}</span></span>
+<span>    <span class="fu">returnType</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/double.html">double</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
+<span>    <span class="kw">if</span> <span class="op">(</span><span class="va">log</span><span class="op">)</span> <span class="kw"><a href="https://rdrr.io/r/base/function.html">return</a></span><span class="op">(</span><span class="va">logL</span><span class="op">)</span></span>
+<span>    <span class="kw"><a href="https://rdrr.io/r/base/function.html">return</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/Log.html">exp</a></span><span class="op">(</span><span class="va">logL</span><span class="op">)</span><span class="op">)</span></span>
+<span>  <span class="op">}</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">rHMMopooled</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimbleFunction.html">nimbleFunction</a></span><span class="op">(</span></span>
+<span>  run <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">n</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/integer.html">integer</a></span><span class="op">(</span><span class="op">)</span>,    <span class="co">## Observed capture (state) history</span></span>
+<span>                 <span class="va">init</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/double.html">double</a></span><span class="op">(</span><span class="fl">1</span><span class="op">)</span>,</span>
+<span>                 <span class="va">probObs</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/double.html">double</a></span><span class="op">(</span><span class="fl">3</span><span class="op">)</span>,</span>
+<span>                 <span class="va">probTrans</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/double.html">double</a></span><span class="op">(</span><span class="fl">2</span><span class="op">)</span>,</span>
+<span>                 <span class="va">len</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/double.html">double</a></span><span class="op">(</span><span class="fl">0</span>, default <span class="op">=</span> <span class="fl">0</span><span class="op">)</span>,</span>
+<span>                 <span class="va">size</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/double.html">double</a></span><span class="op">(</span><span class="fl">0</span><span class="op">)</span>,</span>
+<span>                 <span class="va">checkRowSums</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/double.html">double</a></span><span class="op">(</span><span class="fl">0</span>, default <span class="op">=</span> <span class="fl">1</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="fu">returnType</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/double.html">double</a></span><span class="op">(</span><span class="fl">1</span><span class="op">)</span><span class="op">)</span></span>
+<span>  <span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/dim.html">dim</a></span><span class="op">(</span><span class="va">probObs</span><span class="op">)</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span> <span class="op">!=</span> <span class="fu"><a href="https://rdrr.io/r/base/dim.html">dim</a></span><span class="op">(</span><span class="va">probTrans</span><span class="op">)</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span><span class="op">)</span> <span class="kw"><a href="https://rdrr.io/r/base/stop.html">stop</a></span><span class="op">(</span><span class="st">"In rHMMo: Number of cols in probObs must equal number of cols in probTrans."</span><span class="op">)</span></span>
+<span>  <span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/dim.html">dim</a></span><span class="op">(</span><span class="va">probTrans</span><span class="op">)</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span> <span class="op">!=</span> <span class="fu"><a href="https://rdrr.io/r/base/dim.html">dim</a></span><span class="op">(</span><span class="va">probTrans</span><span class="op">)</span><span class="op">[</span><span class="fl">2</span><span class="op">]</span><span class="op">)</span> <span class="kw"><a href="https://rdrr.io/r/base/stop.html">stop</a></span><span class="op">(</span><span class="st">"In rHMMo: probTrans must be a square matrix."</span><span class="op">)</span></span>
+<span>  <span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/dim.html">dim</a></span><span class="op">(</span><span class="va">probObs</span><span class="op">)</span><span class="op">[</span><span class="fl">3</span><span class="op">]</span> <span class="op">!=</span> <span class="va">len</span><span class="op">)</span> <span class="op">{</span></span>
+<span>    <span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/dim.html">dim</a></span><span class="op">(</span><span class="va">probObs</span><span class="op">)</span><span class="op">[</span><span class="fl">3</span><span class="op">]</span> <span class="op">==</span> <span class="fl">1</span><span class="op">)</span> <span class="kw"><a href="https://rdrr.io/r/base/stop.html">stop</a></span><span class="op">(</span><span class="st">"In rHMMo: Time dimension of probObs must match length of data. Did you mean rHMM?"</span><span class="op">)</span></span>
+<span>    <span class="kw"><a href="https://rdrr.io/r/base/stop.html">stop</a></span><span class="op">(</span><span class="st">"In rHMMo: Length of time dimension of probObs must match length of data."</span><span class="op">)</span></span>
+<span>  <span class="op">}</span></span>
+<span>  <span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/MathFun.html">abs</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/sum.html">sum</a></span><span class="op">(</span><span class="va">init</span><span class="op">)</span> <span class="op">-</span> <span class="fl">1</span><span class="op">)</span> <span class="op">&gt;</span> <span class="fl">1e-6</span><span class="op">)</span> <span class="kw"><a href="https://rdrr.io/r/base/stop.html">stop</a></span><span class="op">(</span><span class="st">"In rHMMo: Initial probabilities must sum to 1."</span><span class="op">)</span></span>
+<span></span>
+<span>  <span class="kw">if</span> <span class="op">(</span><span class="va">checkRowSums</span><span class="op">)</span> <span class="op">{</span></span>
+<span>    <span class="va">transCheckPasses</span> <span class="op">&lt;-</span> <span class="cn">TRUE</span></span>
+<span>    <span class="kw">for</span> <span class="op">(</span><span class="va">i</span> <span class="kw">in</span> <span class="fl">1</span><span class="op">:</span><span class="fu"><a href="https://rdrr.io/r/base/dim.html">dim</a></span><span class="op">(</span><span class="va">probTrans</span><span class="op">)</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span><span class="op">)</span> <span class="op">{</span></span>
+<span>      <span class="va">thisCheckSum</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/sum.html">sum</a></span><span class="op">(</span><span class="va">probTrans</span><span class="op">[</span><span class="va">i</span>,<span class="op">]</span><span class="op">)</span></span>
+<span>      <span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/MathFun.html">abs</a></span><span class="op">(</span><span class="va">thisCheckSum</span> <span class="op">-</span> <span class="fl">1</span><span class="op">)</span> <span class="op">&gt;</span> <span class="fl">1e-6</span><span class="op">)</span> <span class="op">{</span></span>
+<span>        <span class="co">## Compilation doesn't support more than a simple string for stop()</span></span>
+<span>        <span class="co">## so we provide more detail using a print().</span></span>
+<span>        <span class="fu"><a href="https://rdrr.io/r/base/print.html">print</a></span><span class="op">(</span><span class="st">"In rHMMo: Problem with sum(probTrans[i,]) with i = "</span>, <span class="va">i</span>, <span class="st">". The sum should be 1 but is "</span>, <span class="va">thisCheckSum</span><span class="op">)</span></span>
+<span>        <span class="va">transCheckPasses</span> <span class="op">&lt;-</span> <span class="cn">FALSE</span></span>
+<span>      <span class="op">}</span></span>
+<span>    <span class="op">}</span></span>
+<span>    <span class="va">obsCheckPasses</span> <span class="op">&lt;-</span> <span class="cn">TRUE</span></span>
+<span>    <span class="kw">for</span> <span class="op">(</span><span class="va">i</span> <span class="kw">in</span> <span class="fl">1</span><span class="op">:</span><span class="fu"><a href="https://rdrr.io/r/base/dim.html">dim</a></span><span class="op">(</span><span class="va">probObs</span><span class="op">)</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span><span class="op">)</span> <span class="op">{</span></span>
+<span>      <span class="kw">for</span> <span class="op">(</span><span class="va">k</span> <span class="kw">in</span> <span class="fl">1</span><span class="op">:</span><span class="fu"><a href="https://rdrr.io/r/base/dim.html">dim</a></span><span class="op">(</span><span class="va">probObs</span><span class="op">)</span><span class="op">[</span><span class="fl">3</span><span class="op">]</span><span class="op">)</span> <span class="op">{</span></span>
+<span>        <span class="va">thisCheckSum</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/sum.html">sum</a></span><span class="op">(</span><span class="va">probObs</span><span class="op">[</span><span class="va">i</span>,,<span class="va">k</span><span class="op">]</span><span class="op">)</span></span>
+<span>        <span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/MathFun.html">abs</a></span><span class="op">(</span><span class="va">thisCheckSum</span> <span class="op">-</span> <span class="fl">1</span><span class="op">)</span> <span class="op">&gt;</span> <span class="fl">1e-6</span><span class="op">)</span> <span class="op">{</span></span>
+<span>          <span class="fu"><a href="https://rdrr.io/r/base/print.html">print</a></span><span class="op">(</span><span class="st">"In rHMMo: Problem with sum(probObs[i,,k]) with i = "</span>, <span class="va">i</span>, <span class="st">" k = "</span>, <span class="va">k</span>, <span class="st">". The sum should be 1 but is "</span>, <span class="va">thisCheckSum</span><span class="op">)</span></span>
+<span>          <span class="va">obsCheckPasses</span> <span class="op">&lt;-</span> <span class="cn">FALSE</span></span>
+<span>        <span class="op">}</span></span>
+<span>      <span class="op">}</span></span>
+<span>    <span class="op">}</span></span>
+<span>    <span class="kw">if</span><span class="op">(</span><span class="op">!</span><span class="op">(</span><span class="va">transCheckPasses</span> <span class="op">|</span> <span class="va">obsCheckPasses</span><span class="op">)</span><span class="op">)</span></span>
+<span>      <span class="kw"><a href="https://rdrr.io/r/base/stop.html">stop</a></span><span class="op">(</span><span class="st">"In rHMMo: probTrans and probObs were not specified correctly.  Probabilities in each row (second dimension) must sum to 1."</span><span class="op">)</span></span>
+<span>    <span class="kw">if</span><span class="op">(</span><span class="op">!</span><span class="va">transCheckPasses</span><span class="op">)</span></span>
+<span>      <span class="kw"><a href="https://rdrr.io/r/base/stop.html">stop</a></span><span class="op">(</span><span class="st">"In rHMMo: probTrans was not specified correctly.  Probabilities in each row (second dimension) must sum to 1."</span><span class="op">)</span></span>
+<span>    <span class="kw">if</span><span class="op">(</span><span class="op">!</span><span class="va">obsCheckPasses</span><span class="op">)</span></span>
+<span>      <span class="kw"><a href="https://rdrr.io/r/base/stop.html">stop</a></span><span class="op">(</span><span class="st">"In rHMMo: probObs was not specified correctly. Probabilities in each row must sum to 1."</span><span class="op">)</span></span>
+<span>  <span class="op">}</span></span>
+<span></span>
+<span>  <span class="va">ans</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/numeric.html">numeric</a></span><span class="op">(</span><span class="va">len</span><span class="op">)</span></span>
+<span></span>
+<span>  <span class="va">probInit</span> <span class="op">&lt;-</span> <span class="va">init</span></span>
+<span>  <span class="va">trueInit</span> <span class="op">&lt;-</span> <span class="fl">0</span></span>
+<span></span>
+<span>  <span class="va">r</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html">runif</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">0</span>, <span class="fl">1</span><span class="op">)</span></span>
+<span>  <span class="va">j</span> <span class="op">&lt;-</span> <span class="fl">1</span></span>
+<span>  <span class="kw">while</span> <span class="op">(</span><span class="va">r</span> <span class="op">&gt;</span> <span class="fu"><a href="https://rdrr.io/r/base/sum.html">sum</a></span><span class="op">(</span><span class="va">probInit</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="va">j</span><span class="op">]</span><span class="op">)</span><span class="op">)</span> <span class="va">j</span> <span class="op">&lt;-</span> <span class="va">j</span> <span class="op">+</span> <span class="fl">1</span></span>
+<span>  <span class="va">trueInit</span> <span class="op">&lt;-</span> <span class="va">j</span></span>
+<span></span>
+<span>  <span class="va">trueState</span> <span class="op">&lt;-</span> <span class="va">trueInit</span></span>
+<span>  <span class="kw">for</span> <span class="op">(</span><span class="va">i</span> <span class="kw">in</span> <span class="fl">1</span><span class="op">:</span><span class="va">len</span><span class="op">)</span> <span class="op">{</span></span>
+<span>    <span class="co"># Transition to a new true state</span></span>
+<span>    <span class="va">r</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html">runif</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">0</span>, <span class="fl">1</span><span class="op">)</span></span>
+<span>    <span class="va">j</span> <span class="op">&lt;-</span> <span class="fl">1</span></span>
+<span>    <span class="kw">while</span> <span class="op">(</span><span class="va">r</span> <span class="op">&gt;</span> <span class="fu"><a href="https://rdrr.io/r/base/sum.html">sum</a></span><span class="op">(</span><span class="va">probTrans</span><span class="op">[</span><span class="va">trueState</span>, <span class="fl">1</span><span class="op">:</span><span class="va">j</span><span class="op">]</span><span class="op">)</span><span class="op">)</span> <span class="va">j</span> <span class="op">&lt;-</span> <span class="va">j</span> <span class="op">+</span> <span class="fl">1</span></span>
+<span>    <span class="va">trueState</span> <span class="op">&lt;-</span> <span class="va">j</span></span>
+<span></span>
+<span>    <span class="co"># Detect based on the true state</span></span>
+<span>    <span class="va">r</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html">runif</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">0</span>, <span class="fl">1</span><span class="op">)</span></span>
+<span>    <span class="va">j</span> <span class="op">&lt;-</span> <span class="fl">1</span></span>
+<span>    <span class="kw">while</span> <span class="op">(</span><span class="va">r</span> <span class="op">&gt;</span> <span class="fu"><a href="https://rdrr.io/r/base/sum.html">sum</a></span><span class="op">(</span><span class="va">probObs</span><span class="op">[</span><span class="va">trueState</span>, <span class="fl">1</span><span class="op">:</span><span class="va">j</span>, <span class="va">i</span><span class="op">]</span><span class="op">)</span><span class="op">)</span> <span class="va">j</span> <span class="op">&lt;-</span> <span class="va">j</span> <span class="op">+</span> <span class="fl">1</span></span>
+<span>    <span class="va">ans</span><span class="op">[</span><span class="va">i</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="va">j</span></span>
+<span></span>
+<span>  <span class="op">}</span></span>
+<span></span>
+<span>  <span class="kw"><a href="https://rdrr.io/r/base/function.html">return</a></span><span class="op">(</span><span class="va">ans</span><span class="op">)</span></span>
+<span><span class="op">}</span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/assign.html">assign</a></span><span class="op">(</span><span class="st">'dHMMopooled'</span>, <span class="va">dHMMopooled</span>, <span class="va">.GlobalEnv</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/assign.html">assign</a></span><span class="op">(</span><span class="st">'rHMMopooled'</span>, <span class="va">rHMMopooled</span>, <span class="va">.GlobalEnv</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># code</span></span>
+<span><span class="va">hmm.survival</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimbleCode.html">nimbleCode</a></span><span class="op">(</span><span class="op">{</span></span>
+<span>  <span class="va">phi</span> <span class="op">~</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html">dunif</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1</span><span class="op">)</span> <span class="co"># prior survival</span></span>
+<span>  <span class="va">p</span> <span class="op">~</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html">dunif</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1</span><span class="op">)</span> <span class="co"># prior detection</span></span>
+<span>  <span class="co"># likelihood</span></span>
+<span>  <span class="va">delta</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span>          <span class="co"># Pr(alive t = 1) = 1</span></span>
+<span>  <span class="va">delta</span><span class="op">[</span><span class="fl">2</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0</span>          <span class="co"># Pr(dead t = 1) = 0</span></span>
+<span>  <span class="va">gamma</span><span class="op">[</span><span class="fl">1</span>,<span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="va">phi</span>      <span class="co"># Pr(alive t -&gt; alive t+1)</span></span>
+<span>  <span class="va">gamma</span><span class="op">[</span><span class="fl">1</span>,<span class="fl">2</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span> <span class="op">-</span> <span class="va">phi</span>  <span class="co"># Pr(alive t -&gt; dead t+1)</span></span>
+<span>  <span class="va">gamma</span><span class="op">[</span><span class="fl">2</span>,<span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0</span>        <span class="co"># Pr(dead t -&gt; alive t+1)</span></span>
+<span>  <span class="va">gamma</span><span class="op">[</span><span class="fl">2</span>,<span class="fl">2</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span>        <span class="co"># Pr(dead t -&gt; dead t+1)</span></span>
+<span>  <span class="va">omega</span><span class="op">[</span><span class="fl">1</span>,<span class="fl">1</span>,<span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0</span>        <span class="co"># Pr(alive first -&gt; non-detected first)</span></span>
+<span>  <span class="va">omega</span><span class="op">[</span><span class="fl">1</span>,<span class="fl">2</span>,<span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span>        <span class="co"># Pr(alive first -&gt; detected first)</span></span>
+<span>  <span class="va">omega</span><span class="op">[</span><span class="fl">2</span>,<span class="fl">1</span>,<span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span>        <span class="co"># Pr(dead first -&gt; non-detected first)</span></span>
+<span>  <span class="va">omega</span><span class="op">[</span><span class="fl">2</span>,<span class="fl">2</span>,<span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0</span>        <span class="co"># Pr(dead first -&gt; detected first)</span></span>
+<span>  <span class="kw">for</span> <span class="op">(</span><span class="va">t</span> <span class="kw">in</span> <span class="fl">2</span><span class="op">:</span><span class="fl">5</span><span class="op">)</span><span class="op">{</span></span>
+<span>    <span class="va">omega</span><span class="op">[</span><span class="fl">1</span>,<span class="fl">1</span>,<span class="va">t</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span> <span class="op">-</span> <span class="va">p</span>    <span class="co"># Pr(alive t -&gt; non-detected t)</span></span>
+<span>    <span class="va">omega</span><span class="op">[</span><span class="fl">1</span>,<span class="fl">2</span>,<span class="va">t</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="va">p</span>        <span class="co"># Pr(alive t -&gt; detected t)</span></span>
+<span>    <span class="va">omega</span><span class="op">[</span><span class="fl">2</span>,<span class="fl">1</span>,<span class="va">t</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span>        <span class="co"># Pr(dead t -&gt; non-detected t)</span></span>
+<span>    <span class="va">omega</span><span class="op">[</span><span class="fl">2</span>,<span class="fl">2</span>,<span class="va">t</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0</span>        <span class="co"># Pr(dead t -&gt; detected t)</span></span>
+<span>  <span class="op">}</span></span>
+<span>  <span class="kw">for</span> <span class="op">(</span><span class="va">i</span> <span class="kw">in</span> <span class="fl">1</span><span class="op">:</span><span class="va">N</span><span class="op">)</span><span class="op">{</span></span>
+<span>    <span class="va">y</span><span class="op">[</span><span class="va">i</span>,<span class="fl">1</span><span class="op">:</span><span class="fl">5</span><span class="op">]</span> <span class="op">~</span> <span class="fu">dHMMopooled</span><span class="op">(</span>init <span class="op">=</span> <span class="va">delta</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">2</span><span class="op">]</span>, <span class="co"># vector of initial state probabilities</span></span>
+<span>                           probObs <span class="op">=</span> <span class="va">omega</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">2</span>,<span class="fl">1</span><span class="op">:</span><span class="fl">2</span>,<span class="fl">1</span><span class="op">:</span><span class="fl">5</span><span class="op">]</span>, <span class="co"># observation matrix</span></span>
+<span>                           probTrans <span class="op">=</span> <span class="va">gamma</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">2</span>,<span class="fl">1</span><span class="op">:</span><span class="fl">2</span><span class="op">]</span>, <span class="co"># transition matrix</span></span>
+<span>                           len <span class="op">=</span> <span class="fl">5</span>, <span class="co"># nb of sampling occasions</span></span>
+<span>                           checkRowSums <span class="op">=</span> <span class="fl">0</span>, <span class="co"># skip validity checks</span></span>
+<span>                           size <span class="op">=</span> <span class="va">size</span><span class="op">[</span><span class="va">i</span><span class="op">]</span><span class="op">)</span> <span class="co"># number of individuals with encounter history i</span></span>
+<span></span>
+<span>  <span class="op">}</span></span>
+<span><span class="op">}</span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">y_pooled</span> <span class="op">&lt;-</span> <span class="va">y</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html">%&gt;%</a></span> </span>
+<span>  <span class="fu"><a href="https://tibble.tidyverse.org/reference/as_tibble.html">as_tibble</a></span><span class="op">(</span><span class="op">)</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html">%&gt;%</a></span> </span>
+<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/group_by_all.html">group_by_all</a></span><span class="op">(</span><span class="op">)</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html">%&gt;%</a></span> <span class="co"># group</span></span>
+<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/summarise.html">summarise</a></span><span class="op">(</span>size <span class="op">=</span> <span class="fu"><a href="https://dplyr.tidyverse.org/reference/context.html">n</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html">%&gt;%</a></span> <span class="co"># count</span></span>
+<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/relocate.html">relocate</a></span><span class="op">(</span><span class="va">size</span><span class="op">)</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html">%&gt;%</a></span> <span class="co"># put size in front</span></span>
+<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/arrange.html">arrange</a></span><span class="op">(</span><span class="op">-</span><span class="va">size</span><span class="op">)</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html">%&gt;%</a></span> <span class="co"># sort along size</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/matrix.html">as.matrix</a></span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="va">y_pooled</span></span>
+<span><span class="co">##       size winter 1 winter 2 winter 3 winter 4 winter 5</span></span>
+<span><span class="co">##  [1,]   21        1        0        0        0        0</span></span>
+<span><span class="co">##  [2,]    8        1        1        0        0        0</span></span>
+<span><span class="co">##  [3,]    8        1        1        1        1        0</span></span>
+<span><span class="co">##  [4,]    4        1        1        0        0        1</span></span>
+<span><span class="co">##  [5,]    4        1        1        1        0        0</span></span>
+<span><span class="co">##  [6,]    2        1        0        0        1        0</span></span>
+<span><span class="co">##  [7,]    2        1        0        1        1        0</span></span>
+<span><span class="co">##  [8,]    2        1        1        0        1        0</span></span>
+<span><span class="co">##  [9,]    1        1        0        1        0        0</span></span>
+<span><span class="co">## [10,]    1        1        0        1        0        1</span></span>
+<span><span class="co">## [11,]    1        1        0        1        1        1</span></span>
+<span><span class="co">## [12,]    1        1        1        0        1        1</span></span>
+<span><span class="co">## [13,]    1        1        1        1        0        1</span></span>
+<span><span class="co">## [14,]    1        1        1        1        1        1</span></span>
+<span></span>
+<span><span class="va">my.constants</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>N <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html">nrow</a></span><span class="op">(</span><span class="va">y_pooled</span><span class="op">)</span>, T <span class="op">=</span> <span class="fl">5</span>, size <span class="op">=</span> <span class="va">y_pooled</span><span class="op">[</span>,<span class="st">'size'</span><span class="op">]</span><span class="op">)</span></span>
+<span><span class="va">my.data</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>y <span class="op">=</span> <span class="va">y_pooled</span><span class="op">[</span>,<span class="op">-</span><span class="fl">1</span><span class="op">]</span> <span class="op">+</span> <span class="fl">1</span><span class="op">)</span> <span class="co"># delete size from dataset</span></span>
+<span><span class="va">initial.values</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>phi <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html">runif</a></span><span class="op">(</span><span class="fl">1</span>,<span class="fl">0</span>,<span class="fl">1</span><span class="op">)</span>,</span>
+<span>                                  p <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html">runif</a></span><span class="op">(</span><span class="fl">1</span>,<span class="fl">0</span>,<span class="fl">1</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">parameters.to.save</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"phi"</span>, <span class="st">"p"</span><span class="op">)</span></span>
+<span><span class="va">n.iter</span> <span class="op">&lt;-</span> <span class="fl">5000</span></span>
+<span><span class="va">n.burnin</span> <span class="op">&lt;-</span> <span class="fl">1000</span></span>
+<span><span class="va">n.chains</span> <span class="op">&lt;-</span> <span class="fl">2</span></span>
+<span></span>
+<span><span class="va">start_time</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Sys.time.html">Sys.time</a></span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="va">mcmc.output</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimbleMCMC.html">nimbleMCMC</a></span><span class="op">(</span>code <span class="op">=</span> <span class="va">hmm.survival</span>,</span>
+<span>                          constants <span class="op">=</span> <span class="va">my.constants</span>,</span>
+<span>                          data <span class="op">=</span> <span class="va">my.data</span>,</span>
+<span>                          inits <span class="op">=</span> <span class="va">initial.values</span>,</span>
+<span>                          monitors <span class="op">=</span> <span class="va">parameters.to.save</span>,</span>
+<span>                          niter <span class="op">=</span> <span class="va">n.iter</span>,</span>
+<span>                          nburnin <span class="op">=</span> <span class="va">n.burnin</span>,</span>
+<span>                          nchains <span class="op">=</span> <span class="va">n.chains</span><span class="op">)</span></span>
+<span><span class="co">## |-------------|-------------|-------------|-------------|</span></span>
+<span><span class="co">## |-------------------------------------------------------|</span></span>
+<span><span class="co">## |-------------|-------------|-------------|-------------|</span></span>
+<span><span class="co">## |-------------------------------------------------------|</span></span>
+<span><span class="va">end_time</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Sys.time.html">Sys.time</a></span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="va">end_time</span> <span class="op">-</span> <span class="va">start_time</span></span>
+<span><span class="co">## Time difference of 11.89 secs</span></span>
+<span></span>
+<span><span class="fu"><a href="https://rdrr.io/pkg/MCMCvis/man/MCMCsummary.html">MCMCsummary</a></span><span class="op">(</span><span class="va">mcmc.output</span>, round <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span>
+<span><span class="co">##     mean   sd 2.5%  50% 97.5% Rhat n.eff</span></span>
+<span><span class="co">## p   0.61 0.06 0.49 0.61  0.73    1  1331</span></span>
+<span><span class="co">## phi 0.76 0.04 0.68 0.76  0.84    1  1411</span></span></code></pre></div>
+</div>
 </div>
 <div id="decoding" class="section level2" number="3.10">
 <h2>
@@ -5853,7 +6178,7 @@ Figure 3.1: Graphical representation of the Viterbi algorithm with <span class="
 <span class="header-section-number">3.10.2</span> Implementation<a class="anchor" aria-label="anchor" href="#implementation"><i class="fas fa-link"></i></a>
 </h3>
 <p>Let’s write a R function to implement the Viterbi algorithm. As parameters, our function will take the transition and observation matrices, the vector of initial state probabilities and the observed sequence of detections and non-detections for which you aim to compute the sequence of states from which it was most likely generated:</p>
-<div class="sourceCode" id="cb134"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb140"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># getViterbi() returns sequence of states that most likely generated sequence of observations</span></span>
 <span><span class="co"># adapted from https://github.com/vbehnam/viterbi</span></span>
 <span><span class="va">getViterbi</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">Omega</span>, <span class="va">Gamma</span>, <span class="va">delta</span>, <span class="va">y</span><span class="op">)</span> <span class="op">{</span></span>
@@ -5910,7 +6235,7 @@ Figure 3.1: Graphical representation of the Viterbi algorithm with <span class="
 <span><span class="op">}</span></span></code></pre></div>
 <p>Note that instead of writing your own R function, you could use a built-in function from an existing R package to implement the Viterbi algorithm<a class="footnote-ref" tabindex="0" data-toggle="popover" data-content="&lt;p&gt;For example, the &lt;code&gt;viterbi()&lt;/code&gt; function from the HMM and depmixS4 packages.&lt;/p&gt;"><sup>31</sup></a>, and call it from NIMBLE as we have seen in Section <a href="intronimble.html#callrfninnimble">2.4.2</a>. The difficulty is that HMM for capture-recapture data have specific features that make standard functions not adapted and requires coding your own Viterbi function. In particular, we have to deal with detection at first encounter, which is not estimated but is always one because an individual has to be captured to be marked and released for the first time. Also, our transition and observation matrices are not always homogeneous and may depend on time.</p>
 <p>Let’s test our <code>getViterbi()</code> function with our previous example. Remember animal #15 has the encounter history (2, 1, 1, 1, 1) which was generated from the sequence of states (1, 1, 2, 2, 2). Applying our function to that animal encounter history, we get:</p>
-<div class="sourceCode" id="cb135"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb141"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">delta</span> <span class="co"># Vector of initial states probabilities</span></span>
 <span><span class="co">## [1] 1 0</span></span>
 <span><span class="va">Gamma</span> <span class="co"># Transition matrix</span></span>
@@ -5929,7 +6254,7 @@ Figure 3.1: Graphical representation of the Viterbi algorithm with <span class="
 <p>The Viterbi algorithm does pretty well at recovering the latent states, despite incorrectly decoding a death in the second winter while individual #15 only dies in the third winter. We obtained the same results by implementing the Viterbi algorithm by hand in Section <a href="hmmcapturerecapture.html#viterbi-theory">3.10.1</a>.</p>
 <p>Now that we have a function that implements the Viterbi algorithm, we can use it with our MCMC outputs. You have two options, either you apply Viterbi to each MCMC iteration then you compute the posterior median or mode path for each individual, or you compute the posterior mean or median of the transition and observation matrices then you apply Viterbi to each individual encounter history.</p>
 <p>For both options, we will need the values from the posterior distributions of survival and detection probabilities:</p>
-<div class="sourceCode" id="cb136"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb142"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">phi</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="va">mcmc.output</span><span class="op">$</span><span class="va">chain1</span><span class="op">[</span>,<span class="st">'phi'</span><span class="op">]</span>, <span class="va">mcmc.output</span><span class="op">$</span><span class="va">chain2</span><span class="op">[</span>,<span class="st">'phi'</span><span class="op">]</span><span class="op">)</span></span>
 <span><span class="va">p</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="va">mcmc.output</span><span class="op">$</span><span class="va">chain1</span><span class="op">[</span>,<span class="st">'p'</span><span class="op">]</span>, <span class="va">mcmc.output</span><span class="op">$</span><span class="va">chain2</span><span class="op">[</span>,<span class="st">'p'</span><span class="op">]</span><span class="op">)</span></span></code></pre></div>
 </div>
@@ -5938,7 +6263,7 @@ Figure 3.1: Graphical representation of the Viterbi algorithm with <span class="
 <span class="header-section-number">3.10.3</span> Compute first, average after<a class="anchor" aria-label="anchor" href="#compute-average"><i class="fas fa-link"></i></a>
 </h3>
 <p>First option is to apply Viterbi to each MCMC sample, then to compute median of the MCMC Viterbi paths for each observed sequence:</p>
-<div class="sourceCode" id="cb137"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb143"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">niter</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/length.html">length</a></span><span class="op">(</span><span class="va">p</span><span class="op">)</span></span>
 <span><span class="cn">T</span> <span class="op">&lt;-</span> <span class="fl">5</span></span>
 <span><span class="va">res</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html">matrix</a></span><span class="op">(</span><span class="cn">NA</span>, nrow <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html">nrow</a></span><span class="op">(</span><span class="va">y</span><span class="op">)</span>, ncol <span class="op">=</span> <span class="cn">T</span><span class="op">)</span></span>
@@ -5977,7 +6302,7 @@ Figure 3.2: Comparison of the actual sequences of states to the sequences of sta
 <span class="header-section-number">3.10.4</span> Average first, compute after<a class="anchor" aria-label="anchor" href="#average-first-compute-after"><i class="fas fa-link"></i></a>
 </h3>
 <p>Second option is to compute the posterior mean of the observation and transition matrices, then to apply Viterbi:</p>
-<div class="sourceCode" id="cb138"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb144"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Initial states</span></span>
 <span><span class="va">delta</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">0</span><span class="op">)</span></span>
 <span><span class="co"># Transition matrix</span></span>
@@ -6069,7 +6394,12 @@ Figure 3.3: Comparison of the actual sequences of states to the sequences of sta
 <li><a class="nav-link" href="#nimble-implementation-1"><span class="header-section-number">3.8.3</span> NIMBLE implementation</a></li>
 </ul>
 </li>
-<li><a class="nav-link" href="#pooled-likelihood"><span class="header-section-number">3.9</span> Pooled encounter histories</a></li>
+<li>
+<a class="nav-link" href="#pooled-likelihood"><span class="header-section-number">3.9</span> Pooled encounter histories</a><ul class="nav navbar-nav">
+<li><a class="nav-link" href="#do-it-yourself-1"><span class="header-section-number">3.9.1</span> Do it yourself</a></li>
+<li><a class="nav-link" href="#do-it-with-nimbleecology-1"><span class="header-section-number">3.9.2</span> Do it with nimbleEcology</a></li>
+</ul>
+</li>
 <li>
 <a class="nav-link" href="#decoding"><span class="header-section-number">3.10</span> Decoding after marginalization</a><ul class="nav navbar-nav">
 <li><a class="nav-link" href="#viterbi-theory"><span class="header-section-number">3.10.1</span> Theory</a></li>
@@ -6097,7 +6427,7 @@ Figure 3.3: Comparison of the actual sequences of states to the sequences of sta
 <footer class="bg-primary text-light mt-5"><div class="container"><div class="row">
 
   <div class="col-12 col-md-6 mt-3">
-    <p>"<strong>Bayesian Analysis of Capture-Recapture Data with Hidden Markov Models</strong>: Theory and Case Studies in R" was written by Olivier Gimenez. It was last built on 2023-08-17.</p>
+    <p>"<strong>Bayesian Analysis of Capture-Recapture Data with Hidden Markov Models</strong>: Theory and Case Studies in R" was written by Olivier Gimenez. It was last built on 2023-08-19.</p>
   </div>
 
   <div class="col-12 col-md-6 mt-3">

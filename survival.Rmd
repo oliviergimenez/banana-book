@@ -312,7 +312,7 @@ You may have heard about the Akaike Information Criterion (AIC) in the Frequenti
 
 While AIC is the predictive measure of choice in the Frequentist framework for ecologists, DIC has been around for some time for Bayesian applications due to its availability in population BUGS pieces of software. However, these methods only utilize a point estimate of the unknown parameters. Also, various difficulties have been noted with DIC which may give nonsensical results when the posterior distribution is not well summarized by its mean. For a more fully Bayesian approach we would like to use the entire posterior distribution to evaluate the predictive performance, which is exactly what WAIC does. 
 
-Conveniently, NIMBLE calculates WAIC for you. The only modifications we need to make are i) to monitor all nodes, including the latent states and ii) to add `WAIC = TRUE` in the call to the `nimbleMCMC()` function. For example, for the CJS model, we write:
+Conveniently, NIMBLE calculates WAIC for you. The only modification you need to make is to add `WAIC = TRUE` in the call to the `nimbleMCMC()` function. For example, for the CJS model, we write:
 ```{r eval = FALSE}
 parameters.to.save <- c("phi", "p", "z") 
 mcmc.phitpt <- nimbleMCMC(code = hmm.phitpt,
@@ -326,7 +326,18 @@ mcmc.phitpt <- nimbleMCMC(code = hmm.phitpt,
                           WAIC = TRUE) 
 ```
 
+<!-- To obtain WAIC, set WAIC = TRUE in nimbleMCMC. If using a more customized workflow, set enableWAIC = TRUE in configureMCMC or (if skipping configureMCMC) in buildMCMC, followed by setting WAIC = TRUE in runMCMC, if using runMCMC to manage sample generation.  -->
+
 I re-ran the four models to calculate the WAIC value for each of them
+```{r eval = FALSE}
+data.frame(model = c("both survival & detection constant",
+                     "time-dependent survival, constant detection",
+                     "constant survival, time-dependent detection",
+                     "both survival & detection time-dependent"),
+           WAIC = c(mcmc.phip$WAIC$WAIC,
+                    mcmc.phitp$WAIC$WAIC,
+                    mcmc.phipt$WAIC$WAIC,
+                    mcmc.phitpt$WAIC$WAIC))
 ```{r echo = FALSE}
 load(here::here("dat","dipper_waic.RData"))
 data.frame(model = c("both survival & detection constant",
@@ -334,9 +345,9 @@ data.frame(model = c("both survival & detection constant",
                      "constant survival, time-dependent detection",
                      "both survival & detection time-dependent"),
            WAIC = c(mcmc.phip$WAIC,
-             mcmc.phitp$WAIC,
-             mcmc.phipt$WAIC,
-             mcmc.phitpt$WAIC))
+                    mcmc.phitp$WAIC,
+                    mcmc.phipt$WAIC,
+                    mcmc.phitpt$WAIC))
 ```
 
 Lower values of WAIC imply higher predictive accuracy, thefore we would favor model with constant parameters. **Add WAIC weights.**
@@ -485,13 +496,14 @@ mcmc.phifloodp <- nimbleMCMC(code = hmm.phifloodp,
 ```
 
 Having a look to the numerical summaries, we see that as expected, survival in flood years (`phi[2]`) is much lower than survival in non-flood years (`phi[1]`):
+```{r eval = FALSE}
+MCMCsummary(mcmc.phifloodp, round = 2)
+```
 ```{r, echo = FALSE}
 load(here::here("dat/phifloodpni.RData"))
 MCMCsummary(mcmc.phifloodp, round = 2)
 ```
-```{r eval = FALSE}
-MCMCsummary(mcmc.phifloodp, round = 2)
-```
+
 
 An important point here is that we formulated an ecological hypothesis which we translated into a model. The next step would consist in calculating WAIC for this model and compare it with that of the four other model we have fitted so far (see Section \@ref(waic)). **Do it, and explain difference between conditional and marginal WAIC.**
 

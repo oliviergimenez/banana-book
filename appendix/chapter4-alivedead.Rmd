@@ -1,0 +1,1366 @@
+---
+title: "Chapter 4: Alive and dead"
+date: "last updated: `r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE, echo=FALSE, message=FALSE, warning=FALSE}
+# R options
+options(width = 60)
+# chunk options
+knitr::opts_chunk$set(
+  comment = "##",
+  collapse = TRUE,
+  warning = FALSE,
+  message = FALSE
+  )
+```
+
+## Introduction
+
+## The Cormack-Jolly-Seber (CJS) model 
+
+## Capture-recapture data 
+
+## Fitting the CJS model to the dipper data with NIMBLE 
+ 
+```{r}
+# load packages
+library(nimble) # NIMBLE 
+library(tidyverse) # manipulate/visualize data
+library(MCMCvis) # post-process MCMC outputs
+# read in data
+dipper <- read_csv("dipper.csv")
+head(dipper)
+# format the data
+y <- dipper %>%
+  select(year_1981:year_1987) %>%
+  as.matrix()
+# NIMBLE code 
+hmm.phitpt <- nimbleCode({
+  delta[1] <- 1                    # Pr(alive t = 1) = 1
+  delta[2] <- 0                    # Pr(dead t = 1) = 0
+  for (t in 1:(T-1)){ # loop over time
+    phi[t] ~ dunif(0, 1)           # prior survival
+    gamma[1,1,t] <- phi[t]         # Pr(alive t -> alive t+1)
+    gamma[1,2,t] <- 1 - phi[t]     # Pr(alive t -> dead t+1)
+    gamma[2,1,t] <- 0              # Pr(dead t -> alive t+1)
+    gamma[2,2,t] <- 1              # Pr(dead t -> dead t+1)
+    p[t] ~ dunif(0, 1)             # prior detection
+    omega[1,1,t] <- 1 - p[t]       # Pr(alive t -> non-detected t)
+    omega[1,2,t] <- p[t]           # Pr(alive t -> detected t)
+    omega[2,1,t] <- 1              # Pr(dead t -> non-detected t)
+    omega[2,2,t] <- 0              # Pr(dead t -> detected t)
+  }
+  # likelihood
+  for (i in 1:N){
+    z[i,first[i]] ~ dcat(delta[1:2])
+    for (j in (first[i]+1):T){
+      z[i,j] ~ dcat(gamma[z[i,j-1], 1:2, j-1])
+      y[i,j] ~ dcat(omega[z[i,j], 1:2, j-1])
+    }
+  }
+})
+# occasions of first capture
+first <- apply(y, 1, function(x) min(which(x !=0)))
+# constants
+my.constants <- list(N = nrow(y), 
+                     T = ncol(y), 
+                     first = first)
+# data
+my.data <- list(y = y + 1)
+# initial values 
+zinits <- y + 1 # non-detection -> alive
+zinits[zinits == 2] <- 1 # dead -> alive
+initial.values <- function() list(phi = runif(my.constants$T-1,0,1),
+                                  p = runif(my.constants$T-1,0,1),
+                                  z = zinits)
+# parameters to monitor
+parameters.to.save <- c("phi", "p")
+# MCMC details
+n.iter <- 2500
+n.burnin <- 1000
+n.chains <- 2
+# run NIMBLE
+mcmc.phitpt <- nimbleMCMC(code = hmm.phitpt, 
+                          constants = my.constants,
+                          data = my.data,              
+                          inits = initial.values,
+                          monitors = parameters.to.save,
+                          niter = n.iter,
+                          nburnin = n.burnin, 
+                          nchains = n.chains)
+# numerical summaries
+MCMCsummary(object = mcmc.phitpt, round = 2)
+# caterpillar plot 
+MCMCplot(object = mcmc.phitpt)
+```
+
+```{r}
+# prior/posterior overlap
+priors <- runif(3000, 0, 1)
+MCMCtrace(object = mcmc.phitpt,
+          ISB = FALSE,
+          exact = TRUE, 
+          params = c("phi[6]"),
+          pdf = FALSE, 
+          priors = priors)
+```
+
+## CJS model derivatives  
+
+A model with constant parameters
+
+```{r}
+# load packages
+library(nimble) # NIMBLE 
+library(tidyverse) # manipulate/visualize data
+library(MCMCvis) # post-process MCMC outputs
+# read in data
+dipper <- read_csv("dipper.csv")
+head(dipper)
+# format the data
+y <- dipper %>%
+  select(year_1981:year_1987) %>%
+  as.matrix()
+# NIMBLE code 
+hmm.phip <- nimbleCode({
+  phi ~ dunif(0, 1) # prior survival
+  p ~ dunif(0, 1) # prior detection
+  # likelihood
+  gamma[1,1] <- phi      # Pr(alive t -> alive t+1)
+  gamma[1,2] <- 1 - phi  # Pr(alive t -> dead t+1)
+  gamma[2,1] <- 0        # Pr(dead t -> alive t+1)
+  gamma[2,2] <- 1        # Pr(dead t -> dead t+1)
+  delta[1] <- 1          # Pr(alive t = 1) = 1
+  delta[2] <- 0          # Pr(dead t = 1) = 0
+  omega[1,1] <- 1 - p    # Pr(alive t -> non-detected t)
+  omega[1,2] <- p        # Pr(alive t -> detected t)
+  omega[2,1] <- 1        # Pr(dead t -> non-detected t)
+  omega[2,2] <- 0        # Pr(dead t -> detected t)
+  for (i in 1:N){
+    z[i,first[i]] ~ dcat(delta[1:2])
+    for (j in (first[i]+1):T){
+      z[i,j] ~ dcat(gamma[z[i,j-1], 1:2])
+      y[i,j] ~ dcat(omega[z[i,j], 1:2])
+    }
+  }
+})
+# occasions of first capture
+first <- apply(y, 1, function(x) min(which(x !=0)))
+# constants
+my.constants <- list(N = nrow(y), 
+                     T = ncol(y), 
+                     first = first)
+# data
+my.data <- list(y = y + 1)
+# initial values
+zinits <- y + 1 # non-detection -> alive
+zinits[zinits == 2] <- 1 # dead -> alive
+initial.values <- function() list(phi = runif(1,0,1),
+                                  p = runif(1,0,1),
+                                  z = zinits)
+# parameters to monitor
+parameters.to.save <- c("phi", "p")
+# MCMC details
+n.iter <- 2500
+n.burnin <- 1000
+n.chains <- 2
+# run NIMBLE
+mcmc.phip <- nimbleMCMC(code = hmm.phip, 
+                        constants = my.constants,
+                        data = my.data,              
+                        inits = initial.values,
+                        monitors = parameters.to.save,
+                        niter = n.iter,
+                        nburnin = n.burnin, 
+                        nchains = n.chains)
+# numerical summaries
+MCMCsummary(mcmc.phip, round = 2)
+```
+
+A model with time-varying survival probabilities, and constant detection. 
+
+```{r}
+# load packages
+library(nimble) # NIMBLE 
+library(tidyverse) # manipulate/visualize data
+library(MCMCvis) # post-process MCMC outputs
+# read in data
+dipper <- read_csv("dipper.csv")
+head(dipper)
+# format the data
+y <- dipper %>%
+  select(year_1981:year_1987) %>%
+  as.matrix()
+# NIMBLE code 
+hmm.phitp <- nimbleCode({
+  for (t in 1:(T-1)){
+    phi[t] ~ dunif(0, 1) # prior survival
+    gamma[1,1,t] <- phi[t]      # Pr(alive t -> alive t+1)
+    gamma[1,2,t] <- 1 - phi[t]  # Pr(alive t -> dead t+1)
+    gamma[2,1,t] <- 0        # Pr(dead t -> alive t+1)
+    gamma[2,2,t] <- 1        # Pr(dead t -> dead t+1)
+  }
+  p ~ dunif(0, 1) # prior detection
+  delta[1] <- 1          # Pr(alive t = 1) = 1
+  delta[2] <- 0          # Pr(dead t = 1) = 0
+  omega[1,1] <- 1 - p    # Pr(alive t -> non-detected t)
+  omega[1,2] <- p        # Pr(alive t -> detected t)
+  omega[2,1] <- 1        # Pr(dead t -> non-detected t)
+  omega[2,2] <- 0        # Pr(dead t -> detected t)
+  # likelihood
+  for (i in 1:N){
+    z[i,first[i]] ~ dcat(delta[1:2])
+    for (j in (first[i]+1):T){
+      z[i,j] ~ dcat(gamma[z[i,j-1], 1:2, j-1])
+      y[i,j] ~ dcat(omega[z[i,j], 1:2])
+    }
+  }
+})
+# occasions of first capture
+first <- apply(y, 1, function(x) min(which(x !=0)))
+# constants
+my.constants <- list(N = nrow(y), 
+                     T = ncol(y), 
+                     first = first)
+# data
+my.data <- list(y = y + 1)
+# initial values
+initial.values <- function() list(phi = runif(my.constants$T-1,0,1),
+                                  p = runif(1,0,1),
+                                  z = zinits)
+# parameters to monitor
+parameters.to.save <- c("phi", "p")
+# MCMC details
+n.iter <- 2500
+n.burnin <- 1000
+n.chains <- 2
+# run NIMBLE
+mcmc.phitp <- nimbleMCMC(code = hmm.phitp, 
+                   constants = my.constants,
+                   data = my.data,              
+                   inits = initial.values,
+                   monitors = parameters.to.save,
+                   niter = n.iter,
+                   nburnin = n.burnin, 
+                   nchains = n.chains)
+# numerical summaries
+MCMCsummary(object = mcmc.phitp, round = 2)
+```
+
+A model with time-varying detection and constant survival. 
+
+```{r}
+# load packages
+library(nimble) # NIMBLE 
+library(tidyverse) # manipulate/visualize data
+library(MCMCvis) # post-process MCMC outputs
+# read in data
+dipper <- read_csv("dipper.csv")
+head(dipper)
+# format the data
+y <- dipper %>%
+  select(year_1981:year_1987) %>%
+  as.matrix()
+# NIMBLE code 
+hmm.phipt <- nimbleCode({
+  phi ~ dunif(0, 1) # prior survival
+  gamma[1,1] <- phi      # Pr(alive t -> alive t+1)
+  gamma[1,2] <- 1 - phi  # Pr(alive t -> dead t+1)
+  gamma[2,1] <- 0        # Pr(dead t -> alive t+1)
+  gamma[2,2] <- 1        # Pr(dead t -> dead t+1)
+  delta[1] <- 1          # Pr(alive t = 1) = 1
+  delta[2] <- 0          # Pr(dead t = 1) = 0
+  for (t in 1:(T-1)){
+    p[t] ~ dunif(0, 1) # prior detection
+    omega[1,1,t] <- 1 - p[t]    # Pr(alive t -> non-detected t)
+    omega[1,2,t] <- p[t]        # Pr(alive t -> detected t)
+    omega[2,1,t] <- 1        # Pr(dead t -> non-detected t)
+    omega[2,2,t] <- 0        # Pr(dead t -> detected t)
+  }
+  # likelihood
+  for (i in 1:N){
+    z[i,first[i]] ~ dcat(delta[1:2])
+    for (j in (first[i]+1):T){
+      z[i,j] ~ dcat(gamma[z[i,j-1], 1:2])
+      y[i,j] ~ dcat(omega[z[i,j], 1:2, j-1])
+    }
+  }
+})
+# occasions of first capture
+first <- apply(y, 1, function(x) min(which(x !=0)))
+# constants
+my.constants <- list(N = nrow(y), 
+                     T = ncol(y), 
+                     first = first)
+# data
+my.data <- list(y = y + 1)
+# initial values
+initial.values <- function() list(phi = runif(1,0,1),
+                                  p = runif(my.constants$T-1,0,1),
+                                  z = zinits)
+# parameters to monitor
+parameters.to.save <- c("phi", "p")
+# MCMC details
+n.iter <- 2500
+n.burnin <- 1000
+n.chains <- 2
+# run NIMBLE
+mcmc.phipt <- nimbleMCMC(code = hmm.phipt, 
+                         constants = my.constants,
+                         data = my.data,              
+                         inits = initial.values,
+                         monitors = parameters.to.save,
+                         niter = n.iter,
+                         nburnin = n.burnin, 
+                         nchains = n.chains)
+# numerical summaries
+MCMCsummary(object = mcmc.phipt, round = 2)
+```
+
+## Model comparison with WAIC 
+
+We re-run the four models above, and set the WAIC argument to `TRUE` in `nimbleMCMC()`.  
+
+```{r}
+# load packages
+library(nimble) # NIMBLE 
+library(tidyverse) # manipulate/visualize data
+library(MCMCvis) # post-process MCMC outputs
+# read in data
+dipper <- read_csv("dipper.csv")
+head(dipper)
+# format the data
+y <- dipper %>%
+  select(year_1981:year_1987) %>%
+  as.matrix()
+# occasion of first capture
+first <- apply(y, 1, function(x) min(which(x !=0)))
+# constants
+my.constants <- list(N = nrow(y), T = ncol(y), first = first)
+# data
+my.data <- list(y = y + 1)
+# initial values for model with constant survival and detection
+initial.values <- function() list(phi = runif(1,0,1),
+                                  p = runif(1,0,1),
+                                  z = zinits)
+parameters.to.save <- c("phi", "p")
+mcmc.phip <- nimbleMCMC(code = hmm.phip, 
+                        constants = my.constants,
+                        data = my.data,              
+                        inits = initial.values,
+                        monitors = parameters.to.save,
+                        niter = n.iter,
+                        nburnin = n.burnin, 
+                        nchains = n.chains,
+                        WAIC = TRUE)
+# initial values for model with time-varying survival and constant detection
+initial.values <- function() list(phi = runif(my.constants$T-1,0,1),
+                                  p = runif(1,0,1),
+                                  z = zinits)
+mcmc.phitp <- nimbleMCMC(code = hmm.phitp, 
+                         constants = my.constants,
+                         data = my.data,              
+                         inits = initial.values,
+                         monitors = parameters.to.save,
+                         niter = n.iter,
+                         nburnin = n.burnin, 
+                         nchains = n.chains,
+                         WAIC = TRUE)
+# initial values for model with time-varying detection and time-varying detection
+initial.values <- function() list(phi = runif(1,0,1),
+                                  p = runif(my.constants$T-1,0,1),
+                                  z = zinits)
+mcmc.phipt <- nimbleMCMC(code = hmm.phipt, 
+                         constants = my.constants,
+                         data = my.data,              
+                         inits = initial.values,
+                         monitors = parameters.to.save,
+                         niter = n.iter,
+                         nburnin = n.burnin, 
+                         nchains = n.chains,
+                         WAIC = TRUE)
+# initial values for CJS model
+initial.values <- function() list(phi = runif(my.constants$T-1,0,1),
+                                  p = runif(my.constants$T-1,0,1),
+                                  z = zinits)
+mcmc.phitpt <- nimbleMCMC(code = hmm.phitpt, 
+                          constants = my.constants,
+                          data = my.data,              
+                          inits = initial.values,
+                          monitors = parameters.to.save,
+                          niter = n.iter,
+                          nburnin = n.burnin, 
+                          nchains = n.chains,
+                          WAIC = TRUE)
+# model ranking
+data.frame(model = c("(phi,p)",
+                     "(phit,p)",
+                     "(phi,pt)",
+                     "(phit,pt)"),
+           WAIC = c(mcmc.phip$WAIC$WAIC, 
+                    mcmc.phitp$WAIC$WAIC, 
+                    mcmc.phipt$WAIC$WAIC, 
+                    mcmc.phitpt$WAIC$WAIC))
+```
+
+## Goodness of fit
+
+### Posterior predictive checks 
+
+### Classical tests
+ 
+```{r}
+# load package for gof
+library(R2ucare)
+# read in data
+dipper <- read_csv("dipper.csv")
+head(dipper)
+# format the data
+y <- dipper %>%
+  select(year_1981:year_1987) %>%
+  as.matrix()
+# number of birds with that particular capture-recapture history
+size <- rep(1, nrow(y))
+# CJS gof test
+overall_CJS(y, size)
+# transience
+test3sr(y, size)
+# trap-dependence
+test2ct(y, size)
+```
+
+### Design considerations 
+
+## Covariates 
+ 
+### Temporal covariates 
+
+#### Discrete 
+ 
+Nested indexing
+
+```{r}
+# load packages
+library(nimble) # NIMBLE 
+library(tidyverse) # manipulate/visualize data
+library(MCMCvis) # post-process MCMC outputs
+# read in data
+dipper <- read_csv("dipper.csv")
+# format the data
+y <- dipper %>%
+  select(year_1981:year_1987) %>%
+  as.matrix()
+# nonflood/flood covariate
+flood <- c(1, # 1981-1982 (nonflood)
+           2, # 1982-1983 (flood)
+           2, # 1983-1984 (flood)
+           1, # 1984-1985 (nonflood)
+           1, # 1985-1986 (nonflood)
+           1) # 1986-1987 (nonflood)
+# Nimble code
+hmm.phifloodp <- nimbleCode({
+  delta[1] <- 1          # Pr(alive t = 1) = 1
+  delta[2] <- 0          # Pr(dead t = 1) = 0
+  for (t in 1:(T-1)){
+    gamma[1,1,t] <- phi[flood[t]]      # Pr(alive t -> alive t+1)
+    gamma[1,2,t] <- 1 - phi[flood[t]]  # Pr(alive t -> dead t+1)
+    gamma[2,1,t] <- 0        # Pr(dead t -> alive t+1)
+    gamma[2,2,t] <- 1        # Pr(dead t -> dead t+1)
+  }
+  p ~ dunif(0, 1) # prior detection
+  omega[1,1] <- 1 - p    # Pr(alive t -> non-detected t)
+  omega[1,2] <- p        # Pr(alive t -> detected t)
+  omega[2,1] <- 1        # Pr(dead t -> non-detected t)
+  omega[2,2] <- 0        # Pr(dead t -> detected t)
+  phi[1] ~ dunif(0, 1) # prior for survival in nonflood years
+  phi[2] ~ dunif(0, 1) # prior for survival in flood years
+  # likelihood
+  for (i in 1:N){
+    z[i,first[i]] ~ dcat(delta[1:2])
+    for (j in (first[i]+1):T){
+      z[i,j] ~ dcat(gamma[z[i,j-1], 1:2, j-1])
+      y[i,j] ~ dcat(omega[z[i,j], 1:2])
+    }
+  }
+})
+# occasions of first capture
+first <- apply(y, 1, function(x) min(which(x !=0)))
+# constants
+my.constants <- list(N = nrow(y),
+                     T = ncol(y),
+                     first = first,
+                     flood = flood)
+# initial values
+initial.values <- function() list(phi = runif(2,0,1),
+                                  p = runif(1,0,1),
+                                  z = zinits)
+# parameters to monitor
+parameters.to.save <- c("p", "phi")
+# run NIMBLE
+mcmc.phifloodp <- nimbleMCMC(code = hmm.phifloodp, 
+                             constants = my.constants,
+                             data = my.data,              
+                             inits = initial.values,
+                             monitors = parameters.to.save,
+                             niter = n.iter,
+                             nburnin = n.burnin, 
+                             nchains = n.chains)
+# numerical summaries
+MCMCsummary(mcmc.phifloodp, round = 2)
+# run NIMBLE with WAIC on
+mcmc.phifloodp <- nimbleMCMC(code = hmm.phifloodp, 
+                             constants = my.constants,
+                             data = my.data,              
+                             inits = initial.values,
+                             monitors = parameters.to.save,
+                             niter = n.iter,
+                             nburnin = n.burnin, 
+                             nchains = n.chains,
+                             WAIC = TRUE)
+# WAIC value
+mcmc.phifloodp$WAIC$WAIC
+```
+
+Influence of prior
+
+```{r}
+library(patchwork) # arrange plots
+# bad prior
+# 1000 random values from a N(0,10)
+intercept <- rnorm(1000, mean = 0, sd = 10) 
+# plogis() is the inverse-logit function in R
+survival <- plogis(intercept) 
+df <- data.frame(intercept = intercept, survival = survival)
+plot1 <- df %>%
+  ggplot(aes(x = intercept)) +
+  geom_density() +
+  labs(x = "prior on intercept")
+plot2 <- df %>%
+  ggplot(aes(x = survival)) +
+  geom_density() +
+  labs(x = "prior on survival")
+plot1 + plot2
+# good prior
+set.seed(123)
+# 1000 random values from a N(0,1.5)
+intercept <- rnorm(1000, mean = 0, sd = 1.5) 
+# plogis() is the inverse-logit function in R
+survival <- plogis(intercept) 
+df <- data.frame(intercept = intercept, survival = survival)
+plot1 <- df %>%
+  ggplot(aes(x = intercept)) +
+  geom_density() +
+  labs(x = "prior on intercept")
+plot2 <- df %>%
+  ggplot(aes(x = survival)) +
+  geom_density() +
+  labs(x = "prior on survival")
+plot1 + plot2
+```
+
+Logit link function
+
+```{r}
+# load packages
+library(nimble) # NIMBLE 
+library(tidyverse) # manipulate/visualize data
+library(MCMCvis) # post-process MCMC outputs
+# read in data
+dipper <- read_csv("dipper.csv")
+# format the data
+y <- dipper %>%
+  select(year_1981:year_1987) %>%
+  as.matrix()
+# nonflood/flood covariate
+flood <- c(0, # 1981-1982 (nonflood)
+           1, # 1982-1983 (flood)
+           1, # 1983-1984 (flood)
+           0, # 1984-1985 (nonflood)
+           0, # 1985-1986 (nonflood)
+           0) # 1986-1987 (nonflood)
+# NIMBLE code
+hmm.phifloodp <- nimbleCode({
+  delta[1] <- 1          # Pr(alive t = 1) = 1
+  delta[2] <- 0          # Pr(dead t = 1) = 0
+  for (t in 1:(T-1)){
+    logit(phi[t]) <- beta[1] + beta[2] * flood[t]
+    gamma[1,1,t] <- phi[t]      # Pr(alive t -> alive t+1)
+    gamma[1,2,t] <- 1 - phi[t]  # Pr(alive t -> dead t+1)
+    gamma[2,1,t] <- 0           # Pr(dead t -> alive t+1)
+    gamma[2,2,t] <- 1           # Pr(dead t -> dead t+1)
+  }
+  p ~ dunif(0, 1) # prior detection
+  omega[1,1] <- 1 - p    # Pr(alive t -> non-detected t)
+  omega[1,2] <- p        # Pr(alive t -> detected t)
+  omega[2,1] <- 1        # Pr(dead t -> non-detected t)
+  omega[2,2] <- 0        # Pr(dead t -> detected t)
+  beta[1] ~ dnorm(0, 1.5) # prior intercept
+  beta[2] ~ dnorm(0, 1.5) # prior slope
+  # likelihood
+  for (i in 1:N){
+    z[i,first[i]] ~ dcat(delta[1:2])
+    for (j in (first[i]+1):T){
+      z[i,j] ~ dcat(gamma[z[i,j-1], 1:2, j-1])
+      y[i,j] ~ dcat(omega[z[i,j], 1:2])
+    }
+  }
+})
+# occasions of first capture
+first <- apply(y, 1, function(x) min(which(x !=0)))
+# constants
+my.constants <- list(N = nrow(y),
+                     T = ncol(y),
+                     first = first,
+                     flood = flood)
+# initial values
+initial.values <- function() list(beta = rnorm(2,0,1),
+                                  p = runif(1,0,1),
+                                  z = zinits)
+# parameters to monitor
+parameters.to.save <- c("beta", "p", "phi")
+# run NIMBLE
+mcmc.phifloodp <- nimbleMCMC(code = hmm.phifloodp, 
+                             constants = my.constants,
+                             data = my.data,              
+                             inits = initial.values,
+                             monitors = parameters.to.save,
+                             niter = n.iter,
+                             nburnin = n.burnin, 
+                             nchains = n.chains)
+# numerical summaries
+MCMCsummary(mcmc.phifloodp, round = 2)
+# get MCMC draws
+beta1 <- c(mcmc.phifloodp$chain1[,'beta[1]'], # beta1 chain 1
+           mcmc.phifloodp$chain2[,'beta[1]']) # beta1 chain 2
+beta2 <- c(mcmc.phifloodp$chain1[,'beta[2]'], # beta2 chain 1
+           mcmc.phifloodp$chain2[,'beta[2]']) # beta2 chain 2
+# get posterior mean and crebible interval, nonflood years
+mean(plogis(beta1))
+quantile(plogis(beta1), probs = c(2.5, 97.5)/100)
+# get posterior mean and crebible interval, flood years
+mean(plogis(beta1 + beta2))
+quantile(plogis(beta1 + beta2), probs = c(2.5, 97.5)/100)
+```
+
+
+#### Continuous 
+ 
+
+We only take the values we need, and standardize the covariate. 
+```{r}
+# load packages
+library(nimble) # NIMBLE 
+library(tidyverse) # manipulate/visualize data
+library(MCMCvis) # post-process MCMC outputs
+# read in data
+dipper <- read_csv("dipper.csv")
+# format the data
+y <- dipper %>%
+  select(year_1981:year_1987) %>%
+  as.matrix()
+# water flow in L/s
+water_flow <- c(443,  # March-May 1982
+                1114, # March-May 1983
+                529,  # March-May 1984
+                434,  # March-May 1985
+                627,  # March-May 1986
+                466)  # March-May 1987
+water_flow_st <- (water_flow - mean(water_flow))/sd(water_flow)
+# NIMBLE code
+hmm.phiflowp <- nimbleCode({
+  delta[1] <- 1          # Pr(alive t = 1) = 1
+  delta[2] <- 0          # Pr(dead t = 1) = 0
+  for (t in 1:(T-1)){
+    logit(phi[t]) <- beta[1] + beta[2] * flow[t] 
+    gamma[1,1,t] <- phi[t]      # Pr(alive t -> alive t+1)
+    gamma[1,2,t] <- 1 - phi[t]  # Pr(alive t -> dead t+1)
+    gamma[2,1,t] <- 0        # Pr(dead t -> alive t+1)
+    gamma[2,2,t] <- 1        # Pr(dead t -> dead t+1)
+  }
+  p ~ dunif(0, 1) # prior detection
+  omega[1,1] <- 1 - p    # Pr(alive t -> non-detected t)
+  omega[1,2] <- p        # Pr(alive t -> detected t)
+  omega[2,1] <- 1        # Pr(dead t -> non-detected t)
+  omega[2,2] <- 0        # Pr(dead t -> detected t)
+  beta[1] ~ dnorm(0, 1.5) # prior intercept
+  beta[2] ~ dnorm(0, 1.5) # prior slope
+  # likelihood
+  for (i in 1:N){
+    z[i,first[i]] ~ dcat(delta[1:2])
+    for (j in (first[i]+1):T){
+      z[i,j] ~ dcat(gamma[z[i,j-1], 1:2, j-1])
+      y[i,j] ~ dcat(omega[z[i,j], 1:2])
+    }
+  }
+})
+# occasions of first capture
+first <- apply(y, 1, function(x) min(which(x !=0)))
+# constants
+my.constants <- list(N = nrow(y), 
+                     T = ncol(y), 
+                     first = first, 
+                     flow = water_flow_st)
+# initial values
+initial.values <- function() list(beta = rnorm(2,0,1),
+                                  p = runif(1,0,1),
+                                  z = zinits)
+# parameters to be monitored
+parameters.to.save <- c("beta", "p", "phi")
+# run NIMBLE
+mcmc.phiflowp <- nimbleMCMC(code = hmm.phiflowp, 
+                          constants = my.constants,
+                          data = my.data,              
+                          inits = initial.values,
+                          monitors = parameters.to.save,
+                          niter = n.iter,
+                          nburnin = n.burnin, 
+                          nchains = n.chains)
+# caterpillar plot of the regression coef
+MCMCplot(object = mcmc.phiflowp, params = "beta", ISB = TRUE)
+# caterpillar plot of the survival estimates
+MCMCplot(object = mcmc.phiflowp, params = "phi", ISB = TRUE)
+```
+
+### Individual covariates 
+
+#### Discrete 
+
+
+Nested indexing
+
+```{r}
+# load packages
+library(nimble) # NIMBLE 
+library(tidyverse) # manipulate/visualize data
+library(MCMCvis) # post-process MCMC outputs
+# read in data
+dipper <- read_csv("dipper.csv")
+# format the data
+y <- dipper %>%
+  select(year_1981:year_1987) %>%
+  as.matrix()
+# sex covariate
+sex <- if_else(dipper$sex == "M", 1, 2) # 1 = male, 2 = female
+# Nimble code
+hmm.phisexp <- nimbleCode({
+  delta[1] <- 1          # Pr(alive t = 1) = 1
+  delta[2] <- 0          # Pr(dead t = 1) = 0
+  for (i in 1:N){
+    gamma[1,1,i] <- phi[sex[i]]      # Pr(alive t -> alive t+1)
+    gamma[1,2,i] <- 1 - phi[sex[i]]  # Pr(alive t -> dead t+1)
+    gamma[2,1,i] <- 0                # Pr(dead t -> alive t+1)
+    gamma[2,2,i] <- 1                # Pr(dead t -> dead t+1)
+  }
+  phi[1] ~ dunif(0,1) # male survival
+  phi[2] ~ dunif(0,1) # female survival  
+  p ~ dunif(0, 1) # prior detection
+  omega[1,1] <- 1 - p    # Pr(alive t -> non-detected t)
+  omega[1,2] <- p        # Pr(alive t -> detected t)
+  omega[2,1] <- 1        # Pr(dead t -> non-detected t)
+  omega[2,2] <- 0        # Pr(dead t -> detected t)
+  # likelihood
+  for (i in 1:N){
+    z[i,first[i]] ~ dcat(delta[1:2])
+    for (j in (first[i]+1):T){
+      z[i,j] ~ dcat(gamma[z[i,j-1], 1:2, j-1])
+      y[i,j] ~ dcat(omega[z[i,j], 1:2])
+    }
+  }
+})
+# occasions of first capture
+first <- apply(y, 1, function(x) min(which(x !=0)))
+# constants
+my.constants <- list(N = nrow(y),
+                     T = ncol(y),
+                     first = first,
+                     sex = sex)
+# initial values
+initial.values <- function() list(phi = runif(2,0,1),
+                                  p = runif(1,0,1),
+                                  z = zinits)
+# parameters to monitor
+parameters.to.save <- c("p", "phi")
+# run NIMBLE
+mcmc.phisexp.ni <- nimbleMCMC(code = hmm.phisexp, 
+                              constants = my.constants,
+                              data = my.data,              
+                              inits = initial.values,
+                              monitors = parameters.to.save,
+                              niter = n.iter,
+                              nburnin = n.burnin, 
+                              nchains = n.chains)
+# numerical summaries
+MCMCsummary(mcmc.phisexp.ni, round = 2)
+```
+
+
+#### Continuous 
+
+```{r}
+# load packages
+library(nimble) # NIMBLE 
+library(tidyverse) # manipulate/visualize data
+library(MCMCvis) # post-process MCMC outputs
+# read in data
+dipper <- read_csv("dipper.csv")
+# format the data
+y <- dipper %>%
+  select(year_1981:year_1987) %>%
+  as.matrix()
+# wing length covariate
+wing.length.st <- as.vector(scale(dipper$wing_length))
+# NIMBLE code
+hmm.phiwlp <- nimbleCode({
+    p ~ dunif(0, 1) # prior detection
+    omega[1,1] <- 1 - p    # Pr(alive t -> non-detected t)
+    omega[1,2] <- p        # Pr(alive t -> detected t)
+    omega[2,1] <- 1        # Pr(dead t -> non-detected t)
+    omega[2,2] <- 0        # Pr(dead t -> detected t)
+  for (i in 1:N){
+    logit(phi[i]) <- beta[1] + beta[2] * winglength[i]
+    gamma[1,1,i] <- phi[i]      # Pr(alive t -> alive t+1)
+    gamma[1,2,i] <- 1 - phi[i]  # Pr(alive t -> dead t+1)
+    gamma[2,1,i] <- 0           # Pr(dead t -> alive t+1)
+    gamma[2,2,i] <- 1           # Pr(dead t -> dead t+1)
+  }
+  beta[1] ~ dnorm(mean = 0, sd = 1.5)
+  beta[2] ~ dnorm(mean = 0, sd = 1.5)
+  delta[1] <- 1          # Pr(alive t = 1) = 1
+  delta[2] <- 0          # Pr(dead t = 1) = 0
+  # likelihood
+  for (i in 1:N){
+    z[i,first[i]] ~ dcat(delta[1:2])
+    for (j in (first[i]+1):T){
+      z[i,j] ~ dcat(gamma[z[i,j-1], 1:2, i])
+      y[i,j] ~ dcat(omega[z[i,j], 1:2])
+    }
+  }
+})
+# occasions of first capture
+first <- apply(y, 1, function(x) min(which(x !=0)))
+# constants
+my.constants <- list(N = nrow(y), 
+                     T = ncol(y), 
+                     first = first,
+                     winglength = wing.length.st)
+# initial values
+initial.values <- function() list(beta = rnorm(2,0,1),
+                                  p = runif(1,0,1),
+                                  z = zinits)
+# parameters to monitor
+parameters.to.save <- c("p", "beta")
+# run NIMBLE
+mcmc.phiwlp <- nimbleMCMC(code = hmm.phiwlp, 
+                          constants = my.constants,
+                          data = my.data,              
+                          inits = initial.values,
+                          monitors = parameters.to.save,
+                          niter = n.iter,
+                          nburnin = n.burnin, 
+                          nchains = n.chains)
+# numerical summaries
+MCMCsummary(mcmc.phiwlp, params = "beta", round = 2)
+# get MCMC draws from posterior distribution of regression coef
+beta1 <- c(mcmc.phiwlp$chain1[,'beta[1]'], # intercept, chain 1
+           mcmc.phiwlp$chain2[,'beta[1]']) # intercept, chain 2
+beta2 <- c(mcmc.phiwlp$chain1[,'beta[2]'], # slope, chain 1
+           mcmc.phiwlp$chain2[,'beta[2]']) # slope, chain 2
+# build grid for covariate, and predict survival
+predicted_survival <- matrix(NA, 
+                             nrow = length(beta1), 
+                             ncol = length(my.constants$winglength))
+for (i in 1:length(beta1)){
+  for (j in 1:length(my.constants$winglength)){
+    predicted_survival[i,j] <- plogis(beta1[i] + 
+                               beta2[i] * my.constants$winglength[j])
+  }
+}
+# mean and posterior crebible interval
+mean_survival <- apply(predicted_survival, 2, mean)
+lci <- apply(predicted_survival, 2, quantile, prob = 2.5/100)
+uci <- apply(predicted_survival, 2, quantile, prob = 97.5/100)
+ord <- order(my.constants$winglength)
+df <- data.frame(wing_length = my.constants$winglength[ord],
+                 survival = mean_survival[ord],
+                 lci = lci[ord],
+                 uci = uci[ord])
+# visualize
+df %>%
+  ggplot() + 
+  aes(x = wing_length, y = survival) + 
+  geom_line() + 
+  geom_ribbon(aes(ymin = lci, ymax = uci), 
+              fill = "grey70", 
+              alpha = 0.5) + 
+  ylim(0,1) + 
+  labs(x = "wing length", y = "estimated survival")
+```
+
+### Several covariates 
+
+```{r}
+# load packages
+library(nimble) # NIMBLE 
+library(tidyverse) # manipulate/visualize data
+library(MCMCvis) # post-process MCMC outputs
+# read in data
+dipper <- read_csv("dipper.csv")
+# format the data
+y <- dipper %>%
+  select(year_1981:year_1987) %>%
+  as.matrix()
+# sex covariate
+sex <- if_else(dipper$sex == "M", 0, 1) # 0 = male, 1 = female
+# wing length covariate
+wing.length.st <- as.vector(scale(dipper$wing_length))
+# NIMBLE code
+hmm.phisexwlp <- nimbleCode({
+  p ~ dunif(0, 1) # prior detection
+  omega[1,1] <- 1 - p    # Pr(alive t -> non-detected t)
+  omega[1,2] <- p        # Pr(alive t -> detected t)
+  omega[2,1] <- 1        # Pr(dead t -> non-detected t)
+  omega[2,2] <- 0        # Pr(dead t -> detected t)
+  for (i in 1:N){
+    logit(phi[i]) <- beta[1] + beta[2] * sex[i] + beta[3] * winglength[i]
+    gamma[1,1,i] <- phi[i]      # Pr(alive t -> alive t+1)
+    gamma[1,2,i] <- 1 - phi[i]  # Pr(alive t -> dead t+1)
+    gamma[2,1,i] <- 0           # Pr(dead t -> alive t+1)
+    gamma[2,2,i] <- 1           # Pr(dead t -> dead t+1)
+  }
+  beta[1] ~ dnorm(mean = 0, sd = 1.5) # intercept male
+  beta[2] ~ dnorm(mean = 0, sd = 1.5) # difference bw male and female
+  beta[3] ~ dnorm(mean = 0, sd = 1.5) # slope wing length
+  delta[1] <- 1          # Pr(alive t = 1) = 1
+  delta[2] <- 0          # Pr(dead t = 1) = 0
+  # likelihood
+  for (i in 1:N){
+    z[i,first[i]] ~ dcat(delta[1:2])
+    for (j in (first[i]+1):T){
+      z[i,j] ~ dcat(gamma[z[i,j-1], 1:2, i])
+      y[i,j] ~ dcat(omega[z[i,j], 1:2])
+    }
+  }
+})
+# occasions of first capture
+first <- apply(y, 1, function(x) min(which(x !=0)))
+# constants
+my.constants <- list(N = nrow(y), 
+                     T = ncol(y), 
+                     first = first,
+                     winglength = wing.length.st,
+                     sex = sex)
+# initial values
+zinits <- y
+zinits[zinits == 0] <- 1
+initial.values <- function() list(beta = rnorm(3,0,2),
+                                  p = runif(1,0,1),
+                                  z = zinits)
+# parameters to monitor
+parameters.to.save <- c("p", "beta")
+# run NIMBLE
+mcmc.phisexwlp <- nimbleMCMC(code = hmm.phisexwlp, 
+                             constants = my.constants,
+                             data = my.data,              
+                             inits = initial.values,
+                             monitors = parameters.to.save,
+                             niter = n.iter,
+                             nburnin = n.burnin, 
+                             nchains = n.chains)
+# numerical summaries
+MCMCsummary(mcmc.phisexwlp, round = 2)
+# get MCMC draws from posterior distribution of regression coef
+beta1 <- c(mcmc.phisexwlp$chain1[,'beta[1]'], # beta1 chain 1
+           mcmc.phisexwlp$chain2[,'beta[1]']) # beta1 chain 2
+beta2 <- c(mcmc.phisexwlp$chain1[,'beta[2]'], # beta2 chain 1
+           mcmc.phisexwlp$chain2[,'beta[2]']) # beta2 chain 2
+beta3 <- c(mcmc.phisexwlp$chain1[,'beta[3]'], # beta3 chain 1
+           mcmc.phisexwlp$chain2[,'beta[3]']) # beta3 chain 2
+# build grid for covariate, and predict survival
+predicted_survivalM <- matrix(NA, nrow = length(beta1), 
+                              ncol = length(my.constants$winglength))
+predicted_survivalF <- matrix(NA, nrow = length(beta1), 
+                              ncol = length(my.constants$winglength))
+for (i in 1:length(beta1)){
+  for (j in 1:length(my.constants$winglength)){
+    predicted_survivalM[i,j] <- plogis(beta1[i] + 
+                                beta3[i] * my.constants$winglength[j]) 
+    predicted_survivalF[i,j] <- plogis(beta1[i] + 
+                                beta2[i] + 
+                                beta3[i] * my.constants$winglength[j])
+  }
+}
+# mean and posterior crebible interval
+mean_survivalM <- apply(predicted_survivalM, 2, mean)
+lciM <- apply(predicted_survivalM, 2, quantile, prob = 2.5/100)
+uciM <- apply(predicted_survivalM, 2, quantile, prob = 97.5/100)
+mean_survivalF <- apply(predicted_survivalF, 2, mean)
+lciF <- apply(predicted_survivalF, 2, quantile, prob = 2.5/100)
+uciF <- apply(predicted_survivalF, 2, quantile, prob = 97.5/100)
+ord <- order(my.constants$winglength)
+df <- data.frame(wing_length = c(my.constants$winglength[ord], 
+                                 my.constants$winglength[ord]),
+                 survival = c(mean_survivalM[ord], 
+                              mean_survivalF[ord]),
+                 lci = c(lciM[ord],lciF[ord]),
+                 uci = c(uciM[ord],uciF[ord]),
+                 sex = c(rep("male", length(mean_survivalM)), 
+                         rep("female", length(mean_survivalF))))
+# visualize
+df %>%
+  ggplot() + 
+  aes(x = wing_length, y = survival, color = sex) + 
+  geom_line() + 
+  geom_ribbon(aes(ymin = lci, ymax = uci, fill = sex), alpha = 0.5) + 
+  ylim(0,1) + 
+  labs(x = "wing length", y = "estimated survival", color = "", fill = "")
+# idem on the logit scale
+predicted_lsurvivalM <- matrix(NA, nrow = length(beta1), 
+                              ncol = length(my.constants$winglength))
+predicted_lsurvivalF <- matrix(NA, nrow = length(beta1), 
+                              ncol = length(my.constants$winglength))
+for (i in 1:length(beta1)){
+  for (j in 1:length(my.constants$winglength)){
+    predicted_lsurvivalM[i,j] <- beta1[i] + beta3[i] * my.constants$winglength[j] 
+    predicted_lsurvivalF[i,j] <- beta1[i] + beta2[i] + beta3[i] * my.constants$winglength[j]
+  }
+}
+mean_lsurvivalM <- apply(predicted_lsurvivalM, 2, mean)
+mean_lsurvivalF <- apply(predicted_lsurvivalF, 2, mean)
+ord <- order(my.constants$winglength)
+df <- data.frame(wing_length = c(my.constants$winglength[ord], 
+                                 my.constants$winglength[ord]),
+                 survival = c(mean_lsurvivalM[ord], 
+                              mean_lsurvivalF[ord]),
+                 sex = c(rep("male", length(mean_lsurvivalM)), 
+                         rep("female", length(mean_lsurvivalF))))
+df %>%
+  ggplot() + 
+  aes(x = wing_length, y = survival, color = sex) + 
+  geom_line() + 
+  ylim(-2,2) + 
+  labs(x = "wing length", 
+       y = "estimated survival (on the lgit scale)", 
+       color = "")
+```
+
+### Random effects 
+ 
+```{r}
+# load packages
+library(nimble) # NIMBLE 
+library(tidyverse) # manipulate/visualize data
+library(MCMCvis) # post-process MCMC outputs
+# read in data
+dipper <- read_csv("dipper.csv")
+# format the data
+y <- dipper %>%
+  select(year_1981:year_1987) %>%
+  as.matrix()
+# wing length covariate
+wing.length.st <- as.vector(scale(dipper$wing_length))
+# NIMBLE code
+hmm.phiwlrep <- nimbleCode({
+    p ~ dunif(0, 1) # prior detection
+    omega[1,1] <- 1 - p    # Pr(alive t -> non-detected t)
+    omega[1,2] <- p        # Pr(alive t -> detected t)
+    omega[2,1] <- 1        # Pr(dead t -> non-detected t)
+    omega[2,2] <- 0        # Pr(dead t -> detected t)
+  for (i in 1:N){
+    logit(phi[i]) <- beta[1] + beta[2] * winglength[i] + eps[i]
+    eps[i] ~ dnorm(mean = 0, sd = sdeps)
+    gamma[1,1,i] <- phi[i]      # Pr(alive t -> alive t+1)
+    gamma[1,2,i] <- 1 - phi[i]  # Pr(alive t -> dead t+1)
+    gamma[2,1,i] <- 0           # Pr(dead t -> alive t+1)
+    gamma[2,2,i] <- 1           # Pr(dead t -> dead t+1)
+  }
+  beta[1] ~ dnorm(mean = 0, sd = 1.5)
+  beta[2] ~ dnorm(mean = 0, sd = 1.5)
+  sdeps ~ dunif(0, 10)
+  delta[1] <- 1          # Pr(alive t = 1) = 1
+  delta[2] <- 0          # Pr(dead t = 1) = 0
+  # likelihood
+  for (i in 1:N){
+    z[i,first[i]] ~ dcat(delta[1:2])
+    for (j in (first[i]+1):T){
+      z[i,j] ~ dcat(gamma[z[i,j-1], 1:2, i])
+      y[i,j] ~ dcat(omega[z[i,j], 1:2])
+    }
+  }
+})
+# occasions of first capture
+first <- apply(y, 1, function(x) min(which(x !=0)))
+# constants
+my.constants <- list(N = nrow(y), 
+                     T = ncol(y), 
+                     first = first,
+                     winglength = wing.length.st)
+# initial values
+initial.values <- function() list(beta = rnorm(2,0,1.5),
+                                  sdeps = runif(1,0,3),
+                                  p = runif(1,0,1),
+                                  z = zinits)
+# parameters to monitor
+parameters.to.save <- c("beta", "sdeps", "p")
+# MCMC details
+n.iter <- 10000
+n.burnin <- 5000
+n.chains <- 2
+# run NIMBLE
+mcmc.phiwlrep <- nimbleMCMC(code = hmm.phiwlrep, 
+                            constants = my.constants,
+                            data = my.data,              
+                            inits = initial.values,
+                            monitors = parameters.to.save,
+                            niter = n.iter,
+                            nburnin = n.burnin, 
+                            nchains = n.chains)
+# numerical summaries
+MCMCsummary(mcmc.phiwlrep, round = 2)
+```
+
+With non-centering
+```{r}
+# load packages
+library(nimble) # NIMBLE 
+library(tidyverse) # manipulate/visualize data
+library(MCMCvis) # post-process MCMC outputs
+# read in data
+dipper <- read_csv("dipper.csv")
+# format the data
+y <- dipper %>%
+  select(year_1981:year_1987) %>%
+  as.matrix()
+# wing length covariate
+wing.length.st <- as.vector(scale(dipper$wing_length))
+# NIMBLE code
+hmm.phiwlrep <- nimbleCode({
+    p ~ dunif(0, 1) # prior detection
+    omega[1,1] <- 1 - p    # Pr(alive t -> non-detected t)
+    omega[1,2] <- p        # Pr(alive t -> detected t)
+    omega[2,1] <- 1        # Pr(dead t -> non-detected t)
+    omega[2,2] <- 0        # Pr(dead t -> detected t)
+  for (i in 1:N){
+    logit(phi[i]) <- beta[1] + beta[2] * winglength[i] + sdeps * eps[i]
+    eps[i] ~ dnorm(mean = 0, sd = 1)
+    gamma[1,1,i] <- phi[i]      # Pr(alive t -> alive t+1)
+    gamma[1,2,i] <- 1 - phi[i]  # Pr(alive t -> dead t+1)
+    gamma[2,1,i] <- 0           # Pr(dead t -> alive t+1)
+    gamma[2,2,i] <- 1           # Pr(dead t -> dead t+1)
+  }
+  sdeps ~ dunif(0, 10)
+  beta[1] ~ dnorm(mean = 0, sd = 1.5)
+  beta[2] ~ dnorm(mean = 0, sd = 1.5)
+  delta[1] <- 1          # Pr(alive t = 1) = 1
+  delta[2] <- 0          # Pr(dead t = 1) = 0
+  # likelihood
+  for (i in 1:N){
+    z[i,first[i]] ~ dcat(delta[1:2])
+    for (j in (first[i]+1):T){
+      z[i,j] ~ dcat(gamma[z[i,j-1], 1:2, i])
+      y[i,j] ~ dcat(omega[z[i,j], 1:2])
+    }
+  }
+})
+# occasions of first capture
+first <- apply(y, 1, function(x) min(which(x !=0)))
+# constants
+my.constants <- list(N = nrow(y), 
+                     T = ncol(y), 
+                     first = first,
+                     winglength = wing.length.st)
+# initial values
+initial.values <- function() list(beta = rnorm(2,0,1.5),
+                                  sdeps = runif(1,0,3),
+                                  p = runif(1,0,1),
+                                  z = zinits)
+# parameters to monitor
+parameters.to.save <- c("beta", "sdeps", "p")
+# MCMC details
+n.iter <- 10000
+n.burnin <- 5000
+n.chains <- 2
+# run NIMBLE
+mcmc.phiwlrep <- nimbleMCMC(code = hmm.phiwlrep, 
+                            constants = my.constants,
+                            data = my.data,              
+                            inits = initial.values,
+                            monitors = parameters.to.save,
+                            niter = n.iter,
+                            nburnin = n.burnin, 
+                            nchains = n.chains)
+# numerical summaries
+MCMCsummary(mcmc.phiwlrep, round = 2)
+```
+
+
+### Individual time-varying covariates 
+
+Age as a time elapsed since first capture
+```{r}
+# load packages
+library(nimble) # NIMBLE 
+library(tidyverse) # manipulate/visualize data
+library(MCMCvis) # post-process MCMC outputs
+# read in data
+dipper <- read_csv("dipper.csv")
+head(dipper)
+# format the data
+y <- dipper %>%
+  select(year_1981:year_1987) %>%
+  as.matrix()
+# NIMBLE code 
+hmm.phiage.in <- nimbleCode({
+  p ~ dunif(0, 1) # prior detection
+  omega[1,1] <- 1 - p    # Pr(alive t -> non-detected t)
+  omega[1,2] <- p        # Pr(alive t -> detected t)
+  omega[2,1] <- 1        # Pr(dead t -> non-detected t)
+  omega[2,2] <- 0        # Pr(dead t -> detected t)
+  for (i in 1:N){
+    for (t in first[i]:(T-1)){
+    # phi1 = beta1 + beta2; phi1+ = beta1
+    logit(phi[i,t]) <- beta[1] + beta[2] * equals(t, first[i]) 
+    gamma[1,1,i,t] <- phi[i,t]      # Pr(alive t -> alive t+1)
+    gamma[1,2,i,t] <- 1 - phi[i,t]  # Pr(alive t -> dead t+1)
+    gamma[2,1,i,t] <- 0             # Pr(dead t -> alive t+1)
+    gamma[2,2,i,t] <- 1             # Pr(dead t -> dead t+1)
+    }
+  }
+  beta[1] ~ dnorm(mean = 0, sd = 1.5) # phi1+
+  beta[2] ~ dnorm(mean = 0, sd = 1.5) # phi1 - phi1+
+  phi1plus <- plogis(beta[1])         # phi1+
+  phi1 <- plogis(beta[1] + beta[2])   # phi1
+  delta[1] <- 1          # Pr(alive t = 1) = 1
+  delta[2] <- 0          # Pr(dead t = 1) = 0
+  # likelihood
+  for (i in 1:N){
+    z[i,first[i]] ~ dcat(delta[1:2])
+    for (j in (first[i]+1):T){
+      z[i,j] ~ dcat(gamma[z[i,j-1], 1:2, i, j-1])
+      y[i,j] ~ dcat(omega[z[i,j], 1:2])
+    }
+  }
+})
+# occasions of first capture
+first <- apply(y, 1, function(x) min(which(x !=0)))
+# constants
+my.constants <- list(N = nrow(y), 
+                     T = ncol(y), 
+                     first = first)
+# data
+my.data <- list(y = y + 1)
+# initial values
+zinits <- y
+zinits[zinits == 0] <- 1
+initial.values <- function() list(beta = rnorm(2,0,5),
+                                  p = runif(1,0,1),
+                                  z = zinits)
+# parameters to monitor
+parameters.to.save <- c("phi1", "phi1plus", "p")
+# MCMC details
+n.iter <- 2500
+n.burnin <- 1000
+n.chains <- 2
+# run NIMBLE
+mcmc.phi.age.in <- nimbleMCMC(code = hmm.phiage.in, 
+                              constants = my.constants,
+                              data = my.data,              
+                              inits = initial.values,
+                              monitors = parameters.to.save,
+                              niter = n.iter,
+                              nburnin = n.burnin, 
+                              nchains = n.chains)
+# numerical summaries
+MCMCsummary(mcmc.phi.age.in, round = 2)
+```
+
+Age via nested indexing
+
+```{r}
+# load packages
+library(nimble) # NIMBLE 
+library(tidyverse) # manipulate/visualize data
+library(MCMCvis) # post-process MCMC outputs
+# read in data
+dipper <- read_csv("dipper.csv")
+# format the data
+y <- dipper %>%
+  select(year_1981:year_1987) %>%
+  as.matrix()
+# age covariate
+age <- matrix(NA, nrow = nrow(y), ncol = ncol(y) - 1)
+for (i in 1:nrow(age)){
+  for (j in 1:ncol(age)){
+    if (j == first[i]) age[i,j] <- 1 # age = 1
+    if (j > first[i]) age[i,j] <- 2  # age > 1
+  }
+}
+# NIMBLE code 
+hmm.phiage.out <- nimbleCode({
+  p ~ dunif(0, 1) # prior detection
+  omega[1,1] <- 1 - p    # Pr(alive t -> non-detected t)
+  omega[1,2] <- p        # Pr(alive t -> detected t)
+  omega[2,1] <- 1        # Pr(dead t -> non-detected t)
+  omega[2,2] <- 0        # Pr(dead t -> detected t)
+  for (i in 1:N){
+    for (t in first[i]:(T-1)){
+    phi[i,t] <- beta[age[i,t]] # beta1 = phi1, beta2 = phi1+
+    gamma[1,1,i,t] <- phi[i,t]      # Pr(alive t -> alive t+1)
+    gamma[1,2,i,t] <- 1 - phi[i,t]  # Pr(alive t -> dead t+1)
+    gamma[2,1,i,t] <- 0           # Pr(dead t -> alive t+1)
+    gamma[2,2,i,t] <- 1           # Pr(dead t -> dead t+1)
+    }
+  }
+  beta[1] ~ dunif(0, 1) # phi1
+  beta[2] ~ dunif(0, 1) # phi1+
+  phi1 <- beta[1]
+  phi1plus <- beta[2]
+  delta[1] <- 1          # Pr(alive t = 1) = 1
+  delta[2] <- 0          # Pr(dead t = 1) = 0
+  # likelihood
+  for (i in 1:N){
+    z[i,first[i]] ~ dcat(delta[1:2])
+    for (j in (first[i]+1):T){
+      z[i,j] ~ dcat(gamma[z[i,j-1], 1:2, i, j-1])
+      y[i,j] ~ dcat(omega[z[i,j], 1:2])
+    }
+  }
+})
+# occasions of first capture
+first <- apply(y, 1, function(x) min(which(x !=0)))
+# constants
+my.constants <- list(N = nrow(y), 
+                     T = ncol(y), 
+                     first = first,
+                     age = age)
+# data
+my.data <- list(y = y + 1)
+# initial values
+zinits <- y
+zinits[zinits == 0] <- 1
+initial.values <- function() list(beta = runif(2,0,1),
+                                  p = runif(1,0,1),
+                                  z = zinits)
+# parameters to monitor
+parameters.to.save <- c("phi1", "phi1plus", "p")
+# MCMC details
+n.iter <- 2500
+n.burnin <- 1000
+n.chains <- 2
+# run NIMBLE
+mcmc.phi.age.out <- nimbleMCMC(code = hmm.phiage.out, 
+                               constants = my.constants,
+                               data = my.data,              
+                               inits = initial.values,
+                               monitors = parameters.to.save,
+                               niter = n.iter,
+                               nburnin = n.burnin, 
+                               nchains = n.chains)
+# numerical summaries
+MCMCsummary(mcmc.phi.age.out, round = 2)
+```
+
+## Summary
+
+## Suggested reading
