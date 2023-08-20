@@ -8,6 +8,7 @@ library(pdftools)
 library(wesanderson)
 library(RColorBrewer)
 library(patchwork)
+library(emo)
 #library(nimbleEcology)
 #library(basicMCMCplots)
 

@@ -15,3 +15,12 @@ People who sent feedback:
 -   Chloé Nater \@ChloeRN
 -   Joseph Hightower \@jhncsu
 -   Maud Quéroué \@MaudQueroue
+
+People who shared data:
+
+-   Gilbert Marzolin
+-   Evan Cooch and Paul Conn
+-   Richard Scofield
+-   Jay Hestbeck
+-   Christophe Duchamp
+

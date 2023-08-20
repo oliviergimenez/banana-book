@@ -107,6 +107,215 @@ MCMCtrace(object = mcmc.phitpt,
           priors = priors)
 ```
 
+## CJS with nimbleEcology
+
+```{r}
+# load packages
+library(nimbleEcology) # nimbleEcology
+library(tidyverse) # manipulate/visualize data
+library(MCMCvis) # post-process MCMC outputs
+# read in data
+dipper <- read_csv("dipper.csv")
+head(dipper)
+# format the data
+y <- dipper %>%
+  select(year_1981:year_1987) %>%
+  as.matrix()
+first <- apply(y, 1, function(x) min(which(x !=0)))
+y <- y[ first != 7, ]
+y_orig <- y # Keep an "original version" for use below
+head(y)
+
+#-------
+
+dipper_code_basic <- nimbleCode({
+  phi ~ dunif(0, 1) # survival prior
+  p ~ dunif(0, 1)   # detection prior
+  # likelihood
+  for (i in 1:N){
+    z[i,first[i]] <- 1
+    for (t in (first[i]+1):T){
+      z[i,t] ~ dbern(phi * z[i,t-1]) # z = 0 for dead, 1 for alive
+      y[i,t] ~ dbern(p * z[i,t])     # y = 0 for not-observed, 1 for observed
+    }}
+  })
+first <- apply(y_orig, 1, function(x) min(which(x !=0)))
+dipper_constants <- list(N = nrow(y), 
+                         T = ncol(y_orig), 
+                         first = first)
+dipper_data <- list(y = y_orig)   # 0s and 1s
+zinits <- y_orig                  # 0s and 1s
+dipper_inits <- function() list(phi = runif(1,0,1),
+                                  p = runif(1,0,1),
+                                  z = zinits)
+head(zinits)
+samples <- nimbleMCMC(dipper_code_basic, dipper_constants, dipper_data,
+                      dipper_inits(), samplesAsCodaMCMC = TRUE)
+plot(samples)
+
+#-----
+
+
+zinits <- y_orig
+y <- y_orig
+zdata <- matrix(NA, nrow = nrow(y), ncol = ncol(y))
+for(i in 1:nrow(zinits)) {
+  known_alive <- range(which(zinits[i,] == 1))
+  zinits[i, known_alive[1] : known_alive[2] ] <- NA
+  zdata[i, known_alive[1] : known_alive[2] ] <- 1
+}
+head(zinits)
+head(zdata)
+dipper_data$z <- zdata
+dipper_inits <- function() list(phi = runif(1,0,1),
+                                p = runif(1,0,1),
+                                z = zinits)
+samples <- nimbleMCMC(dipper_code_basic, dipper_constants, dipper_data,
+                      dipper_inits(), samplesAsCodaMCMC = TRUE)
+
+#---
+
+dipper_code_dcat <- nimbleCode({
+  phi ~ dunif(0, 1) # prior survival
+  p ~ dunif(0, 1) # prior detection
+  # likelihood
+  gamma[1,1:2] <- c(phi, 1-phi)      # Pr(alive t -> alive t+1), Pr(alive t -> dead t+1)
+  gamma[2,1:2] <- c(0, 1)            # Pr(dead t -> alive t+1), Pr(dead t -> dead t+1)
+  delta[1:2] <- c(1, 0)              # Pr(alive t = 1) = 1, Pr(dead t = 1) = 0
+  omega[1,1:2] <- c(1 - p, p)        # Pr(alive t -> non-detected t), Pr(alive t -> detected t)
+  omega[2,1:2] <- c(1, 0)            # Pr(dead t -> non-detected t), Pr(dead t -> detected t)
+  for (i in 1:N){
+    z[i,first[i]] ~ dcat(delta[1:2]) # Illustrates initial state probabilities
+    for (j in (first[i]+1):T){
+      z[i,j] ~ dcat(gamma[z[i,j-1], 1:2])
+      y[i,j] ~ dcat(omega[z[i,j], 1:2])
+    }
+  }
+})
+dipper_data$y <- y_orig
+dipper_data$y <- dipper_data$y + 1 # 1 = unobserved. 2 = observed.
+zinits_dcat <- zinits
+zinits_dcat[ zinits_dcat == 0] <- 2 # 1 = alive. 2 = dead.
+head(dipper_data$y)
+head(dipper_data$z)
+head(zinits_dcat)
+dipper_inits <- function() list(phi = runif(1,0,1),
+                                p = runif(1,0,1),
+                                z = zinits_dcat)
+samples <- nimbleMCMC(dipper_code_dcat, dipper_constants, dipper_data,
+                      dipper_inits(), samplesAsCodaMCMC = TRUE)
+plot(samples)
+
+#--
+
+dipper_code_dCJS <- nimbleCode({
+  phi ~ dunif(0, 1) # survival prior
+  p ~ dunif(0, 1)   # detection prior
+  # likelihood
+  for (i in 1:N){
+    y[i, first[i]:T] ~ dCJS_ss(probSurvive=phi, probCapture=p, len=T-first[i]+1)
+  }
+})
+dipper_inits <- function() list(phi = runif(1,0,1),
+                                p = runif(1,0,1))
+dipper_data$z <- NULL   # No latent states.
+dipper_data$y <- y_orig # Back to 0 = unobserved, 1 = observed
+samples <- nimbleMCMC(dipper_code_dCJS, dipper_constants, dipper_data,
+                      dipper_inits(), samplesAsCodaMCMC = TRUE)
+plot(samples)
+                      
+
+
+
+dipper_code_dCJS <- nimbleCode({
+  for (t in 1:(T-1)){
+    phi[t] ~ dunif(0, 1) # survival prior
+    p[t+1] ~ dunif(0, 1)   # detection prior
+  }
+  p[1] <- NA
+  # likelihood
+  for (i in 1:N){
+    y[i, first[i]:T] ~ dCJS_vv(probSurvive=phi[1:(T-1)], 
+                               probCapture=p[1:T], 
+                               len=T-first[i]+1)
+  }
+})
+
+phi <- runif(dipper_constants$T-1,0,1)
+p <- c(NA,runif(dipper_constants$T-1,0,1))
+T <- ncol(y_orig)
+
+i <- 10
+dCJS_vv(y_orig[i,first[i]:T],
+        probSurvive=phi[1:(T-1)], 
+        probCapture=p[1:T], 
+        len=T-first[i]+1)
+
+i <- 100
+dCJS_vv(y_orig[i,first[i]:T],
+        probSurvive=phi[1:(T-1)], 
+        probCapture=p[1:T], 
+        len=T-first[i]+1)
+
+
+
+dipper_inits <- function() list(phi = runif(dipper_constants$T-1,0,1),
+                                p = c(NA,runif(dipper_constants$T-1,0,1)))
+dipper_data$z <- NULL   # No latent states.
+dipper_data$y <- y_orig # Back to 0 = unobserved, 1 = observed
+samples <- nimbleMCMC(dipper_code_dCJS, dipper_constants, dipper_data,
+                      dipper_inits(), samplesAsCodaMCMC = TRUE)
+plot(samples)
+
+
+
+
+
+# NIMBLE code 
+hmm.phitpt <- nimbleCode({
+  for (t in 1:(T-1)){ # loop over time
+    phi[t] ~ dunif(0, 1)           # prior survival
+    p[t+1] ~ dunif(0, 1)             # prior detection
+  } 
+  p[1] <- NA
+  for (i in 1:N){
+    y[i,first[i]:T] ~ dCJS_vv(probSurvive = phi[1:(T-1)], # survival
+                              probCapture = p[1:T], # detection
+                              len = T-first[i]+1) # nb of sampling occasions per ind
+  }
+})
+# occasions of first capture
+first <- apply(y, 1, function(x) min(which(x !=0)))
+# constants
+my.constants <- list(N = nrow(y), 
+                     T = ncol(y), 
+                     first = first)
+# data
+my.data <- list(y = y) # 0/1
+# initial values 
+initial.values <- function() list(phi = runif(my.constants$T-1,0,1),
+                                  p = c(NA,runif(my.constants$T-1,0,1)))
+# parameters to monitor
+parameters.to.save <- c("phi", "p")
+# MCMC details
+n.iter <- 2500
+n.burnin <- 1000
+n.chains <- 2
+# run NIMBLE
+mcmc.phitpt <- nimbleMCMC(code = hmm.phitpt, 
+                          constants = my.constants,
+                          data = my.data,              
+                          inits = initial.values,
+                          monitors = parameters.to.save,
+                          niter = n.iter,
+                          nburnin = n.burnin, 
+                          nchains = n.chains)
+# numerical summaries
+MCMCsummary(object = mcmc.phitpt, round = 2)
+# caterpillar plot 
+MCMCplot(object = mcmc.phitpt)
+```
+
 ## CJS model derivatives  
 
 A model with constant parameters
