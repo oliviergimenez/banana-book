@@ -80,8 +80,7 @@ We drop the time index.
 
 Vector of initial states. **Explain.**
 
-$$
-\begin{matrix}
+$$\begin{matrix}
 & \\
 \mathbf{\delta} =
     \left ( \vphantom{ \begin{matrix} 12 \end{matrix} } \right .
@@ -97,13 +96,11 @@ $$
 \left . \vphantom{ \begin{matrix} 12 \end{matrix} } \right )
     \begin{matrix}
     \end{matrix}
-\end{matrix}
-$$
+\end{matrix}$$
 
 Transition matrix. **Explain.**
 
-$$
-\begin{matrix}
+$$\begin{matrix}
 & \\
 \mathbf{\Gamma} =
     \left ( \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \end{matrix} } \right .
@@ -122,13 +119,11 @@ $$
     \begin{matrix}
     z_{t-1}=A \\ z_{t-1}=B \\ z_{t-1}=D
     \end{matrix}
-\end{matrix}
-$$
+\end{matrix}$$
 
 Observation matrix. **Explain.**
 
-$$
-\begin{matrix}
+$$\begin{matrix}
 & \\
 \mathbf{\Omega} =
     \left ( \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \end{matrix} } \right .
@@ -147,8 +142,7 @@ $$
     \begin{matrix}
     z_{t}=A \\ z_{t}=B \\ z_{t}=D
     \end{matrix}
-\end{matrix}
-$$
+\end{matrix}$$
 
 ### Goodness of fit {#gofas}
   
@@ -177,13 +171,11 @@ overall_JMV(geese.hist, geese.freq)
 
 To introduce this chapter, we will use data on the Canada goose (*Cinclus cinclus*; geese hereafter) kindly provided by Jay Hestbeck (**add pix of a goose?**). In total, 21277 geese were captured, marked with coded neck bands and recaptured between 1984 and 1989 in their wintering locations. Specifically, geese were monitored in the Atlantic flyway, in large areas along the East coast of the USA, namely 3 sites in the mid--Atlantic (New York, Pennsylvania, New Jersey), Chesapeake (Delaware, Maryland, Virginia), and Carolinas (North and South Carolina). Birds were adults and sub-adults when banded. 
 
-You may scroll down the data below (**only a subsample**): 
+You may see the data below (**only a subsample**): 
 
 ```{r echo = FALSE}
 geese <- read_csv(here::here("dat", "geese.csv"))
-geese %>%
-  kableExtra::kable() %>%
-  kableExtra::scroll_box(width = "100%", height = "400px")
+geese
 y <- geese %>%
   as.matrix()
 ```
@@ -546,9 +538,9 @@ In brief, states are individual, time-specific discrete covariates.
 
 ### Titis data 
 
-To illustrate this section, we will consider data collected between 1940 and 1957 by Lance Richdale on the Sooty shearwaters (aka titis). **More details. Plus a picture of titi.**
+To illustrate this section, we will consider data collected between 1940 and 1957 by Lance Richdale on the Sooty shearwaters (aka titis): **More details. Plus a picture of titi.**
 
-```{r echo = FALSE}
+```{r echo = TRUE}
 titis <- read_csv2(here::here("dat", "titis.csv"), col_names = FALSE)
 titis %>%
   rename(year_1942 = X1,
@@ -557,9 +549,7 @@ titis %>%
          year_1949 = X4,
          year_1952 = X5,
          year_1953 = X6,
-         year_1956 = X7) %>%
-  kableExtra::kable() %>%
-  kableExtra::scroll_box(width = "100%", height = "400px")
+         year_1956 = X7)
 ```
 
 
@@ -581,8 +571,7 @@ Basically, same model as in the geese example with two sites, see Sections \@ref
 
 Transition matrix
 
-$$
-\begin{matrix}
+$$\begin{matrix}
 & \\
 \mathbf{\Gamma} =
     \left ( \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \end{matrix} } \right .
@@ -601,15 +590,13 @@ $$
     \begin{matrix}
     z_{t-1}=B \\ z_{t-1}=NB \\ z_{t-1}=D
     \end{matrix}
-\end{matrix}
-$$
+\end{matrix}$$
 
 The costs or reproduction would reflect in future reproduction if breeders have a lower probability of breed next year than non-breeders $\psi^{BB} = 1 - \psi^{BNB} < \psi^{NBB}$ or in survival if the survival of breeders is lower than that of non-breeders $\phi^B < \phi^{NB}$.
 
 Observation matrix
 
-$$
-\begin{matrix}
+$$\begin{matrix}
 & \\
 \mathbf{\Omega} =
     \left ( \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \end{matrix} } \right .
@@ -628,8 +615,7 @@ $$
     \begin{matrix}
     z_{t}=B \\ z_{t}=NB \\ z_{t}=D
     \end{matrix}
-\end{matrix}
-$$
+\end{matrix}$$
 
 ### NIMBLE implementation
 
@@ -773,13 +759,15 @@ df %>%
 
 ```
 
-Interestingly, breeder individuals do much better than non-breeder individuals. This failure at detecting a trade-off is probably due to individual heterogeneity that should be accounted for. **Case study with simulations as in Oikos paper, see Figure 1 and Table 2. Would be a nice example of the use of simulations. Another example could the statistical power analyses.**
+Interestingly, breeder individuals do much better than non-breeder individuals. This failure at detecting a trade-off is probably due to individual heterogeneity that should be accounted for. **Case study with simulations as in Oikos paper, see Figure 1 and Table 2. Would be a nice example of the use of simulations. Another example could the statistical power analyses.** 
+
+<!-- See M. Paquet suggestion: Pouvoir utiliser le modèle à la fois pour simuler des données, puis ensuite pour les ajuster au modèle (le tout sans avoir à réécrire le modèle!). Exemple: nodesToSim <- model$getDependencies(c("parameter_name1","parameter_name2"), self = F, downstream = T), # compile Cmodel <- compileNimble(model), #simulate Cmodel$simulate(nodesToSim) -->
   
 ## Issue of local minima {#localminima}
 
 In the Frequentist approach, we use the maximum likelihood theory to estimate parameters. The maximum likelihood estimates are the values that get you to the maximum of the model likelihood. To find out the maximum of the likelihood, we use iterative optimization algorithms. However, sometimes, our model likelihood contains several maxima and there is no guarantee that the algorithms will find the global maximum corresponding to the maximum likelihood estimates, and it may get stuck in a local maximum. Let's illustrate this issue with some simulated data that were kindly provided by Jérôme Dupuis. We consider 2 sites or states, say 1 and 2, and 7 sampling occasions. The survival probability is constant $\phi = 1$ as well as the detection probability $p = 0.6$. The probability of moving from 1 to 2 is $\psi^{12} = 0.6$ and $\psi^{21} = 0.85$ in the opposite direction. Here are the encounter histories of the 27 individuals that were simulated: **refer to HMM chapter for simulations?**
 
-```{r echo = FALSE}
+```{r echo = TRUE}
 dat <- matrix(c(2, 0, 2, 1, 2, 0, 2,
                 2, 0, 2, 1, 2, 0, 2,
                 2, 0, 2, 1, 2, 0, 2,
@@ -815,9 +803,7 @@ dat <- matrix(c(2, 0, 2, 1, 2, 0, 2,
               byrow = T,
               ncol = 7)
 dat %>%
-  as_tibble() %>%
-  kableExtra::kable() %>%
-  kableExtra::scroll_box(width = "100%", height = "400px")
+  as_tibble()
 ```
 
 In Figure \@ref(fig:inits), we provide an illustration of the influence of the choice of initial values when trying to minimize the deviance (which is minus two times the log of the likelihood). The black curve is the what we called the profile deviance for $\psi^{21}$. In brief, the profile deviance consists in taking a slice of the deviance in the direction of a parameter of interest and treating the other parameters as nuisance parameters. In our example, we set $\psi^{21}$ to a value (on the x-axis) an minimize the deviance with respect to the other parameters (on the y-axis). There are two minima, but only the global minimum corresponding to $\psi^{21}$ around 0.8 is of interest to us. The thing is that if you start your optimization algorithm by picking value in the red area, then it will get stuck in the local minimum and tells you the maximum likelihood estimate of $\psi^{21}$ is around 0.35, which is obviously far from the value we used to simulate the data. In contrast, if you pick initial values in the green area, then the algorithm will converge to the global minimum. 
@@ -972,8 +958,7 @@ Each alive state can generate 3 observations. The only deterministic link is tha
 
 Let's specify the model. First thing we need, and it's a big difference with the AS model, we need initial state probabilities because we cannot assign states to individuals with certainty **assumes we got rid of them in the multistate section, is it true?**. We write down the probability for each state at first encounter, or the vector of initial state probabilities:
 
-$$
-\begin{matrix}
+$$\begin{matrix}
 & \\
 \mathbf{\delta} =
     \left ( \vphantom{ \begin{matrix} 12 \end{matrix} } \right .
@@ -989,15 +974,13 @@ $$
 \left . \vphantom{ \begin{matrix} 12 \end{matrix} } \right )
     \begin{matrix}
     \end{matrix}
-\end{matrix}
-$$
+\end{matrix}$$
 
 where $\pi^B$ is the probability that a newly encountered individual is a breeder, and $\pi^{NB} = 1 - \pi^B$ is the probability that a newly encountered individual is a non-breeder (the complementary probability of $\pi^B$. The probability of being dead at first encounter is 0 (a bird is alive when it is first encountered).
 
 Now the transition matrix, this is the easy part as it doesn't change. We have:
 
-$$
-\begin{matrix}
+$$\begin{matrix}
 & \\
 \mathbf{\Gamma} =
     \left ( \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \end{matrix} } \right .
@@ -1016,15 +999,13 @@ $$
     \begin{matrix}
     z_{t-1}=B \\ z_{t-1}=NB \\ z_{t-1}=D
     \end{matrix}
-\end{matrix}
-$$
+\end{matrix}$$
 
 where $\phi^B$ is the breeder survival, $\phi_ {NB}$ that of non-breeders, $\psi^{BNB}$ is the probability for an individual breeding a year to be a non-breeder the next year, and $\psi^{NBB}$ is the probability for an non-breeder individual to breeder the next year. 
 
 Last, the observation matrix. The main difference between multistate and multievent models is here, in the observation parameters. Besides $p^B$ the detection probability of breeders and $p^{NB}$ that of non-breeders, we introduce two new parameters: $\beta^B$ is the probability to correctly assign an individual that is in state B to state B, and $\beta^{NB}$ is the probability to correctly assign an individual that is in state NB to state NB. We put everything in a matrix, as usual. In rows we have the states: breeding, non-breeding and dead. In columns, at the same occasion, we have the observations: detected and ascertained B, detected and ascertained NB, detected and state unknown, and not detected. 
 
-$$
-\begin{matrix}
+$$\begin{matrix}
 & \\
 \mathbf{\Omega} =
     \left ( \vphantom{ \begin{matrix} 12 \\ 12 \\ 12\end{matrix} } \right .
@@ -1043,14 +1024,12 @@ $$
     \begin{matrix}
     z_{t}=B \\ z_{t}=NB \\ z_{t}=D
     \end{matrix}
-\end{matrix}
-$$
+\end{matrix}$$
 For example, the probability of being detected and assigned to state B, given that you're in state B is the product of the detection probability in B and the probability of correctly assigning a breeding individual to state B.
 
 At first encounter, all individuals are captured, but you still need to assign them a state. This means that we should set $p^B = p^{NB} = 1$ and use:
 
-$$
-\begin{matrix}
+$$\begin{matrix}
 & \\
     \left ( \vphantom{ \begin{matrix} 12 \\ 12 \\ 12\end{matrix} } \right .
 \end{matrix}
@@ -1068,8 +1047,7 @@ $$
     \begin{matrix}
     z_{t = \text{first}}=B \\ z_{t = \text{first}}=NB \\ z_{t = \text{first}}=D
     \end{matrix}
-\end{matrix}
-$$
+\end{matrix}$$
 **Show how to split into capture then assignment? Matrix product and all.**
 
 ### NIMBLE implementation

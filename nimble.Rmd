@@ -2,15 +2,15 @@
 
 ## Introduction
 
-In this second chapter, you will get familiar with NIMBLE, an R package that implements up-to-date MCMC algorithms for fitting complex models. NIMBLE spares you from coding the MCMC algorithms by hand, and requires only the specification of a likelihood and priors for model parameters. We will illustrate NIMBLE main features with a simple example, but the ideas hold for other problems.
+In this second chapter, you will get familiar with NIMBLE, an R package that implements up-to-date MCMC algorithms for fitting complex models. NIMBLE spares you from coding the MCMC algorithms by hand, and requires only the specification of a likelihood and priors for model parameters. We will illustrate NIMBLE main features with a simple example, but the ideas hold for more complex problems.
 
 ## What is NIMBLE?
 
 NIMBLE stands for **N**umerical **I**nference for statistical **M**odels using **B**ayesian and **L**ikelihood **E**stimation. Briefly speaking, NIMBLE is an R package that implements for you MCMC algorithms to generate samples from the posterior distribution of model parameters. Freed from the burden of coding your own MCMC algorithms, you only have to specify a likelihood and priors to apply the Bayes theorem. To do so, NIMBLE uses a syntax very similar to the R syntax, which should make your life easier. This so-called BUGS language is also used by other programs like WinBUGS, OpenBUGS, and JAGS. 
 
-So why use NIMBLE you may ask? The short answer is that NIMBLE is capable of so much more than just running MCMC algorithms! First, you will work from within R, but in the background NIMBLE will translate your code in C++ for (in general) faster computation. Second, NIMBLE extends the BUGS language for writing new functions and distributions of your own, or borrow those written by others. Third, NIMBLE gives you full control of the MCMC samplers, and you may pick other algorithms than the defaults. Fourth, NIMBLE comes with a library of numerical methods other than MCMC algorithms, including sequential Monte Carlo (for particle filtering) and Monte Carlo Expectation Maximization (for maximum likelihood). Last but not least, the development team is friendly and helpful, and based on users' feedbacks, NIMBLE folks work constantly at improving the package capabilities. 
+So why use NIMBLE you may ask? The short answer is that NIMBLE is capable of so much more than just running MCMC algorithms! First, you will work from within R, but in the background NIMBLE will translate your code in C++ for (in general) faster computation. Second, NIMBLE extends the BUGS language for writing new functions and distributions of your own, or borrow those written by others. Third, NIMBLE gives you full control of the MCMC samplers, and you may pick other algorithms than the defaults. Fourth, NIMBLE comes with a library of numerical methods other than MCMC algorithms, including sequential Monte Carlo (for particle filtering), Monte Carlo Expectation Maximization (for maximum likelihood), Hamiltonian Monte Carlo (like in program Stan), and Laplace approximation (like in program TMB). Last but not least, the development team is friendly and helpful, and based on users' feedbacks, NIMBLE folks work constantly at improving the package capabilities. 
 
-```{r nimblelogo, echo = FALSE, fig.align="center", out.width="50%", fig.cap = "Logo of the NIMBLE R package designed by Luke Larson. **Ask Perry for context and meaning.**"}
+```{r nimblelogo, echo = FALSE, fig.align="center", out.width="50%", fig.cap = "Logo of the NIMBLE R package designed by Luke Larson."}
 knitr::include_graphics("images/nimble-icon.png")
 ```
 
@@ -18,14 +18,16 @@ knitr::include_graphics("images/nimble-icon.png")
 
 ## Getting started {#start-nimble}
 
-```{block2 nimble_workflow, type='rmdnote', eval = FALSE}
+
+:::: {.blackbox data-latex=""}
 To run NIMBLE, you will need to:  
 1. Build a model consisting of a likelihood and priors.   
 2. Read in some data.   
 3. Specify parameters you want to make inference about.   
 4. Pick initial values for parameters to be estimated (for each chain).   
 5. Provide MCMC details namely the number of chains, the length of the burn-in period and the number of iterations following burn-in.
-```
+::::
+
 
 First things first, let's not forget to load the `nimble` package:
 ```{r}
@@ -51,9 +53,9 @@ You can check that the `model` R object contains your code:
 model
 ```
 
-In the code above, `survived` and `released` are known, only `theta` needs to be estimated. The line `survived ~ dbinom(theta, released)` states that the number of successes or animals that have survived over winter  `survived` is distributed as (that's the `~`) as a binomial with `released` trials and probability of success or survival `theta`. Then the line `theta ~ dunif(0, 1)` assigns a uniform between 0 and 1 as a prior distribution to the survival probability. This is all you need, a likelihood and priors for model parameters, NIMBLE knows the Bayes theorem. The last line `lifespan <- - 1/log(theta)` calculates a quantity derived from `theta`, which is the expected lifespan assuming constant survival^[Cook LM, Brower LP, Croze HJ (1967) The accuracy of a population estimation from multiple recapture data. J Anim Ecol 36:57–60].
+In the code above, `survived` and `released` are known, only `theta` needs to be estimated. The line `survived ~ dbinom(theta, released)` states that the number of successes or animals that have survived over winter  `survived` is distributed as (that's the `~`) as a binomial with `released` trials and probability of success or survival `theta`. Then the line `theta ~ dunif(0, 1)` assigns a uniform between 0 and 1 as a prior distribution to the survival probability. This is all you need, a likelihood and priors for model parameters, NIMBLE knows the Bayes theorem. The last line `lifespan <- - 1/log(theta)` calculates a quantity derived from `theta`, which is the expected lifespan assuming constant survival. If you'd like to know more about the calculation of life expectancy, check out @cook1967expectancy.
 
-A few comments:    
+A few comments:   
 
 + The most common distributions are available in NIMBLE. Among others, we will use later in the book `dbeta`, `dmultinom` and `dnorm`. If you cannot find what you need in NIMBLE, you can write your own distribution as illustrated in Section \@ref(functions-in-nimble).
 
@@ -152,18 +154,20 @@ initial.values <- list(init1, init2, init3)
 initial.values
 ```
 
-Alternatively, you can write a simple R function that generates random initial values:
+Alternatively, you can write an R function that generates random initial values:
 ```{r}
 initial.values <- function() list(theta = runif(1,0,1))
 initial.values()
 ```
 
-Firth and last step, you need to tell NIMBLE the number of chains to run, say `n.chain`, how long the burn-in period should be, say `n.burnin`, and the number of iterations following the burn-in period to be used for posterior inference. In NIMBLE, you specify the total number of iterations, say `n.iter`, so that the number of posterior samples per chain is `n.iter - n.burnin`. NIMBLE also allows discarding samples after burn-in, a procedure known as thinning, which I will not use in this book^[Link, W.A. and Eaton, M.J. (2012), On thinning of chains in MCMC. Methods in Ecology and Evolution, 3: 112-115.].
+Firth and last step, you need to tell NIMBLE the number of chains to run, say `n.chain`, how long the burn-in period should be, say `n.burnin`, and the number of iterations following the burn-in period to be used for posterior inference:
 ```{r}
 n.iter <- 5000
 n.burnin <- 1000
 n.chains <- 3
 ```
+
+In NIMBLE, you specify the total number of iterations, say `n.iter`, so that the number of posterior samples per chain is `n.iter - n.burnin`. NIMBLE also allows discarding samples after burn-in, a procedure known as thinning. Thinning is fixed to 1 by default in NIMBLE so that all simulations are used to summarise posterior distributions. @link2012thinning offer a discussion of the pros and cons of thinning. 
 
 We now have all the ingredients to run model, that is to sample in the posterior distribution of model parameters using MCMC simulations. This is accomplished using function `nimbleMCMC()`: 
 ```{r, cache = F}
@@ -201,14 +205,14 @@ quantile(mcmc.output$chain1[,'theta'], probs = c(2.5, 97.5)/100)
 
 Let's visualise the posterior distribution of `theta` with a histogram: 
 ```{r}
-mcmc.output %>%
+mcmc.output$chain1[,"theta"] %>%
   as_tibble() %>%
   ggplot() +
-  geom_histogram(aes(x = chain1[,"theta"]), color = "white") +
+  geom_histogram(aes(x = value), color = "white") +
   labs(x = "survival probability")
 ```
 
-There are less painful ways of doing posterior inference. In this book, I will use the R package `MCMCvis`^[https://github.com/caseyyoungflesh/MCMCvis] to summarise and visualize MCMC outputs, but there are other perfectly valid options out there like `ggmcmc`^[Fernández-i-Marín, X. (2016). ggmcmc: Analysis of MCMC Samples and Bayesian Inference. Journal of Statistical Software, 70(9), 1–20] and `basicMCMCplots`^[https://cran.r-project.org/web/packages/basicMCMCplots/index.html]. **Shall I demonstrate these other options?**
+There are less painful ways of doing posterior inference. In this book, I will use the R package `MCMCvis` to summarise and visualize MCMC outputs, but there are other perfectly valid options out there like `ggmcmc`, `bayesplot` and `basicMCMCplots`.
 
 <!-- Finally we want to look at our samples. NIMBLE returns samples as a simple matrix with named columns. There are numerous packages for processing MCMC output. If you want to use the coda package, you can convert a matrix to a coda mcmc object like this: -->
 <!-- library(coda) -->
@@ -251,7 +255,7 @@ MCMCtrace(object = mcmc.output,
           params = "theta")
 ```
 
-We calculated lifespan directly in our model with `lifespan <- -1/log(theta)`. But you can also calculate this quantity from outside NIMBLE. This is a nice by-product of using MCMC simulations: you can obtain the posterior distribution of any quantity that is function of your model parameters by applying this function to samples from the posterior distribution of these parameters. In our example, all you need is samples from the posterior distribution of `theta`, which we pool between the three chains with:
+We calculated lifespan directly in our model with `lifespan <- -1/log(theta)`. But you can also calculate this quantity from outside NIMBLE. This is a nice by-product of using MCMC simulations: You can obtain the posterior distribution of any quantity that is function of your model parameters by applying this function to samples from the posterior distribution of these parameters. In our example, all you need is samples from the posterior distribution of `theta`, which we pool between the three chains with:
 ```{r}
 theta_samples <- c(mcmc.output$chain1[,'theta'], 
                    mcmc.output$chain2[,'theta'],
@@ -280,7 +284,8 @@ lifespan %>%
 
 Now you're good to go. For convenience I have summarized the steps above in the box below. The NIMBLE workflow provided with `nimbleMCMC()` allows you to build models and make inference. This is what you can achieve with other software like WinBUGS or JAGS. 
 
-::: {.rmdnote}
+
+:::: {.blackbox data-latex=""}
 **NIMBLE workflow:**
 ```{r, eval = FALSE}
 # model building
@@ -322,6 +327,7 @@ MCMCtrace(object = mcmc.output,
           params = "theta")
 ```
 :::
+
 
 But NIMBLE is more than just another MCMC engine. It provides a programming environment so that you have full control when building models and estimating parameters. NIMBLE allows you to write your own functions and distributions to build models, and to choose alternative MCMC samplers or code new ones. This flexibility often comes with faster convergence. 
 
@@ -452,9 +458,9 @@ dmybinom <- nimbleFunction(
                  prob = double(0), 
                  log = integer(0, default = 1)) {
     returnType(double(0))
-    # compute binomial coefficient 
+    # compute binomial coefficient = size! / [x! (n-x)!] and take log
     lchoose <- lfactorial(size) - lfactorial(x) - lfactorial(size - x)
-    # binomial density function
+    # binomial density function = size! / [x! (n-x)!] * prob^x * (1-prob)^(size-x) and take log
     logProb <- lchoose + x * log(prob) + (size - x) * log(1 - prob)
     if(log) return(logProb)
     else return(exp(logProb)) 
@@ -557,7 +563,33 @@ survival$calculate()
 # this is dbinom(x = 19, size = 57, prob = 0.5, log = TRUE)
 ```
 
-The ability in NIMBLE to access the nodes of your model and to evaluate the model likelihood can help you in identifying bugs in your code. **Give example? Provide negative initial value for theta, or released in data < survived.**
+The ability in NIMBLE to access the nodes of your model and to evaluate the model likelihood can help you in identifying bugs in your code. For example, if we provide a negative initial value for `theta`, `survival$calculate()` returns NA:
+```{r}
+survival <- nimbleModel(code = model,
+                        data = my.data,
+                        inits = list(theta = -0.5))
+survival$calculate()
+```
+
+As another example, if we convey in the data the information that more animals survived than were released, we'll get an infinity value for the log-likelihood:
+```{r}
+my.data <- list(survived = 61, released = 57)
+initial.values <- list(theta = 0.5)
+survival <- nimbleModel(code = model,
+                        data = my.data,
+                        inits = initial.values)
+survival$calculate()
+```
+
+As a check that the model is correctly initialized and that your code is without bugs, the call to `model$calculate()` should return a number and not NA or -Inf:
+```{r}
+my.data <- list(survived = 19, released = 57)
+initial.values <- list(theta = 0.5)
+survival <- nimbleModel(code = model,
+                        data = my.data,
+                        inits = initial.values)
+survival$calculate()
+```
 
 You can obtain the graph of the model as in Figure \@ref(fig:dag-survival) with:
 ```{r}
@@ -629,14 +661,15 @@ You can look into `samples` which contains values simulated from the posterior d
 head(samples)
 ```
 
-From here, you can obtain numerical summaries with `samplesSummary()`:
+From here, you can obtain numerical summaries with `samplesSummary()` (or `MCMCvis::MCMCsummary()`):
 ```{r}
 samplesSummary(samples)
 ```
 
 I have summarized the steps above in the box below. 
 
-::: {.rmdnote}
+
+:::: {.blackbox data-latex=""}
 **Detailed NIMBLE workflow:**
 ```{r, eval = FALSE}
 # model building
@@ -730,7 +763,9 @@ samples2 <- runMCMC(mcmc = CsurvivalMCMC2,
 samplesSummary(samples2)
 ```
 
-NIMBLE implements many samplers, and a list is available with `?samplers`. For example, high correlation in (regression) parameters can make independent samplers inefficient. In that situation, block sampling might help which consists in proposing candidate values from a multivariate distribution that acknowledges correlation between parameters. **Say something on how default samplers are chosen by NIMBLE?**
+NIMBLE implements many samplers, and a list is available with `?samplers`. For example, high correlation in (regression) parameters can make independent samplers inefficient. In that situation, block sampling might help which consists in proposing candidate values from a multivariate distribution that acknowledges correlation between parameters. 
+
+<!-- **Say something on how default samplers are chosen by NIMBLE?** -->
 
 ### User-defined samplers
 
@@ -818,8 +853,9 @@ samples <- runMCMC(mcmc = CsurvivalMCMC,
 samplesSummary(samples)
 ```
 
-You can re-run the analysis by setting the standard deviation of the proposal to different values, say 1 and 10, and compare Figure \@ref(fig:traceown) to traceplots we obtained with our R implementation of the Metropolis algorithm in the previous chapter at Figure \@ref(fig:tracechainlength):
-```{r traceown, echo = FALSE, fig.align="center", out.width="100%", fig.cap = "Trace plots for different values of the standard deviation (scale) of the proposal distribution."}
+You can re-run the analysis by setting the standard deviation of the proposal to different values, say 1 and 10, and compare the results to traceplots we obtained with our R implementation of the Metropolis algorithm in the previous chapter:
+```{r traceown}
+# standard deviation of proposal is 0.1
 scale <- 0.1
 Rmodel <- nimbleModel(code = model, data = my.data, inits = initial.values())
 conf <- configureMCMC(Rmodel, monitors = c('theta'), print = FALSE)
@@ -829,6 +865,7 @@ Rmcmc <- buildMCMC(conf)
 out <- compileNimble(list(model = Rmodel, mcmc = Rmcmc))
 Cmcmc <- out$mcmc
 samples_sd01 <- runMCMC(Cmcmc, niter = 10000, nburnin = 9000, progressBar = FALSE)
+# standard deviation of proposal is 1
 scale <- 1
 Rmodel <- nimbleModel(code = model, data = my.data, inits = initial.values())
 conf <- configureMCMC(Rmodel, monitors = c('theta'), print = FALSE)
@@ -838,6 +875,7 @@ Rmcmc <- buildMCMC(conf)
 out <- compileNimble(list(model = Rmodel, mcmc = Rmcmc))
 Cmcmc <- out$mcmc
 samples_sd1 <- runMCMC(Cmcmc, niter = 10000, nburnin = 9000, progressBar = FALSE)
+# standard deviation of proposal is 10
 scale <- 10
 Rmodel <- nimbleModel(code = model, data = my.data, inits = initial.values())
 conf <- configureMCMC(Rmodel, monitors = c('theta'), print = FALSE)
@@ -847,31 +885,37 @@ Rmcmc <- buildMCMC(conf)
 out <- compileNimble(list(model = Rmodel, mcmc = Rmcmc))
 Cmcmc <- out$mcmc
 samples_sd10 <- runMCMC(Cmcmc, niter = 10000, nburnin = 9000, progressBar = FALSE)
+# trace plot for scenario with standard deviation 0.1
 plot01 <- samples_sd01 %>%
   as_tibble() %>%
   ggplot() + 
   aes(x = 9001:10000, y = theta) +
   geom_line() + 
   labs(x = "iterations", title = "scale = 0.1")
+# trace plot for scenario with standard deviation 1
 plot1 <- samples_sd1 %>%
   as_tibble() %>%
   ggplot() + 
   aes(x = 9001:10000, y = theta) +
   geom_line() + 
   labs(x = "iterations", title = "scale = 1")
+# trace plot for scenario with standard deviation 10
 plot10 <- samples_sd10 %>%
   as_tibble() %>%
   ggplot() + 
   aes(x = 9001:10000, y = theta) +
   geom_line() + 
   labs(x = "iterations", title = "scale = 10")
+# Assemble all three trace plots
 library(patchwork)
 plot01 + plot1 + plot10
 ```
 
 ## Tips and tricks
 
-Before closing this chapter on NIMBLE, I thought it'd be useful to have a section gathering a few tips and tricks that would make your life easier. **These are my tips and tricks, NIMBLE users, I'd be happy to hear yours: [email me](mailto:olivier.gimenez@cefe.cnrs.fr), [edit the chapter](https://github.com/oliviergimenez/banana-book/edit/master/nimble.Rmd) or [file an issue](https://github.com/oliviergimenez/banana-book/issues) on GitHub.**
+Before closing this chapter on NIMBLE, I thought it'd be useful to have a section gathering a few tips and tricks that would make your life easier. 
+
+<!-- **These are my tips and tricks, NIMBLE users, I'd be happy to hear yours: [email me](mailto:olivier.gimenez@cefe.cnrs.fr), [edit the chapter](https://github.com/oliviergimenez/banana-book/edit/master/nimble.Rmd) or [file an issue](https://github.com/oliviergimenez/banana-book/issues) on GitHub.** -->
 
 ### Precision vs standard deviation
 
@@ -1085,7 +1129,7 @@ you would write:
 x[1:n] <- mu + epsilon[1:n]
 ```
 
-Vectorization can make your code more efficient by manipulating one vector node `x[1:n]` instead of `n` nodes `x[1]`, ..., `x[n]`. **Think of an example in relation to animal survival? Illustrate with vectorized Bernoulli or [vectorized Binomial](https://github.com/nimble-dev/nimbleSCR/blob/master/nimbleSCR/R/dbinom_vector.R)?**
+Vectorization can make your code more efficient by manipulating one vector node `x[1:n]` instead of `n` nodes `x[1]`, ..., `x[n]`. As an example, you may have a look to the vectorized flavor of the binomial distribution written by Pierre Dupont at <https://github.com/nimble-dev/nimbleSCR/blob/master/nimbleSCR/R/dbinom_vector.R>.
 
 ## Summary
 
@@ -1111,10 +1155,10 @@ In this chapter, I have only scratched the surface of what NIMBLE is capable of.
 
 - You can keep the NIMBLE cheatsheet [https://r-nimble.org/cheatsheets/NimbleCheatSheet.pdf](https://r-nimble.org/cheatsheets/NimbleCheatSheet.pdf) near you to remind yourself of the workflow, how to write and use models, or which functions and distributions are available.
 
-- The motivation to write this book comes from a workshop I co-teach with colleagues, including Perry de Valpine and Daniel Turek from the NIMBLE development team. The material (slides and videos) is available at [https://github.com/oliviergimenez/bayesian-cr-workshop](https://github.com/oliviergimenez/bayesian-cr-workshop). 
-
 - If you have questions, feel free to get in touch with the community of NIMBLE users by emailing the discussion group [https://groups.google.com/forum/#!forum/nimble-users](https://groups.google.com/forum/#!forum/nimble-users). This is a great place to learn, and folks who take the time to answer questions are kind and provide constructive answers. When possible, make sure to provide a reproducible example illustrating your problem. 
 
-- Last, you can cite the following reference when using NIMBLE in a publication:
+- You can cite the following reference when using NIMBLE in a publication:
 
-> de Valpine, P., D. Turek, C. J. Paciorek, C. Anderson-Bergman, D. Temple Lang, and R. Bodik (2017). [Programming With Models: Writing Statistical Algorithms for General Model Structures With NIMBLE](https://arxiv.org/pdf/1505.05093.pdf). *Journal of Computational and Graphical Statistics* **26** (2): 403–13.
+> de Valpine, P., D. Turek, C. J. Paciorek, C. Anderson-Bergman, D. Temple Lang, and R. Bodik (2017). Programming With Models: Writing Statistical Algorithms for General Model Structures With NIMBLE. *Journal of Computational and Graphical Statistics* **26** (2): 403–13.
+
+- Last, the packages to process NIMBLE results are developed by people whose work should be acknowledged: see @youngflesh2018mcmcvis for `MCMCvis`, @turek2022basicmcmcplots for `basicMCMCplots`, @gabry2022bayesplot for `bayesplot` and @fernandez2016ggmcmc for `ggmcmc`.

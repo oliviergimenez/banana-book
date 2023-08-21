@@ -6,7 +6,7 @@ In this third chapter, you will learn the basics on Markov models and how to fit
 
 ## Longitudinal data
 
-Let's get back to our survival example, and denote $z_i$ the state of individual $i$ with $z_i = 1$ if alive and $z_i = 0$ if dead. We have a total of $z = \displaystyle{\sum_{i=1}^{n}{z_i}}$ survivors out of $n$ released animals with winter survival probability $\phi$. Our model so far is a combination of a binomial likelihood and a Beta prior with parameters 1 and 1, which is also a uniform distribution between 0 and 1. It can be written as^[I write models the way Richard McElreath does it in his book and video lectures [Statistical Rethinking](https://xcelab.net/rm/statistical-rethinking/).]:
+Let's get back to our survival example, and denote $z_i$ the state of individual $i$ with $z_i = 1$ if alive and $z_i = 0$ if dead. We have a total of $z = \displaystyle{\sum_{i=1}^{n}{z_i}}$ survivors out of $n$ released animals with winter survival probability $\phi$. Our model so far is a combination of a binomial likelihood and a Beta prior with parameters 1 and 1, which is also a uniform distribution between 0 and 1. It can be written as:
 
 \begin{align*}
    z &\sim \text{Binomial}(n, \phi) &\text{[likelihood]}
@@ -50,16 +50,16 @@ for (i in 1:nind){
 colnames(z) <- paste0("winter ", 1:nocc)
 z %>%
   as_tibble() %>%
-  add_column(id = 1:nind, .before = "winter 1") %>%
-  kableExtra::kable() %>%
-  kableExtra::scroll_box(width = "100%", height = "400px")
+  add_column(id = 1:nind, .before = "winter 1") #%>%
+#  kableExtra::kable() %>%
+#  kableExtra::scroll_box(width = "100%", height = "400px")
 #  kableExtra::kable_styling(font_size = 8,
 #                            latex_options = "scale_down")
 ```
 
 ## A Markov model for longitudinal data
 
-Let's think of a model for these data. The objective remains the same, estimating survival. To build this model, we'll make assumptions, go through its components and write down its likelihood. Note that we already encountered Markov models in Section \@ref(markovmodelmcmc).
+Let's think of a model for these data. The objective remains the same, estimating survival. To build this model, we'll make assumptions, go through its components and write down its likelihood. Note that we have already encountered Markov models in Section \@ref(markovmodelmcmc).
 
 ### Assumptions
 
@@ -127,8 +127,9 @@ We can gather these probabilities of transition between states from one occasion
 
 To try and remember that the states at $t-1$ are in rows, and the states at $t$ are in columns, I will often write:
 
-$$
-\begin{matrix}
+
+
+$$\begin{matrix}
 & \\
 \mathbf{\Gamma} =
     \left ( \vphantom{ \begin{matrix} 12 \\ 12 \end{matrix} } \right .
@@ -146,8 +147,9 @@ $$
     \begin{matrix}
     z_{t-1}=1 \; \mbox{(alive)} \\ z_{t-1}=2 \; \mbox{(dead)}
     \end{matrix}
-\end{matrix}
-$$
+\end{matrix}$$
+
+
 
 Take the time you need to navigate through this matrix, and get familiar with it. For example, you may start alive at $t$ (first row) then end up dead at $t+1$ (first column) with probability $1-\phi$.
 
@@ -247,12 +249,12 @@ The probability of having the sequence alive, alive and dead is the probability 
 
 ## Bayesian formulation
 
-Before implementing this model in NIMBLE, we provide a Bayesian formulation of our model. We first note that the likelihood is a product of conditional probabilities of binary events (alive or dead). Usually binary events are associated with the Bernoulli distribution. Here however,  we will use its extension to several outcomes (from a coin with two sides to a dice with more than two faces) known as the categorical distribution^[The categorical distribution is a multinomial distribution with a single draw.]. To get a better idea of how the categorical distribution works, let's simulate from it with the `rcat()` function. Consider for example a random value drawn from a categorical distribution with probability 0.1, 0.3 and 0.6. Think of a dice with three faces, face 1 has probability 0.1 of occurring, face 2 probability 0.3 and face 3 has probability 0.6, the sum of these probabilities being 1. We expect to get a 3 more often than a 2 and rarely a 1^[Alternatively, you can use the `sample()` function and `sample(x = 1:3, size = 1, replace = FALSE, prob = c(0.1, 0.3, 0.6))`]: 
+Before implementing this model in NIMBLE, we provide a Bayesian formulation of our model. We first note that the likelihood is a product of conditional probabilities of binary events (alive or dead). Usually binary events are associated with the Bernoulli distribution. Here however,  we will use its extension to several outcomes (from a coin with two sides to a dice with more than two faces) known as the categorical distribution. The categorical distribution is a multinomial distribution with a single draw. To get a better idea of how the categorical distribution works, let's simulate from it with the `rcat()` function. Consider for example a random value drawn from a categorical distribution with probability 0.1, 0.3 and 0.6. Think of a dice with three faces, face 1 has probability 0.1 of occurring, face 2 probability 0.3 and face 3 has probability 0.6, the sum of these probabilities being 1. We expect to get a 3 more often than a 2 and rarely a 1: 
 ```{r}
 rcat(n = 1, prob = c(0.1, 0.3, 0.6))
 ```
 
-Here is another example in which we sample 20 times in a categorical distribution with probabilities 0.1, 0.1, 0.4, 0.2 and 0.2, hence a dice with 5 faces:
+Alternatively, you can use the `sample()` function and `sample(x = 1:3, size = 1, replace = FALSE, prob = c(0.1, 0.3, 0.6))`. Here is another example in which we sample 20 times in a categorical distribution with probabilities 0.1, 0.1, 0.4, 0.2 and 0.2, hence a dice with 5 faces:
 ```{r}
 rcat(n = 20, prob = c(0.1, 0.1, 0.4, 0.2, 0.2))
 ```
@@ -455,15 +457,16 @@ for (i in 1:nind){
 head(z) 
 ```
 
-We could replace `dcat()` by `dbern()` everywhere in the code because we have binary events alive/dead. Would it make any difference? Although `dcat()` uses less efficient samplers than `dbern()` (**check w/ Perry/Daniel**), `dcat()` is convenient for model building to accomodate more than two outcomes, a feature that will become handy in the next chapters. 
+We could replace `dcat()` by `dbern()` everywhere in the code because we have binary events alive/dead. Would it make any difference? Although `dcat()` uses less efficient samplers than `dbern()`, `dcat()` is convenient for model building to accomodate more than two outcomes, a feature that will become handy in the next chapters. 
 
 ## Hidden Markov models
 
 ### Capture-recapture data {#capturerecapturedata}
 
-```{block2 hmm-verbal, type='rmdnote', eval = FALSE}
-Unfortunately, the data with alive and dead states is the data we wish we had. In real life, animals cannot be monitored exhaustively, like humans in a medical trial. This is why we use capture-recapture protocols^[Have a look to this enjoyable video on the basics principles of capture-recapture experiments <https://www.youtube.com/embed/tyX79mPm2xY>.], in which animals are captured, individually marked, and released alive. Then, these animals may be detected again, or go undetected. Whenever animals go undetected, it might be that they were alive but missed, or because they were dead and therefore could not be detected. This issue is usually referred to as that of imperfect detection. As a consequence of imperfect detection, the Markov process for survival is only partially observed: You know an animal is alive when you detect it, but when an animal goes undetected, whether it is alive or dead is unknown to you. This is where hidden Markov models (HMMs) come in.
-```
+
+:::: {.blackbox data-latex=""}
+Unfortunately, the data with alive and dead states is the data we wish we had. In real life, animals cannot be monitored exhaustively, like humans in a medical trial. This is why we use capture-recapture protocols, in which animals are captured, individually marked, and released alive. Then, these animals may be detected again, or go undetected. Whenever animals go undetected, it might be that they were alive but missed, or because they were dead and therefore could not be detected. This issue is usually referred to as that of imperfect detection. As a consequence of imperfect detection, the Markov process for survival is only partially observed: You know an animal is alive when you detect it, but when an animal goes undetected, whether it is alive or dead is unknown to you. This is where hidden Markov models (HMMs) come in.
+::::
 
 Let's get back to the data we had in the previous section. The truth is in $z$ which contains the fate of all individuals with $z = 1$ for alive, and $z = 2$ for dead:
 
@@ -471,22 +474,18 @@ Let's get back to the data we had in the previous section. The truth is in $z$ w
 colnames(z) <- paste0("winter ", 1:nocc)
 z %>%
   as_tibble() %>%
-  add_column(id = 1:nind, .before = "winter 1") %>%
-  kableExtra::kable() %>%
-  kableExtra::scroll_box(width = "100%", height = "300px")
+  add_column(id = 1:nind, .before = "winter 1")
 ```
 
 Unfortunately, we have only partial access to $z$. What we do observe is $y$ the detections and non-detections. How are $z$ and $y$ connected?
 
-The easiest connection is with dead animals which go undetected for sure. Therefore when an animal is dead i.e. $z = 2$, it cannot be detected, therefore $y = 0$: **why not use 1 for non-detected and 2 for detected from here, and mention somewhere that usually people use 0 and 1?**
+The easiest connection is with dead animals which go undetected for sure. Therefore when an animal is dead i.e. $z = 2$, it cannot be detected, therefore $y = 0$:
 
 ```{r echo = FALSE}
 z %>%
   as_tibble() %>%
   replace(. == 2, 0) %>%
-  add_column(id = 1:nind, .before = "winter 1") %>%
-  kableExtra::kable() %>%
-  kableExtra::scroll_box(width = "100%", height = "300px")
+  add_column(id = 1:nind, .before = "winter 1")
 ```
 
 Now alive animals may be detected or not. If an animal is alive $z = 1$, it is detected $y = 1$ with probability $p$ or not $y = 0$ with probability $1-p$. In our example, first detection coincides with first winter for all individuals. 
@@ -524,18 +523,16 @@ nobs <- sum(apply(y,1,sum) != 0)
 y <- y[apply(y,1,sum) !=0, ] # remove rows w/ non-detections only
 y %>%
  as_tibble() %>%
- add_column(id = 1:nobs, .before = "winter 1") %>%
- kableExtra::kable() %>%
- kableExtra::scroll_box(width = "100%", height = "300px")
+ add_column(id = 1:nobs, .before = "winter 1")
 ```
 
-Compare with previous table. Some 1's for alive have become 0's for non-detection, other 1's for alive have remained 1's for detection. This table $y$ is what we observe in real life. I hope I have convinced you that to make the connection between observations, the $y$, and true states, the $z$,  we need to describe how observations are made (or emitted in the HMM terminology) from the states.
+Compare with the previous $z$ table. Some 1's for alive have become 0's for non-detection, other 1's for alive have remained 1's for detection. This $y$ table is what we observe in real life. I hope I have convinced you that to make the connection between observations, the $y$, and true states, the $z$,  we need to describe how observations are made (or emitted in the HMM terminology) from the states.
 
 ### Observation matrix
 
 The novelty in HMMs is the link between observations and states. This link is made through observation probabilities. For example, the probability of detecting an animal $i$ at $t$ given it is alive at $t$ is $\Pr(y_{i,t}=2|z_{i,t}=1)=\omega_{1,2}$. It is the detection probability $p$. If individual $i$ is dead at $t$, then it is missed for sure, and  $\Pr(y_{i,t}=1|z_{i,t}=2)=\omega_{2,1}=1$. 
 
-We can gather these observation probabilities into an observation matrix $\mathbf{\Omega}$. In rows we have the states alive $z = 1$ and dead $z = 2$, while in columns we have the observations non-detected $y = 1$ and detected $y = 2$ (previously coded 0 and 1 respectively): **if we go for 1 and 2, do wee need the comment between parentheses?**
+We can gather these observation probabilities into an observation matrix $\mathbf{\Omega}$. In rows we have the states alive $z = 1$ and dead $z = 2$, while in columns we have the observations non-detected $y = 1$ and detected $y = 2$ (previously coded 0 and 1 respectively):
 
 \begin{align*}
 \mathbf{\Omega} =
@@ -549,10 +546,11 @@ We can gather these observation probabilities into an observation matrix $\mathb
 \end{array}\right)
 \end{align*}
 
-Observation matrix:
+In survival models we will use throughout this book, we condition the fate of individuals on first detection, which boils down to set the corresponding detection probability to 1. 
 
-$$
-\begin{matrix}
+The observation matrix is:
+
+$$\begin{matrix}
 & \\
 \mathbf{\Omega} =
     \left ( \vphantom{ \begin{matrix} 12 \\ 12 \end{matrix} } \right .
@@ -571,8 +569,8 @@ $$
     \begin{matrix}
     z_{t}=1 \; \mbox{(alive)}\\ z_{t}=2 \; \mbox{(dead)}
     \end{matrix}
-\end{matrix}
-$$
+\end{matrix}$$
+
 
 ### Hidden Markov model
 
@@ -606,11 +604,13 @@ Our hidden Markov model can be represented this way:
 
 States $z$ are in gray. Observations $y$ are in white. All individuals are first captured in the first winter $t = 1$, and are therefore all alive $z_1 = 1$ and detected $y_1 = 2$. 
 
-```{block2 hmm-diagram, type='rmdnote', eval = FALSE}
-A hidden Markov model is just two time series running in parallel. One for the states with the Markovian property, and the other of for the observations generated from the states^[HMM are a special case of state-space models in which latent states are discrete.].
-```
 
-Have a look to the example below, in which an individual is detected at first sampling occasion, detected again, then missed for the rest of the study. While on occasion $t=3$ that individual was alive $z_3=1$ and went undetected $y_3=1$, on occasions $t=4$ and $t=5$ it went undetected $y_4=y_5=1$ because it was dead $z_4=z_5=2$.
+:::: {.blackbox data-latex=""}
+A hidden Markov model is just two time series running in parallel. One for the states with the Markovian property, and the other of for the observations generated from the states. HMM are a special case of state-space models in which latent states are discrete.
+::::
+
+
+Have a look to the example below, in which an individual is detected at first sampling occasion, detected again, then missed for the rest of the study. While on occasion $t=3$ that individual was alive $z_3=1$ and went undetected $y_3=1$, on occasions $t=4$ and $t=5$ it went undetected $y_4=y_5=1$ because it was dead $z_4=z_5=2$. Because we condition on first detection, the link between state and observation at $t=1$ is deterministic and $p = 1$. 
 
 ```{r, engine = 'tikz', echo = FALSE}
 \usetikzlibrary{arrows, fit, positioning, automata}
@@ -717,12 +717,12 @@ The Bayesian approach with MCMC methods allows treating the latent states $z_{i,
 
 ## Fitting HMM with NIMBLE {#fittinghmmnimble}
 
-Our model so far is written as follows:
+If we denote *first* the time of first detection, then our model so far is written as follows:
 
 \begin{align*}
    z_{\text{first}} &\sim \text{Categorical}(1, \delta) &\text{[likelihood]}\\
-   z_t | z_{t-1} &\sim \text{Categorical}(1, \gamma_{z_{t-1},z_{t}}) &\text{[likelihood]}\\
-   y_t | z_{t} &\sim \text{Categorical}(1, \omega_{z_{t}}) &\text{[likelihood]}\\
+   z_t | z_{t-1} &\sim \text{Categorical}(1, \gamma_{z_{t-1},z_{t}}) &\text{[likelihood, t>first]}\\
+   y_t | z_{t} &\sim \text{Categorical}(1, \omega_{z_{t}}) &\text{[likelihood, t>first]}\\
   \phi &\sim \text{Beta}(1, 1) &\text{[prior for }\phi \text{]} \\
   p &\sim \text{Beta}(1, 1) &\text{[prior for }p \text{]} \\
 \end{align*}
@@ -766,8 +766,8 @@ Then we define initial states, transition and observation matrices:
 ```{r eval=FALSE}
 ...
   # parameters
-  delta[1] <- 1          # Pr(alive t = 1) = 1
-  delta[2] <- 0          # Pr(dead t = 1) = 0
+  delta[1] <- 1          # Pr(alive t = first) = 1
+  delta[2] <- 0          # Pr(dead t = first) = 0
   gamma[1,1] <- phi      # Pr(alive t -> alive t+1)
   gamma[1,2] <- 1 - phi  # Pr(alive t -> dead t+1)
   gamma[2,1] <- 0        # Pr(dead t -> alive t+1)
@@ -793,14 +793,16 @@ Then the likelihood:
 })
 ```
 
+The loop over time for each individual `for (j in 2:T){}` starts after the first time individuals are detected (this is time 2 for all of them here), because we work conditional on the first detection. 
+
 Overall, the code looks like:
 ```{r eval = FALSE}
 hmm.survival <- nimbleCode({
   phi ~ dunif(0, 1) # prior survival
   p ~ dunif(0, 1) # prior detection
   # likelihood
-  delta[1] <- 1          # Pr(alive t = 1) = 1
-  delta[2] <- 0          # Pr(dead t = 1) = 0
+  delta[1] <- 1          # Pr(alive t = first) = 1
+  delta[2] <- 0          # Pr(dead t = first) = 0
   gamma[1,1] <- phi      # Pr(alive t -> alive t+1)
   gamma[1,2] <- 1 - phi  # Pr(alive t -> dead t+1)
   gamma[2,1] <- 0        # Pr(dead t -> alive t+1)
@@ -825,10 +827,12 @@ my.constants <- list(N = nrow(y), T = 5)
 my.constants
 ```
 
-The data are made of 0's for non-detections and 1's for detections. To use the categorical distribution, we need to code 1's and 2's. We simply add 1 to get the correct format, that is $y = 1$ for non-detection and $y = 2$ for detection: **Using 1 and 2 would make my life easier... The 0/1 coding is a convention; Using the 1/2 coding would make clear that non-detections are actual data (while the use of 0s for non-detections is sometimes confusing). Also, it might help to replace states 1 and 2 by A and D for dead and alive. Even if not mathematically convenient, I guess it would help the understanding. Do it, do it. We want non-detection first, so always 1's.**
+The data are made of 0's for non-detections and 1's for detections. To use the categorical distribution, we need to code 1's and 2's. We simply add 1 to get the correct format, that is $y = 1$ for non-detection and $y = 2$ for detection: 
 ```{r}
 my.data <- list(y = y + 1)
 ```
+
+<!-- **Using 1 and 2 would make my life easier... The 0/1 coding is a convention; Using the 1/2 coding would make clear that non-detections are actual data (while the use of 0s for non-detections is sometimes confusing). Also, it might help to replace states 1 and 2 by A and D for dead and alive. Even if not mathematically convenient, I guess it would help the understanding. Do it, do it. We want non-detection first, so always 1's.** -->
 
 Now let's write a function for the initial values:
 ```{r}
@@ -838,6 +842,8 @@ initial.values <- function() list(phi = runif(1,0,1),
                                   p = runif(1,0,1),
                                   z = zinits)
 ```
+
+As initial values for the latent states, we assumed that whenever an individual was non-detected, it was alive, with with `zinits <- y + 1`, and we make sure dead individuals are alive with `zinits[zinits == 2] <- 1`.
 
 We specify the parameters we'd like to monitor:
 ```{r}
@@ -867,7 +873,7 @@ end_time <- Sys.time()
 end_time - start_time
 ```
 
-```{r, message=FALSE, cache = F, echo = FALSE}
+```{r, message=FALSE, echo = FALSE}
 start_time <- Sys.time()
 mcmc.output <- nimbleMCMC(code = hmm.survival,
                           constants = my.constants,
@@ -912,7 +918,7 @@ Omega[2,2] <- 0          # Pr(dead t -> detected t)
 # Matrix of states
 z <- matrix(NA, nrow = nind, ncol = nocc)
 y <- z
-y[,1] <- 2 # all individuals are detected in first winter
+y[,1] <- 2 # all individuals are detected in first winter, as we condition on first detection
 for (i in 1:nind){
   z[i,1] <- rcat(n = 1, prob = delta) # 1 for sure
   for (t in 2:nocc){
@@ -1001,8 +1007,6 @@ Because all individuals are captured in first winter, or $\Pr(y_1 = 2 | z_1 = 1)
 You end up with $\Pr(y_1 = 2, y_2 = 2, y_3 = 1) = \phi p (1 - p\phi)$. 
 
 The latent states are no longer involved in the likelihood for this individual. However, even on a rather simple example, the marginal likelihood is quite complex to evaluate because it involves many operations. If $T$ is the length of our encounter histories and $N$ is the number of hidden states (two for alive and dead, but we will deal with more states in some chapters to come), then we need to calculate the sum of $N^T$ terms (the sums in the formula above), each of which has two products of $T$ factors (the products in the formula above), hence $2TN^T$ calculations in total. You can check that in the simple example above, we have $T^N = 2^3 = 8$ terms that are summed, each of which is a product of $2T = 2 \times 3 = 6$ terms. This means that the number of operations increases exponentially as the number of states increases. In most cases, this complexity precludes using this method to get rid of the states. Fortunately, we have another algorithm in the HMM toolbox that is useful to calculate the marginal likelihood efficiently.
-
-**Explain somewhere that we condition on first encounter, therefore p at first encounter is 1! **
 
 ### Forward algorithm {#forward-algorithm}
 
@@ -1101,19 +1105,20 @@ You can check that we did in total $3 \times 2^2 = 12$ operations.
 
 ### NIMBLE implementation
 
-#### Do it yourself
+#### Do it yourself {#diymarginalisation}
 
 In NIMBLE, we use functions to implement the forward algorithm. The only differences with the theory above is that i) we work on the log scale for numerical stability and ii) we use a matrix formulation of the recurrence. 
+
 First we write the density function:
 ```{r}
 dHMM <- nimbleFunction(
   run = function(x = double(1), 
-                 probInit = double(1),
-                 probObs = double(2),
-                 probTrans = double(2),
-                 len = double(0, default = 0),
+                 probInit = double(1), # vector of initial states
+                 probObs = double(2), #observation matrix
+                 probTrans = double(2), # transition matrix
+                 len = double(0, default = 0), # number of sampling occasions
                  log = integer(0, default = 0)) {
-    alpha <- probInit[1:2]
+    alpha <- probInit[1:2] # * probObs[1:2,x[1]] == 1 due to conditioning on first detection
     for (t in 2:len) {
       alpha[1:2] <- (alpha[1:2] %*% probTrans[1:2,1:2]) * probObs[1:2,x[t]]
     }
@@ -1125,7 +1130,7 @@ dHMM <- nimbleFunction(
 )
 ```
 
-In passing, this is the function you would maximize in a Frequentist approach^[I might add that example in a footnote. See also Section \@ref(under-the-hood)]. Then we write a function to simulate values from a HMM:
+In passing, this is the function you would maximize in a frequentist approach (see Section \@ref(under-the-hood)). Then we write a function to simulate values from a HMM:
 ```{r}
 rHMM <- nimbleFunction(
   run = function(n = integer(),
@@ -1262,15 +1267,16 @@ MCMCsummary(mcmc.output, round = 2)
 
 #### Do it with `nimbleEcology`
 
-Writing NIMBLE functions is not easy. Fortunately, the NIMBLE folks got you covered. They developed the package `nimbleEcology` that implements some of the most popular ecological models with latent states. **Develop. Give ref in Suggested reading.**
+Writing NIMBLE functions is not easy. Fortunately, the NIMBLE folks got you covered. They developed the package `nimbleEcology` that implements some of the most popular ecological models with latent states. 
 
-We will use the function `dHMMo` which provides the distribution of a hidden Markov model with time-independent transition matrix and time-dependent observation matrix. Why time-dependent observation matrix? We need to tell NIMBLE that capture at first encounter is 1. **More details.**
+We will use the function `dHMMo` which provides the distribution of a hidden Markov model with time-independent transition matrix and time-dependent observation matrix. Why time-dependent observation matrix? Because we need to tell NIMBLE that detection at first encounter is 1. 
 
+We load the package:
 ```{r}
 library(nimbleEcology)
 ```
 
-NIMBLE code:
+The NIMBLE code is:
 
 ```{r}
 hmm.survival <- nimbleCode({
@@ -1303,7 +1309,9 @@ hmm.survival <- nimbleCode({
 })
 ```
 
-Next steps are similar to the workflow we used before:
+You may see that we no longer have the states in the code as we use the marginalized likelihood. The `dHMMo` takes several arguments, including `init` the vector of initial state probabilities, `probObs` the observation matrix, `probTrans` the transition matrix and `len` the number of sampling occasions. 
+
+Next steps are similar to the workflow we used before. The only difference is that we do not need to specify initial values for the latent states: 
 
 ```{r}
 # constants
@@ -1337,19 +1345,16 @@ end_time <- Sys.time()
 end_time - start_time
 ```
 
-
+Now we display the numerical summaries of the posterior distributions: 
 ```{r}
 MCMCsummary(mcmc.output, round = 2)
 ```
 
-
-
+The results are similar what we obtained previously with our home-made marginalized likelihood (Section \@ref(diymarginalisation)), or with the full likelihood (\@ref(fittinghmmnimble)).
 
 ## Pooled encounter histories {#pooled-likelihood}
 
-### Do it yourself
-
-We can go one step further to make convergence even faster. As mentionned earlier in Section \@ref(likelihoodhmm), the likelihood of an HMM fitted to capture-recapture data often involves individuals that share the same encounter histories. Instead of repeating the same calculations several times, the likelihood contribution that is shared by say $x$ individuals is raised to the power $x$ in the likelihood of the whole dataset, hence making the same operations only once^[This idea is used in routine in capture-recapture software like MARK or E-SURGE. For Bayesian software however, it is only recently that the trick was tested in NIMBLE (in Turek, de Valpine, and Paciorek (2016). Efficient Markov chain Monte Carlo sampling for hierarchical hidden Markov models. *Environmental and Ecological Statistics* 23: 549-564. Many thanks to Chloé Nater for showing me how to implement it.].
+We can go one step further to make convergence even faster. As mentionned earlier in Section \@ref(likelihoodhmm), the likelihood of an HMM fitted to capture-recapture data often involves individuals that share the same encounter histories. Instead of repeating the same calculations several times, the likelihood contribution that is shared by say $x$ individuals is raised to the power $x$ in the likelihood of the whole dataset, hence making the same operations only once. This idea is used in routine in capture-recapture software. For Bayesian software however, it is only recently that the trick was tested in NIMBLE by @TurekEtAl2016.
 
 In this section, we amend the NIMBLE functions we wrote for marginalizing latent states in Section \@ref(marginalization) to express the likelihood using pooled encounter histories. We use a vector `size` that contains the number of individuals with the same encounter history. 
 
@@ -1471,231 +1476,217 @@ MCMCsummary(mcmc.output, round = 2)
 
 The results are the same as those obtained previously. The gain in computation times will be bigger for more complex models as we will see in the next chapters. 
 
-<!-- Works preeeeeety well ;-) two small issues though: -->
+The pooled likelihood is not yet implemented in `nimbleEcology`, but you can hack the code for the function `dHMMo` <https://github.com/nimble-dev/nimbleEcology/blob/master/R/dHMM.R> to implement it yourself by adding a `size` argument. 
 
-<!-- 1. I get this warning:  -->
-<!-- Message d'avis : -->
-<!-- Dans model$checkBasics() : -->
-<!--   Possible size/dimension mismatch amongst vectors and matrices  -->
-<!--    in BUGS expression: y[i, 1:5] ~ dHMM(probInit = delta[1:2],  -->
-<!--    probObs = omegat[1:2,     1:2], probTrans = gamma[1:2, 1:2],  -->
-<!--    len = 5, lower_ = -Inf,     upper_ = Inf). Ignore this warning  -->
-<!--    if the user-provided distribution has multivariate parameters  -->
-<!--    with distinct sizes or if size of variable differs from sizes of parameters. -->
+<!-- ```{r} -->
+<!-- library(nimble) -->
+<!-- library(MCMCvis) -->
+<!-- library(tidyverse) -->
 
-### Do it with `nimbleEcology`
+<!-- dHMMopooled <- nimbleFunction( -->
+<!--   run = function(x = double(1),    ## Observed capture (state) history -->
+<!--                  init = double(1),## -->
+<!--                  probObs = double(3), -->
+<!--                  probTrans = double(2), -->
+<!--                  len = double(0, default = 0),## length of x (needed as a separate param for rDHMM) -->
+<!--                  size = double(0), -->
+<!--                  checkRowSums = double(0, default = 1), -->
+<!--                  log = integer(0, default = 0)) { -->
+<!--     if (length(x) != len) stop("In dHMMo: Argument len must be length of x or 0.") -->
+<!--     if (dim(probObs)[1] != dim(probTrans)[1]) stop("In dHMMo: In dHMM: Length of dimension 1 in probObs must equal length of dimension 1 in probTrans.") -->
+<!--     if (dim(probTrans)[1] != dim(probTrans)[2]) stop("In dHMMo: probTrans must be a square matrix.") -->
+<!--     if (dim(probObs)[3] != len) { -->
+<!--       if (dim(probObs)[3] == 1) stop("In dHMMo: Time dimension of probObs must match length of data. Did you mean dHMM?") -->
+<!--       stop("In dHMMo: Length of time dimension of probObs must match length of data.") -->
+<!--     } -->
+<!--     if (abs(sum(init) - 1) > 1e-6) stop("In dHMMo: Initial probabilities must sum to 1.") -->
 
-**Pooled likelihood not implemented at the moment in nimbleEcology, but you can hack the code for the function dHMMo to implement it yourself. Get functions in nimbleEcology GitHub <https://github.com/nimble-dev/nimbleEcology/blob/master/R/dHMM.R> and add size. That gives**
+<!--     if (checkRowSums) { -->
+<!--       transCheckPasses <- TRUE -->
+<!--       for (i in 1:dim(probTrans)[1]) { -->
+<!--         thisCheckSum <- sum(probTrans[i,]) -->
+<!--         if (abs(thisCheckSum - 1) > 1e-6) { -->
+<!--           ## Compilation doesn't support more than a simple string for stop() -->
+<!--           ## so we provide more detail using a print(). -->
+<!--           print("In dHMMo: Problem with sum(probTrans[i,]) with i = ", i, ". The sum should be 1 but is ", thisCheckSum) -->
+<!--           transCheckPasses <- FALSE -->
+<!--         } -->
+<!--       } -->
+<!--       obsCheckPasses <- TRUE -->
+<!--       for (i in 1:dim(probObs)[1]) { -->
+<!--         for (k in 1:dim(probObs)[3]) { -->
+<!--           thisCheckSum <- sum(probObs[i,,k]) -->
+<!--           if (abs(thisCheckSum - 1) > 1e-6) { -->
+<!--             print("In dHMMo: Problem with sum(probObs[i,,k]) with i = ", i, " k = " , k, ". The sum should be 1 but is ", thisCheckSum) -->
+<!--             obsCheckPasses <- FALSE -->
+<!--           } -->
+<!--         } -->
+<!--       } -->
+<!--       if(!(transCheckPasses | obsCheckPasses)) -->
+<!--         stop("In dHMMo: probTrans and probObs were not specified correctly.  Probabilities in each row (second dimension) must sum to 1.") -->
+<!--       if(!transCheckPasses) -->
+<!--         stop("In dHMMo: probTrans was not specified correctly.  Probabilities in each row (second dimension) must sum to 1.") -->
+<!--       if(!obsCheckPasses) -->
+<!--         stop("In dHMMo: probObs was not specified correctly. Probabilities in each row must sum to 1.") -->
+<!--     } -->
+<!--     pi <- init # State probabilities at time t=1 -->
+<!--     logL <- 0 -->
+<!--     nObsClasses <- dim(probObs)[2] -->
+<!--     for (t in 1:len) { -->
+<!--       if (x[t] > nObsClasses | x[t] < 1) stop("In dHMMo: Invalid value of x[t].") -->
+<!--       Zpi <- probObs[,x[t],t] * pi # Vector of P(state) * P(observation class x[t] | state) -->
+<!--       sumZpi <- sum(Zpi)    # Total P(observed as class x[t]) -->
+<!--       logL <- logL + log(sumZpi) * size  # Accumulate log probabilities through timeÍ -->
+<!--       if (t != len) pi <- ((Zpi %*% probTrans) / sumZpi)[1, ] # State probabilities at t+1 -->
+<!--     } -->
+<!--     returnType(double()) -->
+<!--     if (log) return(logL) -->
+<!--     return(exp(logL)) -->
+<!--   } -->
+<!-- ) -->
 
-```{r}
-library(nimble)
-library(MCMCvis)
-library(tidyverse)
+<!-- rHMMopooled <- nimbleFunction( -->
+<!--   run = function(n = integer(),    ## Observed capture (state) history -->
+<!--                  init = double(1), -->
+<!--                  probObs = double(3), -->
+<!--                  probTrans = double(2), -->
+<!--                  len = double(0, default = 0), -->
+<!--                  size = double(0), -->
+<!--                  checkRowSums = double(0, default = 1)) { -->
+<!--   returnType(double(1)) -->
+<!--   if (dim(probObs)[1] != dim(probTrans)[1]) stop("In rHMMo: Number of cols in probObs must equal number of cols in probTrans.") -->
+<!--   if (dim(probTrans)[1] != dim(probTrans)[2]) stop("In rHMMo: probTrans must be a square matrix.") -->
+<!--   if (dim(probObs)[3] != len) { -->
+<!--     if (dim(probObs)[3] == 1) stop("In rHMMo: Time dimension of probObs must match length of data. Did you mean rHMM?") -->
+<!--     stop("In rHMMo: Length of time dimension of probObs must match length of data.") -->
+<!--   } -->
+<!--   if (abs(sum(init) - 1) > 1e-6) stop("In rHMMo: Initial probabilities must sum to 1.") -->
 
-dHMMopooled <- nimbleFunction(
-  run = function(x = double(1),    ## Observed capture (state) history
-                 init = double(1),##
-                 probObs = double(3),
-                 probTrans = double(2),
-                 len = double(0, default = 0),## length of x (needed as a separate param for rDHMM)
-                 size = double(0),
-                 checkRowSums = double(0, default = 1),
-                 log = integer(0, default = 0)) {
-    if (length(x) != len) stop("In dHMMo: Argument len must be length of x or 0.")
-    if (dim(probObs)[1] != dim(probTrans)[1]) stop("In dHMMo: In dHMM: Length of dimension 1 in probObs must equal length of dimension 1 in probTrans.")
-    if (dim(probTrans)[1] != dim(probTrans)[2]) stop("In dHMMo: probTrans must be a square matrix.")
-    if (dim(probObs)[3] != len) {
-      if (dim(probObs)[3] == 1) stop("In dHMMo: Time dimension of probObs must match length of data. Did you mean dHMM?")
-      stop("In dHMMo: Length of time dimension of probObs must match length of data.")
-    }
-    if (abs(sum(init) - 1) > 1e-6) stop("In dHMMo: Initial probabilities must sum to 1.")
+<!--   if (checkRowSums) { -->
+<!--     transCheckPasses <- TRUE -->
+<!--     for (i in 1:dim(probTrans)[1]) { -->
+<!--       thisCheckSum <- sum(probTrans[i,]) -->
+<!--       if (abs(thisCheckSum - 1) > 1e-6) { -->
+<!--         ## Compilation doesn't support more than a simple string for stop() -->
+<!--         ## so we provide more detail using a print(). -->
+<!--         print("In rHMMo: Problem with sum(probTrans[i,]) with i = ", i, ". The sum should be 1 but is ", thisCheckSum) -->
+<!--         transCheckPasses <- FALSE -->
+<!--       } -->
+<!--     } -->
+<!--     obsCheckPasses <- TRUE -->
+<!--     for (i in 1:dim(probObs)[1]) { -->
+<!--       for (k in 1:dim(probObs)[3]) { -->
+<!--         thisCheckSum <- sum(probObs[i,,k]) -->
+<!--         if (abs(thisCheckSum - 1) > 1e-6) { -->
+<!--           print("In rHMMo: Problem with sum(probObs[i,,k]) with i = ", i, " k = ", k, ". The sum should be 1 but is ", thisCheckSum) -->
+<!--           obsCheckPasses <- FALSE -->
+<!--         } -->
+<!--       } -->
+<!--     } -->
+<!--     if(!(transCheckPasses | obsCheckPasses)) -->
+<!--       stop("In rHMMo: probTrans and probObs were not specified correctly.  Probabilities in each row (second dimension) must sum to 1.") -->
+<!--     if(!transCheckPasses) -->
+<!--       stop("In rHMMo: probTrans was not specified correctly.  Probabilities in each row (second dimension) must sum to 1.") -->
+<!--     if(!obsCheckPasses) -->
+<!--       stop("In rHMMo: probObs was not specified correctly. Probabilities in each row must sum to 1.") -->
+<!--   } -->
 
-    if (checkRowSums) {
-      transCheckPasses <- TRUE
-      for (i in 1:dim(probTrans)[1]) {
-        thisCheckSum <- sum(probTrans[i,])
-        if (abs(thisCheckSum - 1) > 1e-6) {
-          ## Compilation doesn't support more than a simple string for stop()
-          ## so we provide more detail using a print().
-          print("In dHMMo: Problem with sum(probTrans[i,]) with i = ", i, ". The sum should be 1 but is ", thisCheckSum)
-          transCheckPasses <- FALSE
-        }
-      }
-      obsCheckPasses <- TRUE
-      for (i in 1:dim(probObs)[1]) {
-        for (k in 1:dim(probObs)[3]) {
-          thisCheckSum <- sum(probObs[i,,k])
-          if (abs(thisCheckSum - 1) > 1e-6) {
-            print("In dHMMo: Problem with sum(probObs[i,,k]) with i = ", i, " k = " , k, ". The sum should be 1 but is ", thisCheckSum)
-            obsCheckPasses <- FALSE
-          }
-        }
-      }
-      if(!(transCheckPasses | obsCheckPasses))
-        stop("In dHMMo: probTrans and probObs were not specified correctly.  Probabilities in each row (second dimension) must sum to 1.")
-      if(!transCheckPasses)
-        stop("In dHMMo: probTrans was not specified correctly.  Probabilities in each row (second dimension) must sum to 1.")
-      if(!obsCheckPasses)
-        stop("In dHMMo: probObs was not specified correctly. Probabilities in each row must sum to 1.")
-    }
-    pi <- init # State probabilities at time t=1
-    logL <- 0
-    nObsClasses <- dim(probObs)[2]
-    for (t in 1:len) {
-      if (x[t] > nObsClasses | x[t] < 1) stop("In dHMMo: Invalid value of x[t].")
-      Zpi <- probObs[,x[t],t] * pi # Vector of P(state) * P(observation class x[t] | state)
-      sumZpi <- sum(Zpi)    # Total P(observed as class x[t])
-      logL <- logL + log(sumZpi) * size  # Accumulate log probabilities through timeÍ
-      if (t != len) pi <- ((Zpi %*% probTrans) / sumZpi)[1, ] # State probabilities at t+1
-    }
-    returnType(double())
-    if (log) return(logL)
-    return(exp(logL))
-  }
-)
+<!--   ans <- numeric(len) -->
 
-rHMMopooled <- nimbleFunction(
-  run = function(n = integer(),    ## Observed capture (state) history
-                 init = double(1),
-                 probObs = double(3),
-                 probTrans = double(2),
-                 len = double(0, default = 0),
-                 size = double(0),
-                 checkRowSums = double(0, default = 1)) {
-  returnType(double(1))
-  if (dim(probObs)[1] != dim(probTrans)[1]) stop("In rHMMo: Number of cols in probObs must equal number of cols in probTrans.")
-  if (dim(probTrans)[1] != dim(probTrans)[2]) stop("In rHMMo: probTrans must be a square matrix.")
-  if (dim(probObs)[3] != len) {
-    if (dim(probObs)[3] == 1) stop("In rHMMo: Time dimension of probObs must match length of data. Did you mean rHMM?")
-    stop("In rHMMo: Length of time dimension of probObs must match length of data.")
-  }
-  if (abs(sum(init) - 1) > 1e-6) stop("In rHMMo: Initial probabilities must sum to 1.")
+<!--   probInit <- init -->
+<!--   trueInit <- 0 -->
 
-  if (checkRowSums) {
-    transCheckPasses <- TRUE
-    for (i in 1:dim(probTrans)[1]) {
-      thisCheckSum <- sum(probTrans[i,])
-      if (abs(thisCheckSum - 1) > 1e-6) {
-        ## Compilation doesn't support more than a simple string for stop()
-        ## so we provide more detail using a print().
-        print("In rHMMo: Problem with sum(probTrans[i,]) with i = ", i, ". The sum should be 1 but is ", thisCheckSum)
-        transCheckPasses <- FALSE
-      }
-    }
-    obsCheckPasses <- TRUE
-    for (i in 1:dim(probObs)[1]) {
-      for (k in 1:dim(probObs)[3]) {
-        thisCheckSum <- sum(probObs[i,,k])
-        if (abs(thisCheckSum - 1) > 1e-6) {
-          print("In rHMMo: Problem with sum(probObs[i,,k]) with i = ", i, " k = ", k, ". The sum should be 1 but is ", thisCheckSum)
-          obsCheckPasses <- FALSE
-        }
-      }
-    }
-    if(!(transCheckPasses | obsCheckPasses))
-      stop("In rHMMo: probTrans and probObs were not specified correctly.  Probabilities in each row (second dimension) must sum to 1.")
-    if(!transCheckPasses)
-      stop("In rHMMo: probTrans was not specified correctly.  Probabilities in each row (second dimension) must sum to 1.")
-    if(!obsCheckPasses)
-      stop("In rHMMo: probObs was not specified correctly. Probabilities in each row must sum to 1.")
-  }
+<!--   r <- runif(1, 0, 1) -->
+<!--   j <- 1 -->
+<!--   while (r > sum(probInit[1:j])) j <- j + 1 -->
+<!--   trueInit <- j -->
 
-  ans <- numeric(len)
+<!--   trueState <- trueInit -->
+<!--   for (i in 1:len) { -->
+<!--     # Transition to a new true state -->
+<!--     r <- runif(1, 0, 1) -->
+<!--     j <- 1 -->
+<!--     while (r > sum(probTrans[trueState, 1:j])) j <- j + 1 -->
+<!--     trueState <- j -->
 
-  probInit <- init
-  trueInit <- 0
+<!--     # Detect based on the true state -->
+<!--     r <- runif(1, 0, 1) -->
+<!--     j <- 1 -->
+<!--     while (r > sum(probObs[trueState, 1:j, i])) j <- j + 1 -->
+<!--     ans[i] <- j -->
 
-  r <- runif(1, 0, 1)
-  j <- 1
-  while (r > sum(probInit[1:j])) j <- j + 1
-  trueInit <- j
+<!--   } -->
 
-  trueState <- trueInit
-  for (i in 1:len) {
-    # Transition to a new true state
-    r <- runif(1, 0, 1)
-    j <- 1
-    while (r > sum(probTrans[trueState, 1:j])) j <- j + 1
-    trueState <- j
+<!--   return(ans) -->
+<!-- }) -->
 
-    # Detect based on the true state
-    r <- runif(1, 0, 1)
-    j <- 1
-    while (r > sum(probObs[trueState, 1:j, i])) j <- j + 1
-    ans[i] <- j
+<!-- assign('dHMMopooled', dHMMopooled, .GlobalEnv) -->
+<!-- assign('rHMMopooled', rHMMopooled, .GlobalEnv) -->
 
-  }
+<!-- # code -->
+<!-- hmm.survival <- nimbleCode({ -->
+<!--   phi ~ dunif(0, 1) # prior survival -->
+<!--   p ~ dunif(0, 1) # prior detection -->
+<!--   # likelihood -->
+<!--   delta[1] <- 1          # Pr(alive t = 1) = 1 -->
+<!--   delta[2] <- 0          # Pr(dead t = 1) = 0 -->
+<!--   gamma[1,1] <- phi      # Pr(alive t -> alive t+1) -->
+<!--   gamma[1,2] <- 1 - phi  # Pr(alive t -> dead t+1) -->
+<!--   gamma[2,1] <- 0        # Pr(dead t -> alive t+1) -->
+<!--   gamma[2,2] <- 1        # Pr(dead t -> dead t+1) -->
+<!--   omega[1,1,1] <- 0        # Pr(alive first -> non-detected first) -->
+<!--   omega[1,2,1] <- 1        # Pr(alive first -> detected first) -->
+<!--   omega[2,1,1] <- 1        # Pr(dead first -> non-detected first) -->
+<!--   omega[2,2,1] <- 0        # Pr(dead first -> detected first) -->
+<!--   for (t in 2:5){ -->
+<!--     omega[1,1,t] <- 1 - p    # Pr(alive t -> non-detected t) -->
+<!--     omega[1,2,t] <- p        # Pr(alive t -> detected t) -->
+<!--     omega[2,1,t] <- 1        # Pr(dead t -> non-detected t) -->
+<!--     omega[2,2,t] <- 0        # Pr(dead t -> detected t) -->
+<!--   } -->
+<!--   for (i in 1:N){ -->
+<!--     y[i,1:5] ~ dHMMopooled(init = delta[1:2], # vector of initial state probabilities -->
+<!--                            probObs = omega[1:2,1:2,1:5], # observation matrix -->
+<!--                            probTrans = gamma[1:2,1:2], # transition matrix -->
+<!--                            len = 5, # nb of sampling occasions -->
+<!--                            checkRowSums = 0, # skip validity checks -->
+<!--                            size = size[i]) # number of individuals with encounter history i -->
 
-  return(ans)
-})
+<!--   } -->
+<!-- }) -->
 
-assign('dHMMopooled', dHMMopooled, .GlobalEnv)
-assign('rHMMopooled', rHMMopooled, .GlobalEnv)
+<!-- y_pooled <- y %>%  -->
+<!--   as_tibble() %>%  -->
+<!--   group_by_all() %>% # group -->
+<!--   summarise(size = n()) %>% # count -->
+<!--   relocate(size) %>% # put size in front -->
+<!--   arrange(-size) %>% # sort along size -->
+<!--   as.matrix() -->
+<!-- y_pooled -->
 
-# code
-hmm.survival <- nimbleCode({
-  phi ~ dunif(0, 1) # prior survival
-  p ~ dunif(0, 1) # prior detection
-  # likelihood
-  delta[1] <- 1          # Pr(alive t = 1) = 1
-  delta[2] <- 0          # Pr(dead t = 1) = 0
-  gamma[1,1] <- phi      # Pr(alive t -> alive t+1)
-  gamma[1,2] <- 1 - phi  # Pr(alive t -> dead t+1)
-  gamma[2,1] <- 0        # Pr(dead t -> alive t+1)
-  gamma[2,2] <- 1        # Pr(dead t -> dead t+1)
-  omega[1,1,1] <- 0        # Pr(alive first -> non-detected first)
-  omega[1,2,1] <- 1        # Pr(alive first -> detected first)
-  omega[2,1,1] <- 1        # Pr(dead first -> non-detected first)
-  omega[2,2,1] <- 0        # Pr(dead first -> detected first)
-  for (t in 2:5){
-    omega[1,1,t] <- 1 - p    # Pr(alive t -> non-detected t)
-    omega[1,2,t] <- p        # Pr(alive t -> detected t)
-    omega[2,1,t] <- 1        # Pr(dead t -> non-detected t)
-    omega[2,2,t] <- 0        # Pr(dead t -> detected t)
-  }
-  for (i in 1:N){
-    y[i,1:5] ~ dHMMopooled(init = delta[1:2], # vector of initial state probabilities
-                           probObs = omega[1:2,1:2,1:5], # observation matrix
-                           probTrans = gamma[1:2,1:2], # transition matrix
-                           len = 5, # nb of sampling occasions
-                           checkRowSums = 0, # skip validity checks
-                           size = size[i]) # number of individuals with encounter history i
+<!-- my.constants <- list(N = nrow(y_pooled), T = 5, size = y_pooled[,'size']) -->
+<!-- my.data <- list(y = y_pooled[,-1] + 1) # delete size from dataset -->
+<!-- initial.values <- function() list(phi = runif(1,0,1), -->
+<!--                                   p = runif(1,0,1)) -->
+<!-- parameters.to.save <- c("phi", "p") -->
+<!-- n.iter <- 5000 -->
+<!-- n.burnin <- 1000 -->
+<!-- n.chains <- 2 -->
 
-  }
-})
+<!-- start_time <- Sys.time() -->
+<!-- mcmc.output <- nimbleMCMC(code = hmm.survival, -->
+<!--                           constants = my.constants, -->
+<!--                           data = my.data, -->
+<!--                           inits = initial.values, -->
+<!--                           monitors = parameters.to.save, -->
+<!--                           niter = n.iter, -->
+<!--                           nburnin = n.burnin, -->
+<!--                           nchains = n.chains) -->
+<!-- end_time <- Sys.time() -->
+<!-- end_time - start_time -->
 
-y_pooled <- y %>% 
-  as_tibble() %>% 
-  group_by_all() %>% # group
-  summarise(size = n()) %>% # count
-  relocate(size) %>% # put size in front
-  arrange(-size) %>% # sort along size
-  as.matrix()
-y_pooled
-
-my.constants <- list(N = nrow(y_pooled), T = 5, size = y_pooled[,'size'])
-my.data <- list(y = y_pooled[,-1] + 1) # delete size from dataset
-initial.values <- function() list(phi = runif(1,0,1),
-                                  p = runif(1,0,1))
-parameters.to.save <- c("phi", "p")
-n.iter <- 5000
-n.burnin <- 1000
-n.chains <- 2
-
-start_time <- Sys.time()
-mcmc.output <- nimbleMCMC(code = hmm.survival,
-                          constants = my.constants,
-                          data = my.data,
-                          inits = initial.values,
-                          monitors = parameters.to.save,
-                          niter = n.iter,
-                          nburnin = n.burnin,
-                          nchains = n.chains)
-end_time <- Sys.time()
-end_time - start_time
-
-MCMCsummary(mcmc.output, round = 2)
-```
+<!-- MCMCsummary(mcmc.output, round = 2) -->
+<!-- ``` -->
 
 
 ## Decoding after marginalization {#decoding}
@@ -1746,7 +1737,7 @@ Imagine you do not know the truth. What is the chance that animal #15 was alive 
 
 Now what is the chance that animal #15 was alive, then dead for the rest of the study, when observing the encounter history (`r y[15,] + 1`)? And the chance of being alive in first and second winters, then dead after when observing the same encounter history? And so on. You need to enumerate all possible sequences of states and compute the probability for each of them, and choose the most probable sequence, that is with maximum probability. In our example, we would need to compute $2^5 = 32$ of these probabilities, and $N^T$ in general. Needless to say, these calculations quickly become cumbersome, if not impossible, as the number of states and/or the number of sampling occasions increases. 
 
-This is where the Viterbi algorithm comes in. The idea is to decompose this overall complex problem in a sequence of smallers problems that are easier to solve^[If dynamic programming rings a bell, the Viterbi algorithm should look familiar to you.]. The Viterbi algorithm is based on the fact that the optimal path to each winter and each state can be deduced from the optimal path to the previous winter and each state.  
+This is where the Viterbi algorithm comes in. The idea is to decompose this overall complex problem in a sequence of smallers problems that are easier to solve. If dynamic programming rings a bell, the Viterbi algorithm should look familiar to you. The Viterbi algorithm is based on the fact that the optimal path to each winter and each state can be deduced from the optimal path to the previous winter and each state.  
 
 For first winter, the probability of being alive and detected is 1, while the probability of being dead and detected is 0. Now what is the probability of being alive in the second winter and non-detected? If the animal was alive in the first winter, it remains alive and is missed with probability $1 \times \phi (1-p) = 0.32$. If it was dead in the first winter, then this probability is 0. The maximum probability is 0.32 obviously so the most probable scenario to being alive in the second winter is being alive in the first winter. What about being dead in the second winter? If the animal was alive in first winter, then the probability is $1 \times (1-\phi) \times 1 = 0.2$. If dead, then this probability is $0 \times 0 \times (1-p) = 0$. The maximum probability is 0.2 obviously so the most probable scenario to being dead in the second winter is being alive in the first winter. Doing these calculations for third, fourth and fifth winters, we get the probabilities:
 
@@ -1827,7 +1818,7 @@ for (i in 2:T) {
 }
 ```
 
-Note that instead of writing your own R function, you could use a built-in function from an existing R package to implement the Viterbi algorithm^[For example, the `viterbi()` function from the HMM and depmixS4 packages.], and call it from NIMBLE as we have seen in Section \@ref(callrfninnimble). The difficulty is that HMM for capture-recapture data have specific features that make standard functions not adapted and requires coding your own Viterbi function. In particular, we have to deal with detection at first encounter, which is not estimated but is always one because an individual has to be captured to be marked and released for the first time. Also, our transition and observation matrices are not always homogeneous and may depend on time. 
+Note that instead of writing your own R function, you could use a built-in function from an existing R package to implement the Viterbi algorithm (for example, the `viterbi()` function from the `HMM` and `depmixS4` packages), and call it from NIMBLE as we have seen in Section \@ref(callrfninnimble). The difficulty is that HMM for capture-recapture data have specific features that make standard functions not adapted and requires coding your own Viterbi function. In particular, we have to deal with detection at first encounter, which is not estimated but is always one because an individual has to be captured to be marked and released for the first time. Also, our transition and observation matrices are not always homogeneous and may depend on time. 
 
 ```{r echo = FALSE, eval = FALSE}
 library(HMM)
@@ -1977,4 +1968,10 @@ The results are very similar to those we obtained in Section \@ref(compute-avera
 
 ## Suggested reading
 
-+ @JurafskySpeechAL, @mcclintock_uncovering_2020, @Rabiner1989, @ZucchiniEtAl2016. **Comment.**
++ A landmark paper on HMM is @Rabiner1989. 
+
++ Check out @JurafskySpeechAL for a nice introduction to HMM and @ZucchiniEtAl2016 for an excellent book that covers theory and applications. 
+
++ The paper by @mcclintock_uncovering_2020 reviews the applications of HMM in ecology. 
+
++ The package `nimbleEcology` is developed by @goldstein2019nimbleecology and @ponisio2020customizing for application to occupancy and N--mixture models.
