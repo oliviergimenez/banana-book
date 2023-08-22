@@ -501,4 +501,34 @@ Cannot be done in Jags. Can be done in nimble thanks to nimble functions! The ru
 
 + Nimble [manual](https://r-nimble.org/html_manual/cha-welcome-nimble.html) and [cheatsheet](https://r-nimble.org/cheatsheets/NimbleCheatSheet.pdf).
 
+## Tip by Cyril Milleret
 
+- For a model that takes long to run, it might be useful to run MCMC in “bites”. This allows to check the results before the model is done running. For example we can save 80 bites each containing 250 iterations.  
+
+```
+bite.size <- 250 # number of iterations in each bite to be exported and cleared
+bites <- 80 # we run 80 bites containing of 250 iterations each. 
+for(nb in 1:80){
+   print(nb)
+   if(nb==1){# first bite 
+      Cmcmc$run(bite.size)
+   }
+   if(nb>1){# second bite or more
+      Cmcmc$run(bite.size, reset = FALSE)
+   }
+   this.sample <- as.matrix(Cmcmc$mvSamples)# save the 250iterations
+   save(this.sample, RunTime, file=paste(”bite_”, nb, "RData”, sep=””))
+}
+```
+
+Now imagine the MCMC is still running but 25 bites were finished. We can check the results of the 25 first bites (6250 iterations: 
+
+```
+bites <- 25
+MCMC <- list()
+for(nb in 1: bites){
+  load(paste(”bite_”, nb, "RData”, sep=””))
+  MCMC[[nb]] <- this.sample
+}
+MCMCsamples <- as.mcmc(do.call(rbind, MCMC)))
+```
