@@ -1,3 +1,25 @@
+#--------------------------- chapitre Extensions dans Transitions part
+
+## Hidden semi-Markov models
+
+See @ChoquetEtAl2011, choquet2013stopover, @choquet2014stopover, @guerin2017stopover and @king2016semi. 
+The latter illustrates the approach with the house finch data which we use in the book. 
+Ruth and Roland say: "We extend the Arnason–Schwarz model by specifying a semi-Markov model for the state 
+process, where the dwell-time distribution is specified more generally, using, for example, a shifted 
+Poisson or negative binomial distribution. A state expansion technique is applied in order to represent 
+the resulting semi-Markov Arnason–Schwarz model in terms of a simpler and computationally tractable 
+hidden Markov model. Semi-Markov Arnason–Schwarz models come with only a very modest increase in the 
+number of parameters, yet permit a significantly more flexible state process.". The expansion method 
+is from @langrock2011expansion, and is very well explained in Chapter 12 of @ZucchiniEtAl2016. Totally 
+doable I guess. I think to remember that in house finch app, only one state has dwell time non-geometric, 
+and if so, see Section 12.3.3 in @ZucchiniEtAl2016. There is even an R function to convert the HSMM into HMM.
+
+## Continuous-time HMM
+
+Shouldn't be too difficult to code the matrix exponential, or to use `mexp()` with a `nimbleRcall()`. 
+The likelihood is the same basically, with the distribution of the dwell-time in there.
+
+
 #---------------------------- case studies à voir
 
 ## Dependence among individuals
@@ -6,8 +28,17 @@
 
 ## Others
 
-Multispecies? Phylogeny? Social networks? Path analysis? Structural Equation Modelling? Prevalence estimation with hybrid (@SantostasiEtAl2019) or sex-ratio (@pradel2008sex) example. Insist on prop in newly marked, how to go to proportion in whole population.
+Multispecies? Phylogeny? Social networks? Path analysis? Structural Equation Modelling? 
 
+## Prevalence 
+
+Prevalence estimation with hybrid (@SantostasiEtAl2019) or sex-ratio (@pradel2008sex) example. 
+Insist on prop in newly marked, how to go to proportion in whole population. See formula derived for C. Duchamp.
+
+## Covariate on multinomial logit link or Dirichlet
+
+Example?
+  
 
 #---------------------------- Dirichelt
 

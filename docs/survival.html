@@ -1332,9 +1332,44 @@ There are other assumptions relative to the design, which we simply list here. T
 <p>Like I mentioned earlier, age is easy to deal with as it does not contain missing values. Now think of size or body mass for a minute. The problem is that we cannot record size or body mass when an animal is non-detected. The easiest way to cope with individual time-varying covariates is to discretize e.g. in small, medium and large as in Chapter <a href="dispersal.html#dispersal">5</a>. Another option is to come up with a model for the covariate and fill in missing values by simulating from this model (see <strong>case study</strong>).</p>
 </div>
 </div>
-<div id="summary-3" class="section level2" number="4.9">
+<div id="elicitprior" class="section level2" number="4.9">
 <h2>
-<span class="header-section-number">4.9</span> Summary<a class="anchor" aria-label="anchor" href="#summary-3"><i class="fas fa-link"></i></a>
+<span class="header-section-number">4.9</span> Why Bayes? Incorporate prior information<a class="anchor" aria-label="anchor" href="#elicitprior"><i class="fas fa-link"></i></a>
+</h2>
+<p>Before we close this section.</p>
+<p>The example on how to incorporate prior information is in <span class="citation">McCarthy and Masters (<a href="references.html#ref-mccarthy2005">2005</a>)</span>.</p>
+<p>So far, we have assumed a non-informative prior on survival <span class="math inline">\(\text{Beta}(1,1) = \text{Uniform}(0,1)\)</span>. With this prior, mean posterior survival is <span class="math inline">\(\phi = 0.56\)</span> with credible interval <span class="math inline">\([0.52,0.62]\)</span>. Graphically we may represent the posterior distribution of survival obtained with two chains with different colors, and our prior in gray dashed line:</p>
+<div class="inline-figure"><img src="banana-book_files/figure-html/unnamed-chunk-292-1.png" width="672"></div>
+<div id="prior-elicitation" class="section level3" number="4.9.1">
+<h3>
+<span class="header-section-number">4.9.1</span> Prior elicitation<a class="anchor" aria-label="anchor" href="#prior-elicitation"><i class="fas fa-link"></i></a>
+</h3>
+<p>The thing is that we know a lot about passerines and it is a shame not to be able to use this information and act as if we have to start from scratch and know nothing. We illustrate how to incorporate prior information by acknowledging that species with similar body masses have similar survival. By gathering information on several other European passerines than the dipper, let’s assume we have built a regression of survival vs. body mass – allometric relationship. Knowing dippers weigh on average 59.8g, we’re now in the position to build a prior for dipper survival probability by predicting its value using the regression. We obtain a predicted survival of 0.57 and a standard deviation of 0.075. Using an informative prior <span class="math inline">\(\text{Normal}(0.57, sd = 0.073)\)</span> in NIMBLE, we get a mean posterior of <span class="math inline">\(0.56\)</span> with credible interval <span class="math inline">\([0.52, 0.61]\)</span>. There’s barely no difference with the non-informative prior, quite a disappointment.
+Now let’s assume that we had only the three first years of data, what would have happened? We fit the model with constant parameters with both the non-informative and informative priors to the dataset from which we delete the final 4 years of data. Now the benefit of using the prior information becomes clear as the credible interval when prior information is ignored has a width of 0.53, which is more than twice as much as when prior information is used (0.24), illustrating the increased precision provided by the prior. We may assess visually this gain in precision by comparing the survival posterior distributions with and without informative prior:</p>
+<div class="inline-figure"><img src="banana-book_files/figure-html/unnamed-chunk-293-1.png" width="672"></div>
+<p>In brief, if the aim is to get an estimate of survival, Gilbert did not have to conduct further data collection after 3 years, and he could have reached the same precision as with 7 years of data by using prior information derived from body mass. In brief, the prior information was worth 4 years of field data. Of course, this is assuming that the ecological question remains the same whether you have 3 or 7 years of data, which is unlikely to be the case, as with long-term data, there is so much we can ask, more than “just” what annual survival probability is.</p>
+</div>
+<div id="moment-matching" class="section level3" number="4.9.2">
+<h3>
+<span class="header-section-number">4.9.2</span> Moment matching<a class="anchor" aria-label="anchor" href="#moment-matching"><i class="fas fa-link"></i></a>
+</h3>
+<p>The prior <span class="math inline">\(\text{Normal}(0.57, sd = 0.073)\)</span> is not entirely satisfying because it is not constrained to be positive or less than one, which is the minimum for a probability (of survival) to be well defined. In our specific example, the prior distribution is centered on positive values far from 0, and the sandard deviation is small enough so that the chances to get values smaller than 0 or higher than 1 are null (to convince yourself, <code>hist(rnorm(1000, mean = 0.57, sd = 0.073))</code>). Can we do better? The answer is yes.
+Remember the Beta distribution? Recall that the Beta distribution is a continuous distribution with values between 0 and 1. It is therefore convenient to specify priors for survival and detection probabilities. Plus we know everything about the Beta distribution, in particular its moments. If <span class="math inline">\(X \sim Beta(\alpha,\beta)\)</span>, then the first (mean) and second moments (variance) of <span class="math inline">\(X\)</span> are <span class="math inline">\(\mu = \text{E}(X) = \frac{\alpha}{\alpha + \beta}\)</span> and <span class="math inline">\(\sigma^2 = \text{Var}(X) = \frac{\alpha\beta}{(\alpha + \beta)^2 (\alpha + \beta + 1)}\)</span>.</p>
+<p>In the capture-recapture example, we know a priori that the mean of the probability we’re interested in is <span class="math inline">\(\mu = 0.57\)</span> and its variance is <span class="math inline">\(\sigma^2 = 0.073^2\)</span>. Parameters <span class="math inline">\(\mu\)</span> and <span class="math inline">\(\sigma^2\)</span> are seen as the moments of a <span class="math inline">\(Beta(\alpha,\beta)\)</span> distribution. Now we look for values of <span class="math inline">\(\alpha\)</span> and <span class="math inline">\(\beta\)</span> that match the observed moments of the Beta distribution <span class="math inline">\(\mu\)</span> and <span class="math inline">\(\sigma^2\)</span>. We need another set of equations:
+<span class="math display">\[\alpha = \bigg(\frac{1-\mu}{\sigma^2}- \frac{1}{\mu} \bigg)\mu^2\]</span>
+<span class="math display">\[\beta = \alpha \bigg(\frac{1}{\mu}-1\bigg)\]</span>
+For our model, that means:</p>
+<div class="sourceCode" id="cb269"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="op">(</span><span class="va">alpha</span> <span class="op">&lt;-</span> <span class="op">(</span> <span class="op">(</span><span class="fl">1</span> <span class="op">-</span> <span class="fl">0.57</span><span class="op">)</span><span class="op">/</span><span class="op">(</span><span class="fl">0.073</span><span class="op">*</span><span class="fl">0.073</span><span class="op">)</span> <span class="op">-</span> <span class="op">(</span><span class="fl">1</span><span class="op">/</span><span class="fl">0.57</span><span class="op">)</span> <span class="op">)</span><span class="op">*</span><span class="fl">0.57</span><span class="op">^</span><span class="fl">2</span><span class="op">)</span></span>
+<span><span class="co">## [1] 25.65</span></span>
+<span><span class="op">(</span><span class="va">beta</span> <span class="op">&lt;-</span> <span class="va">alpha</span> <span class="op">*</span> <span class="op">(</span> <span class="op">(</span><span class="fl">1</span><span class="op">/</span><span class="fl">0.57</span><span class="op">)</span> <span class="op">-</span> <span class="fl">1</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co">## [1] 19.35</span></span></code></pre></div>
+<p>Now we simply have to use <span class="math inline">\(\text{Beta}(\alpha = 25.6,\beta = 19.3)\)</span> as a prior instead of our <span class="math inline">\(\text{Normal}(0.57, sd = 0.073)\)</span>.</p>
+</div>
+</div>
+<div id="summary-3" class="section level2" number="4.10">
+<h2>
+<span class="header-section-number">4.10</span> Summary<a class="anchor" aria-label="anchor" href="#summary-3"><i class="fas fa-link"></i></a>
 </h2>
 <ul>
 <li><p>The CJS model is a HMM with time-varying parameters to account for variation due to environmental conditions in survival or to sampling effort in detection.</p></li>
@@ -1343,9 +1378,9 @@ There are other assumptions relative to the design, which we simply list here. T
 <li><p>Statistical models rely on assumptions, and the CJS model makes no exception. There are procedures to assess the goodness of fit of the CJS model to capture-recapture data.</p></li>
 </ul>
 </div>
-<div id="suggested-reading-3" class="section level2" number="4.10">
+<div id="suggested-reading-3" class="section level2" number="4.11">
 <h2>
-<span class="header-section-number">4.10</span> Suggested reading<a class="anchor" aria-label="anchor" href="#suggested-reading-3"><i class="fas fa-link"></i></a>
+<span class="header-section-number">4.11</span> Suggested reading<a class="anchor" aria-label="anchor" href="#suggested-reading-3"><i class="fas fa-link"></i></a>
 </h2>
 <ul>
 <li><p><span class="citation">Buckland (<a href="references.html#ref-buckland2016">2016</a>)</span> provides a historical perspective on the CJS model and anecdotes. The monography by <span class="citation">Lebreton et al. (<a href="references.html#ref-LebretonEtAl1992">1992</a>)</span> is a must-read to better understand the CJS model and its applications. The HMM formulation of the CJS model was proposed by <span class="citation">Gimenez et al. (<a href="references.html#ref-gimenez2007">2007</a>)</span> and <span class="citation">Royle (<a href="references.html#ref-royle2008">2008</a>)</span>.</p></li>
@@ -1385,8 +1420,14 @@ There are other assumptions relative to the design, which we simply list here. T
 <li><a class="nav-link" href="#individual-time-varying-covariates"><span class="header-section-number">4.8.5</span> Individual time-varying covariates</a></li>
 </ul>
 </li>
-<li><a class="nav-link" href="#summary-3"><span class="header-section-number">4.9</span> Summary</a></li>
-<li><a class="nav-link" href="#suggested-reading-3"><span class="header-section-number">4.10</span> Suggested reading</a></li>
+<li>
+<a class="nav-link" href="#elicitprior"><span class="header-section-number">4.9</span> Why Bayes? Incorporate prior information</a><ul class="nav navbar-nav">
+<li><a class="nav-link" href="#prior-elicitation"><span class="header-section-number">4.9.1</span> Prior elicitation</a></li>
+<li><a class="nav-link" href="#moment-matching"><span class="header-section-number">4.9.2</span> Moment matching</a></li>
+</ul>
+</li>
+<li><a class="nav-link" href="#summary-3"><span class="header-section-number">4.10</span> Summary</a></li>
+<li><a class="nav-link" href="#suggested-reading-3"><span class="header-section-number">4.11</span> Suggested reading</a></li>
 </ul>
 
       <div class="book-extra">
@@ -1404,7 +1445,7 @@ There are other assumptions relative to the design, which we simply list here. T
 <footer class="bg-primary text-light mt-5"><div class="container"><div class="row">
 
   <div class="col-12 col-md-6 mt-3">
-    <p>"<strong>Bayesian analysis of capture-recapture data with hidden Markov models</strong>: Theory and case studies in R and NIMBLE" was written by Olivier Gimenez. It was last built on 2023-08-22.</p>
+    <p>"<strong>Bayesian analysis of capture-recapture data with hidden Markov models</strong>: Theory and case studies in R and NIMBLE" was written by Olivier Gimenez. It was last built on 2023-08-23.</p>
   </div>
 
   <div class="col-12 col-md-6 mt-3">
