@@ -1,3 +1,14 @@
+#---------------------------- case studies à voir
+
+## Dependence among individuals
+
+@culina_multievent_2013 and @cubaynes_modeling_2021
+
+## Others
+
+Multispecies? Phylogeny? Social networks? Path analysis? Structural Equation Modelling? Prevalence estimation with hybrid (@SantostasiEtAl2019) or sex-ratio (@pradel2008sex) example. Insist on prop in newly marked, how to go to proportion in whole population.
+
+
 #---------------------------- Dirichelt
 
 ```{r dirichlet, echo = FALSE, fig.cap = "Dirichlet prior with parameter alpha"}
