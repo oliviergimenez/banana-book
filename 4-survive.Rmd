@@ -1,7 +1,5 @@
 # Alive and dead {#survival}
 
-WORK IN PROGRESS.
-
 ## Introduction
 
 In this fourth chapter, you will learn about the Cormack-Jolly-Seber model that allows estimating survival based on capture-recapture data. You will also see how to deal with covariates to try and explain temporal and/or individual variation in survival. This chapter will also be the opportunity to introduce tools to compare models and assess their quality of fit to data. 
@@ -42,7 +40,7 @@ In Chapter \@ref(hmmcapturerecapture), we introduced a capture-recapture model w
 
 Note that the states (in gray) and the observations (in white) do not change. We still have $z = 1$ for alive, $z = 2$ for dead, $y = 1$ for non-detected, and $y = 2$ for detected. 
 
-Parameters are now indexed by time. The survival probability is defined as the probability of staying alive (or "ah, ha, ha, ha, stayin' alive" like the Bee Gees would say) over the interval between $t$ and $t+1$, that is $\phi_t = \Pr(z_{t+1} = 1 | z_t = 1)$. The detection probability is defined as the probability of being observed at $t$ given you're alive at $t$, that is $p_t = \Pr(y_{t} = 1 | z_t = 1)$. It is important to bear in mind that survival operates over an interval while detection occurs at a specific time (see Section \@ref(covariates)).
+Parameters are now indexed by time. The survival probability is defined as the probability of staying alive (or "ah, ha, ha, ha, stayin' alive" like the Bee Gees would say) over the interval between $t$ and $t+1$, that is $\phi_t = \Pr(z_{t+1} = 1 | z_t = 1)$. The detection probability is defined as the probability of being observed at $t$ given you're alive at $t$, that is $p_t = \Pr(y_{t} = 1 | z_t = 1)$. It is important to bear in mind for later (see Section \@ref(covariates)) that survival operates over an interval while detection occurs at a specific time.
 
 The CJS model is named after the three statisticians -- Richard Cormack, George Jolly and George Seber -- who each published independently a paper introducing more or less the same approach, a year apart ! In fact, Richard Cormack and George Jolly were working in the same corridor in Scotland back in the 1960's. They would meet every day at coffee and would play some game together, but never mention work and were not aware of each other's work.
 
@@ -50,34 +48,28 @@ The CJS model is named after the three statisticians -- Richard Cormack, George 
 
 Before we turn to fitting the CJS model to actual data, let's talk about capture-recapture for a minute. We said in Section \@ref(capturerecapturedata) that animals are individually marked. This can be accomplished in two ways, either with artificial marks like rings for birds or ear tags for mammals, or (non-invasive) natural marks like coat patterns or feces DNA sequencing (Figure \@ref(fig:marking)).
 
-```{r marking, fig.ncol = 2, echo = FALSE, fig.cap = "Animal individual marking. Top-left: rings; Top-right: ear-tags; Bottom left: coat patterns; Bottom right: ADN feces", fig.show = "hold", fig.subcap = c("ring", "ear-tag", "coat patters", "ADN feces"), out.width="50%"}
-knitr::include_graphics(c("images/gull.jpg", 
-                   "images/bighorn.png", 
-                   "images/lynx.png", 
-                   "images/bearscat.png"))
+```{r marking, echo = FALSE, fig.cap = "Animal individual marking. Top-left: rings (credit: Emannuelle Cam and Jean-Yves Monat); Top-right: ear-tags (credit: Kelly Powell); Bottom left: coat patterns (credit: Fridolin Zimmermann); Bottom right: ADN feces (credit: Alexander Kopatz)", fig.show = "hold", out.width="100%"}
+knitr::include_graphics("images/marking.png")
 ```
 
 Throughout this chapter, we will use data on the White-throated Dipper (*Cinclus cinclus*; dipper hereafter) kindly provided by Gilbert Marzolin (Figure \@ref(fig:pixdipper)). In total, 294 dippers with known sex and wing length were captured and recaptured between 1981 and 1987 during the March-June period. Birds were at least 1 year old when initially banded. 
 
-```{r pixdipper, echo=FALSE, out.width="60%", fig.cap="White-throated Dipper (Cinclus cinclus)", fig.align='center'}
+```{r pixdipper, echo=FALSE, out.width="60%", fig.cap="White-throated Dipper (Cinclus cinclus). Credit: Gilbert Marzolin.", fig.align='center'}
 knitr::include_graphics("images/Marzo_BaguesMance.jpg")
 ```
 
 The data look like: 
 
 ```{r echo = TRUE}
-dipper <- read_csv(here::here("dat", "dipper.csv"))
+dipper <- read_csv("dat/dipper.csv")
 dipper
-y <- dipper %>%
-  select(year_1981:year_1987) %>%
-  as.matrix()
 ```
 
 The first seven columns are years in which Gilbert went on the field and captured the birds. A 0 stands for a non-detection, and a 1 for a detection. The eighth column informs on the sex of the bird, with F for female and M for male. The last column gives a measure wing length the first time a bird was captured. 
 
 ## Fitting the CJS model to the dipper data with NIMBLE
 
-To write the NIMBLE code corresponding to the CJS model, we only need to make a few adjustments to the NIMBLE code for the model with constant parameters from Section \@ref(fittinghmmnimble). The main modification concerns the observation and transition matrices which we need to make time-varying. These matrices therefore become arrays and inherit a third dimension besides that for rows and columns. Also we need priors for all time-varying survival and detection probabilities. We write:
+To write the NIMBLE code corresponding to the CJS model, we only need to make a few adjustments to the NIMBLE code for the model with constant parameters from Section \@ref(fittinghmmnimble). The main modification concerns the observation and transition matrices which we need to make time-varying. These matrices therefore become arrays and inherit a third dimension for time, besides that for rows and columns. Also we need priors for all time-varying survival `phi[t] ~ dunif(0, 1)` and detection `p[t] ~ dunif(0, 1)` probabilities. We write:
 
 ```{r eval=FALSE}
 ...
@@ -114,6 +106,7 @@ The likelihood does not change, except that the time-varying observation and tra
 ...
 ```
 
+At first capture, all individuals are alive `z[i,first[i]] ~ dcat(delta[1:2])` and detection is 1, then after first capture `for (j in (first[i]+1):T)` we apply the transition and observation matrices. 
 Overall, the code looks like:
 ```{r}
 hmm.phitpt <- nimbleCode({
@@ -143,9 +136,8 @@ hmm.phitpt <- nimbleCode({
 })
 ```
 
-We read in the data:
+We extract the detections and non-detections from the data:
 ```{r}
-dipper <- read_csv(here::here("dat", "dipper.csv"), show_col_types = FALSE)
 y <- dipper %>%
   select(year_1981:year_1987) %>%
   as.matrix()
@@ -161,15 +153,14 @@ Now we specify the constants:
 my.constants <- list(N = nrow(y),   # number of animals
                      T = ncol(y),   # number of sampling occasions
                      first = first) # first capture for all animales
-my.constants
 ```
 
-Now we put the data in a list. We add 1 to the data to code non-detections as 1's detections as 2's (see Section \@ref(fittinghmmnimble)). 
+We then put the data in a list. We add 1 to the data to code non-detections as 1's detections as 2's (see Section \@ref(fittinghmmnimble)). 
 ```{r}
 my.data <- list(y = y + 1)
 ```
 
-Now let's write a function for the initial values. For the latent states, we go the easy way, and say that all individuals are alive through the study period:
+Let's write a function for the initial values. For the latent states, we go the easy way, and say that all individuals are alive through the study period:
 ```{r}
 zinits <- y + 1 # non-detection -> alive
 zinits[zinits == 2] <- 1 # dead -> alive
@@ -178,7 +169,7 @@ initial.values <- function() list(phi = runif(my.constants$T-1,0,1),
                                   z = zinits)
 ```
 
-We specify the parameters we would like to monitor:
+We specify the parameters we would like to monitor, survival and detection probabilities here:
 ```{r}
 parameters.to.save <- c("phi", "p")
 ```
@@ -190,7 +181,7 @@ n.burnin <- 1000
 n.chains <- 2
 ```
 
-Now we are ready to run NIMBLE:
+And we run NIMBLE:
 ```{r, message=FALSE, eval = FALSE}
 mcmc.phitpt <- nimbleMCMC(code = hmm.phitpt,
                           constants = my.constants,
@@ -210,8 +201,7 @@ load(here::here("dat","dipper.RData"))
 MCMCsummary(mcmc.phitpt, params = c("phi","p"), round = 2)
 ```
 
-
-There is not so much time variation in the detection probability which is estimated high around 0.90. Note that `p[1]` corresponds to the detection probability in 1982 that is $p_2$, `p[2]` to detection in 1983 therefore $p_3$, and so on. In contrast, the dippers seem to have experienced a decrease in survival in years 1982-1983 (`phi[2]`) and 1983-1984 (`phi[4]`). We will get back to that in Section \@ref(covariates). 
+There is not so much time variation in the detection probability which is estimated high around 0.90. Note that `p[1]` corresponds to the detection probability in 1982 that is $p_2$, `p[2]` to detection in 1983 therefore $p_3$, and so on. The dippers seem to have experienced a decrease in survival in years 1982-1983 (`phi[2]`) and 1983-1984 (`phi[4]`). We will get back to that in Section \@ref(covariates). 
 
 You may have noticed the small effective sample size for the last survival (`phi[6]`) and detection (`p[6]`) probabilities. Let's have a look to mixing for parameter `phi[6]` for example:
 ```{r}
@@ -224,15 +214,72 @@ MCMCtrace(object = mcmc.phitpt,
           priors = priors)
 ```
 
-Clearly mixing (left panel in the plot above) is bad and there is a big overlap between the prior and the posterior for this parameter (right panel) suggesting that its prior was not well updated with the data. What is going on? If you could inspect the likelihood of the CJS model, you would realise that these two parameters $\phi_6$ and $p_7$ appear only as the product $\phi_6 p_7$ and cannot be estimated separately. In other words, one of these parameters is redundant, and you'd need an extra sampling occasion to be able to disentangle them. This is not a big issue as long as you're aware of it and you do not attempt to ecologically interpret these parameters. 
+Clearly mixing (left panel in the plot above) is bad and there is a big overlap between the prior and the posterior for this parameter (right panel) suggesting that its prior was not well updated with the data. What is going on? If you could inspect the likelihood of the CJS model, you would realize that these two parameters $\phi_6$ and $p_7$ appear only as the product $\phi_6 p_7$ and cannot be estimated separately. In other words, one of these parameters is redundant, and you'd need an extra sampling occasion to be able to disentangle them. This is not a big issue as long as you're aware of it and you do not attempt to ecologically interpret these parameters. 
 
-**Wondering whether I should demonstrate marginalization here, and pooled encounter histories.**
-
-## CJS model derivatives
+## CJS model derivatives {#cjsderivatives}
 
 Besides the model we considered with constant parameters (see Chapter \@ref(hmmcapturerecapture)) and the CJS model with time-varying parameters, you might want to fit in-between or models with time variation on either detection or survival. 
 
-Let's start with the model with time-varying survival and constant detection. We modify the CJS model NIMBLE code by no longer having the observation matrix time-specific:
+But I realize that we did not actually fit the model with constant parameters from Chapter \@ref(hmmcapturerecapture). Let's do it. You should be familiar with the process by now: 
+
+```{r}
+# NIMBLE code 
+hmm.phip <- nimbleCode({
+  phi ~ dunif(0, 1) # prior survival
+  p ~ dunif(0, 1) # prior detection
+  # likelihood
+  gamma[1,1] <- phi      # Pr(alive t -> alive t+1)
+  gamma[1,2] <- 1 - phi  # Pr(alive t -> dead t+1)
+  gamma[2,1] <- 0        # Pr(dead t -> alive t+1)
+  gamma[2,2] <- 1        # Pr(dead t -> dead t+1)
+  delta[1] <- 1          # Pr(alive t = 1) = 1
+  delta[2] <- 0          # Pr(dead t = 1) = 0
+  omega[1,1] <- 1 - p    # Pr(alive t -> non-detected t)
+  omega[1,2] <- p        # Pr(alive t -> detected t)
+  omega[2,1] <- 1        # Pr(dead t -> non-detected t)
+  omega[2,2] <- 0        # Pr(dead t -> detected t)
+  for (i in 1:N){
+    z[i,first[i]] ~ dcat(delta[1:2])
+    for (j in (first[i]+1):T){
+      z[i,j] ~ dcat(gamma[z[i,j-1], 1:2])
+      y[i,j] ~ dcat(omega[z[i,j], 1:2])
+    }
+  }
+})
+# occasions of first capture
+first <- apply(y, 1, function(x) min(which(x !=0)))
+# constants
+my.constants <- list(N = nrow(y), 
+                     T = ncol(y), 
+                     first = first)
+# data
+my.data <- list(y = y + 1)
+# initial values
+zinits <- y + 1 # non-detection -> alive
+zinits[zinits == 2] <- 1 # dead -> alive
+initial.values <- function() list(phi = runif(1,0,1),
+                                  p = runif(1,0,1),
+                                  z = zinits)
+# parameters to monitor
+parameters.to.save <- c("phi", "p")
+# MCMC details
+n.iter <- 2500
+n.burnin <- 1000
+n.chains <- 2
+# run NIMBLE
+mcmc.phip <- nimbleMCMC(code = hmm.phip, 
+                        constants = my.constants,
+                        data = my.data,              
+                        inits = initial.values,
+                        monitors = parameters.to.save,
+                        niter = n.iter,
+                        nburnin = n.burnin, 
+                        nchains = n.chains)
+# numerical summaries
+MCMCsummary(mcmc.phip, round = 2)
+```
+
+Let's now turn to the model with time-varying survival and constant detection. We modify the CJS model NIMBLE code by no longer having the observation matrix time-specific. I'm just providing the model code to save space:
 ```{r eval=FALSE}
 hmm.phitp <- nimbleCode({
   for (t in 1:(T-1)){
@@ -300,19 +347,73 @@ load(here::here("dat","dipper.RData"))
 MCMCsummary(object = mcmc.phipt, params = c("phi","p"), round = 2)
 ```
 
-We note that these two models do no longer have parameter redundancy issues. We are left with four models, each saying a different story about the data, with temporal variation or not in either survival or detection probabilty. How to quantify the most plausible of these four ecological hypotheses? Rendez-vous in the next section. 
+We note that these two models do no longer have parameter redundancy issues. 
+
+Before we move to the next section, you might ask how to fit these models with `nimbleEcology` as in Section \@ref(nimblemarginalization). Conveniently there are specific NIMBLE functions for the marginalized likelihood of the CJS model and its derivatives. These function are named generically `dCJSxx()` where the first `x` is for survival and the second `x` is for detection and `x` can be `s` for scalar or constant or `v` for vector or time-dependent. For example, to implement the model with constant survival and detection probabilities, you would use `dCJSss()`:
+
+```{r}
+# load nimbleEcology in case we forgot previously
+library(nimbleEcology)
+# data
+y <- dipper %>%
+  select(year_1981:year_1987) %>%
+  as.matrix()
+y <- y[ first != ncol(y), ] # get rid of individuals for which first detection = last capture
+# NIMBLE code
+hmm.phip.nimbleecology <- nimbleCode({
+  phi ~ dunif(0, 1) # survival prior
+  p ~ dunif(0, 1)   # detection prior
+  # likelihood
+  for (i in 1:N){
+    y[i, first[i]:T] ~ dCJS_ss(probSurvive = phi, 
+                               probCapture = p, 
+                               len = T - first[i] + 1)
+  }
+})
+# occasions of first capture
+first <- apply(y, 1, function(x) min(which(x !=0)))
+# constants
+my.constants <- list(N = nrow(y), 
+                     T = ncol(y), 
+                     first = first)
+# data
+my.data <- list(y = y) # format is 0 for non-detected and 1 for detected
+# initial values; we use the marginalized likelihood, so no latent states 
+# in it, therefore no need for initial values for the latent states
+initial.values <- function() list(phi = runif(1,0,1),
+                                  p = runif(1,0,1))
+# parameters to monitor
+parameters.to.save <- c("phi", "p")
+# MCMC details
+n.iter <- 2500
+n.burnin <- 1000
+n.chains <- 2
+# run NIMBLE
+mcmc.phip.nimbleecology <- nimbleMCMC(code = hmm.phip.nimbleecology, 
+                        constants = my.constants,
+                        data = my.data,              
+                        inits = initial.values,
+                        monitors = parameters.to.save,
+                        niter = n.iter,
+                        nburnin = n.burnin, 
+                        nchains = n.chains)
+# numerical summaries
+MCMCsummary(mcmc.phip.nimbleecology, round = 2)
+```
+
+We are left with four models, each saying a different story about the data, with temporal variation or not in either survival or detection probability. How to quantify the most plausible of these four ecological hypotheses? Rendez-vous in the next section. 
+
 
 ## Model comparison with WAIC {#waic}
 
-Which of the four models above is best supported by the data? To answer this question, we need to bear in mind that we used all the observed data to fit these models, and how close to the truth these models will perform when predicting for future data -- or predictive accuracy -- should be assessed. A natural candidate measure for predictive accuracy is the likelihood which is often referred in the context of model comparison as the predictive density. However, we know neither the true process, nor the future data, and we can only estimate the predictive density with some bias. 
+Which of the four models above is best supported by the data? To answer this question, we need to bear in mind that we used all the observed data to fit these models, and how close to the truth these models will perform when predicting for future data -- also known as predictive accuracy -- should be assessed. A natural candidate measure for predictive accuracy is the likelihood which is often referred in the context of model comparison as the predictive density. However, we know neither the true process, nor the future data, and we can only estimate the predictive density with some bias. 
 
-You may have heard about the Akaike Information Criterion (AIC) in the Frequentist framework, and the Deviance Information Criterion (DIC) in the Bayesian framework. We will consider here the Widely Applicable Information Criterion or Watanabe Information Criterion (WAIC). AIC, DIC and WAIC each aim to provide an approximation of predictive accuracy. 
+You may have heard about the Akaike Information Criterion (AIC) in the frequentist framework, and the Deviance Information Criterion (DIC) in the Bayesian framework. Here, we will also consider the Widely Applicable Information Criterion or Watanabe Information Criterion (WAIC). AIC, DIC and WAIC each aim to provide an approximation of predictive accuracy. 
 
-While AIC is the predictive measure of choice in the Frequentist framework for ecologists, DIC has been around for some time for Bayesian applications due to its availability in population BUGS pieces of software. However, these methods only utilize a point estimate of the unknown parameters. Also, various difficulties have been noted with DIC which may give nonsensical results when the posterior distribution is not well summarized by its mean. For a more fully Bayesian approach we would like to use the entire posterior distribution to evaluate the predictive performance, which is exactly what WAIC does. 
+While AIC is the predictive measure of choice in the frequentist framework for ecologists, DIC has been around for some time for Bayesian applications due to its availability in population BUGS pieces of software. However, AIC and BIC use a point estimate of the unknown parameters, while we have access to their entire (posterior) distribution with the Bayesian approach. Also, DIC has been shown to misbehave when the posterior distribution is not well summarized by its mean. For a more fully Bayesian approach we would like to use the entire posterior distribution to evaluate the predictive performance, which is exactly what WAIC does. 
 
 Conveniently, NIMBLE calculates WAIC for you. The only modification you need to make is to add `WAIC = TRUE` in the call to the `nimbleMCMC()` function. For example, for the CJS model, we write:
 ```{r eval = FALSE}
-parameters.to.save <- c("phi", "p", "z") 
 mcmc.phitpt <- nimbleMCMC(code = hmm.phitpt,
                           constants = my.constants,
                           data = my.data,
@@ -348,25 +449,27 @@ data.frame(model = c("both survival & detection constant",
                     mcmc.phitpt$WAIC))
 ```
 
-Lower values of WAIC imply higher predictive accuracy, thefore we would favor model with constant parameters. **Add WAIC weights.**
+Lower values of WAIC imply higher predictive accuracy, thefore we would favor model with constant parameters.
 
 ## Goodness of fit {#gof}
 
 In the previous section, Section \@ref(waic), we compared models between each other based on their predictive accuracy -- we assessed their *relative* fit. However, even though we were able to rank these models according to predictive accuracy, it could happen that all models actually had poor predictive performance -- this has to do with *absolute* fit. 
 
-How to assess the goodness of fit of the CJS model to capture-recapture data? In particular how to assess homogeneity of survival and detection probabilities which is a fundamental assumption for this model?
+How to assess the goodness of fit of the CJS model to capture-recapture data? 
 
 ### Posterior predictive checks
 
-In the Bayesian framework, we would rely on posterior predictive checks to assess absolute fit. Briefly speaking, the idea is to compare the observed data to replicated data generated from the model. If the model is a good fit to the data, then the replicated data predicted from the model should look similar to the observed data. To simplify the comparison, some summary statistics are generally used. For the CJS model, we would use the so-called m-array which gathers the elements $m_{ij}$ for the number of marked individuals initially released at time $i$ that were first detected again at time $j$. **Refer to a case study. With m-array and Nimble functions. Refer to paper by Paganin & de Valpine and use code in https://github.com/salleuska/fastCPPP. Also papers by Chambert et al. (individual performance) and Conn et al. (geometric time, and hidden semi-Markov models).**
+In the Bayesian framework, we rely on posterior predictive checks to assess absolute fit. Briefly speaking, the idea is to compare the observed data to replicated data generated from the model. If the model is a good fit to the data, then the replicated data predicted from the model should look similar to the observed data. To simplify the comparison, some summary statistics are generally used. For the CJS model, we would use the so-called m-array which gathers the number of individuals released in a year and first recaptured in other years. I illustrate the use of posterior predictive checks in Section \@ref(ppchecks).
 
 ### Classical tests
 
-In the Frequentist literature, there are well established procedures for assessing absolute fit and departures from specific CJS model assumptions that would be a shame to just ignore. 
+In the frequentist literature, there are well established procedures for assessing absolute fit and departures from specific CJS model assumptions, and it would be a shame to just ignore them. 
 
-We focus on two such assumptions that have an ecological interpretation, transience and trap-dependence. The transience procedure assesses whether newly encountered individuals ('new' individuals) have the same chance to be later re-observed as recaptured (previously encountered) individuals ('old' individuals). The trap-dependence procedure assesses whether missed individuals have the same chance to be recaptured at the next occasion as currently captured individuals. Although these procedures are called *test of transience* and *test of trap-dependence*, when it comes to interpretation, you should keep in mind that transience -- an excess of individuals never seen again -- and trap-dependence -- an effect of trapping on detection -- are just two specific reasons why the tests might detect a lack of fit.
+We focus on two such assumptions that have an ecological interpretation, transience and trap-dependence. The transience procedure assesses whether newly encountered individuals have the same chance to be later detected as previously encountered individuals. Transience is often seen as an excess of individuals never seen again. The trap-dependence procedure assesses whether non-detected individuals have the same chance to be encountered at the next occasion as detected individuals. Trap-dependence is often seen as an effect of trapping on detection. Although these procedures are called *test of transience* and *test of trap-dependence*, when it comes to interpretation, you should keep in mind that transience and trap-dependence are just two specific reasons why the tests might detect a lack of fit.
 
 These tests are implemented in the package `R2ucare`, and we illustrate its use with the dipper data.
+
+We load the package `R2ucare`:
 ```{r}
 library(R2ucare)
 ```
@@ -374,18 +477,19 @@ library(R2ucare)
 We get the capture-recapture data:
 ```{r}
 # capture-recapture data
-dipper <- read_csv(here::here("dat", "dipper.csv"))
+dipper <- read_csv("dat/dipper.csv")
+# get encounter histories
 y <- dipper %>%
   select(year_1981:year_1987) %>%
   as.matrix()
-# number of birds with that particular capture-recapture history
+# number of birds with a particular capture-recapture history
 size <- rep(1, nrow(y))
 ```
 
-The overall test shows that we cannot reject the hypothesis that the CJS models fits the data well:
-```{r}
-overall_CJS(y, size)
-```
+<!-- The overall test shows that we cannot reject the hypothesis that the CJS models fits the data well: -->
+<!-- ```{r} -->
+<!-- overall_CJS(y, size) -->
+<!-- ``` -->
 
 We may perform a test specifically to assess a transient effect:
 ```{r}
@@ -397,13 +501,14 @@ Or trap-dependence:
 test2ct(y, size)
 ```
 
-What to do if these tests are significant? Transience may occur when animals transit through but do not belong to the study population (true transients), or reproduce only once then die or permanently disperse (cost of first reproduction), or die or permanently disperse due to an effect of marking (marking effect). These transient individuals are never detected again after their initial capture, which means they have a zero probability of local survival after this initial capture. This suggests a way to account for the transience issue that we cover in a case study (see **transience case study**). 
+None of these tests is significant, but what to do if these tests are significant? Transience may occur when animals transit through but do not belong to the study population (true transients), or reproduce only once then die or permanently disperse (cost of first reproduction), or die or permanently disperse due to an effect of marking (marking effect). These transient individuals are never detected again after their initial capture, which means they have a zero probability of local survival after this initial capture. This suggests a way to account for the transience issue that we cover in a case study (see Section \@ref(trapdep)). 
 
-Trap-dependence may occur when animals are affected (positively or negatively) by trapping (true trap-dependence), when observers tend to visit some parts of the study area more often when individuals have been detected (preferential sampling), when some patches of a heterogeneous habitat are more accessible so that individuals stationed there have higher detection probabilities (access bias), when age, sex or social status are unknown, but determine individual movements or activity patterns so that the susceptibility to be detected varies (individual heterogeneity), or when non random temporary emigration occurs (skipped reproduction). Trap-dependence therefore designates some correlation between detection events. To account for the trap-dependence issue, this correlation needs to be accounted for, and we show how in a case study (see **trap dep case study**). 
+Trap-dependence may occur when animals are affected (positively or negatively) by trapping (true trap-dependence), when observers tend to visit some parts of the study area more often when individuals have been detected (preferential sampling), when some patches of a heterogeneous habitat are more accessible so that individuals stationed there have higher detection probabilities (access bias), when age, sex or social status are unknown, but determine individual movements or activity patterns so that the susceptibility to be detected varies (individual heterogeneity), or when non random temporary emigration occurs (skipped reproduction). Trap-dependence therefore designates some correlation between detection events. To account for the trap-dependence issue, this correlation needs to be accounted for, and we show how to do just that in a case study (see Section \@ref(transience)). 
 
 ### Design considerations
 
 So far, we have addressed assumptions relative to the model. There are also assumptions relative to the design. In particular, survival refers to the study area, and so we need to think carefully about what survival does actually mean. We actually estimate what we usually call *apparent* survival, not exactly *true* survival. Apparent survival probability is the product of true survival and study area fidelity. Consequently, apparent survival is always lower than true survival unless study area fidelity is exactly 1. 
+
 There are other assumptions relative to the design, which we simply list here. There should be no mark loss, the identity of individuals should be recorded without error (no false positives), and captured animals should be a random sample of the population.
 
 ## Covariates {#covariates}
@@ -412,15 +517,15 @@ In the models we have considered so far, survival and detection probabilities ma
 
 Besides variation over time, we will also cover individual variation in these parameters, in which for example survival vary according to sex or some phenotypic characteristics (e.g. size or body mass). 
 
-Let's illustrate the use of covariates with the dipper example.  
+Let's illustrate the use of covariates with the dipper example. 
 
 ### Temporal covariates
 
 #### Discrete 
 
-A major flood occurred during the 1983 breeding season (from October 1982 to May 1983). Because captures during the breding season occurred before and after the flood, survival in the two years 1982-1983 and 1983-1984 were likely to be affected. Indeed survival of a species living along and feeding in the river in these two flood years was most likely lower than in nonflood years. **Say that discrete cov are also called categorical. Or groups.**
+A major flood occurred during the 1983 breeding season (from October 1982 to May 1983). Because captures during the breeding season occurred before and after the flood, survival in the two years 1982-1983 and 1983-1984 were likely to be affected. Indeed survival of a species living along and feeding in the river in these two flood years was most likely lower than in nonflood years. Here we will use a discrete or categorical covariate, or a group.
 
-Let's use a covariate $\text{flood}$ that contains 1s and 2s, indicating whether we are in a flood or nonflood year for each year: 1 if nonflood year, and 2 if flood year. 
+Let's use a covariate `flood` that contains 1s and 2s, indicating whether we are in a flood or nonflood year for each year: 1 if nonflood year, and 2 if flood year. 
 ```{r eval = FALSE}
 flood <- c(1, # 1981-1982 (nonflood)
            2, # 1982-1983 (flood)
@@ -459,7 +564,7 @@ hmm.phifloodp <- nimbleCode({
 })
 ```
 
-We use nested indexing here when specifying survival in the transition matrix. E.g. for year $t = 2$, `phi[flood[t]]` gives `phi[flood[2]]` which will be `phi[2]` because `flood[2]` is 2 that is a flood year.
+We use nested indexing above when specifying survival in the transition matrix. E.g. for year $t = 2$, `phi[flood[t]]` gives `phi[flood[2]]` which will be `phi[2]` because `flood[2]` is 2 that (a flood year).
 
 Let's provide the constants in a list: 
 ```{r eval = FALSE}
@@ -469,7 +574,7 @@ my.constants <- list(N = nrow(y),
                      flood = flood)
 ```
 
-Our function to generate initial values:
+Now a function to generate initial values:
 ```{r eval = FALSE}
 initial.values <- function() list(phi = runif(2,0,1),
                                   p = runif(1,0,1),
@@ -481,7 +586,7 @@ The parameters to be monitored:
 parameters.to.save <- c("p", "phi")
 ```
 
-We're all set, and ready to run NIMBLE: 
+We're all set, and we run NIMBLE: 
 ```{r eval = FALSE}
 mcmc.phifloodp <- nimbleMCMC(code = hmm.phifloodp, 
                              constants = my.constants,
@@ -493,7 +598,7 @@ mcmc.phifloodp <- nimbleMCMC(code = hmm.phifloodp,
                              nchains = n.chains)
 ```
 
-Having a look to the numerical summaries, we see that as expected, survival in flood years (`phi[2]`) is much lower than survival in non-flood years (`phi[1]`):
+The numerical summaries are given by:
 ```{r eval = FALSE}
 MCMCsummary(mcmc.phifloodp, round = 2)
 ```
@@ -502,14 +607,23 @@ load(here::here("dat/phifloodpni.RData"))
 MCMCsummary(mcmc.phifloodp, round = 2)
 ```
 
+Having a look to the numerical summaries, we see that as expected, survival in flood years (`phi[2]`) is much lower than survival in non-flood years (`phi[1]`). You could formally test this difference by considering the difference `phi[1] - phi[2]`. Alternatively, this can be done afterwards and calculating the probability that this difference is positive (or `phi[1] > phi[2]`). Using a single chain for convenience, we do:
 
-An important point here is that we formulated an ecological hypothesis which we translated into a model. The next step would consist in calculating WAIC for this model and compare it with that of the four other model we have fitted so far (see Section \@ref(waic)). **Do it, and explain difference between conditional and marginal WAIC.**
+```{r}
+phi1 <- mcmc.phifloodp$chain1[,'phi[1]']
+phi2 <- mcmc.phifloodp$chain1[,'phi[2]']
+mean(phi1 - phi2 > 0)
+```
+
+An important point here is that we formulated an ecological hypothesis which we translated into a model. The next step would consist in calculating WAIC for this model and compare it with that of the four other model we have fitted so far (see Section \@ref(waic)). 
+
+<!-- **Do it, and explain difference between conditional and marginal WAIC.** -->
 
 Another method to include a discrete covariate consists in considering the effect of the difference between its levels. For example, we could consider survival in nonflood years as the reference and test the difference in survival with flood years. 
 
-To do so, we will write survival as a linear function of our covariate on some scale, e.g. $\text{logit}(\phi_t) = \beta_1 + \beta_2 \;\text{flood}_t$ where the $\beta$'s are regression coefficient we need to estimate (intercept $\beta_1$ and slope $\beta_2$), and $\displaystyle{\text{logit}(x) = \log \left(\frac{x}{1-x}\right)}$ is the logit function. The logit function lives between $-\infty$ and $+\infty$, and sends values between 0 and 1 onto the real line. For example $\log(0.2/(1-0.2))=-1.39$, $\log(0.5/(1-0.5))=0$ and $\log(0.8/(1-0.8))=1.39$. Why use the logit function? Because survival is a probability bounded between 0 and 1, and if we used directly $\phi_t = \beta_1 + \beta_2 \;\text{flood}_t$ we might end up with estimates for the regression coefficients that make survival out of bound. Therefore, we consider survival as a linear function of our covariates on the scale of the logit function, working on the real line, then back-transform using the inverse-logit (reciprocal function) to obtain survival on its natural scale. The inverse-logit function is $\displaystyle{\text{logit}^{-1}(x) = \frac{\exp(x)}{1+\exp(x)} = \frac{1}{1+\exp(-x)}}$. The logit function is often called a link function like in generalized linear models. **Mention other link functions. Forward ref to multinomial logit. Also see ordinal link.**
+To do so, we write survival as a linear function of our covariate on some scale, e.g. $\text{logit}(\phi_t) = \beta_1 + \beta_2 \;\text{flood}_t$ where the $\beta$'s are regression coefficients we need to estimate (intercept $\beta_1$ and slope $\beta_2$), and $\text{logit}(x) = \log \displaystyle{\left(\frac{x}{1-x}\right)}$ is the logit function. The logit function lives between $-\infty$ and $+\infty$, and sends values between 0 and 1 onto the real line. For example $\log(0.2/(1-0.2))=-1.39$, $\log(0.5/(1-0.5))=0$ and $\log(0.8/(1-0.8))=1.39$. Why use the logit function? Because survival is a probability bounded between 0 and 1, and if we used directly $\phi_t = \beta_1 + \beta_2 \;\text{flood}_t$ we might end up with estimates for the regression coefficients that make survival out of bound. Therefore, we consider survival as a linear function of our covariates on the scale of the logit function, working on the real line, then back-transform using the inverse-logit (reciprocal function) to obtain survival on its natural scale. The inverse-logit function is $\displaystyle{\text{logit}^{-1}(x) = \frac{\exp(x)}{1+\exp(x)} = \frac{1}{1+\exp(-x)}}$. The logit function is often called a link function like in generalized linear models. Other link functions exist, we'll see an example in Section \@ref(multinomiallogit). 
 
-Another point of attention is the prior we will assign to regression coefficients. We no longer assign a prior to survival directly like previously, but we need to assign prior to the $\beta$'s which will induce some prior on survival. And sometimes, your priors on the regression coefficients are non-informative, but the prior on survival is not. Consider for example the case of a single intercept with no covariate. If you assign as a prior to this regression coefficient a normal distribution with mean 0 and large standard deviation, which would be my first reflex, then you end up with a very informative prior on survival with a bathtub shape, putting much importance on low and high values:
+Another point of attention is the prior we will assign to regression coefficients. We no longer assign a prior to survival directly like previously, but we need to assign prior to the $\beta$'s which will induce some prior on survival. And sometimes, your priors on the regression coefficients are non-informative, but the prior on survival is not. Consider for example the case of a single intercept with no covariate. If you assign as a prior to this regression coefficient a normal distribution with mean 0 and large standard deviation (left figure below), which would be my first reflex, then you end up with a very informative prior on survival with a bathtub shape, putting much importance on low and high values (right figure below):
 ```{r}
 # 1000 random values from a N(0,10)
 intercept <- rnorm(1000, mean = 0, sd = 10) 
@@ -527,7 +641,7 @@ plot2 <- df %>%
 plot1 + plot2
 ```
 
-Now if you go for a lower standard deviation for the intercept prior, the prior on survival is non-informative, looking like a uniform distribution between 0 and 1:
+Now if you go for a lower standard deviation for the intercept prior (left figure below), e.g. 1.5, the prior on survival is non-informative, looking like a uniform distribution between 0 and 1 (right figure below):
 ```{r}
 set.seed(123)
 # 1000 random values from a N(0,1.5)
@@ -546,7 +660,7 @@ plot2 <- df %>%
 plot1 + plot2
 ```
 
-Now let's go back to our model. We first define our flood covariate with 0 if nonflood year, and 1 if flood year. 
+Now let's go back to our model. We first define our flood covariate with 0 if nonflood year, and 1 if flood year:
 ```{r eval = FALSE}
 flood <- c(0, # 1981-1982 (nonflood)
            1, # 1982-1983 (flood)
@@ -586,7 +700,7 @@ hmm.phifloodp <- nimbleCode({
 })
 ```
 
-We wrote $\text{logit}(\phi_t) = \beta_1 + \beta_2 \; \text{flood}_t$, meaning that survival in nonflood years ($\text{flood}_t = 0$) is $\text{logit}(\phi_t) = \beta_1$ and survival in flood years ($\text{flood}_t = 1$) is $\text{logit}(\phi_t) = \beta_1 + \beta_2$. We see that $\beta_1$ is survival in nonflood years (on the logit scale) and $\beta_2$ is the difference between survival in flood years and survival in nonflood years (again, on the logit scale). 
+We wrote $\text{logit}(\phi_t) = \beta_1 + \beta_2 \; \text{flood}_t$, meaning that survival in nonflood years ($\text{flood}_t = 0$) is $\text{logit}(\phi_t) = \beta_1$ and survival in flood years ($\text{flood}_t = 1$) is $\text{logit}(\phi_t) = \beta_1 + \beta_2$. We see that $\beta_1$ is survival in nonflood years (on the logit scale) and $\beta_2$ is the difference between survival in flood years and survival in nonflood years (again, on the logit scale). In passing we assigned the same prior for both $\beta_1$ and $\beta_2$ but in certain situations, we might think twice before doing that as $\beta_2$ is a difference between two survival probabilities (on the logit scale). 
 
 Let's put our constants in a list:
 ```{r eval = FALSE}
@@ -603,12 +717,12 @@ initial.values <- function() list(beta = rnorm(2,0,1),
                                   z = zinits)
 ```
 
-And the parameters to be monitored. 
+And the parameters to be monitored: 
 ```{r eval = FALSE}
 parameters.to.save <- c("beta", "p", "phi")
 ```
 
-Finaly, we may run NIMBLE: 
+Finaly, we run NIMBLE: 
 ```{r eval = FALSE}
 mcmc.phifloodp <- nimbleMCMC(code = hmm.phifloodp, 
                              constants = my.constants,
@@ -753,7 +867,7 @@ load(here::here("dat/dipperflow.RData"))
 MCMCplot(object = mcmc.phiflowp, params = "phi", ISB = TRUE)
 ```
 
-Survival between 1982 and 1983 (`phi[2]`) was greatly affected and much lower than on average. This decrease corresponds to the high water flow in 1983 and the flood. These results are in line with our previous findings obtained by considering a covariate for nonflood vs. flood years.
+Survival between 1982 and 1983 (`phi[2]`) was greatly affected and much lower than on average. This decrease corresponds to the high water flow in 1983 and the flood. These results are in line with our previous findings obtained by considering a discrete covariate for nonflood vs. flood years.
 
 ### Individual covariates
 
@@ -761,7 +875,7 @@ In the previous section, we learnt how to explain temporal heterogeneity in surv
 
 #### Discrete
 
-We first consider a covariate $\text{sex}$ that contains 1's and 2's indicating the sex of each bird: 1 if male, and 2 if female. We implement the model with sex effect using nested indexing, similarly to the model with flood vs. nonflood years. The section of the NIMBLE code that needs to be amended is:
+We first consider a covariate `sex` that contains 1's and 2's indicating the sex of each bird: 1 if male, and 2 if female. We implement the model with sex effect using nested indexing, similarly to the model with flood vs. nonflood years. The section of the NIMBLE code that needs to be amended is:
 ```{r eval = FALSE}
 ...
 for (i in 1:N){
@@ -784,7 +898,7 @@ load(here::here("dat/phisexpni.RData"))
 MCMCsummary(object = mcmc.phisexp.ni, round = 2)
 ```
 
-Male survival (`phi[1]`) looks very similar to female survival (`phi[2]`). **Give the entire NIMBLE code? Alternatively, in this chapter and others, provide fragments of the code to emphasize a specific point or adjustments, and have a file with the whole code elsewhere for convenience, as a R script. This would avoid repeating the data/constants/initial values/MCMC details/nimble run steps, and save space as well.**
+Male survival (`phi[1]`) looks very similar to female survival (`phi[2]`).
 
 #### Continuous 
 
@@ -912,7 +1026,7 @@ The flat relationship between survival and wing length is confirmed.
 
 ### Several covariates
 
-You may test an effect of both sex and wing length. Let's consider an additive effect of both covariates. We use a covariate $\text{sex}$ that takes value 0 if male, and 1 if female. We have $\text{logit}(\phi_i) = \beta_1 + \beta_2 \text{sex}_i + \beta_3 \text{winglength}_i$ for bird $i$, so that male survival is $\beta_1 + \beta_3 \text{winglength}_i$ and female survival is $\beta_1 + \beta_2 + \beta_3 \text{winglength}_i$ (both on the logit scale). The relationship between survival and wing length is parallel between males and females, on the logit scale, and the gap between the two is measured by $\beta_2$ (hence the term *additive* effect). 
+You may wish to have an effect of both sex and wing length in a model. Let's consider an additive effect of both covariates. We use a covariate `sex` that takes value 0 if male, and 1 if female. We have $\text{logit}(\phi_i) = \beta_1 + \beta_2 \text{sex}_i + \beta_3 \text{winglength}_i$ for bird $i$, so that male survival is $\beta_1 + \beta_3 \text{winglength}_i$ and female survival is $\beta_1 + \beta_2 + \beta_3 \text{winglength}_i$ (both on the logit scale). The relationship between survival and wing length is parallel between males and females, on the logit scale, and the gap between the two is measured by $\beta_2$ (hence the term *additive* effect). 
 
 The NIMBLE code is:
 ```{r eval = FALSE}
@@ -992,7 +1106,7 @@ load(here::here("dat/phisexwlp.RData"))
 MCMCsummary(mcmc.phisexwlp, round = 2)
 ```
 
-The slope is the same for both males and females. Although its posterior mean is negative, its crebible interval suggest its posterior distribution largely encompasses 0, therefore a very weak signal, if any.
+The slope `beta[3]` is the same for both males and females. Although its posterior mean is negative, its crebible interval suggests that its posterior distribution largely encompasses 0, therefore a very weak signal, if any.
 
 Let's visualize survival as a function of wing length for both sexes. First we put together the values from the two chains we generated in the posterior distributions of the regression parameters: 
 ```{r}
@@ -1082,15 +1196,11 @@ df %>%
        color = "")
 ```
 
-**Show how to use values of the covariate de-standardized.** 
-
-**Mention interaction bw sex and wing length w/ logit(phi[i]) <- beta[1] + beta[2] * sex[i] + beta[3] * winglength[i] + beta[4] * sex[i] * winglength[i] and explain.**
-
 ### Random effects
 
-If individual variation in survival is not fully explained by our covariates, we may add random effects through $\text{logit}(\phi_i) = \beta_1 + \beta_2 x_i + \varepsilon_i$ where $\varepsilon_i \sim N(0,\sigma^2)$. We consider individual variation in this section, but the reasoning holds for temporal variation. In essence, we are treating the individual survival probabilities $\phi_i$ as a sample from a population of survival probabilities, and we assume a normal distribution with mean the linear component (with or without a covariate) and standard deviation $\sigma$. The variation that is unexplained by the covariate $x_i$ is measured by the variation $\sigma$ in the residuals $\varepsilon_i$. Ignoring individual heterogeneity generated by individuals having contrasted performances over life may mask senescence or hamper the understanding of life history trade-offs. 
+If individual variation in survival is not fully explained by our covariates, we may add random effects through $\text{logit}(\phi_i) = \beta_1 + \beta_2 x_i + \varepsilon_i$ where $\varepsilon_i \sim N(0,\sigma^2)$. We consider individual variation in this section, but the reasoning holds for temporal variation. In essence, we are treating the individual survival probabilities $\phi_i$ as a sample from a population of survival probabilities, and we assume a normal distribution with mean the linear component (with or without a covariate) and standard deviation $\sigma$. The variation that is unexplained by the covariate $x_i$ is measured by the variation $\sigma$ in the residuals $\varepsilon_i$. 
 
-Overall, failing to incorporate unexplained residual variance may induce bias in parameter estimates and lead to detecting an effect of the covariate more often than it should be.
+Why is it important? Ignoring individual heterogeneity generated by individuals having contrasted performances over life may mask senescence or hamper the understanding of life history trade-offs. Overall, failing to incorporate unexplained residual variance may induce bias in parameter estimates and lead to detecting an effect of the covariate more often than it should be.
 
 Let's go back to our dipper example with wing length as a covariate, and write the NIMBLE code: 
 ```{r eval = FALSE}
@@ -1124,7 +1234,7 @@ hmm.phiwlrep <- nimbleCode({
 })
 ```
 
-The prior on the standard deviation of the random effect is uniform between 0 and 10. **Explain how to pick prior for SD.**
+The prior on the standard deviation of the random effect is uniform between 0 and 10. 
 
 We now write a function for generating initial values:
 ```{r eval = FALSE}
@@ -1202,7 +1312,7 @@ So far, we allowed covariates to vary along a single dimension, either time or i
 
 Age has a particular meaning in the capture-recapture framework. It is the time elapsed since first encounter, which is a proxy of true age, but not true age. If age is known at first encounter, then it is true age. For example, if the dippers were marked as young, then we would have the true biological age of each bird.  
 
-The convenient thing is that age has no missing value because age at $t+1$ is just age at $t$ to which we add 1. This suggests a way to code the age effect in NIMBLE as follows: 
+The convenient thing is that age has no missing value because age at $t+1$ is just age at $t$ to which we add 1 (we will see an example of an individual covariate with missing values in Section \@ref(naincov)). This suggests a way to code the age effect in NIMBLE as follows: 
 ```{r eval = FALSE}
 hmm.phiage.in <- nimbleCode({
   p ~ dunif(0, 1) # prior detection
@@ -1237,7 +1347,7 @@ hmm.phiage.in <- nimbleCode({
 })
 ```
 
-Here we used `equals(t, first[i])` which renders 1 when $t$ is the first encounter and 0 otherwise. Therefore we distinguish survival of the first interval after first encounter $\phi_1$ (`logit(phi[i,t]) <- beta[1] + beta[2]`) from survival afterwards $\phi_{1+}$ (`logit(phi[i,t]) <- beta[1]`).
+Here we used `equals(t, first[i])` which renders 1 when $t$ is the first encounter `first[i]` and 0 otherwise. Therefore we distinguish survival over the first interval after first encounter $\phi_1$ (`logit(phi[i,t]) <- beta[1] + beta[2]`) from survival afterwards $\phi_{1+}$ (`logit(phi[i,t]) <- beta[1]`).
 
 We put all constants in a list:
 ```{r eval = FALSE}
@@ -1300,7 +1410,7 @@ for (i in 1:nrow(age)){
 }
 ```
 
-Now we may write the NIMBLE code for this model. We just need to remember that survival is no longer defined on the logit scale as in the previous model, so we use uniform priors:  
+Now we may write the NIMBLE code for this model. We just need to remember that survival is no longer defined on the logit scale as in the previous model, so we simply use uniform priors:  
 ```{r eval = FALSE}
 hmm.phiage.out <- nimbleCode({
   p ~ dunif(0, 1) # prior detection
@@ -1373,41 +1483,45 @@ load(here::here("dat/phiageout.RData"))
 MCMCsummary(mcmc.phi.age.out, round = 2)
 ```
 
-Like I mentioned earlier, age is easy to deal with as it does not contain missing values. Now think of size or body mass for a minute. The problem is that we cannot record size or body mass when an animal is non-detected. The easiest way to cope with individual time-varying covariates is to discretize e.g. in small, medium and large as in Chapter \@ref(dispersal). Another option is to come up with a model for the covariate and fill in missing values by simulating from this model (see **case study**). 
+Like I mentioned earlier, age is easy to deal with as it does not contain missing values. Now think of size or body mass for a minute. The problem is that we cannot record size or body mass when an animal is non-detected. The easiest way to cope with individual time-varying covariates is to discretize e.g. in small, medium and large as in Chapter \@ref(dispersal). Another option is to come up with a model for the covariate and fill in missing values by simulating from this model (see case study in Section \@ref(naincov)). 
 
 ## Why Bayes? Incorporate prior information {#elicitprior}
 
-Before we close this section. 
-
-The example on how to incorporate prior information is in @mccarthy2005.
-
-So far, we have assumed a non-informative prior on survival $\text{Beta}(1,1) = \text{Uniform}(0,1)$. With this prior, mean posterior survival is $\phi = 0.56$ with credible interval $[0.52,0.62]$. Graphically we may represent the posterior distribution of survival obtained with two chains with different colors, and our prior in gray dashed line:
-
-```{r, echo = FALSE}
-load(here::here("dat","dipper.RData"))
-PR <- runif(1500, 0, 1)
-MCMCtrace(mcmc.phip,
-          params = c('phi'),
-          ISB = FALSE,
-          exact = TRUE,
-          priors = PR,
-          pdf = FALSE,
-          Rhat = FALSE,
-          n.eff = FALSE,
-          #          post_zm = TRUE,
-          sz_txt = NULL,
-          ind = TRUE,
-          type = "density",
-          lwd_den = 3,
-          lwd_pr = 3,
-          col_pr = "gray70",
-          lty_pr = 2,
-          main_den = "",
-          xlab_den = "survival")
-```
-
 ### Prior elicitation
-The thing is that we know a lot about passerines and it is a shame not to be able to use this information and act as if we have to start from scratch and know nothing. We illustrate how to incorporate prior information by acknowledging that species with similar body masses have similar survival. By gathering information on several other European passerines than the dipper, let's assume we have built a regression of survival vs. body mass -- allometric relationship. Knowing dippers weigh on average 59.8g, we're now in the position to build a prior for dipper survival probability by predicting its value using the regression. We obtain a predicted survival of 0.57 and a standard deviation of 0.075. Using an informative prior $\text{Normal}(0.57, sd = 0.073)$ in NIMBLE, we get a mean posterior of $0.56$ with credible interval $[0.52, 0.61]$. There's barely no difference with the non-informative prior, quite a disappointment. 
+
+Before we close this section, I'd like to cover one last topic. Think again of the CJS model with constant parameters. So far, we have assumed a non-informative prior on survival $\text{Beta}(1,1) = \text{Uniform}(0,1)$. With this prior, we have seen in Section \@ref(cjsderivatives) that mean posterior survival is $\phi = 0.56$ with credible interval $[0.52,0.62]$. 
+
+<!-- Graphically we may represent the posterior distribution of survival obtained with two chains with different colors, and our prior in gray dashed line: -->
+
+<!-- ```{r, echo = FALSE} -->
+<!-- load(here::here("dat","dipper.RData")) -->
+<!-- PR <- runif(1500, 0, 1) -->
+<!-- MCMCtrace(mcmc.phip, -->
+<!--           params = c('phi'), -->
+<!--           ISB = FALSE, -->
+<!--           exact = TRUE, -->
+<!--           priors = PR, -->
+<!--           pdf = FALSE, -->
+<!--           Rhat = FALSE, -->
+<!--           n.eff = FALSE, -->
+<!--           #          post_zm = TRUE, -->
+<!--           sz_txt = NULL, -->
+<!--           ind = TRUE, -->
+<!--           type = "density", -->
+<!--           lwd_den = 3, -->
+<!--           lwd_pr = 3, -->
+<!--           col_pr = "gray70", -->
+<!--           lty_pr = 2, -->
+<!--           main_den = "", -->
+<!--           xlab_den = "survival") -->
+<!-- ``` -->
+
+The thing is that we know a lot about passerines and it is a shame not to be able to use this information and act as if we have to start from scratch and know nothing. 
+
+We illustrate how to incorporate prior information by acknowledging that species with similar body masses have similar survival. By gathering information on several other European passerines than the dipper, let's assume we have built a regression of survival vs. body mass -- an allometric relationship. 
+
+Now knowing dippers weigh on average 59.8g, we're in the position to build a prior for dipper survival probability by predicting its value using the regression. We obtain a predicted survival of 0.57 and a standard deviation of 0.075. Using an informative prior `phi ~ dnorm(0.57, sd = 0.073)` in NIMBLE instead of our `phi ~ dunif(0,1)`, we get a mean posterior of $0.56$ with credible interval $[0.52, 0.61]$. There's barely no difference with the non-informative prior, quite a disappointment. 
+
 Now let's assume that we had only the three first years of data, what would have happened? We fit the model with constant parameters with both the non-informative and informative priors to the dataset from which we delete the final 4 years of data. Now the benefit of using the prior information becomes clear as the credible interval when prior information is ignored has a width of 0.53, which is more than twice as much as when prior information is used (0.24), illustrating the increased precision provided by the prior. We may assess visually this gain in precision by comparing the survival posterior distributions with and without informative prior:
   
 ```{r, echo = FALSE}
@@ -1429,14 +1543,16 @@ df %>%
   scale_fill_manual(values = wesanderson::wes_palette("Royal1")[2:1])
 ```
 
-In brief, if the aim is to get an estimate of survival, Gilbert did not have to conduct further data collection after 3 years, and he could have reached the same precision as with 7 years of data by using prior information derived from body mass. In brief, the prior information was worth 4 years of field data. Of course, this is assuming that the ecological question remains the same whether you have 3 or 7 years of data, which is unlikely to be the case, as with long-term data, there is so much we can ask, more than "just" what annual survival probability is. 
+If the aim is to get an estimate of survival, Gilbert did not have to conduct further data collection after 3 years, and he could have reached the same precision as with 7 years of data by using prior information derived from body mass. In brief, the prior information was worth 4 years of field data. Of course, this is assuming that the ecological question remains the same whether you have 3 or 7 years of data, which is unlikely to be the case, as with long-term data, there is so much we can ask, more than "just" what annual survival probability is. 
 
 ### Moment matching
 
-The prior $\text{Normal}(0.57, sd = 0.073)$ is not entirely satisfying because it is not constrained to be positive or less than one, which is the minimum for a probability (of survival) to be well defined. In our specific example, the prior distribution is centered on positive values far from 0, and the sandard deviation is small enough so that the chances to get values smaller than 0 or higher than 1 are null (to convince yourself, `hist(rnorm(1000, mean = 0.57, sd = 0.073))`). Can we do better? The answer is yes. 
-Remember the Beta distribution? Recall that the Beta distribution is a continuous distribution with values between 0 and 1. It is therefore convenient to specify priors for survival and detection probabilities. Plus we know everything about the Beta distribution, in particular its moments. If $X \sim Beta(\alpha,\beta)$, then the first (mean) and second moments (variance) of $X$ are $\mu = \text{E}(X) = \frac{\alpha}{\alpha + \beta}$ and $\sigma^2 = \text{Var}(X) = \frac{\alpha\beta}{(\alpha + \beta)^2 (\alpha + \beta + 1)}$. 
+The prior `phi ~ dnorm(0.57, sd = 0.073)` is not entirely satisfying because it is not constrained to be positive or less than one, which is the minimum for a probability (of survival) to be well defined. In our specific example, the prior distribution is centered on positive values far from 0, and the standard deviation is small enough so that the chances to get values smaller than 0 or higher than 1 are null (to convince yourself, just type in `hist(rnorm(1000, mean = 0.57, sd = 0.073))` in R). Can we do better? The answer is yes. 
+
+Remember the Beta distribution? Recall that the Beta distribution is a continuous distribution with values between 0 and 1, which is very convenient to specify priors for survival and detection probabilities. Plus we know everything about the Beta distribution, in particular its moments. If $X \sim Beta(\alpha,\beta)$, then the first (mean) and second moments (variance) of $X$ are $\mu = \text{E}(X) = \frac{\alpha}{\alpha + \beta}$ and $\sigma^2 = \text{Var}(X) = \frac{\alpha\beta}{(\alpha + \beta)^2 (\alpha + \beta + 1)}$. 
 
 In the capture-recapture example, we know a priori that the mean of the probability we're interested in is $\mu = 0.57$ and its variance is $\sigma^2 = 0.073^2$. Parameters $\mu$ and $\sigma^2$ are seen as the moments of a $Beta(\alpha,\beta)$ distribution. Now we look for values of $\alpha$ and $\beta$ that match the observed moments of the Beta distribution $\mu$ and $\sigma^2$. We need another set of equations:
+
 $$\alpha = \bigg(\frac{1-\mu}{\sigma^2}- \frac{1}{\mu} \bigg)\mu^2$$
 $$\beta = \alpha \bigg(\frac{1}{\mu}-1\bigg)$$
 For our model, that means:
@@ -1446,7 +1562,7 @@ For our model, that means:
 (beta <- alpha * ( (1/0.57) - 1))
 ```
 
-Now we simply have to use $\text{Beta}(\alpha = 25.6,\beta = 19.3)$ as a prior instead of our $\text{Normal}(0.57, sd = 0.073)$. 
+Now we simply have to use `phi ~ dbeta(25.6,19.3)` as a prior instead of our `phi ~ dnorm(0.57, sd = 0.073)`.
 
 ## Summary
 
@@ -1454,7 +1570,7 @@ Now we simply have to use $\text{Beta}(\alpha = 25.6,\beta = 19.3)$ as a prior i
 
 + Covariates can be considered to try and explain temporal and/or individual variation in survival and detection probabilities. If needed, random effects can be added to cope with unexplained variation. 
 
-+ For model comparison, the WAIC can be used to evaluate the relative predictive performance of capture-recapture models. **Refer to case study on RJMCMC.**
++ For model comparison, the WAIC can be used to evaluate the relative predictive performance of capture-recapture models. 
 
 + Statistical models rely on assumptions, and the CJS model makes no exception. There are procedures to assess the goodness of fit of the CJS model to capture-recapture data. 
 
@@ -1462,10 +1578,14 @@ Now we simply have to use $\text{Beta}(\alpha = 25.6,\beta = 19.3)$ as a prior i
 
 + @buckland2016 provides a historical perspective on the CJS model and anecdotes. The monography by @LebretonEtAl1992 is a must-read to better understand the CJS model and its applications. The HMM formulation of the CJS model was proposed by @gimenez2007 and @royle2008.
 
-+ @gimenez2009 deals with parameter redundandy in capture-recapture models in a Bayesian framework. For an exhaustive treatment, see @cole2020 excellent book.
++ @gimenez2009 deals with parameter redundancy in capture-recapture models in a Bayesian framework. For an exhaustive treatment, see @cole2020 excellent book.
 
 + Relative to model comparison, I warmly recommend @mcelreathbook to better understand WAIC (there is a video as well, see <https://www.youtube.com/watch?v=vSjL2Zc-gEQ>). The paper by @gelman2004 is also much helpful. 
 
 + On posterior predictive checks, you may check out @conn2018. The `R2ucare` package is introduced in @gimenez2018r2ucare.
 
 + Temporal heterogeneity is addressed in papers by @grosbois_assessing_2008 and @frederiksen2014, while individual heterogeneity is reviewed by @gimenez2018ih.
+
++ Regarding covariates, I did not use the formalization of linear models and sticked to an intuitive (hopefully) illustration of the use of covariates. More details can be found in Chapter 6 of @cooch2017intromark. 
+
++ The example on how to incorporate prior information is in @mccarthy2005.
