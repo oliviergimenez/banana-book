@@ -1206,6 +1206,183 @@ Breeders are difficult to assign to the correct state $\beta^B$, while non-breed
 
 **Refer to case studies on sex, age, disease and hybridization**
 
+### Disease dynamics
+
+@ConnCooch2009, @cooch2012disease, @MarescotEtAl2018 and @santoro2014host. See also @ollivier2023lyme.
+
+Let's have a look to another example. Very similar to the previous example. We consider a system of an emerging pathogen *Mycoplasma gallisepticum* Edward and Kanarek and its host the house finch, *Carpodacus mexicanus* Müller.
+
+```{r pixfinch, echo=FALSE, fig.cap="A house finch with a heavy infection (Jim Mondok).", out.width="100%", fig.align='center'}
+knitr::include_graphics("images/infectedhousefinch.jpg")
+```
+
+We consider a system of an emerging pathogen *Mycoplasma gallisepticum* Edward and Kanarek and its host the house finch, *Carpodacus mexicanus* Müller. @FaustinoEtAl2004 and @ConnCooch2009 studied impact of pathogen on host demographic rates (see also @cooch2012disease). Problem is true disease state for some encountered individuals is ambiguous because seen at distance. In this context, how to study the dynamics of the disease?
+
+States and observations
+
++ 3 states
+    + healthy (H)
+    + ill (I)
+    + dead (D)
+
++ 4 observations
+    + not seen (0)
+    + captured healthy (1)
+    + captured ill (2)
+    + health status unknown, i.e. seen at distance (3)
+
+How states generate observations.
+
+```{r, echo = FALSE}
+ggplot() +
+  geom_point(aes(1, 1), size = 2.5, alpha = .7) +
+  geom_point(aes(1, 1.5), size = 2.5, alpha = .7) +
+  geom_point(aes(1, 2), size = 2.5, alpha = .7) +
+  geom_text(aes(1.5, 2, label = 'not seen (0)'), nudge_x = 1.2, size = 7) +
+  geom_text(aes(1.5, 1.5, label = 'captured healthy (1)'), nudge_x = 1.5, size = 7) +
+  geom_text(aes(1.5, 1, label = 'captured ill (2)'), nudge_x = 1.3, size = 7) +
+  geom_text(aes(1.5, 0.5, label = 'status unknown (3)'), nudge_x = 1.5, size = 7) +
+  geom_point(aes(2, 0.5), size = 2.5, alpha = .7) +
+  geom_point(aes(2, 1), size = 2.5, alpha = .7) +
+  geom_point(aes(2, 1.5), size = 2.5, alpha = .7) +
+  geom_point(aes(2, 2), size = 2.5, alpha = .7) +
+  geom_text(aes(.5, 2, label = 'healthy'), nudge_x = 0, size = 7) +
+  geom_text(aes(.5, 1.5, label = 'ill'), nudge_x = 0.2, size = 7) +
+  geom_text(aes(.5, 1, label = 'dead'), nudge_x = 0.1, size = 7) +
+  xlim(0, 4.5) +
+  ylim(0.5, 3) +
+  annotate('text', x = .5, y = 2.6, label = 'States', size = 10) +
+  annotate('text', x = 2.7, y = 2.6, label = 'Observations', size = 10) +
+
+  geom_segment(aes(x = 1, y = 1, xend = 2, yend = 2), alpha = 0.7, arrow = arrow(length = unit(0.02, "npc"))) +
+
+  geom_segment(aes(x = 1, y = 1.5, xend = 2, yend = 1), lty = 2, alpha = 0.7, arrow = arrow(length = unit(0.02, "npc"))) +
+  geom_segment(aes(x = 1, y = 1.5, xend = 2, yend = 2), lty = 2, alpha = 0.7, arrow = arrow(length = unit(0.02, "npc"))) +
+  geom_segment(aes(x = 1, y = 1.5, xend = 2, yend = .5), lty = 2, alpha = 0.7, arrow = arrow(length = unit(0.02, "npc"))) +
+
+  geom_segment(aes(x = 1, y = 2, xend = 2, yend = .5), lty = 2, alpha = 0.7, arrow = arrow(length = unit(0.02, "npc"))) +
+  geom_segment(aes(x = 1, y = 2, xend = 2, yend = 1.5), lty = 2, alpha = 0.7, arrow = arrow(length = unit(0.02, "npc"))) +
+  geom_segment(aes(x = 1, y = 2, xend = 2, yend = 2), lty = 2, alpha = 0.7, arrow = arrow(length = unit(0.02, "npc"))) +
+
+  theme_void()
+```
+
+Vector of initial state probabilities
+
+$$\begin{matrix}
+& \\
+\mathbf{\delta} =
+    \left ( \vphantom{ \begin{matrix} 12 \end{matrix} } \right .
+\end{matrix}
+\hspace{-1.2em}
+\begin{matrix}
+    z_t=H & z_t=I & z_t=D \\ \hdashline
+\pi_H & 1 - \pi_{H} & 0\\
+\end{matrix}
+\hspace{-0.2em}
+\begin{matrix}
+& \\
+\left . \vphantom{ \begin{matrix} 12 \end{matrix} } \right )
+    \begin{matrix}
+    \end{matrix}
+\end{matrix}$$
+
+$\pi_H$ is the probability that a newly encountered individual is healthy. $\pi_{I} = 1 - \pi_H$ is the probability that a newly encountered individual is ill.
+
+Transition matrix
+
+$$\begin{matrix}
+& \\
+\mathbf{\Gamma} =
+    \left ( \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \end{matrix} } \right .
+\end{matrix}
+\hspace{-1.2em}
+\begin{matrix}
+    z_t=H & z_t=I & z_t=D \\ \hdashline
+\phi_H (1-\psi_{HI}) & \phi_H \psi_{HI} & 1 - \phi_H\\
+\phi_{I} \psi_{IH} & \phi_{I} (1-\psi_{IH}) & 1 - \phi_{I}\\
+0 & 0 & 1
+\end{matrix}
+\hspace{-0.2em}
+\begin{matrix}
+& \\
+\left . \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \end{matrix} } \right )
+    \begin{matrix}
+    z_{t-1}=H \\ z_{t-1}=I \\ z_{t-1}=D
+    \end{matrix}
+\end{matrix}$$
+
+$\phi_H$ is the survival probability of healthy individuals, $\phi_I$ that of ill individuals. $\psi_{HI}$ is the probability of getting sick, $\psi_{IH}$ that of recovering from the disease.
+
+Transition matrix, incurable disease
+
+$$\begin{matrix}
+& \\
+\mathbf{\Gamma} =
+    \left ( \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \end{matrix} } \right .
+\end{matrix}
+\hspace{-1.2em}
+\begin{matrix}
+    z_t=H & z_t=I & z_t=D \\ \hdashline
+\phi_H (1-\psi_{HI}) & \phi_H \psi_{HI} & 1 - \phi_H\\
+0 & \phi_{I}  & 1 - \phi_{I}\\
+0 & 0 & 1
+\end{matrix}
+\hspace{-0.2em}
+\begin{matrix}
+& \\
+\left . \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \end{matrix} } \right )
+    \begin{matrix}
+    z_{t-1}=H \\ z_{t-1}=I \\ z_{t-1}=D
+    \end{matrix}
+\end{matrix}$$
+
+No possibility of recovering from the disease, that is $\psi_{IH} = 0$. Once you get sick, you remain sick $\psi_{II} = 1 - \psi_{IH} = 1$. For analysing the house finch data, we allow recovering from the disease, and we will use transition matrix from previous slide.
+
+Observation matrix
+
+$$\begin{matrix}
+& \\
+\mathbf{\Omega} =
+    \left ( \vphantom{ \begin{matrix} 12 \\ 12 \\ 12\end{matrix} } \right .
+\end{matrix}
+\hspace{-1.2em}
+\begin{matrix}
+    y_t=0 & y_t=1 & y_t=2 & y_t=3\\ \hdashline
+1-p_H & p_H \beta_H & 0 & p_H (1-\beta_H)\\
+1-p_I & 0 & p_{I} \beta_{I} & p_{I} (1-\beta_{I})\\
+1 & 0 & 0 & 0
+\end{matrix}
+\hspace{-0.2em}
+\begin{matrix}
+& \\
+\left . \vphantom{ \begin{matrix} 12 \\ 12 \\ 12\end{matrix} } \right )
+    \begin{matrix}
+    z_{t}=H \\ z_{t}=I \\ z_{t}=D
+    \end{matrix}
+\end{matrix}$$
+
+$\beta_H$ is the probability to assign a healthy individual to state H. $\beta_{I}$ is the probability to assign a sick individual to state I. $p_H$ is the detection probability of healthy individuals, $p_I$ that of sick individuals.
+
+Results
+
+```{r echo = FALSE}
+library(MCMCvis)
+load(here::here("dat","disease.RData"))
+MCMCsummary(out, round = 2)
+```
+
+Healthy individuals are correctly assigned, while infected individuals are difficult to ascertain. Sounds like being infected has an effect on detection and survival. Run models without effects and compare with WAIC for formal testing. Infection rate is 22%, recovery rate is 46%.
+
+```{r, echo = FALSE}
+library(MCMCvis)
+load(here::here("dat","disease.RData"))
+MCMCplot(out)
+```
+
+Double check that data are the same as in @king2016semi as I'd like to illustrate HSMM as well. Otherwise, re-do analyses with their dataset. 
+
+
 ## Summary
 
 + The AS model is a HMM that extends the CJS model by allowing the estimation of movements between sites (e.g. geographical locations) or transitions between states (e.g. breeding status). This flexibility allows addressing all sorts of questions in ecology and evolution. 
