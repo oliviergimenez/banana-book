@@ -8,11 +8,11 @@ In this fifth chapter, you will learn about the Arnason-Schwarz model that allow
 
 ## The Arnason-Schwarz (AS) model {#ASmodel}
 
-In Chapter \@ref(survival), we got acquainted with Cormack-Jolly-Seber (CJS) model which accommodates transitions between the states alive and dead while accounting for imperfect detection. It is often the case that besides being alive, more detailed information is collected on the state of animals when they are detected. For example, if the study area is split into several discrete sites, you may record where an animal is detected, the state being now alive in this particular site. The Arnason-Schwarz (AS) model can be viewed as an extension to the CJS model in which we estimate movements between sites on top of survival. The AS model is named after the two statisticians -- Neil Arnason and Carl Schwarz -- who came up with the idea. 
+In Chapter \@ref(survival), we got acquainted with the Cormack-Jolly-Seber (CJS) model which accommodates transitions between the states alive and dead while accounting for imperfect detection. It is often the case that besides being alive, more detailed information is collected on the state of animals when they are detected. For example, if the study area is split into several discrete sites, you may record where an animal is detected, the state being now alive in this particular site. The Arnason-Schwarz (AS) model can be viewed as an extension to the CJS model in which we estimate movements between sites on top of survival. The AS model is named after the two statisticians -- Neil Arnason and Carl Schwarz -- who came up with the idea. 
 
 ### Theory
 
-Let's assume for now that we have two sites, say A and B. The way we usually think of analyzing the data is to start from the detections and non-detections and infer the transitions between sites and movements. Schematically, when a bird is detected in site A or site B, it obviously means that it is alive in that site, whereas when it is not detected, it may be dead or alive in either site. Schematically, we have:
+Let's assume for now that we have two sites, say 1 and 2. The way we usually think of analyzing the data is to start from the detections and non-detections and infer the transitions between sites and movements. Schematically, when a animal is detected in site 1 or site 2, it obviously means that it is alive in that site, whereas when it is not detected, it may be dead or alive in either site. Schematically, we have:
 
 ```{r, echo = FALSE}
 ggplot() +
@@ -20,13 +20,13 @@ ggplot() +
   geom_point(aes(1, 1.5), size = 2.5, alpha = .7) +
   geom_point(aes(1, 2), size = 2.5, alpha = .7) +
   geom_text(aes(1, 2, label = 'non-detection'), nudge_x = -0.6, size = 7) +
-  geom_text(aes(1, 1.5, label = 'detection in site A'), nudge_x = -0.6, size = 7) +
-  geom_text(aes(1, 1, label = 'detection in site B'), nudge_x = -0.6, size = 7) +
+  geom_text(aes(1, 1.5, label = 'detection in site 1'), nudge_x = -0.6, size = 7) +
+  geom_text(aes(1, 1, label = 'detection in site 2'), nudge_x = -0.6, size = 7) +
   geom_point(aes(2, 1), size = 2.5, alpha = .7) +
   geom_point(aes(2, 1.5), size = 2.5, alpha = .7) +
   geom_point(aes(2, 2), size = 2.5, alpha = .7) +
-  geom_text(aes(2, 2, label = 'alive in site A'), nudge_x = 0.5, size = 7) +
-  geom_text(aes(2, 1.5, label = 'alive in site B'), nudge_x = 0.5, size = 7) +
+  geom_text(aes(2, 2, label = 'alive in site 1'), nudge_x = 0.5, size = 7) +
+  geom_text(aes(2, 1.5, label = 'alive in site 2'), nudge_x = 0.5, size = 7) +
   geom_text(aes(2, 1, label = 'dead'), nudge_x = 0.5, size = 7) +
   xlim(0, 3) +
   ylim(0.5, 3) +
@@ -40,7 +40,7 @@ ggplot() +
   theme_void()
 ```
 
-Therefore observations and states are indeed closely related, but not entirely, and the HMM framework will help you make the distinction clear, which in turn will make the modelling easier. When we are to build the model, we should think the other way around, and think of the states as generating the observations. When a bird is alive in either site, it may get detected in that site or go undetected. When a bird is dead, then it goes undetected for sure. Schematically, we obtain:
+Observations and states are indeed closely related, but we do not have a perfect states to observations correspondence, and the HMM framework will help you make the distinction clear, which in turn will make the modelling easier. Usually, we focus our energy on the observations but what we'd really like is to spend time thinking of the ecological processes that we observed imperfectly. In the HMM framework, when we are to build a model, we think of the states and their dynamic over time, and these states emit the observations we're given to make. Going back to the our example, when an animal is alive in either site, it may get detected in that site or go undetected. When an animal is dead, then it goes undetected for sure. Schematically, we obtain:
 
 ```{r, echo = FALSE}
 ggplot() +
@@ -48,13 +48,13 @@ ggplot() +
   geom_point(aes(1, 1.5), size = 2.5, alpha = .7) +
   geom_point(aes(1, 2), size = 2.5, alpha = .7) +
   geom_text(aes(2, 2, label = 'non-detection'), nudge_x = 0.5, size = 7) +
-  geom_text(aes(2, 1.5, label = 'detection in site A'), nudge_x = 0.6, size = 7) +
-  geom_text(aes(2, 1, label = 'detection in site B'), nudge_x = 0.6, size = 7) +
+  geom_text(aes(2, 1.5, label = 'detection in site 1'), nudge_x = 0.6, size = 7) +
+  geom_text(aes(2, 1, label = 'detection in site 2'), nudge_x = 0.6, size = 7) +
   geom_point(aes(2, 1), size = 2.5, alpha = .7) +
   geom_point(aes(2, 1.5), size = 2.5, alpha = .7) +
   geom_point(aes(2, 2), size = 2.5, alpha = .7) +
-  geom_text(aes(1, 2, label = 'alive in site A'), nudge_x = -0.6, size = 7) +
-  geom_text(aes(1, 1.5, label = 'alive in site B'), nudge_x = -0.6, size = 7) +
+  geom_text(aes(1, 2, label = 'alive in site 1'), nudge_x = -0.6, size = 7) +
+  geom_text(aes(1, 1.5, label = 'alive in site 2'), nudge_x = -0.6, size = 7) +
   geom_text(aes(1, 1, label = 'dead'), nudge_x = -0.6, size = 7) +
   xlim(0, 3) +
   ylim(0.5, 3) +
@@ -68,17 +68,15 @@ ggplot() +
   theme_void()
 ```
 
-We have $z = 1$ for alive in site A, $z = 2$ for alive in site B and $z = 3$ for dead. We will code $y = 1$ for non-detected, $y = 2$ for detected in site A and $y = 3$ for detected is site B. The parameters are: 
-- $\pi^r$ is the probability the a newly encountered individual is in state $r$;
+We have $z = 1$ for alive in site 1, $z = 2$ for alive in site 2 and $z = 3$ for dead. We will code $y = 1$ for non-detected, $y = 2$ for detected in site 1 and $y = 3$ for detected in site 2. The parameters are:   
+- $\pi^r$ is the probability the a newly encountered individual is in state $r$;   
 - $p_t^r$ is the probability of detection at $t$ for a bird in site $r$ at $t$;  
 - $\phi_t^r$ is the survival probability for birds in site $r$ at between $t$ and $t+1$;  
 - $\psi_t^{rs}$ is the probability of being in site $s$ at time $t+1$ for animals that were in site $r$ at $t$ and have survived to $t+1$, in short movement conditional on survival.
 
-**Add HMM representation? Make link with observations and latent states. I'm hesitating between using letters for states, which is probably more intuitive, or numbers which would be more rigorous.**
+These parameters can be modelled as functions of covariates as in Section \@ref(covariates). But for now we will drop the time index for simplicity.
 
-We drop the time index.
-
-Vector of initial states. **Explain.**
+We follow the presentation of HMM as in Chapter \@ref(hmmcapturerecapture). Let's start with the vector of initial states. At first encounter, an animal may be alive in site 1 with probability $\pi^1$ or in site 2 with the complementary probability $1 - \pi^{1}$, but it cannot be dead. Therefore, we have: 
 
 $$\begin{matrix}
 & \\
@@ -87,8 +85,8 @@ $$\begin{matrix}
 \end{matrix}
 \hspace{-1.2em}
 \begin{matrix}
-    z_t=A & z_t=B & z_t=D \\ \hdashline
-\pi^A & 1 - \pi^{A} & 0\\
+    z_t=1 & z_t=2 & z_t=3 \\ \hdashline
+\pi^1 & 1 - \pi^{1} & 0\\
 \end{matrix}
 \hspace{-0.2em}
 \begin{matrix}
@@ -98,7 +96,7 @@ $$\begin{matrix}
     \end{matrix}
 \end{matrix}$$
 
-Transition matrix. **Explain.**
+We move on to the transition matrix which connects the states at $t-1$ in rows to the states at $t$ in columns. For example, the probability of moving from site 1 at $t-1$ to site $2$ at $t$ is the product of the survival probability in site 1 over that time interval, times the probability of moving from site 1 to 2 for those animals who survived. We have:
 
 $$\begin{matrix}
 & \\
@@ -107,9 +105,9 @@ $$\begin{matrix}
 \end{matrix}
 \hspace{-1.2em}
 \begin{matrix}
-    z_{t}=A & z_{t}=B & z_{t}=D \\ \hdashline
-\phi^A (1-\psi^{AB}) & \phi^A \psi^{AB} & 1 - \phi^A\\
-\phi^B \psi^{BA} & \phi^B (1-\psi^{BA}) & 1 - \phi^B\\
+    z_{t}=1 & z_{t}=2 & z_{t}=3 \\ \hdashline
+\phi^1 (1-\psi^{12}) & \phi^1 \psi^{12} & 1 - \phi^1\\
+\phi^2 \psi^{21} & \phi^2 (1-\psi^{21}) & 1 - \phi^2\\
 0 & 0 & 1
 \end{matrix}
 \hspace{-0.2em}
@@ -117,11 +115,11 @@ $$\begin{matrix}
 & \\
 \left . \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \end{matrix} } \right )
     \begin{matrix}
-    z_{t-1}=A \\ z_{t-1}=B \\ z_{t-1}=D
+    z_{t-1}=1 \\ z_{t-1}=2 \\ z_{t-1}=3
     \end{matrix}
 \end{matrix}$$
 
-Observation matrix. **Explain.**
+Finally, the observation matrix relates the states an animal is in at $t$ in rows to the observations at $t$ in columns. If an animal is dead ($z_t=3$), it cannot be detected ($\Pr(y_t=1|z_t=3)=\Pr(y_t=2|z_t=3)=0$ and $\Pr(y_t=3|z_t=3)=1$), whereas when it is alive in either site, it can be detected or not. We have: 
 
 $$\begin{matrix}
 & \\
@@ -130,9 +128,9 @@ $$\begin{matrix}
 \end{matrix}
 \hspace{-1.2em}
 \begin{matrix}
-    y_t=0 & y_t=1 & y_t=2 \\ \hdashline
-1 - p^A & p^A & 0\\
-1 - p^B & 0 & p^B\\
+    y_t=1 & y_t=2 & y_t=3 \\ \hdashline
+1 - p^1 & p^1 & 0\\
+1 - p^2 & 0 & p^2\\
 1 & 0 & 0
 \end{matrix}
 \hspace{-0.2em}
@@ -140,51 +138,42 @@ $$\begin{matrix}
 & \\
 \left . \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \end{matrix} } \right )
     \begin{matrix}
-    z_{t}=A \\ z_{t}=B \\ z_{t}=D
+    z_{t}=1 \\ z_{t}=2 \\ z_{t}=3
     \end{matrix}
 \end{matrix}$$
 
-### Goodness of fit {#gofas}
-  
-**I'm missing a section on gof w/ R2ucare and posterior predictive checks/Bayesian p-values.**
-
-```{r eval = FALSE}
-geese.hist <- geese$encounter_histories
-geese.freq <- geese$sample_size
-test3Gsr(geese.hist, geese.freq)
-test3Gsm(geese.hist, geese.freq)
-test3Gwbwa(geese.hist, geese.freq)
-testMitec(geese.hist, geese.freq)
-testMltec(geese.hist, geese.freq)
-```
-
-All at once:
-```{r eval = FALSE}
-overall_JMV(geese.hist, geese.freq)
-```
-
-**Refer to case study for posterior predictive check, and how to account for memory. If trap-dependence or transience is significant, you may account for these lacks of fit as in the Cormack-Jolly-Seber model example. If there are signs of a memory effect, it gets a bit trickier but you may fit a model to account for this issue. Check our Animal Biodiversity paper for more.**
+The vector of initial state probabilities sums up to one, as well as the rows of the transition and observation matrices. 
 
 ## Fitting the AS model {#ASmodelfitting}
 
 ### Geese data
 
-To introduce this chapter, we will use data on the Canada goose (*Cinclus cinclus*; geese hereafter) kindly provided by Jay Hestbeck (**add pix of a goose?**). In total, 21277 geese were captured, marked with coded neck bands and recaptured between 1984 and 1989 in their wintering locations. Specifically, geese were monitored in the Atlantic flyway, in large areas along the East coast of the USA, namely 3 sites in the mid--Atlantic (New York, Pennsylvania, New Jersey), Chesapeake (Delaware, Maryland, Virginia), and Carolinas (North and South Carolina). Birds were adults and sub-adults when banded. 
+To introduce this chapter, we will use data on the Canada goose (*Branta canadensis*; geese hereafter) kindly provided by Jay Hestbeck (Figure \@ref(fig:pixdipper)). 
 
-You may see the data below (**only a subsample**): 
-
-```{r echo = FALSE}
-geese <- read_csv(here::here("dat", "geese.csv"))
-geese
-y <- geese %>%
-  as.matrix()
+```{r pixgeese, echo=FALSE, out.width="100%", fig.cap="Canada goose (Branta canadensis). Credit: Max McCarthy.", fig.align='center'}
+knitr::include_graphics("images/goose.jpg")
 ```
 
-The six columns are years in which the geese were captured, banded and recapture. A 0 stands for a non-detection, and we coded detections in the 3 wintering sites 1, 2 and 3 for mid--Atlantic, Chesapeake and Carolinas respectively. 
+In total, 21277 geese were captured, marked with coded neck bands and recaptured between 1984 and 1989 in their wintering locations. Specifically, geese were monitored in the Atlantic flyway, in large areas along the East coast of the USA, namely 3 sites in the mid--Atlantic (New York, Pennsylvania, New Jersey), Chesapeake (Delaware, Maryland, Virginia), and Carolinas (North and South Carolina). Birds were adults and sub-adults when banded. 
+
+You may see the data below: 
+
+```{r echo = TRUE}
+y <- read_csv("dat/geese.csv") %>% as.matrix()
+head(y)
+```
+
+The six columns are years in which the geese were captured, banded and recapture. A 0 stands for a non-detection, and detections were coded in the 3 wintering sites 1, 2 and 3 for mid--Atlantic, Chesapeake and Carolinas respectively. This is only a subsample of 500 individuals of the whole dataset that I will use for illustration here. 
 
 ### NIMBLE implementation
 
-To write the NIMBLE code corresponding to the AS model, we will make our life easier and start with 2 sites only -- we drop the Carolinas wintering site for now (replace all 3's by 0's in the dataset). Also we consider parameters constant over time.
+To write the NIMBLE code corresponding to the AS model, we will make our life easier and start with 2 sites only -- we drop the Carolinas wintering site for now. We replace all 3's by 0's in the dataset:
+
+```{r}
+y[y==3] <- 0
+```
+
+Also we consider parameters constant over time.
 
 <!-- Note: You may code non-detections as $y_t = 2$, and the first column in the observation matrix should go last. -->
 
@@ -195,21 +184,21 @@ We start with comments to define the quantities -- parameters, states and observ
 multisite <- nimbleCode({
   # -------------------------------------------------
   # Parameters:
-  # phiA: survival probability site A
-  # phiB: survival probability site B
-  # psiAB: movement probability from site A to site B
-  # psiBA: movement probability from site B to site A
-  # pA: recapture probability site A
-  # pB: recapture probability site B
+  # phi1: survival probability site 1
+  # phi2: survival probability site 2
+  # psi12: movement probability from site 1 to site 2
+  # psi21: movement probability from site 2 to site 1
+  # p1: detection probability site 1
+  # p2: detection probability site 2
   # -------------------------------------------------
   # States (z):
-  # 1 alive at A
-  # 2 alive at B
+  # 1 alive at site 1
+  # 2 alive at site 2
   # 3 dead
   # Observations (y):
   # 1 not seen
-  # 2 seen at A
-  # 3 seen at B
+  # 2 seen at site 1
+  # 3 seen at site 2
   # -------------------------------------------------
 ...
 ```
@@ -219,12 +208,12 @@ The we specify priors for the survival, transition and detection probabilities:
 multisite <- nimbleCode({
 ...
   # Priors
-  phiA ~ dunif(0, 1)
-  phiB ~ dunif(0, 1)
-  psiAB ~ dunif(0, 1)
-  psiBA ~ dunif(0, 1)
-  pA ~ dunif(0, 1)
-  pB ~ dunif(0, 1)
+  phi1 ~ dunif(0, 1)
+  phi2 ~ dunif(0, 1)
+  psi12 ~ dunif(0, 1)
+  psi21 ~ dunif(0, 1)
+  p1 ~ dunif(0, 1)
+  p2 ~ dunif(0, 1)
 ...
 ```
 
@@ -233,13 +222,13 @@ We now write the vector of initial state probabilities:
 multisite <- nimbleCode({
 ...
   # initial state probabilities
-  delta[1] <- piA          # Pr(alive in A at t = first)
-  delta[2] <- 1 - piA      # Pr(alive in B at t = first)
+  delta[1] <- pi1          # Pr(alive in 1 at t = first)
+  delta[2] <- 1 - pi1      # Pr(alive in 2 at t = first)
   delta[3] <- 0            # Pr(dead at t = first) = 0
 ...
 ```
 
-Actually, the initial state is known exactly: It is alive at site of initial capture, and $\pi^A$ is the proportion of individuals first captured in site A, there is no need to make it explicit in the model and estimate it. Therefore, in the likelihood, instead of `z[i,first[i]] ~ dcat(delta[1:3])`, you can use `z[i,first[i]] <- y[i,first[i]] - 1` and just forget about $\\pi^A$, for now. **Forward reference to section on multievent model? Remind that y <- y + 1. Maybe start by estimating piA, then illustrating the trick.**. Note that the same trick applies to the CJS model.
+Actually, the initial state is known exactly: It is alive at site of initial capture, and $\pi^1$ is the proportion of individuals first captured in site 1, there is no need to make it explicit in the model and estimate it. Therefore, in the likelihood, instead of `z[i,first[i]] ~ dcat(delta[1:3])`, you can use `z[i,first[i]] <- y[i,first[i]] - 1` and just forget about $\pi^1$, for now. Note that the same trick applies to the CJS model. 
 
 We write the transition matrix:
 ```{r eval = FALSE}
@@ -248,19 +237,17 @@ multisite <- nimbleCode({
   # probabilities of state z(t+1) given z(t)
   # (read as gamma[z(t),z(t+1)] = gamma[fromState,toState])
 
-  gamma[1,1] <- phiA * (1 - psiAB)
-  gamma[1,2] <- phiA * psiAB
-  gamma[1,3] <- 1 - phiA
-  gamma[2,1] <- phiB * psiBA
-  gamma[2,2] <- phiB * (1 - psiBA)
-  gamma[2,3] <- 1 - phiB
+  gamma[1,1] <- phi1 * (1 - psi12)
+  gamma[1,2] <- phi1 * psi12
+  gamma[1,3] <- 1 - phi1
+  gamma[2,1] <- phi2 * psi21
+  gamma[2,2] <- phi2 * (1 - psi21)
+  gamma[2,3] <- 1 - phi2
   gamma[3,1] <- 0
   gamma[3,2] <- 0
   gamma[3,3] <- 1
 ...
 ```
-
-**Say something about parameterization in psiAB and psiBA and complementary probabilities that do not need to be estimated. Mutually exclusive event, therefore sum on a row is 1. **
 
 In the same way, the observation matrix is:
 ```{r eval = FALSE}
@@ -269,15 +256,15 @@ multisite <- nimbleCode({
   # probabilities of y(t) given z(t)
   # (read as omega[y(t),z(t)] = omega[Observation,State])
 
-  omega[1,1] <- 1 - pA     # Pr(alive A t -> non-detected t)
-  omega[1,2] <- pA         # Pr(alive A t -> detected A t)
-  omega[1,3] <- 0          # Pr(alive A t -> detected B t)
-  omega[2,1] <- 1 - pB     # Pr(alive B t -> non-detected t)
-  omega[2,2] <- 0          # Pr(alive B t -> detected A t)
-  omega[2,3] <- pB         # Pr(alive B t -> detected B t)
+  omega[1,1] <- 1 - p1     # Pr(alive 1 t -> non-detected t)
+  omega[1,2] <- p1         # Pr(alive 1 t -> detected site 1 t)
+  omega[1,3] <- 0          # Pr(alive 1 t -> detected site 2 t)
+  omega[2,1] <- 1 - p2     # Pr(alive 2 t -> non-detected t)
+  omega[2,2] <- 0          # Pr(alive 2 t -> detected site 1 t)
+  omega[2,3] <- p2         # Pr(alive 2 t -> detected site 2 t)
   omega[3,1] <- 1          # Pr(dead t -> non-detected t)
-  omega[3,2] <- 0          # Pr(dead t -> detected A t)
-  omega[3,3] <- 0          # Pr(dead t -> detected B t)
+  omega[3,2] <- 0          # Pr(dead t -> detected site 1 t)
+  omega[3,3] <- 0          # Pr(dead t -> detected site 2 t)
 ...
 ```
 
@@ -299,7 +286,47 @@ multisite <- nimbleCode({
 })
 ```
 
-Now we may run NIMBLE. **Provide whole code w/ inits, etc.**
+We need to provide NIMBLE with constants, data, initial values, some parameters to monitor and MCMC details:
+
+```{r eval = FALSE}
+# occasions of first capture
+first <- apply(y, 1, function(x) min(which(x !=0)))
+# constants
+my.constants <- list(first = first, 
+                     K = ncol(y), 
+                     N = nrow(y))
+# data
+my.data <- list(y = y + 1)
+# initial values 
+zinits <- y # say states are observations, detections in A or B are taken as alive in same sites 
+zinits[zinits==0] <- sample(c(1,2), sum(zinits==0), replace = TRUE) # non-detections become alive in site A or B
+initial.values <- function(){list(phi1 = runif(1, 0, 1), 
+                                  phi2 = runif(1, 0, 1), 
+                                  psi12 = runif(1, 0, 1), 
+                                  psi21 = runif(1, 0, 1), 
+                                  p1 = runif(1, 0, 1), 
+                                  p2 = runif(1, 0, 1), 
+                                  pi1 = runif(1, 0, 1),
+                                  z = zinits)}
+# parameters to monitor
+parameters.to.save <- c("phi1", "phi2","psi12", "psi21", "p1", "p2", "pi1")
+# MCMC details
+n.iter <- 5000
+n.burnin <- 1000
+n.chains <- 2
+```
+
+Now we may run NIMBLE:
+```{r eval = FALSE}
+mcmc.multisite <- nimbleMCMC(code = multisite, 
+                             constants = my.constants,
+                             data = my.data,              
+                             inits = initial.values,
+                             monitors = parameters.to.save,
+                             niter = n.iter,
+                             nburnin = n.burnin, 
+                             nchains = n.chains)
+```
 
 We may have a look to the results via a caterpillar plot: 
 ```{r, echo = FALSE}
@@ -309,10 +336,9 @@ load(here::here("dat","geese_2sites.RData"))
 MCMCplot(mcmc.multisite)
 ```
 
-Remember mid--Atlantic is site A, and Chesapeake site B. Detection in mid--Atlantic (around 0.5) is higher than in Cheasapeake (around 0.4) although it comes with more uncertainty (wider credible interval). Survival in both sites are similar estimated at around 0.6--0.7. Note that by going multisite, we could make these parameters site-specific and differences might reflect habitat quality for example. Now the novelty lies in our capability to estimate movements from site A to site B and from site B to site A from a winter to the next. The annual probability of remaining in the same site for two successive
-winters, used as a measure of site fidelity, was lower in the mid--Atlantic (around 0.7) than in the Chesapeake (0.9). The estimated probability of moving to the Chesapeake from the mid--Atlantic was three times as high as the probability of moving in the opposite direction.
+Remember mid--Atlantic is site 1, and Chesapeake site 2. Detection in mid--Atlantic (around 0.5) is higher than in Cheasapeake (around 0.4) although it comes with more uncertainty (wider credible interval). Survival in both sites are similar estimated at around 0.6--0.7. Note that by going multisite, we could make these parameters site-specific and differences might reflect habitat quality for example. Now the novelty lies in our capability to estimate movements from site 1 to site 2 and from site 2 to site 1 from a winter to the next. The annual probability of remaining in the same site for two successive winters, used as a measure of site fidelity, was lower in the mid--Atlantic (around 0.7) than in the Chesapeake (0.9). The estimated probability of moving to the Chesapeake from the mid--Atlantic was three times as high as the probability of moving in the opposite direction.
 
-We may also have a look to numerical summaries, which confirm our ecological interpretation of the model parameters:
+We may also have a look to numerical summaries, which confirm our ecological interpretation of the model parameter estimates:
 ```{r echo = FALSE}
 load(here::here("dat","geese_2sites.RData"))
 ```
@@ -320,7 +346,23 @@ load(here::here("dat","geese_2sites.RData"))
 MCMCsummary(mcmc.multisite, round = 2)
 ```
 
-**Add time-dependence and comment on the harshness of winters? Also this is only a subsample of the whole dataset, I shall introduce the pooled (marginalized) likelihood, probably at the end of the section/chapter.**
+You could add time-dependence to the demographic parameters, e.g. survival and movements, and assess the effect of winter harshness with some temporal covariates. Individual covariates could also be considered.  
+
+### Goodness of fit {#gofas}
+
+Like for the CJS model, we need to ensure that the AS model provides a good fit to the data. To do so, both posterior predictive checks and classical procedures can be used. I illustrate the use of posterior predictive checks in Section \@ref(ppchecks). With regard to classical tests, the goodness-of-fit testing procedures we covered in Section \@ref(gof) for the CJS model have been extended to the AS model. These procedure are also available in the package `R2ucare`. While the transience and trap-dependence tests can be used on each site, it is worth mentionning a test that is specific to the AS model with several sites. The "where before where after" (WBWA) tests for memory, in other words it's a test for the Markovian property of the HMM in the particular context of capture-recapture. WBWA quantifies whether there is a relationship between where an animal has last been seen and where it will next be seen again. If a relationship exists, positive or negative, this suggests memory in the movements, and the probability for an animal of moving to a site at $t$, given it is present in a site at $t-1$ should be made dependent of where it was at $t-2$. This is called a second-order Markov process. 
+
+Going back to the geese data, the WBWA test is implemented as follows on the whole dataset:
+```{r eval = TRUE}
+library(R2ucare)
+geese <- read_csv2("dat/allgeese.csv") %>% as.matrix()
+y <- geese[,1:6]
+size <- geese[,7]
+wbwa <- test3Gwbwa(y, size)
+wbwa$test3Gwbwa
+```
+
+There is clearly a strong (not to say significant) positive relationship judging by the value of the statistic. I will demonstrate how to account for this memory issue in an extension of the AS model in a case study in Section \@ref(memorymodel).
 
 ## What if more than 2 sites?
 
@@ -1403,7 +1445,9 @@ Double check that data are the same as in @king2016semi as I'd like to illustrat
 
 + Models with uncertainty were introduced in @pradel_multievent_2005. @dupuis_bayesian_1995 had a similar idea for the AS model. For a review, see @gimenez_estimating_2012.
 
-+ The section \@ref(localminima) on local minima was inspired by chapter 10 of @cooch2017intromark.  
++ The section \@ref(localminima) on local minima was inspired by chapter 10 of @cooch2017intromark.
+
++ **Quote paper two papers by Roger on gof (Biometrics and Animal Biodiversity and Conservation.**
 
 <!-- Several papers propose adapted MCMC algo. Also Gelman advice: "Say you have already found several distinct modes of the posterior and you are happy that these are the most important modes, and if the posterior around these modes is reasonably normal. Then you can calculate the hessian at these modes (say, using optim in R with hessian=T) and you can approximate the posterior as a mixture of normals (or t distributions). See p318-319 in Gelman et al. (2003) "Bayesian Data Analysis" for details. Then you can use the normal/t-mixture approximation as the proposal distribution in an independence sampler to obtain samples from the full posterior." -->
 
