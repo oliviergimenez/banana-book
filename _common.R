@@ -1,6 +1,6 @@
 # packages
 library(tidyverse)
-theme_set(theme_light())
+theme_set(theme_light(base_size = 14))
 library(nimble)
 library(MCMCvis)
 library(magick)

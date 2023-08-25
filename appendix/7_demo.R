@@ -216,8 +216,8 @@ parameters.to.save <- c("phiA", "phiB", "phiC", "psiA", "psiB", "psiC","pA", "pB
 #' 
 #' MCMC settings.
 ## ------------------------------------------------------------------------
-n.iter <- 10000
-n.burnin <- 5000
+n.iter <- 5000
+n.burnin <- 1000
 n.chains <- 2
 
 #' 
