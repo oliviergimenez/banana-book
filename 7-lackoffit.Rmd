@@ -8,7 +8,7 @@ Multievent formulation à la @pradeltrapdep2012. Also add example w/ individual 
 
 ## Transience {#transience}
 
-Multievent treatment à la @genovart2019.
+Multievent treatment à la @genovart2019. Remind of the two age-classes on survival technique. 
 
 ## Temporary emigration
 
@@ -24,8 +24,8 @@ $$\begin{matrix}
           \hspace{-1.2em}
           \begin{matrix}
           z_t=\text{in} & z_t=\text{out} & z_t=\text{D} \\ \hdashline
-          \phi (1-\psi_{\text{in} \rightarrow \text{out}}) & \phi \psi_{\text{in} \rightarrow \text{out}} & 1 - \phi\\
-          \phi \psi_{\text{out} \rightarrow \text{in}} & \phi (1-\psi_{\text{out} \rightarrow \text{in}}) & 1 - \phi\\
+          \phi (1-\psi^{\text{in} \rightarrow \text{out}}) & \phi \psi^{\text{in} \rightarrow \text{out}} & 1 - \phi\\
+          \phi \psi^{\text{out} \rightarrow \text{in}} & \phi (1-\psi^{\text{out} \rightarrow \text{in}}) & 1 - \phi\\
           0 & 0 & 1
           \end{matrix}
           \hspace{-0.2em}
@@ -46,7 +46,7 @@ $$\begin{matrix}
           \end{matrix}
           \hspace{-1.2em}
           \begin{matrix}
-          y_t=0 & y_t=1 \\ \hdashline
+          y_t=1 & y_t=2 \\ \hdashline
           1 - p & p\\
           1 & 0\\
           1 & 0
@@ -79,9 +79,9 @@ Individual heterogeneity
 + alive in class 2 (A2)
 + dead (D)
 
-+ 4 observations
-+ not captured (0)
-+ captured (1)
++ 2 observations
++ not captured (1)
++ captured (2)
 
 Vector of initial state probabilities
 
@@ -102,7 +102,7 @@ $$\begin{matrix}
 \begin{matrix}
 \end{matrix}
 \end{matrix}$$
-  
+
 $\pi$ is the probability of being alive in class 1. $1 - \pi$ is the probability of being in class 2.
 
 Transition matrix
@@ -140,8 +140,8 @@ $$\begin{matrix}
           \hspace{-1.2em}
           \begin{matrix}
           z_t=A1 & z_t=A2 & z_t=D \\ \hdashline
-          \phi (1-\psi_{12}) & \phi \psi_{12} & 1 - \phi\\
-          \phi \psi_{21} & \phi (1-\psi_{21}) & 1 - \phi\\
+          \phi (1-\psi^{12}) & \phi \psi^{12} & 1 - \phi\\
+          \phi \psi^{21} & \phi (1-\psi^{21}) & 1 - \phi\\
           0 & 0 & 1
           \end{matrix}
           \hspace{-0.2em}
@@ -153,7 +153,7 @@ z_{t-1}=A1 \\ z_{t-1}=A2 \\ z_{t-1}=D
 \end{matrix}
 \end{matrix}$$
   
-$\psi_{12}$ is the probability for an individual to change class of heterogeneity, from 1 to 2. $\psi_{21}$ is the probability for an individual to change class of heterogeneity, from 2 to 1.
+$\psi^{12}$ is the probability for an individual to change class of heterogeneity, from 1 to 2. $\psi^{21}$ is the probability for an individual to change class of heterogeneity, from 2 to 1.
 
 Observation matrix
 
@@ -164,9 +164,9 @@ $$\begin{matrix}
           \end{matrix}
           \hspace{-1.2em}
           \begin{matrix}
-          y_t=0 & y_t=1\\ \hdashline
-          1 - p_1 & p_1\\
-          1 - p_2 & p_2\\
+          y_t=1 & y_t=2\\ \hdashline
+          1 - p^1 & p^1\\
+          1 - p^2 & p^2\\
           1 & 0
           \end{matrix}
           \hspace{-0.2em}
@@ -178,7 +178,7 @@ z_{t}=A1 \\ z_{t}=A2 \\ z_{t}=D
 \end{matrix}
 \end{matrix}$$
   
-$p_1$ is detection for individuals in class 1, and $p_2$ that of individuals in class 2.
+$p^1$ is detection for individuals in class 1, and $p^2$ that of individuals in class 2.
 
 Results
 
@@ -188,13 +188,15 @@ load(here::here("dat","wolf_het.RData"))
 MCMCsummary(mcmc.phipmix, round = 2)
 ```
 
-We have lowly detectable individuals (class A1 with $p_1$) in proportion 62%. And highly (or so) detectable individuals (class A2 with $p_2$) in proportion 38%. Note that interpretation of classes is made a posteriori. Survival is 81%.
+We have lowly detectable individuals (class A1 with $p^1$) in proportion 62%. And highly (or so) detectable individuals (class A2 with $p^2$) in proportion 38%. Note that interpretation of classes is made a posteriori. Survival is 81%.
 
 ```{r, echo = FALSE}
 library(MCMCvis)
 load(here::here("dat","wolf_het.RData"))
 MCMCplot(mcmc.phipmix)
 ```
+
+From the simulations I run, seems like the categorical sampler on latent states gets stuck in places that depend on initial values. Changing for the slice sampler improves thing a bit, but not that much. Only option is to get rid of the states and use the marginalized likelihood. Nice illustration of the use of simulations (to check model is doing ok, estimated are valid, etc.), changing samplers, nimbleEcology, NIMBLE functions, etc. 
 
 You may consider more classes, and select among models, see @cubaynes2012. You may also go for a non-parametric approach and let the data tell you how many classes you need. This is relatively easy to do in NIMBLE, see @turek_bayesian_2021. More about individual heterogeneity in @gimenez2018ih.
 
@@ -222,8 +224,8 @@ $$\begin{matrix}
 \hspace{-1.2em}
 \begin{matrix}
 z_t=A & z_t=B & z_t=D \\ \hdashline
-\phi_A (1-\psi_{AB}) & \phi_A \psi_{AB} & 1 - \phi_A\\
-\phi_B \psi_{BA} & \phi_B (1-\psi_{BA}) & 1 - \phi_B\\
+\phi^A (1-\psi^{AB}) & \phi^A \psi^{AB} & 1 - \phi^A\\
+\phi^B \psi^{BA} & \phi^B (1-\psi^{BA}) & 1 - \phi^B\\
 0 & 0 & 1
 \end{matrix}
 \hspace{-0.2em}
@@ -244,9 +246,9 @@ $$\begin{matrix}
 \end{matrix}
 \hspace{-1.2em}
 \begin{matrix}
-y_t=0 & y_t=1 & y_t=2 \\ \hdashline
-1 - p_A & p_A & 0\\
-1 - p_B & 0 & p_B\\
+y_t=1 & y_t=2 & y_t=3 \\ \hdashline
+1 - p^A & p^A & 0\\
+1 - p^B & 0 & p^B\\
 1 & 0 & 0
 \end{matrix}
 \hspace{-0.2em}
@@ -270,9 +272,9 @@ To keep track of the sites previously visited, the trick is to consider states a
 + D is for dead
 
 + Observations
-+ 0 not captured
-+ 1 captured at site A
-+ 2 captured at site B
++ 1 not captured
++ 2 captured at site A
++ 3 captured at site B
 
 Vector of initial state probabilities
 
@@ -284,7 +286,7 @@ $$\begin{matrix}
 \hspace{-1.2em}
 \begin{matrix}
 z_t=AA & z_t=AB & z_t=BA & z_t=BB &z_t=D \\ \hdashline
-\pi_{AA} & \pi_{AB} & \pi_{BA} & \pi_{BB} & 0\\
+\pi^{AA} & \pi^{AB} & \pi^{BA} & \pi^{BB} & 0\\
 \end{matrix}
 \hspace{-0.2em}
 \begin{matrix}
@@ -294,7 +296,7 @@ z_t=AA & z_t=AB & z_t=BA & z_t=BB &z_t=D \\ \hdashline
 \end{matrix}
 \end{matrix}$$
 
-where $\pi_{BB} = 1 - (\pi_{AA} + \pi_{AB} + \pi_{BA})$, and $\pi_{ij}$ at site $j$ when first captured at $t$ and site $i$ at $t - 1$.
+where $\pi^{BB} = 1 - (\pi^{AA} + \pi^{AB} + \pi^{BA})$, and $\pi^{ij}$ at site $j$ when first captured at $t$ and site $i$ at $t - 1$.
 
 Transition matrix
 
@@ -306,10 +308,10 @@ $$\begin{matrix}
 \hspace{-1.2em}
 \begin{matrix}
 z_t=AA & z_t=AB & z_t=BA & z_t=BB & z_t=D \\ \hdashline
-\phi_{AAA} & \phi_{AAB} & 0 & 0 & 1 - \phi_{AAA} - \phi_{AAB}\\
-0 & 0 & \phi_{ABA} & \phi_{ABB} & 1 - \phi_{ABA} - \phi_{ABB}\\
-\phi_{BAA} & \phi_{BAB} & 0 & 0 & 1 - \phi_{BAA} - \phi_{BAB}\\
-0 & 0 & \phi_{BBA} & \phi_{BBB} & 1 - \phi_{BBA} - \phi_{BBB}\\
+\phi^{AAA} & \phi^{AAB} & 0 & 0 & 1 - \phi^{AAA} - \phi^{AAB}\\
+0 & 0 & \phi^{ABA} & \phi^{ABB} & 1 - \phi^{ABA} - \phi^{ABB}\\
+\phi^{BAA} & \phi^{BAB} & 0 & 0 & 1 - \phi^{BAA} - \phi^{BAB}\\
+0 & 0 & \phi^{BBA} & \phi^{BBB} & 1 - \phi^{BBA} - \phi^{BBB}\\
 0 & 0 & 0 & 0 & 1
 \end{matrix}
 \hspace{-0.2em}
@@ -317,11 +319,11 @@ z_t=AA & z_t=AB & z_t=BA & z_t=BB & z_t=D \\ \hdashline
 & \\
 \left . \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \\ 12 \\ 12\end{matrix} } \right )
 \begin{matrix}
-z_t=AA \\ z_t=AB \\ z_t=BA \\ z_t=BB \\ z_t=D
+z_{t-1}=AA \\ z_{t-1}=AB \\ z_{t-1}=BA \\ z_{t-1}=BB \\ z_{t-1}=D 
 \end{matrix}
 \end{matrix}$$
 
-$\phi_{ijk}$ is probability to be in site $k$ at time $t + 1$ for an individual
+$\phi^{ijk}$ is probability to be in site $k$ at time $t + 1$ for an individual
 present in site $j$ at $t$ and in site $i$ at $t - 1$
 
 Transition matrix, alternate parameterization
@@ -334,10 +336,10 @@ $$\begin{matrix}
 \hspace{-1.2em}
 \begin{matrix}
 z_t=AA & z_t=AB & z_t=BA & z_t=BB & z_t=D \\ \hdashline
-\phi \psi_{AAA} & \phi (1 - \psi_{AAA}) & 0 & 0 & 1 - \phi\\
-0 & 0 & \phi (1 - \psi_{ABB}) & \phi \psi_{ABB} & 1 - \phi\\
-\phi \psi_{BAA} & \phi (1 - \psi_{BAA}) & 0 & 0 & 1 - \phi\\
-0 & 0 & \phi (1-\psi_{BBB}) & \phi \psi_{BBB} & 1 - \phi\\
+\phi \psi^{AAA} & \phi (1 - \psi^{AAA}) & 0 & 0 & 1 - \phi\\
+0 & 0 & \phi (1 - \psi^{ABB}) & \phi \psi^{ABB} & 1 - \phi\\
+\phi \psi^{BAA} & \phi (1 - \psi^{BAA}) & 0 & 0 & 1 - \phi\\
+0 & 0 & \phi (1-\psi^{BBB}) & \phi \psi^{BBB} & 1 - \phi\\
 0 & 0 & 0 & 0 & 1
 \end{matrix}
 \hspace{-0.2em}
@@ -345,7 +347,7 @@ z_t=AA & z_t=AB & z_t=BA & z_t=BB & z_t=D \\ \hdashline
 & \\
 \left . \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \\ 12 \\ 12\end{matrix} } \right )
 \begin{matrix}
-z_t=AA \\ z_t=AB \\ z_t=BA \\ z_t=BB \\ z_t=D
+z_{t-1}=AA \\ z_{t-1}=AB \\ z_{t-1}=BA \\ z_{t-1}=BB \\ z_{t-1}=D
 \end{matrix}
 \end{matrix}$$
 
@@ -360,11 +362,11 @@ $$\begin{matrix}
 \end{matrix}
 \hspace{-1.2em}
 \begin{matrix}
-y_t=0 & y_t=1 & y_t=2 \\ \hdashline
-1 - p_A & p_A & 0\\
-1 - p_B & 0 & p_B\\
-1 - p_A & p_A & 0\\
-1 - p_B & 0 & p_B\\
+y_t=1 & y_t=2 & y_t=3 \\ \hdashline
+1 - p^A & p^A & 0\\
+1 - p^B & 0 & p^B\\
+1 - p^A & p^A & 0\\
+1 - p^B & 0 & p^B\\
 1 & 0 & 0
 \end{matrix}
 \hspace{-0.2em}
