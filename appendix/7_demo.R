@@ -1,10 +1,5 @@
-
-#' 
-#' 
-#' ## Marginalization with nimbleEcology
-#' 
-#' Let's get back to the analysis of the Canada geese data, with 3 sites. 
-## ------------------------------------------------------------------------
+# Let's get back to the analysis of the Canada geese data, with 3 sites. 
+library
 geese <- read_csv("appendix/geese.csv", col_names = TRUE)
 y <- as.matrix(geese)
 

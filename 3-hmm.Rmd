@@ -1111,10 +1111,10 @@ In NIMBLE, we use functions to implement the forward algorithm. The only differe
 
 First we write the density function:
 ```{r}
-dHMM <- nimbleFunction(
+dHMMhomemade <- nimbleFunction(
   run = function(x = double(1), 
                  probInit = double(1), # vector of initial states
-                 probObs = double(2), #observation matrix
+                 probObs = double(2), # observation matrix
                  probTrans = double(2), # transition matrix
                  len = double(0, default = 0), # number of sampling occasions
                  log = integer(0, default = 0)) {
@@ -1132,7 +1132,7 @@ dHMM <- nimbleFunction(
 
 In passing, this is the function you would maximize in a frequentist approach (see Section \@ref(under-the-hood)). Then we write a function to simulate values from a HMM:
 ```{r}
-rHMM <- nimbleFunction(
+rHMMhomemade <- nimbleFunction(
   run = function(n = integer(),
                  probInit = double(1),
                  probObs = double(2),
@@ -1155,17 +1155,17 @@ rHMM <- nimbleFunction(
 
 We assign these functions to the global R environment:
 ```{r}
-assign('dHMM', dHMM, .GlobalEnv)
-assign('rHMM', rHMM, .GlobalEnv)
+assign('dHMMhomemade', dHMMhomemade, .GlobalEnv)
+assign('rHMMhomemade', rHMMhomemade, .GlobalEnv)
 ```
 
 ```{r, eval = FALSE, echo = FALSE}
-dHMM(x = c(2,2,1,1,1),
+dHMMhomemade(x = c(2,2,1,1,1),
      probInit = delta,
      probObs = Gamma,
      probTrans = Omega,
      len = 5)
-rHMM(probInit = delta,
+rHMMhomemade(probInit = delta,
      probObs = Gamma,
      probTrans = Omega,
      len = 5)
@@ -1191,7 +1191,7 @@ nc <- nimbleCode({
   omega[2,1] <- 1        # Pr(dead t -> non-detected t)
   omega[2,2] <- 0        # Pr(dead t -> detected t)
   for (i in 1:N){
-    y[i,1:T] ~ dHMM(probInit = delta[1:2], 
+    y[i,1:T] ~ dHMMhomemade(probInit = delta[1:2], 
                     probObs = omega[1:2,1:2], # observation matrix
                     probTrans = gamma[1:2,1:2], # transition matrix
                     len = T) # nb of sampling occasions
@@ -1224,10 +1224,10 @@ hmm.survival <- nimbleCode({
   omega[2,1] <- 1        # Pr(dead t -> non-detected t)
   omega[2,2] <- 0        # Pr(dead t -> detected t)
   for (i in 1:N){
-    y[i,1:T] ~ dHMM(probInit = delta[1:2], 
-                    probObs = omega[1:2,1:2], # observation matrix
-                    probTrans = gamma[1:2,1:2], # transition matrix
-                    len = T) # nb of sampling occasions
+    y[i,1:T] ~ dHMMhomemade(probInit = delta[1:2], 
+                            probObs = omega[1:2,1:2], # observation matrix
+                            probTrans = gamma[1:2,1:2], # transition matrix
+                            len = T) # nb of sampling occasions
   }
 })
 # constants
@@ -1358,7 +1358,7 @@ We can go one step further to make convergence even faster. As mentionned earlie
 
 In this section, we amend the NIMBLE functions we wrote for marginalizing latent states in Section \@ref(marginalization) to express the likelihood using pooled encounter histories. We use a vector `size` that contains the number of individuals with the same encounter history. 
 
-The density function is the function `dHMM` to which we add a `size` argument, and raise the individual likelihood to the power `size`, or multiply by `size` as we work on the log scale `log(sum(alpha[1:2])) * size`:
+The density function is the function `dHMMhomemade` to which we add a `size` argument, and raise the individual likelihood to the power `size`, or multiply by `size` as we work on the log scale `log(sum(alpha[1:2])) * size`:
 ```{r}
 dHMMpooled <- nimbleFunction(
   run = function(x = double(1), 
@@ -1380,7 +1380,7 @@ dHMMpooled <- nimbleFunction(
 )
 ```
 
-The `rHMM` function is renamed `rHMMpooled` for compatibility but remains unchanged:
+The `rHMMhomemade` function is renamed `rHMMpooled` for compatibility but remains unchanged:
 ```{r}
 rHMMpooled <- nimbleFunction(
   run = function(n = integer(),

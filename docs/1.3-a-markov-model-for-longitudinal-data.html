@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="" xml:lang="">
+<head>
+
+<meta charset="utf-8" />
+<meta name="generator" content="pandoc" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta property="og:title" content="1.3 A Markov model for longitudinal data | banana-book.knit" />
+<meta property="og:type" content="book" />
+
+
+
+
+
+
+<script type="text/x-mathjax-config">
+MathJax.Hub.Config({
+  TeX: { equationNumbers: { autoNumber: "AMS" } }
+});
+</script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<meta name="description" content="1.3 A Markov model for longitudinal data | banana-book.knit">
+
+<title>1.3 A Markov model for longitudinal data | banana-book.knit</title>
+
+<script src="libs/jquery-3.6.0/jquery-3.6.0.min.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link href="libs/bootstrap-3.3.5/css/bootstrap.min.css" rel="stylesheet" />
+<script src="libs/bootstrap-3.3.5/js/bootstrap.min.js"></script>
+<script src="libs/bootstrap-3.3.5/shim/html5shiv.min.js"></script>
+<script src="libs/bootstrap-3.3.5/shim/respond.min.js"></script>
+<style>h1 {font-size: 34px;}
+       h1.title {font-size: 38px;}
+       h2 {font-size: 30px;}
+       h3 {font-size: 24px;}
+       h4 {font-size: 18px;}
+       h5 {font-size: 16px;}
+       h6 {font-size: 12px;}
+       code {color: inherit; background-color: rgba(0, 0, 0, 0.04);}
+       pre:not([class]) { background-color: white }</style>
+<script src="libs/navigation-1.1/tabsets.js"></script>
+
+
+<style type="text/css">code{white-space: pre;}</style>
+<style type="text/css">
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { display: inline-block; text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+    color: #aaaaaa;
+  }
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+code span.at { color: #7d9029; } /* Attribute */
+code span.bn { color: #40a070; } /* BaseN */
+code span.bu { color: #008000; } /* BuiltIn */
+code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+code span.ch { color: #4070a0; } /* Char */
+code span.cn { color: #880000; } /* Constant */
+code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+code span.dt { color: #902000; } /* DataType */
+code span.dv { color: #40a070; } /* DecVal */
+code span.er { color: #ff0000; font-weight: bold; } /* Error */
+code span.ex { } /* Extension */
+code span.fl { color: #40a070; } /* Float */
+code span.fu { color: #06287e; } /* Function */
+code span.im { color: #008000; font-weight: bold; } /* Import */
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+code span.op { color: #666666; } /* Operator */
+code span.ot { color: #007020; } /* Other */
+code span.pp { color: #bc7a00; } /* Preprocessor */
+code span.sc { color: #4070a0; } /* SpecialChar */
+code span.ss { color: #bb6688; } /* SpecialString */
+code span.st { color: #4070a0; } /* String */
+code span.va { color: #19177c; } /* Variable */
+code span.vs { color: #4070a0; } /* VerbatimString */
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+</style>
+<style type="text/css">
+  pre:not([class]) {
+    background-color: white;
+  }
+</style>
+
+
+
+
+<style type = "text/css">
+.main-container {
+  max-width: 940px;
+  margin-left: auto;
+  margin-right: auto;
+}
+code {
+  color: inherit;
+  background-color: rgba(0, 0, 0, 0.04);
+}
+img {
+  max-width:100%;
+  height: auto;
+}
+/* show arrow before summary tag as in bootstrap
+TODO: remove if bootstrap in updated in html_document (rmarkdown#1485) */
+details > summary {
+  display: list-item;
+  cursor: pointer;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container-fluid main-container">
+
+
+<div class="row">
+<div class="col-sm-12">
+<div id="TOC">
+<ul>
+<li class="has-sub"><a href="1-hmmcapturerecapture.html#hmmcapturerecapture" id="toc-hmmcapturerecapture"><span class="toc-section-number">1</span> Hidden Markov models</a>
+<ul>
+<li><a href="1.1-introduction.html#introduction" id="toc-introduction"><span class="toc-section-number">1.1</span> Introduction</a></li>
+<li><a href="1.2-longitudinal-data.html#longitudinal-data" id="toc-longitudinal-data"><span class="toc-section-number">1.2</span> Longitudinal data</a></li>
+<li class="has-sub"><a href="1.3-a-markov-model-for-longitudinal-data.html#a-markov-model-for-longitudinal-data" id="toc-a-markov-model-for-longitudinal-data"><span class="toc-section-number">1.3</span> A Markov model for longitudinal data</a>
+<ul>
+<li><a href="1.3-a-markov-model-for-longitudinal-data.html#assumptions" id="toc-assumptions"><span class="toc-section-number">1.3.1</span> Assumptions</a></li>
+<li><a href="1.3-a-markov-model-for-longitudinal-data.html#transition-matrix" id="toc-transition-matrix"><span class="toc-section-number">1.3.2</span> Transition matrix</a></li>
+<li><a href="1.3-a-markov-model-for-longitudinal-data.html#initial-states" id="toc-initial-states"><span class="toc-section-number">1.3.3</span> Initial states</a></li>
+<li><a href="1.3-a-markov-model-for-longitudinal-data.html#likelihood" id="toc-likelihood"><span class="toc-section-number">1.3.4</span> Likelihood</a></li>
+<li><a href="1.3-a-markov-model-for-longitudinal-data.html#example" id="toc-example"><span class="toc-section-number">1.3.5</span> Example</a></li>
+</ul></li>
+<li><a href="1.4-bayesian-formulation.html#bayesian-formulation" id="toc-bayesian-formulation"><span class="toc-section-number">1.4</span> Bayesian formulation</a></li>
+<li><a href="1.5-nimble-implementation.html#nimble-implementation" id="toc-nimble-implementation"><span class="toc-section-number">1.5</span> NIMBLE implementation</a></li>
+<li class="has-sub"><a href="1.6-hidden-markov-models.html#hidden-markov-models" id="toc-hidden-markov-models"><span class="toc-section-number">1.6</span> Hidden Markov models</a>
+<ul>
+<li><a href="1.6-hidden-markov-models.html#capturerecapturedata" id="toc-capturerecapturedata"><span class="toc-section-number">1.6.1</span> Capture-recapture data</a></li>
+<li><a href="1.6-hidden-markov-models.html#observation-matrix" id="toc-observation-matrix"><span class="toc-section-number">1.6.2</span> Observation matrix</a></li>
+<li><a href="1.6-hidden-markov-models.html#hidden-markov-model" id="toc-hidden-markov-model"><span class="toc-section-number">1.6.3</span> Hidden Markov model</a></li>
+<li><a href="1.6-hidden-markov-models.html#likelihoodhmm" id="toc-likelihoodhmm"><span class="toc-section-number">1.6.4</span> Likelihood</a></li>
+</ul></li>
+<li><a href="1.7-fittinghmmnimble.html#fittinghmmnimble" id="toc-fittinghmmnimble"><span class="toc-section-number">1.7</span> Fitting HMM with NIMBLE</a></li>
+<li class="has-sub"><a href="1.8-marginalization.html#marginalization" id="toc-marginalization"><span class="toc-section-number">1.8</span> Marginalization</a>
+<ul>
+<li><a href="1.8-marginalization.html#brute-force-approach" id="toc-brute-force-approach"><span class="toc-section-number">1.8.1</span> Brute-force approach</a></li>
+<li><a href="1.8-marginalization.html#forward-algorithm" id="toc-forward-algorithm"><span class="toc-section-number">1.8.2</span> Forward algorithm</a></li>
+<li><a href="1.8-marginalization.html#nimblemarginalization" id="toc-nimblemarginalization"><span class="toc-section-number">1.8.3</span> NIMBLE implementation</a></li>
+</ul></li>
+<li><a href="1.9-pooled-likelihood.html#pooled-likelihood" id="toc-pooled-likelihood"><span class="toc-section-number">1.9</span> Pooled encounter histories</a></li>
+<li class="has-sub"><a href="1.10-decoding.html#decoding" id="toc-decoding"><span class="toc-section-number">1.10</span> Decoding after marginalization</a>
+<ul>
+<li><a href="1.10-decoding.html#viterbi-theory" id="toc-viterbi-theory"><span class="toc-section-number">1.10.1</span> Theory</a></li>
+<li><a href="1.10-decoding.html#implementation" id="toc-implementation"><span class="toc-section-number">1.10.2</span> Implementation</a></li>
+<li><a href="1.10-decoding.html#compute-average" id="toc-compute-average"><span class="toc-section-number">1.10.3</span> Compute first, average after</a></li>
+<li><a href="1.10-decoding.html#average-first-compute-after" id="toc-average-first-compute-after"><span class="toc-section-number">1.10.4</span> Average first, compute after</a></li>
+</ul></li>
+<li><a href="1.11-summary.html#summary" id="toc-summary"><span class="toc-section-number">1.11</span> Summary</a></li>
+<li><a href="1.12-suggested-reading.html#suggested-reading" id="toc-suggested-reading"><span class="toc-section-number">1.12</span> Suggested reading</a></li>
+</ul></li>
+</ul>
+</div>
+</div>
+</div>
+<div class="row">
+<div class="col-sm-12">
+<div id="a-markov-model-for-longitudinal-data" class="section level2" number="1.3">
+<h2><span class="header-section-number">1.3</span> A Markov model for longitudinal data</h2>
+<p>Let’s think of a model for these data. The objective remains the same, estimating survival. To build this model, we’ll make assumptions, go through its components and write down its likelihood. Note that we have already encountered Markov models in Section <a href="#markovmodelmcmc"><strong>??</strong></a>.</p>
+<div id="assumptions" class="section level3" number="1.3.1">
+<h3><span class="header-section-number">1.3.1</span> Assumptions</h3>
+<p>First, we assume that the state of an animal in a given winter, alive or dead, is only dependent on its state the winter before. In other words, the future depends only on the present, not the past. This is a Markov process.</p>
+<p>Second, if an animal is alive in a given winter, the probability it survives to the next winter is <span class="math inline">\(\phi\)</span>. The probability it dies is <span class="math inline">\(1 - \phi\)</span>.</p>
+<p>Third, if an animal is dead a winter, it remains dead, unless you believe in zombies.</p>
+<p>Our Markov process can be represented this way:</p>
+<p><img src="banana-book_files/figure-html/unnamed-chunk-4-1.png" width="672" /></p>
+<p>An example of this Markov process is, for example:</p>
+<p><img src="banana-book_files/figure-html/unnamed-chunk-5-1.png" width="672" /></p>
+<p>Here the animal remains alive over the first two time intervals <span class="math inline">\((z_{i,1} = z_{i,2} = z_{i,3} = 1)\)</span> with probability <span class="math inline">\(\phi\)</span> until it dies over the fourth time interval <span class="math inline">\((z_{i,4} = 2)\)</span> with probability <span class="math inline">\(1-\phi\)</span> then remains dead from then onwards <span class="math inline">\((z_{i,5} = 2)\)</span> with probability 1.</p>
+</div>
+<div id="transition-matrix" class="section level3" number="1.3.2">
+<h3><span class="header-section-number">1.3.2</span> Transition matrix</h3>
+<p>You might have figured it out already (if not, not a problem), the core of our Markov process is made of transition probabilities between states alive and dead. For example, the probability of transitioning from state alive at <span class="math inline">\(t-1\)</span> to state alive at <span class="math inline">\(t\)</span> is <span class="math inline">\(\Pr(z_{i,t} = 1 | z_{i,t-1} = 1) = \gamma_{1,1}\)</span>. It is the survival probability <span class="math inline">\(\phi\)</span>. The probability of dying over the interval <span class="math inline">\((t-1, t)\)</span> is <span class="math inline">\(\Pr(z_{i,t} = 2 | z_{i,t-1} = 1) = \gamma_{1,2} = 1 - \phi\)</span>. Now if an animal is dead at <span class="math inline">\(t-1\)</span>, then <span class="math inline">\(\Pr(z_t = 1 | z_{t-1} = 2) = 0\)</span> and <span class="math inline">\(\Pr(z_{i,t} = 2 | z_{i,t-1} = 2) = 1\)</span>.</p>
+<p>We can gather these probabilities of transition between states from one occasion to the next in a matrix, say <span class="math inline">\(\mathbf{\Gamma}\)</span>, which we will call the transition matrix:</p>
+<p><span class="math display">\[\begin{align*}
+\mathbf{\Gamma} =
+\left(\begin{array}{cc}
+\gamma_{1,1} &amp; \gamma_{1,2}\\
+\gamma_{2,1} &amp; \gamma_{2,2}
+\end{array}\right) =
+\left(\begin{array}{cc}
+\phi &amp; 1 - \phi\\
+0 &amp; 1
+\end{array}\right)
+\end{align*}\]</span></p>
+<p>To try and remember that the states at <span class="math inline">\(t-1\)</span> are in rows, and the states at <span class="math inline">\(t\)</span> are in columns, I will often write:</p>
+<p><span class="math display">\[\begin{matrix}
+&amp; \\
+\mathbf{\Gamma} =
+    \left ( \vphantom{ \begin{matrix} 12 \\ 12 \end{matrix} } \right .
+\end{matrix}
+\hspace{-1.2em}
+\begin{matrix}
+    z_t=1 &amp; z_t=2 \\ \hdashline
+\phi &amp; 1-\phi \\
+0 &amp; 1
+\end{matrix}
+\hspace{-0.2em}
+\begin{matrix}
+&amp; \\
+\left . \vphantom{ \begin{matrix} 12 \\ 12 \end{matrix} } \right )
+    \begin{matrix}
+    z_{t-1}=1 \; \mbox{(alive)} \\ z_{t-1}=2 \; \mbox{(dead)}
+    \end{matrix}
+\end{matrix}\]</span></p>
+<p>Take the time you need to navigate through this matrix, and get familiar with it. For example, you may start alive at <span class="math inline">\(t\)</span> (first row) then end up dead at <span class="math inline">\(t+1\)</span> (first column) with probability <span class="math inline">\(1-\phi\)</span>.</p>
+</div>
+<div id="initial-states" class="section level3" number="1.3.3">
+<h3><span class="header-section-number">1.3.3</span> Initial states</h3>
+<p>A Markov process has to start somewhere. We need the probabilities of initial states, i.e. the states of an individual at <span class="math inline">\(t = 1\)</span>. We will gather the probability of being in each state (alive or 1 and dead or 2) in the first winter in a vector. We will use <span class="math inline">\(\mathbf{\delta} = \left(\Pr(z_{i,1} = 1), \Pr(z_{i,1} = 2)\right)\)</span>. For simplicity, we will assume that all individuals are marked and released in the first winter, hence alive when first captured, which means that they are all in state alive or 1 for sure. Therefore we have <span class="math inline">\(\mathbf{\delta} = \left(1, 0\right)\)</span>.</p>
+</div>
+<div id="likelihood" class="section level3" number="1.3.4">
+<h3><span class="header-section-number">1.3.4</span> Likelihood</h3>
+<p>Now that we have built a Markov model, we need its likelihood to apply the Bayes theorem. The likelihood is the probability of the data, given the model. Here the data are the <span class="math inline">\(z\)</span>, therefore we need <span class="math inline">\(\Pr(\mathbf{z}) = \Pr(z_1, z_2, \ldots, z_{T-2}, z_{T-1}, z_T)\)</span>.</p>
+<p>We’re gonna work backward, starting from the last sampling occasion. Using conditional probabilities, the likelihood can be written as the product of the probability of <span class="math inline">\(z_T\)</span> i.e. you’re alive or not on the last occasion given your past history, that is the states at previous occasions, times the probability of your past history:</p>
+<p><span class="math display">\[\begin{align*}
+\Pr(\mathbf{z}) &amp;= \Pr(z_T, z_{T-1}, z_{T-2}, \ldots, z_1) \color{white}{\Pr(z_{T-1}, z_{T-2},\ldots, z_1) \Pr(z_{T-2}, \ldots, z_1)}\\
+                &amp;= \color{blue}{\Pr(z_T | z_{T-1}, z_{T-2},\ldots, z_1) \Pr(z_{T-1}, z_{T-2},\ldots, z_1)} \\
+\end{align*}\]</span></p>
+<p>Then because we have a Markov model, we’re memory less, that is the probabilty of next state, here <span class="math inline">\(z_T\)</span>, depends only on the current state, that is <span class="math inline">\(z_{T-1}\)</span>, and not the previous states:</p>
+<p><span class="math display">\[\begin{align*}
+\Pr(\mathbf{z}) &amp;= \Pr(z_T, z_{T-1}, z_{T-2}, \ldots, z_1) \color{white}{\Pr(z_{T-1}, z_{T-2},\ldots, z_1) \Pr(z_{T-2}, \ldots, z_1)}\\
+                &amp;= \Pr(z_T | z_{T-1}, z_{T-2},\ldots, z_1) \Pr(z_{T-1}, z_{T-2},\ldots, z_1) \\
+                &amp;= \color{blue}{\Pr(z_T | z_{T-1})} \Pr(z_{T-1}, z_{T-2},\ldots, z_1) \\
+\end{align*}\]</span></p>
+<p>You can apply the same reasoning to <span class="math inline">\(T-1\)</span>. First use conditional probabilities:</p>
+<p><span class="math display">\[\begin{align*}
+\Pr(\mathbf{z}) &amp;= \Pr(z_T, z_{T-1}, z_{T-2}, \ldots, z_1) \color{white}{\Pr(z_{T-1}, z_{T-2},\ldots, z_1) \Pr(z_{T-2}, \ldots, z_1)}\\
+                &amp;= \Pr(z_T | z_{T-1}, z_{T-2},\ldots, z_1) \Pr(z_{T-1}, z_{T-2},\ldots, z_1) \\
+                &amp;= \Pr(z_T | z_{T-1}) \Pr(z_{T-1}, z_{T-2},\ldots, z_1) \\
+                &amp;= \Pr(z_T | z_{T-1}) \color{blue}{\Pr(z_{T-1} | z_{T-2}, \ldots, z_1) \Pr(z_{T-2}, \ldots, z_1)}\\
+\end{align*}\]</span></p>
+<p>Then apply the Markovian property:</p>
+<p><span class="math display">\[\begin{align*}
+\Pr(\mathbf{z}) &amp;= \Pr(z_T, z_{T-1}, z_{T-2}, \ldots, z_1) \color{white}{\Pr(z_{T-1}, z_{T-2},\ldots, z_1) \Pr(z_{T-2}, \ldots, z_1)}\\
+                &amp;= \Pr(z_T | z_{T-1}, z_{T-2},\ldots, z_1) \Pr(z_{T-1}, z_{T-2},\ldots, z_1) \\
+                &amp;= \Pr(z_T | z_{T-1}) \Pr(z_{T-1}, z_{T-2},\ldots, z_1) \\
+                &amp;= \Pr(z_T | z_{T-1}) \Pr(z_{T-1} | z_{T-2}, \ldots, z_1) \Pr(z_{T-2}, \ldots, z_1)\\
+                &amp;= \Pr(z_T | z_{T-1}) \color{blue}{\Pr(z_{T-1} | z_{T-2})} \Pr(z_{T-2}, \ldots, z_1)\\
+\end{align*}\]</span></p>
+<p>And so on up to <span class="math inline">\(z_2\)</span>. You end up with this expression for the likelihood:</p>
+<p><span class="math display">\[\begin{align*}
+\Pr(\mathbf{z}) &amp;= \Pr(z_T, z_{T-1}, z_{T-2}, \ldots, z_1) \color{white}{\Pr(z_{T-1}, z_{T-2},\ldots, z_1) \Pr(z_{T-2}, \ldots, z_1)}\\
+                &amp;= \Pr(z_T | z_{T-1}, z_{T-2},\ldots, z_1) \Pr(z_{T-1}, z_{T-2},\ldots, z_1) \\
+                &amp;= \Pr(z_T | z_{T-1}) \Pr(z_{T-1}, z_{T-2},\ldots, z_1) \\
+                &amp;= \Pr(z_T | z_{T-1}) \Pr(z_{T-1} | z_{T-2}, \ldots, z_1) \Pr(z_{T-2}, \ldots, z_1)\\
+                &amp;= \Pr(z_T | z_{T-1}) \Pr(z_{T-1} | z_{T-2}) \Pr(z_{T-2}, \ldots, z_1)\\
+                &amp;= \ldots \\
+                &amp;= \color{blue}{\Pr(z_T | z_{T-1}) \Pr(z_{T-1} | z_{T-2}) \ldots \Pr(z_{2} | z_{1}) \Pr(z_{1})}\\
+\end{align*}\]</span></p>
+<p>This is a product of conditional probabilities of states given previous states, and the probability of initial states <span class="math inline">\(\Pr(z_1)\)</span>. Using a more compact notation for the product of conditional probabilities, we get:</p>
+<p><span class="math display">\[\begin{align*}
+\Pr(\mathbf{z}) &amp;= \Pr(z_T, z_{T-1}, z_{T-2}, \ldots, z_1) \color{white}{\Pr(z_{T-1}, z_{T-2},\ldots, z_1) \Pr(z_{T-2}, \ldots, z_1)}\\
+                &amp;= \Pr(z_T | z_{T-1}, z_{T-2},\ldots, z_1) \Pr(z_{T-1}, z_{T-2},\ldots, z_1) \\
+                &amp;= \Pr(z_T | z_{T-1}) \Pr(z_{T-1}, z_{T-2},\ldots, z_1) \\
+                &amp;= \Pr(z_T | z_{T-1}) \Pr(z_{T-1} | z_{T-2}, \ldots, z_1) \Pr(z_{T-2}, \ldots, z_1)\\
+                &amp;= \Pr(z_T | z_{T-1}) \Pr(z_{T-1} | z_{T-2}) \Pr(z_{T-2}, \ldots, z_1)\\
+                &amp;= \ldots \\
+                &amp;= \Pr(z_T | z_{T-1}) \Pr(z_{T-1} | z_{T-2}) \ldots \Pr(z_{2} | z_{1}) \Pr(z_{1})\\
+                &amp;= \color{blue}{\Pr(z_{1}) \prod_{t=2}^T{\Pr(z_{t} | z_{t-1})}}\\
+\end{align*}\]</span></p>
+<p>In the product, you can recognize the transition parameters <span class="math inline">\(\gamma\)</span> we defined above, so that the likelihood of a Markov model can be written as:</p>
+<p><span class="math display">\[\begin{align*}
+\Pr(\mathbf{z}) &amp;= \Pr(z_T, z_{T-1}, z_{T-2}, \ldots, z_1) \color{white}{\Pr(z_{T-1}, z_{T-2},\ldots, z_1) \Pr(z_{T-2}, \ldots, z_1)}\\
+                &amp;= \Pr(z_{1}) \prod_{t=2}^T{\gamma_{z_{t-1},z_{t}}}\\
+\end{align*}\]</span></p>
+<!-- ## Matrix formulation of the likelihood -->
+<!-- \begin{align*} -->
+<!-- \Pr(\mathbf{z}) &= \Pr(z_T, z_{T-1}, z_{T-2}, \ldots, z_1) \color{white}{\Pr(z_{T-1}, z_{T-2},\ldots, z_1) \Pr(z_{T-2}, \ldots, z_1)}\\ -->
+<!--                 &= \Pr(z_{1}) \prod_{t=2}^T{\gamma_{z_{t-1},z_{t}}}\\ -->
+<!--                 &= \mathbf{\delta} \; \mathbf{\Gamma} \cdots \mathbf{\Gamma} -->
+<!-- \end{align*} -->
+</div>
+<div id="example" class="section level3" number="1.3.5">
+<h3><span class="header-section-number">1.3.5</span> Example</h3>
+<p>I realise these calculations are a bit difficult to follow. Let’s take an example to fix ideas. Let’s assume an animal is alive, alive at time 2 then dies at time 3. We have <span class="math inline">\(\mathbf{z} = (1, 1, 2)\)</span>. What is the contribution of this animal to the likelihood? Let’s apply the formula we just derived:</p>
+<p><span class="math display">\[\begin{align*}
+\Pr(\mathbf{z} = (1, 1, 2)) &amp;= \Pr(z_1 = 1) \; \gamma_{z_{1} = 1, z_{2} = 1} \; \gamma_{z_{2} = 1, z_{3} = 2}\\
+                            &amp;= 1 \; \phi \; (1 - \phi).
+\end{align*}\]</span></p>
+<p>The probability of having the sequence alive, alive and dead is the probability of being alive first, then to stay alive, eventually to die. The probability of being alive at first occasion being 1, we have that the contribution of this individual to the likelihood is <span class="math inline">\(\phi (1 - \phi)\)</span>.</p>
+</div>
+</div>
+<p style="text-align: center;">
+<a href="1.2-longitudinal-data.html"><button class="btn btn-default">Previous</button></a>
+<a href="1.4-bayesian-formulation.html"><button class="btn btn-default">Next</button></a>
+</p>
+</div>
+</div>
+
+
+</div>
+
+<script>
+
+// add bootstrap table styles to pandoc tables
+$(document).ready(function () {
+  $('tr.header').parent('thead').parent('table').addClass('table table-condensed');
+});
+
+</script>
+
+</body>
+</html>

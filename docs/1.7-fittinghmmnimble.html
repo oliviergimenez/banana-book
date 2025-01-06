@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="" xml:lang="">
+<head>
+
+<meta charset="utf-8" />
+<meta name="generator" content="pandoc" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta property="og:title" content="1.7 Fitting HMM with NIMBLE | banana-book.knit" />
+<meta property="og:type" content="book" />
+
+
+
+
+
+
+<script type="text/x-mathjax-config">
+MathJax.Hub.Config({
+  TeX: { equationNumbers: { autoNumber: "AMS" } }
+});
+</script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<meta name="description" content="1.7 Fitting HMM with NIMBLE | banana-book.knit">
+
+<title>1.7 Fitting HMM with NIMBLE | banana-book.knit</title>
+
+<script src="libs/jquery-3.6.0/jquery-3.6.0.min.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link href="libs/bootstrap-3.3.5/css/bootstrap.min.css" rel="stylesheet" />
+<script src="libs/bootstrap-3.3.5/js/bootstrap.min.js"></script>
+<script src="libs/bootstrap-3.3.5/shim/html5shiv.min.js"></script>
+<script src="libs/bootstrap-3.3.5/shim/respond.min.js"></script>
+<style>h1 {font-size: 34px;}
+       h1.title {font-size: 38px;}
+       h2 {font-size: 30px;}
+       h3 {font-size: 24px;}
+       h4 {font-size: 18px;}
+       h5 {font-size: 16px;}
+       h6 {font-size: 12px;}
+       code {color: inherit; background-color: rgba(0, 0, 0, 0.04);}
+       pre:not([class]) { background-color: white }</style>
+<script src="libs/navigation-1.1/tabsets.js"></script>
+
+
+<style type="text/css">code{white-space: pre;}</style>
+<style type="text/css">
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { display: inline-block; text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+    color: #aaaaaa;
+  }
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+code span.at { color: #7d9029; } /* Attribute */
+code span.bn { color: #40a070; } /* BaseN */
+code span.bu { color: #008000; } /* BuiltIn */
+code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+code span.ch { color: #4070a0; } /* Char */
+code span.cn { color: #880000; } /* Constant */
+code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+code span.dt { color: #902000; } /* DataType */
+code span.dv { color: #40a070; } /* DecVal */
+code span.er { color: #ff0000; font-weight: bold; } /* Error */
+code span.ex { } /* Extension */
+code span.fl { color: #40a070; } /* Float */
+code span.fu { color: #06287e; } /* Function */
+code span.im { color: #008000; font-weight: bold; } /* Import */
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+code span.op { color: #666666; } /* Operator */
+code span.ot { color: #007020; } /* Other */
+code span.pp { color: #bc7a00; } /* Preprocessor */
+code span.sc { color: #4070a0; } /* SpecialChar */
+code span.ss { color: #bb6688; } /* SpecialString */
+code span.st { color: #4070a0; } /* String */
+code span.va { color: #19177c; } /* Variable */
+code span.vs { color: #4070a0; } /* VerbatimString */
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+</style>
+<style type="text/css">
+  pre:not([class]) {
+    background-color: white;
+  }
+</style>
+
+
+
+
+<style type = "text/css">
+.main-container {
+  max-width: 940px;
+  margin-left: auto;
+  margin-right: auto;
+}
+code {
+  color: inherit;
+  background-color: rgba(0, 0, 0, 0.04);
+}
+img {
+  max-width:100%;
+  height: auto;
+}
+/* show arrow before summary tag as in bootstrap
+TODO: remove if bootstrap in updated in html_document (rmarkdown#1485) */
+details > summary {
+  display: list-item;
+  cursor: pointer;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container-fluid main-container">
+
+
+<div class="row">
+<div class="col-sm-12">
+<div id="TOC">
+<ul>
+<li class="has-sub"><a href="1-hmmcapturerecapture.html#hmmcapturerecapture" id="toc-hmmcapturerecapture"><span class="toc-section-number">1</span> Hidden Markov models</a>
+<ul>
+<li><a href="1.1-introduction.html#introduction" id="toc-introduction"><span class="toc-section-number">1.1</span> Introduction</a></li>
+<li><a href="1.2-longitudinal-data.html#longitudinal-data" id="toc-longitudinal-data"><span class="toc-section-number">1.2</span> Longitudinal data</a></li>
+<li class="has-sub"><a href="1.3-a-markov-model-for-longitudinal-data.html#a-markov-model-for-longitudinal-data" id="toc-a-markov-model-for-longitudinal-data"><span class="toc-section-number">1.3</span> A Markov model for longitudinal data</a>
+<ul>
+<li><a href="1.3-a-markov-model-for-longitudinal-data.html#assumptions" id="toc-assumptions"><span class="toc-section-number">1.3.1</span> Assumptions</a></li>
+<li><a href="1.3-a-markov-model-for-longitudinal-data.html#transition-matrix" id="toc-transition-matrix"><span class="toc-section-number">1.3.2</span> Transition matrix</a></li>
+<li><a href="1.3-a-markov-model-for-longitudinal-data.html#initial-states" id="toc-initial-states"><span class="toc-section-number">1.3.3</span> Initial states</a></li>
+<li><a href="1.3-a-markov-model-for-longitudinal-data.html#likelihood" id="toc-likelihood"><span class="toc-section-number">1.3.4</span> Likelihood</a></li>
+<li><a href="1.3-a-markov-model-for-longitudinal-data.html#example" id="toc-example"><span class="toc-section-number">1.3.5</span> Example</a></li>
+</ul></li>
+<li><a href="1.4-bayesian-formulation.html#bayesian-formulation" id="toc-bayesian-formulation"><span class="toc-section-number">1.4</span> Bayesian formulation</a></li>
+<li><a href="1.5-nimble-implementation.html#nimble-implementation" id="toc-nimble-implementation"><span class="toc-section-number">1.5</span> NIMBLE implementation</a></li>
+<li class="has-sub"><a href="1.6-hidden-markov-models.html#hidden-markov-models" id="toc-hidden-markov-models"><span class="toc-section-number">1.6</span> Hidden Markov models</a>
+<ul>
+<li><a href="1.6-hidden-markov-models.html#capturerecapturedata" id="toc-capturerecapturedata"><span class="toc-section-number">1.6.1</span> Capture-recapture data</a></li>
+<li><a href="1.6-hidden-markov-models.html#observation-matrix" id="toc-observation-matrix"><span class="toc-section-number">1.6.2</span> Observation matrix</a></li>
+<li><a href="1.6-hidden-markov-models.html#hidden-markov-model" id="toc-hidden-markov-model"><span class="toc-section-number">1.6.3</span> Hidden Markov model</a></li>
+<li><a href="1.6-hidden-markov-models.html#likelihoodhmm" id="toc-likelihoodhmm"><span class="toc-section-number">1.6.4</span> Likelihood</a></li>
+</ul></li>
+<li><a href="1.7-fittinghmmnimble.html#fittinghmmnimble" id="toc-fittinghmmnimble"><span class="toc-section-number">1.7</span> Fitting HMM with NIMBLE</a></li>
+<li class="has-sub"><a href="1.8-marginalization.html#marginalization" id="toc-marginalization"><span class="toc-section-number">1.8</span> Marginalization</a>
+<ul>
+<li><a href="1.8-marginalization.html#brute-force-approach" id="toc-brute-force-approach"><span class="toc-section-number">1.8.1</span> Brute-force approach</a></li>
+<li><a href="1.8-marginalization.html#forward-algorithm" id="toc-forward-algorithm"><span class="toc-section-number">1.8.2</span> Forward algorithm</a></li>
+<li><a href="1.8-marginalization.html#nimblemarginalization" id="toc-nimblemarginalization"><span class="toc-section-number">1.8.3</span> NIMBLE implementation</a></li>
+</ul></li>
+<li><a href="1.9-pooled-likelihood.html#pooled-likelihood" id="toc-pooled-likelihood"><span class="toc-section-number">1.9</span> Pooled encounter histories</a></li>
+<li class="has-sub"><a href="1.10-decoding.html#decoding" id="toc-decoding"><span class="toc-section-number">1.10</span> Decoding after marginalization</a>
+<ul>
+<li><a href="1.10-decoding.html#viterbi-theory" id="toc-viterbi-theory"><span class="toc-section-number">1.10.1</span> Theory</a></li>
+<li><a href="1.10-decoding.html#implementation" id="toc-implementation"><span class="toc-section-number">1.10.2</span> Implementation</a></li>
+<li><a href="1.10-decoding.html#compute-average" id="toc-compute-average"><span class="toc-section-number">1.10.3</span> Compute first, average after</a></li>
+<li><a href="1.10-decoding.html#average-first-compute-after" id="toc-average-first-compute-after"><span class="toc-section-number">1.10.4</span> Average first, compute after</a></li>
+</ul></li>
+<li><a href="1.11-summary.html#summary" id="toc-summary"><span class="toc-section-number">1.11</span> Summary</a></li>
+<li><a href="1.12-suggested-reading.html#suggested-reading" id="toc-suggested-reading"><span class="toc-section-number">1.12</span> Suggested reading</a></li>
+</ul></li>
+</ul>
+</div>
+</div>
+</div>
+<div class="row">
+<div class="col-sm-12">
+<div id="fittinghmmnimble" class="section level2" number="1.7">
+<h2><span class="header-section-number">1.7</span> Fitting HMM with NIMBLE</h2>
+<p>If we denote <em>first</em> the time of first detection, then our model so far is written as follows:</p>
+<p><span class="math display">\[\begin{align*}
+   z_{\text{first}} &amp;\sim \text{Categorical}(1, \delta) &amp;\text{[likelihood]}\\
+   z_t | z_{t-1} &amp;\sim \text{Categorical}(1, \gamma_{z_{t-1},z_{t}}) &amp;\text{[likelihood, t&gt;first]}\\
+   y_t | z_{t} &amp;\sim \text{Categorical}(1, \omega_{z_{t}}) &amp;\text{[likelihood, t&gt;first]}\\
+  \phi &amp;\sim \text{Beta}(1, 1) &amp;\text{[prior for }\phi \text{]} \\
+  p &amp;\sim \text{Beta}(1, 1) &amp;\text{[prior for }p \text{]} \\
+\end{align*}\]</span></p>
+<p>It has an observation layer for the <span class="math inline">\(y\)</span>’s, conditional on the <span class="math inline">\(z\)</span>’s. We also consider uniform priors for the detection and survival probabilities. How to implement this model in NIMBLE?</p>
+<p>We start with priors for survival and detection probabilities:</p>
+<div class="sourceCode" id="cb20"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb20-1"><a href="1.7-fittinghmmnimble.html#cb20-1" tabindex="-1"></a>hmm.survival <span class="ot">&lt;-</span> <span class="fu">nimbleCode</span>({</span>
+<span id="cb20-2"><a href="1.7-fittinghmmnimble.html#cb20-2" tabindex="-1"></a>  phi <span class="sc">~</span> <span class="fu">dunif</span>(<span class="dv">0</span>, <span class="dv">1</span>) <span class="co"># prior survival</span></span>
+<span id="cb20-3"><a href="1.7-fittinghmmnimble.html#cb20-3" tabindex="-1"></a>  p <span class="sc">~</span> <span class="fu">dunif</span>(<span class="dv">0</span>, <span class="dv">1</span>) <span class="co"># prior detection</span></span>
+<span id="cb20-4"><a href="1.7-fittinghmmnimble.html#cb20-4" tabindex="-1"></a>...</span></code></pre></div>
+<p>Then we define initial states, transition and observation matrices:</p>
+<div class="sourceCode" id="cb21"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb21-1"><a href="1.7-fittinghmmnimble.html#cb21-1" tabindex="-1"></a>...</span>
+<span id="cb21-2"><a href="1.7-fittinghmmnimble.html#cb21-2" tabindex="-1"></a>  <span class="co"># parameters</span></span>
+<span id="cb21-3"><a href="1.7-fittinghmmnimble.html#cb21-3" tabindex="-1"></a>  delta[<span class="dv">1</span>] <span class="ot">&lt;-</span> <span class="dv">1</span>          <span class="co"># Pr(alive t = first) = 1</span></span>
+<span id="cb21-4"><a href="1.7-fittinghmmnimble.html#cb21-4" tabindex="-1"></a>  delta[<span class="dv">2</span>] <span class="ot">&lt;-</span> <span class="dv">0</span>          <span class="co"># Pr(dead t = first) = 0</span></span>
+<span id="cb21-5"><a href="1.7-fittinghmmnimble.html#cb21-5" tabindex="-1"></a>  gamma[<span class="dv">1</span>,<span class="dv">1</span>] <span class="ot">&lt;-</span> phi      <span class="co"># Pr(alive t -&gt; alive t+1)</span></span>
+<span id="cb21-6"><a href="1.7-fittinghmmnimble.html#cb21-6" tabindex="-1"></a>  gamma[<span class="dv">1</span>,<span class="dv">2</span>] <span class="ot">&lt;-</span> <span class="dv">1</span> <span class="sc">-</span> phi  <span class="co"># Pr(alive t -&gt; dead t+1)</span></span>
+<span id="cb21-7"><a href="1.7-fittinghmmnimble.html#cb21-7" tabindex="-1"></a>  gamma[<span class="dv">2</span>,<span class="dv">1</span>] <span class="ot">&lt;-</span> <span class="dv">0</span>        <span class="co"># Pr(dead t -&gt; alive t+1)</span></span>
+<span id="cb21-8"><a href="1.7-fittinghmmnimble.html#cb21-8" tabindex="-1"></a>  gamma[<span class="dv">2</span>,<span class="dv">2</span>] <span class="ot">&lt;-</span> <span class="dv">1</span>        <span class="co"># Pr(dead t -&gt; dead t+1)</span></span>
+<span id="cb21-9"><a href="1.7-fittinghmmnimble.html#cb21-9" tabindex="-1"></a>  omega[<span class="dv">1</span>,<span class="dv">1</span>] <span class="ot">&lt;-</span> <span class="dv">1</span> <span class="sc">-</span> p    <span class="co"># Pr(alive t -&gt; non-detected t)</span></span>
+<span id="cb21-10"><a href="1.7-fittinghmmnimble.html#cb21-10" tabindex="-1"></a>  omega[<span class="dv">1</span>,<span class="dv">2</span>] <span class="ot">&lt;-</span> p        <span class="co"># Pr(alive t -&gt; detected t)</span></span>
+<span id="cb21-11"><a href="1.7-fittinghmmnimble.html#cb21-11" tabindex="-1"></a>  omega[<span class="dv">2</span>,<span class="dv">1</span>] <span class="ot">&lt;-</span> <span class="dv">1</span>        <span class="co"># Pr(dead t -&gt; non-detected t)</span></span>
+<span id="cb21-12"><a href="1.7-fittinghmmnimble.html#cb21-12" tabindex="-1"></a>  omega[<span class="dv">2</span>,<span class="dv">2</span>] <span class="ot">&lt;-</span> <span class="dv">0</span>        <span class="co"># Pr(dead t -&gt; detected t)</span></span>
+<span id="cb21-13"><a href="1.7-fittinghmmnimble.html#cb21-13" tabindex="-1"></a>...</span></code></pre></div>
+<p>Then the likelihood:</p>
+<div class="sourceCode" id="cb22"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb22-1"><a href="1.7-fittinghmmnimble.html#cb22-1" tabindex="-1"></a>...</span>
+<span id="cb22-2"><a href="1.7-fittinghmmnimble.html#cb22-2" tabindex="-1"></a>    <span class="co"># likelihood</span></span>
+<span id="cb22-3"><a href="1.7-fittinghmmnimble.html#cb22-3" tabindex="-1"></a>    <span class="cf">for</span> (i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>N){</span>
+<span id="cb22-4"><a href="1.7-fittinghmmnimble.html#cb22-4" tabindex="-1"></a>    z[i,<span class="dv">1</span>] <span class="sc">~</span> <span class="fu">dcat</span>(delta[<span class="dv">1</span><span class="sc">:</span><span class="dv">2</span>])</span>
+<span id="cb22-5"><a href="1.7-fittinghmmnimble.html#cb22-5" tabindex="-1"></a>    <span class="cf">for</span> (j <span class="cf">in</span> <span class="dv">2</span><span class="sc">:</span>T){</span>
+<span id="cb22-6"><a href="1.7-fittinghmmnimble.html#cb22-6" tabindex="-1"></a>      z[i,j] <span class="sc">~</span> <span class="fu">dcat</span>(gamma[z[i,j<span class="dv">-1</span>], <span class="dv">1</span><span class="sc">:</span><span class="dv">2</span>])</span>
+<span id="cb22-7"><a href="1.7-fittinghmmnimble.html#cb22-7" tabindex="-1"></a>      y[i,j] <span class="sc">~</span> <span class="fu">dcat</span>(omega[z[i,j], <span class="dv">1</span><span class="sc">:</span><span class="dv">2</span>])</span>
+<span id="cb22-8"><a href="1.7-fittinghmmnimble.html#cb22-8" tabindex="-1"></a>    }</span>
+<span id="cb22-9"><a href="1.7-fittinghmmnimble.html#cb22-9" tabindex="-1"></a>  }</span>
+<span id="cb22-10"><a href="1.7-fittinghmmnimble.html#cb22-10" tabindex="-1"></a><span class="er">})</span></span></code></pre></div>
+<p>The loop over time for each individual <code>for (j in 2:T){}</code> starts after the first time individuals are detected (this is time 2 for all of them here), because we work conditional on the first detection.</p>
+<p>Overall, the code looks like:</p>
+<div class="sourceCode" id="cb23"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb23-1"><a href="1.7-fittinghmmnimble.html#cb23-1" tabindex="-1"></a>hmm.survival <span class="ot">&lt;-</span> <span class="fu">nimbleCode</span>({</span>
+<span id="cb23-2"><a href="1.7-fittinghmmnimble.html#cb23-2" tabindex="-1"></a>  phi <span class="sc">~</span> <span class="fu">dunif</span>(<span class="dv">0</span>, <span class="dv">1</span>) <span class="co"># prior survival</span></span>
+<span id="cb23-3"><a href="1.7-fittinghmmnimble.html#cb23-3" tabindex="-1"></a>  p <span class="sc">~</span> <span class="fu">dunif</span>(<span class="dv">0</span>, <span class="dv">1</span>) <span class="co"># prior detection</span></span>
+<span id="cb23-4"><a href="1.7-fittinghmmnimble.html#cb23-4" tabindex="-1"></a>  <span class="co"># likelihood</span></span>
+<span id="cb23-5"><a href="1.7-fittinghmmnimble.html#cb23-5" tabindex="-1"></a>  delta[<span class="dv">1</span>] <span class="ot">&lt;-</span> <span class="dv">1</span>          <span class="co"># Pr(alive t = first) = 1</span></span>
+<span id="cb23-6"><a href="1.7-fittinghmmnimble.html#cb23-6" tabindex="-1"></a>  delta[<span class="dv">2</span>] <span class="ot">&lt;-</span> <span class="dv">0</span>          <span class="co"># Pr(dead t = first) = 0</span></span>
+<span id="cb23-7"><a href="1.7-fittinghmmnimble.html#cb23-7" tabindex="-1"></a>  gamma[<span class="dv">1</span>,<span class="dv">1</span>] <span class="ot">&lt;-</span> phi      <span class="co"># Pr(alive t -&gt; alive t+1)</span></span>
+<span id="cb23-8"><a href="1.7-fittinghmmnimble.html#cb23-8" tabindex="-1"></a>  gamma[<span class="dv">1</span>,<span class="dv">2</span>] <span class="ot">&lt;-</span> <span class="dv">1</span> <span class="sc">-</span> phi  <span class="co"># Pr(alive t -&gt; dead t+1)</span></span>
+<span id="cb23-9"><a href="1.7-fittinghmmnimble.html#cb23-9" tabindex="-1"></a>  gamma[<span class="dv">2</span>,<span class="dv">1</span>] <span class="ot">&lt;-</span> <span class="dv">0</span>        <span class="co"># Pr(dead t -&gt; alive t+1)</span></span>
+<span id="cb23-10"><a href="1.7-fittinghmmnimble.html#cb23-10" tabindex="-1"></a>  gamma[<span class="dv">2</span>,<span class="dv">2</span>] <span class="ot">&lt;-</span> <span class="dv">1</span>        <span class="co"># Pr(dead t -&gt; dead t+1)</span></span>
+<span id="cb23-11"><a href="1.7-fittinghmmnimble.html#cb23-11" tabindex="-1"></a>  omega[<span class="dv">1</span>,<span class="dv">1</span>] <span class="ot">&lt;-</span> <span class="dv">1</span> <span class="sc">-</span> p    <span class="co"># Pr(alive t -&gt; non-detected t)</span></span>
+<span id="cb23-12"><a href="1.7-fittinghmmnimble.html#cb23-12" tabindex="-1"></a>  omega[<span class="dv">1</span>,<span class="dv">2</span>] <span class="ot">&lt;-</span> p        <span class="co"># Pr(alive t -&gt; detected t)</span></span>
+<span id="cb23-13"><a href="1.7-fittinghmmnimble.html#cb23-13" tabindex="-1"></a>  omega[<span class="dv">2</span>,<span class="dv">1</span>] <span class="ot">&lt;-</span> <span class="dv">1</span>        <span class="co"># Pr(dead t -&gt; non-detected t)</span></span>
+<span id="cb23-14"><a href="1.7-fittinghmmnimble.html#cb23-14" tabindex="-1"></a>  omega[<span class="dv">2</span>,<span class="dv">2</span>] <span class="ot">&lt;-</span> <span class="dv">0</span>        <span class="co"># Pr(dead t -&gt; detected t)</span></span>
+<span id="cb23-15"><a href="1.7-fittinghmmnimble.html#cb23-15" tabindex="-1"></a>  <span class="cf">for</span> (i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>N){</span>
+<span id="cb23-16"><a href="1.7-fittinghmmnimble.html#cb23-16" tabindex="-1"></a>    z[i,<span class="dv">1</span>] <span class="sc">~</span> <span class="fu">dcat</span>(delta[<span class="dv">1</span><span class="sc">:</span><span class="dv">2</span>])</span>
+<span id="cb23-17"><a href="1.7-fittinghmmnimble.html#cb23-17" tabindex="-1"></a>    <span class="cf">for</span> (j <span class="cf">in</span> <span class="dv">2</span><span class="sc">:</span>T){</span>
+<span id="cb23-18"><a href="1.7-fittinghmmnimble.html#cb23-18" tabindex="-1"></a>      z[i,j] <span class="sc">~</span> <span class="fu">dcat</span>(gamma[z[i,j<span class="dv">-1</span>], <span class="dv">1</span><span class="sc">:</span><span class="dv">2</span>])</span>
+<span id="cb23-19"><a href="1.7-fittinghmmnimble.html#cb23-19" tabindex="-1"></a>      y[i,j] <span class="sc">~</span> <span class="fu">dcat</span>(omega[z[i,j], <span class="dv">1</span><span class="sc">:</span><span class="dv">2</span>])</span>
+<span id="cb23-20"><a href="1.7-fittinghmmnimble.html#cb23-20" tabindex="-1"></a>    }</span>
+<span id="cb23-21"><a href="1.7-fittinghmmnimble.html#cb23-21" tabindex="-1"></a>  }</span>
+<span id="cb23-22"><a href="1.7-fittinghmmnimble.html#cb23-22" tabindex="-1"></a>})</span></code></pre></div>
+<p>Now we specify the constants:</p>
+<div class="sourceCode" id="cb24"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb24-1"><a href="1.7-fittinghmmnimble.html#cb24-1" tabindex="-1"></a>my.constants <span class="ot">&lt;-</span> <span class="fu">list</span>(<span class="at">N =</span> <span class="fu">nrow</span>(y), <span class="at">T =</span> <span class="dv">5</span>)</span>
+<span id="cb24-2"><a href="1.7-fittinghmmnimble.html#cb24-2" tabindex="-1"></a>my.constants</span>
+<span id="cb24-3"><a href="1.7-fittinghmmnimble.html#cb24-3" tabindex="-1"></a><span class="do">## $N</span></span>
+<span id="cb24-4"><a href="1.7-fittinghmmnimble.html#cb24-4" tabindex="-1"></a><span class="do">## [1] 57</span></span>
+<span id="cb24-5"><a href="1.7-fittinghmmnimble.html#cb24-5" tabindex="-1"></a><span class="do">## </span></span>
+<span id="cb24-6"><a href="1.7-fittinghmmnimble.html#cb24-6" tabindex="-1"></a><span class="do">## $T</span></span>
+<span id="cb24-7"><a href="1.7-fittinghmmnimble.html#cb24-7" tabindex="-1"></a><span class="do">## [1] 5</span></span></code></pre></div>
+<p>The data are made of 0’s for non-detections and 1’s for detections. To use the categorical distribution, we need to code 1’s and 2’s. We simply add 1 to get the correct format, that is <span class="math inline">\(y = 1\)</span> for non-detection and <span class="math inline">\(y = 2\)</span> for detection:</p>
+<div class="sourceCode" id="cb25"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb25-1"><a href="1.7-fittinghmmnimble.html#cb25-1" tabindex="-1"></a>my.data <span class="ot">&lt;-</span> <span class="fu">list</span>(<span class="at">y =</span> y <span class="sc">+</span> <span class="dv">1</span>)</span></code></pre></div>
+<!-- **Using 1 and 2 would make my life easier... The 0/1 coding is a convention; Using the 1/2 coding would make clear that non-detections are actual data (while the use of 0s for non-detections is sometimes confusing). Also, it might help to replace states 1 and 2 by A and D for dead and alive. Even if not mathematically convenient, I guess it would help the understanding. Do it, do it. We want non-detection first, so always 1's.** -->
+<p>Now let’s write a function for the initial values:</p>
+<div class="sourceCode" id="cb26"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb26-1"><a href="1.7-fittinghmmnimble.html#cb26-1" tabindex="-1"></a>zinits <span class="ot">&lt;-</span> y <span class="sc">+</span> <span class="dv">1</span> <span class="co"># non-detection -&gt; alive</span></span>
+<span id="cb26-2"><a href="1.7-fittinghmmnimble.html#cb26-2" tabindex="-1"></a>zinits[zinits <span class="sc">==</span> <span class="dv">2</span>] <span class="ot">&lt;-</span> <span class="dv">1</span> <span class="co"># dead -&gt; alive</span></span>
+<span id="cb26-3"><a href="1.7-fittinghmmnimble.html#cb26-3" tabindex="-1"></a>initial.values <span class="ot">&lt;-</span> <span class="cf">function</span>() <span class="fu">list</span>(<span class="at">phi =</span> <span class="fu">runif</span>(<span class="dv">1</span>,<span class="dv">0</span>,<span class="dv">1</span>),</span>
+<span id="cb26-4"><a href="1.7-fittinghmmnimble.html#cb26-4" tabindex="-1"></a>                                  <span class="at">p =</span> <span class="fu">runif</span>(<span class="dv">1</span>,<span class="dv">0</span>,<span class="dv">1</span>),</span>
+<span id="cb26-5"><a href="1.7-fittinghmmnimble.html#cb26-5" tabindex="-1"></a>                                  <span class="at">z =</span> zinits)</span></code></pre></div>
+<p>As initial values for the latent states, we assumed that whenever an individual was non-detected, it was alive, with with <code>zinits &lt;- y + 1</code>, and we make sure dead individuals are alive with <code>zinits[zinits == 2] &lt;- 1</code>.</p>
+<p>We specify the parameters we’d like to monitor:</p>
+<div class="sourceCode" id="cb27"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb27-1"><a href="1.7-fittinghmmnimble.html#cb27-1" tabindex="-1"></a>parameters.to.save <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">&quot;phi&quot;</span>, <span class="st">&quot;p&quot;</span>)</span>
+<span id="cb27-2"><a href="1.7-fittinghmmnimble.html#cb27-2" tabindex="-1"></a>parameters.to.save</span>
+<span id="cb27-3"><a href="1.7-fittinghmmnimble.html#cb27-3" tabindex="-1"></a><span class="do">## [1] &quot;phi&quot; &quot;p&quot;</span></span></code></pre></div>
+<p>We provide MCMC details:</p>
+<div class="sourceCode" id="cb28"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb28-1"><a href="1.7-fittinghmmnimble.html#cb28-1" tabindex="-1"></a>n.iter <span class="ot">&lt;-</span> <span class="dv">5000</span></span>
+<span id="cb28-2"><a href="1.7-fittinghmmnimble.html#cb28-2" tabindex="-1"></a>n.burnin <span class="ot">&lt;-</span> <span class="dv">1000</span></span>
+<span id="cb28-3"><a href="1.7-fittinghmmnimble.html#cb28-3" tabindex="-1"></a>n.chains <span class="ot">&lt;-</span> <span class="dv">2</span></span></code></pre></div>
+<p>At last, we’re ready to run NIMBLE:</p>
+<div class="sourceCode" id="cb29"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb29-1"><a href="1.7-fittinghmmnimble.html#cb29-1" tabindex="-1"></a>start_time <span class="ot">&lt;-</span> <span class="fu">Sys.time</span>()</span>
+<span id="cb29-2"><a href="1.7-fittinghmmnimble.html#cb29-2" tabindex="-1"></a>mcmc.output <span class="ot">&lt;-</span> <span class="fu">nimbleMCMC</span>(<span class="at">code =</span> hmm.survival,</span>
+<span id="cb29-3"><a href="1.7-fittinghmmnimble.html#cb29-3" tabindex="-1"></a>                          <span class="at">constants =</span> my.constants,</span>
+<span id="cb29-4"><a href="1.7-fittinghmmnimble.html#cb29-4" tabindex="-1"></a>                          <span class="at">data =</span> my.data,</span>
+<span id="cb29-5"><a href="1.7-fittinghmmnimble.html#cb29-5" tabindex="-1"></a>                          <span class="at">inits =</span> initial.values,</span>
+<span id="cb29-6"><a href="1.7-fittinghmmnimble.html#cb29-6" tabindex="-1"></a>                          <span class="at">monitors =</span> parameters.to.save,</span>
+<span id="cb29-7"><a href="1.7-fittinghmmnimble.html#cb29-7" tabindex="-1"></a>                          <span class="at">niter =</span> n.iter,</span>
+<span id="cb29-8"><a href="1.7-fittinghmmnimble.html#cb29-8" tabindex="-1"></a>                          <span class="at">nburnin =</span> n.burnin,</span>
+<span id="cb29-9"><a href="1.7-fittinghmmnimble.html#cb29-9" tabindex="-1"></a>                          <span class="at">nchains =</span> n.chains)</span>
+<span id="cb29-10"><a href="1.7-fittinghmmnimble.html#cb29-10" tabindex="-1"></a>end_time <span class="ot">&lt;-</span> <span class="fu">Sys.time</span>()</span>
+<span id="cb29-11"><a href="1.7-fittinghmmnimble.html#cb29-11" tabindex="-1"></a>end_time <span class="sc">-</span> start_time</span></code></pre></div>
+<pre><code>## Time difference of 22.98 secs</code></pre>
+<p>We can have a look to numerical summaries:</p>
+<div class="sourceCode" id="cb31"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb31-1"><a href="1.7-fittinghmmnimble.html#cb31-1" tabindex="-1"></a><span class="fu">MCMCsummary</span>(mcmc.output, <span class="at">round =</span> <span class="dv">2</span>)</span>
+<span id="cb31-2"><a href="1.7-fittinghmmnimble.html#cb31-2" tabindex="-1"></a><span class="do">##     mean   sd 2.5%  50% 97.5% Rhat n.eff</span></span>
+<span id="cb31-3"><a href="1.7-fittinghmmnimble.html#cb31-3" tabindex="-1"></a><span class="do">## p   0.61 0.06 0.50 0.61  0.72    1   740</span></span>
+<span id="cb31-4"><a href="1.7-fittinghmmnimble.html#cb31-4" tabindex="-1"></a><span class="do">## phi 0.75 0.04 0.67 0.75  0.83    1   805</span></span></code></pre></div>
+<p>The estimates for survival and detection are close to true survival <span class="math inline">\(\phi = 0.8\)</span> and detection <span class="math inline">\(p = 0.6\)</span> with which we simulated the data. The code I used is:</p>
+<div class="sourceCode" id="cb32"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb32-1"><a href="1.7-fittinghmmnimble.html#cb32-1" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">2022</span>) <span class="co"># for reproducibility</span></span>
+<span id="cb32-2"><a href="1.7-fittinghmmnimble.html#cb32-2" tabindex="-1"></a>nocc <span class="ot">&lt;-</span> <span class="dv">5</span> <span class="co"># nb of winters or sampling occasions</span></span>
+<span id="cb32-3"><a href="1.7-fittinghmmnimble.html#cb32-3" tabindex="-1"></a>nind <span class="ot">&lt;-</span> <span class="dv">57</span> <span class="co"># nb of animals</span></span>
+<span id="cb32-4"><a href="1.7-fittinghmmnimble.html#cb32-4" tabindex="-1"></a>p <span class="ot">&lt;-</span> <span class="fl">0.6</span> <span class="co"># detection prob</span></span>
+<span id="cb32-5"><a href="1.7-fittinghmmnimble.html#cb32-5" tabindex="-1"></a>phi <span class="ot">&lt;-</span> <span class="fl">0.8</span> <span class="co"># survival prob</span></span>
+<span id="cb32-6"><a href="1.7-fittinghmmnimble.html#cb32-6" tabindex="-1"></a><span class="co"># Vector of initial states probabilities</span></span>
+<span id="cb32-7"><a href="1.7-fittinghmmnimble.html#cb32-7" tabindex="-1"></a>delta <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">1</span>,<span class="dv">0</span>) <span class="co"># all individuals are alive in first winter</span></span>
+<span id="cb32-8"><a href="1.7-fittinghmmnimble.html#cb32-8" tabindex="-1"></a><span class="co"># Transition matrix</span></span>
+<span id="cb32-9"><a href="1.7-fittinghmmnimble.html#cb32-9" tabindex="-1"></a>Gamma <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="cn">NA</span>, <span class="dv">2</span>, <span class="dv">2</span>)</span>
+<span id="cb32-10"><a href="1.7-fittinghmmnimble.html#cb32-10" tabindex="-1"></a>Gamma[<span class="dv">1</span>,<span class="dv">1</span>] <span class="ot">&lt;-</span> phi      <span class="co"># Pr(alive t -&gt; alive t+1)</span></span>
+<span id="cb32-11"><a href="1.7-fittinghmmnimble.html#cb32-11" tabindex="-1"></a>Gamma[<span class="dv">1</span>,<span class="dv">2</span>] <span class="ot">&lt;-</span> <span class="dv">1</span> <span class="sc">-</span> phi  <span class="co"># Pr(alive t -&gt; dead t+1)</span></span>
+<span id="cb32-12"><a href="1.7-fittinghmmnimble.html#cb32-12" tabindex="-1"></a>Gamma[<span class="dv">2</span>,<span class="dv">1</span>] <span class="ot">&lt;-</span> <span class="dv">0</span>        <span class="co"># Pr(dead t -&gt; alive t+1)</span></span>
+<span id="cb32-13"><a href="1.7-fittinghmmnimble.html#cb32-13" tabindex="-1"></a>Gamma[<span class="dv">2</span>,<span class="dv">2</span>] <span class="ot">&lt;-</span> <span class="dv">1</span>        <span class="co"># Pr(dead t -&gt; dead t+1)</span></span>
+<span id="cb32-14"><a href="1.7-fittinghmmnimble.html#cb32-14" tabindex="-1"></a><span class="co"># Observation matrix </span></span>
+<span id="cb32-15"><a href="1.7-fittinghmmnimble.html#cb32-15" tabindex="-1"></a>Omega <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="cn">NA</span>, <span class="dv">2</span>, <span class="dv">2</span>)</span>
+<span id="cb32-16"><a href="1.7-fittinghmmnimble.html#cb32-16" tabindex="-1"></a>Omega[<span class="dv">1</span>,<span class="dv">1</span>] <span class="ot">&lt;-</span> <span class="dv">1</span> <span class="sc">-</span> p      <span class="co"># Pr(alive t -&gt; non-detected t)</span></span>
+<span id="cb32-17"><a href="1.7-fittinghmmnimble.html#cb32-17" tabindex="-1"></a>Omega[<span class="dv">1</span>,<span class="dv">2</span>] <span class="ot">&lt;-</span> p          <span class="co"># Pr(alive t -&gt; detected t)</span></span>
+<span id="cb32-18"><a href="1.7-fittinghmmnimble.html#cb32-18" tabindex="-1"></a>Omega[<span class="dv">2</span>,<span class="dv">1</span>] <span class="ot">&lt;-</span> <span class="dv">1</span>          <span class="co"># Pr(dead t -&gt; non-detected t)</span></span>
+<span id="cb32-19"><a href="1.7-fittinghmmnimble.html#cb32-19" tabindex="-1"></a>Omega[<span class="dv">2</span>,<span class="dv">2</span>] <span class="ot">&lt;-</span> <span class="dv">0</span>          <span class="co"># Pr(dead t -&gt; detected t)</span></span>
+<span id="cb32-20"><a href="1.7-fittinghmmnimble.html#cb32-20" tabindex="-1"></a><span class="co"># Matrix of states</span></span>
+<span id="cb32-21"><a href="1.7-fittinghmmnimble.html#cb32-21" tabindex="-1"></a>z <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="cn">NA</span>, <span class="at">nrow =</span> nind, <span class="at">ncol =</span> nocc)</span>
+<span id="cb32-22"><a href="1.7-fittinghmmnimble.html#cb32-22" tabindex="-1"></a>y <span class="ot">&lt;-</span> z</span>
+<span id="cb32-23"><a href="1.7-fittinghmmnimble.html#cb32-23" tabindex="-1"></a>y[,<span class="dv">1</span>] <span class="ot">&lt;-</span> <span class="dv">2</span> <span class="co"># all individuals are detected in first winter, as we condition on first detection</span></span>
+<span id="cb32-24"><a href="1.7-fittinghmmnimble.html#cb32-24" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>nind){</span>
+<span id="cb32-25"><a href="1.7-fittinghmmnimble.html#cb32-25" tabindex="-1"></a>  z[i,<span class="dv">1</span>] <span class="ot">&lt;-</span> <span class="fu">rcat</span>(<span class="at">n =</span> <span class="dv">1</span>, <span class="at">prob =</span> delta) <span class="co"># 1 for sure</span></span>
+<span id="cb32-26"><a href="1.7-fittinghmmnimble.html#cb32-26" tabindex="-1"></a>  <span class="cf">for</span> (t <span class="cf">in</span> <span class="dv">2</span><span class="sc">:</span>nocc){</span>
+<span id="cb32-27"><a href="1.7-fittinghmmnimble.html#cb32-27" tabindex="-1"></a>    <span class="co"># state at t given state at t-1</span></span>
+<span id="cb32-28"><a href="1.7-fittinghmmnimble.html#cb32-28" tabindex="-1"></a>    z[i,t] <span class="ot">&lt;-</span> <span class="fu">rcat</span>(<span class="at">n =</span> <span class="dv">1</span>, <span class="at">prob =</span> Gamma[z[i,t<span class="dv">-1</span>],<span class="dv">1</span><span class="sc">:</span><span class="dv">2</span>]) </span>
+<span id="cb32-29"><a href="1.7-fittinghmmnimble.html#cb32-29" tabindex="-1"></a>    <span class="co"># observation at t given state at t</span></span>
+<span id="cb32-30"><a href="1.7-fittinghmmnimble.html#cb32-30" tabindex="-1"></a>    y[i,t] <span class="ot">&lt;-</span> <span class="fu">rcat</span>(<span class="at">n =</span> <span class="dv">1</span>, <span class="at">prob =</span> Omega[z[i,t],<span class="dv">1</span><span class="sc">:</span><span class="dv">2</span>]) </span>
+<span id="cb32-31"><a href="1.7-fittinghmmnimble.html#cb32-31" tabindex="-1"></a>  }</span>
+<span id="cb32-32"><a href="1.7-fittinghmmnimble.html#cb32-32" tabindex="-1"></a>}</span>
+<span id="cb32-33"><a href="1.7-fittinghmmnimble.html#cb32-33" tabindex="-1"></a>y</span>
+<span id="cb32-34"><a href="1.7-fittinghmmnimble.html#cb32-34" tabindex="-1"></a>y <span class="ot">&lt;-</span> y <span class="sc">-</span> <span class="dv">1</span> <span class="co"># non-detection = 0, detection = 1</span></span></code></pre></div>
+</div>
+<p style="text-align: center;">
+<a href="1.6-hidden-markov-models.html"><button class="btn btn-default">Previous</button></a>
+<a href="1.8-marginalization.html"><button class="btn btn-default">Next</button></a>
+</p>
+</div>
+</div>
+
+
+</div>
+
+<script>
+
+// add bootstrap table styles to pandoc tables
+$(document).ready(function () {
+  $('tr.header').parent('thead').parent('table').addClass('table table-condensed');
+});
+
+</script>
+
+</body>
+</html>
