@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="" xml:lang="">
+<head>
+
+<meta charset="utf-8" />
+<meta name="generator" content="pandoc" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta property="og:title" content="1.5 Memory model | Bayesian analysis of capture-recapture data with hidden Markov models" />
+<meta property="og:type" content="book" />
+
+<meta property="og:description" content="This is a textbook on the analysis of capture-recapture data with hidden Markov models (HMM) implemented in the Bayesian framework with R and NIMBLE." />
+<meta name="github-repo" content="oliviergimenez/banana-book" />
+
+<meta name="author" content="Olivier Gimenez" />
+
+<meta name="date" content="2025-02-04" />
+
+<script type="text/x-mathjax-config">
+MathJax.Hub.Config({
+  TeX: { equationNumbers: { autoNumber: "AMS" } }
+});
+</script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<meta name="description" content="This is a textbook on the analysis of capture-recapture data with hidden Markov models (HMM) implemented in the Bayesian framework with R and NIMBLE.">
+
+<title>1.5 Memory model | Bayesian analysis of capture-recapture data with hidden Markov models</title>
+
+<script src="libs/jquery-3.6.0/jquery-3.6.0.min.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link href="libs/bootstrap-3.3.5/css/bootstrap.min.css" rel="stylesheet" />
+<script src="libs/bootstrap-3.3.5/js/bootstrap.min.js"></script>
+<script src="libs/bootstrap-3.3.5/shim/html5shiv.min.js"></script>
+<script src="libs/bootstrap-3.3.5/shim/respond.min.js"></script>
+<style>h1 {font-size: 34px;}
+       h1.title {font-size: 38px;}
+       h2 {font-size: 30px;}
+       h3 {font-size: 24px;}
+       h4 {font-size: 18px;}
+       h5 {font-size: 16px;}
+       h6 {font-size: 12px;}
+       code {color: inherit; background-color: rgba(0, 0, 0, 0.04);}
+       pre:not([class]) { background-color: white }</style>
+<script src="libs/navigation-1.1/tabsets.js"></script>
+
+
+<style type="text/css">code{white-space: pre;}</style>
+<style type="text/css">
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { display: inline-block; text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+    color: #aaaaaa;
+  }
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+code span.at { color: #7d9029; } /* Attribute */
+code span.bn { color: #40a070; } /* BaseN */
+code span.bu { color: #008000; } /* BuiltIn */
+code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+code span.ch { color: #4070a0; } /* Char */
+code span.cn { color: #880000; } /* Constant */
+code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+code span.dt { color: #902000; } /* DataType */
+code span.dv { color: #40a070; } /* DecVal */
+code span.er { color: #ff0000; font-weight: bold; } /* Error */
+code span.ex { } /* Extension */
+code span.fl { color: #40a070; } /* Float */
+code span.fu { color: #06287e; } /* Function */
+code span.im { color: #008000; font-weight: bold; } /* Import */
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+code span.op { color: #666666; } /* Operator */
+code span.ot { color: #007020; } /* Other */
+code span.pp { color: #bc7a00; } /* Preprocessor */
+code span.sc { color: #4070a0; } /* SpecialChar */
+code span.ss { color: #bb6688; } /* SpecialString */
+code span.st { color: #4070a0; } /* String */
+code span.va { color: #19177c; } /* Variable */
+code span.vs { color: #4070a0; } /* VerbatimString */
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+</style>
+<style type="text/css">
+  pre:not([class]) {
+    background-color: white;
+  }
+</style>
+
+
+<style type="text/css">
+/* Used with Pandoc 2.11+ new --citeproc when CSL is used */
+div.csl-bib-body { }
+div.csl-entry {
+  clear: both;
+  margin-bottom: 0em;
+}
+.hanging div.csl-entry {
+  margin-left:2em;
+  text-indent:-2em;
+}
+div.csl-left-margin {
+  min-width:2em;
+  float:left;
+}
+div.csl-right-inline {
+  margin-left:2em;
+  padding-left:1em;
+}
+div.csl-indent {
+  margin-left: 2em;
+}
+</style>
+
+
+<style type = "text/css">
+.main-container {
+  max-width: 940px;
+  margin-left: auto;
+  margin-right: auto;
+}
+code {
+  color: inherit;
+  background-color: rgba(0, 0, 0, 0.04);
+}
+img {
+  max-width:100%;
+  height: auto;
+}
+/* show arrow before summary tag as in bootstrap
+TODO: remove if bootstrap in updated in html_document (rmarkdown#1485) */
+details > summary {
+  display: list-item;
+  cursor: pointer;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container-fluid main-container">
+
+
+<div class="row">
+<div class="col-sm-12">
+<div id="TOC">
+<ul>
+<li class="has-sub"><a href="index.html#welcome" id="toc-welcome">Welcome</a>
+<ul>
+<li><a href="license.html#license" id="toc-license">License</a></li>
+</ul></li>
+<li class="has-sub"><a href="preface.html#preface" id="toc-preface">Preface</a>
+<ul>
+<li><a href="why-this-book.html#why-this-book" id="toc-why-this-book">Why this book?</a></li>
+<li><a href="who-should-read-this-book.html#who-should-read-this-book" id="toc-who-should-read-this-book">Who should read this book?</a></li>
+<li><a href="what-will-you-learn.html#what-will-you-learn" id="toc-what-will-you-learn">What will you learn?</a></li>
+<li><a href="what-wont-you-learn.html#what-wont-you-learn" id="toc-what-wont-you-learn">What won’t you learn?</a></li>
+<li><a href="prerequisites.html#prerequisites" id="toc-prerequisites">Prerequisites</a></li>
+<li><a href="how-this-book-was-written.html#how-this-book-was-written" id="toc-how-this-book-was-written">How this book was written</a></li>
+<li><a href="about-the-author.html#about-the-author" id="toc-about-the-author">About the author</a></li>
+<li><a href="acknowledgements.html#acknowledgements" id="toc-acknowledgements">Acknowledgements</a></li>
+</ul></li>
+<li class="has-sub"><a href="1-lackoffit.html#lackoffit" id="toc-lackoffit"><span class="toc-section-number">1</span> Lack of fit</a>
+<ul>
+<li><a href="1.1-individual-heterogeneity.html#individual-heterogeneity" id="toc-individual-heterogeneity"><span class="toc-section-number">1.1</span> Individual heterogeneity</a></li>
+<li><a href="1.2-trapdep.html#trapdep" id="toc-trapdep"><span class="toc-section-number">1.2</span> Trap dep</a></li>
+<li><a href="1.3-transience.html#transience" id="toc-transience"><span class="toc-section-number">1.3</span> Transience</a></li>
+<li><a href="1.4-temporary-emigration.html#temporary-emigration" id="toc-temporary-emigration"><span class="toc-section-number">1.4</span> Temporary emigration</a></li>
+<li><a href="1.5-memorymodel.html#memorymodel" id="toc-memorymodel"><span class="toc-section-number">1.5</span> Memory model</a></li>
+<li><a href="1.6-ppchecks.html#ppchecks" id="toc-ppchecks"><span class="toc-section-number">1.6</span> Posterior predictive check</a></li>
+</ul></li>
+<li><a href="conclusion.html#conclusion" id="toc-conclusion">Conclusion</a></li>
+<li><a href="references.html#references" id="toc-references">References</a></li>
+</ul>
+</div>
+</div>
+</div>
+<div class="row">
+<div class="col-sm-12">
+<div id="memorymodel" class="section level2" number="1.5">
+<h2><span class="header-section-number">1.5</span> Memory model</h2>
+<p>How to make your models remember?</p>
+<p>So far, the dynamics of the states are first-order Makovian. The site where you will be depends only on the site where you are, and not on the sites you were previously. How to relax this assumption, and go second-order Markovian?</p>
+<p>Memory models were initially proposed by <span class="citation">Hestbeck, Nichols, and Malecki (<a href="#ref-hestbeck1991estimates">1991</a>)</span> and <span class="citation">Brownie et al. (<a href="#ref-BrownieEtAl1993">1993</a>)</span>, then formulated as HMMs in <span class="citation">Rouan, Choquet, and Pradel (<a href="#ref-rouan2009memory">2009</a>)</span>. See also <span class="citation">Cole et al. (<a href="#ref-cole2014">2014</a>)</span>.</p>
+<p>Remember HMM model for dispersal between 2 sites</p>
+<p>Transition matrix</p>
+<p><span class="math display">\[\begin{matrix}
+&amp; \\
+\mathbf{\Gamma} =
+\left ( \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \end{matrix} } \right .
+\end{matrix}
+\hspace{-1.2em}
+\begin{matrix}
+z_t=A &amp; z_t=B &amp; z_t=D \\ \hdashline
+\phi^A (1-\psi^{AB}) &amp; \phi^A \psi^{AB} &amp; 1 - \phi^A\\
+\phi^B \psi^{BA} &amp; \phi^B (1-\psi^{BA}) &amp; 1 - \phi^B\\
+0 &amp; 0 &amp; 1
+\end{matrix}
+\hspace{-0.2em}
+\begin{matrix}
+&amp; \\
+\left . \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \end{matrix} } \right )
+\begin{matrix}
+z_{t-1}=A \\ z_{t-1}=B \\ z_{t-1}=D
+\end{matrix}
+\end{matrix}\]</span></p>
+<p>Observation matrix</p>
+<p><span class="math display">\[\begin{matrix}
+&amp; \\
+\mathbf{\Omega} =
+\left ( \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \end{matrix} } \right .
+\end{matrix}
+\hspace{-1.2em}
+\begin{matrix}
+y_t=1 &amp; y_t=2 &amp; y_t=3 \\ \hdashline
+1 - p^A &amp; p^A &amp; 0\\
+1 - p^B &amp; 0 &amp; p^B\\
+1 &amp; 0 &amp; 0
+\end{matrix}
+\hspace{-0.2em}
+\begin{matrix}
+&amp; \\
+\left . \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \end{matrix} } \right )
+\begin{matrix}
+z_{t}=A \\ z_{t}=B \\ z_{t}=D
+\end{matrix}
+\end{matrix}\]</span></p>
+<p>HMM formulation of the memory model</p>
+<p>To keep track of the sites previously visited, the trick is to consider states as being pairs of sites occupied</p>
+<ul>
+<li><p>States</p></li>
+<li><p>AA is for alive in site A at <span class="math inline">\(t\)</span> and alive in site A at <span class="math inline">\(t-1\)</span></p></li>
+<li><p>AB is for alive in site A at <span class="math inline">\(t\)</span> and alive in site B at <span class="math inline">\(t-1\)</span></p></li>
+<li><p>BA is for alive in site B at <span class="math inline">\(t\)</span> and alive in site A at <span class="math inline">\(t-1\)</span></p></li>
+<li><p>BB is for alive in site B at <span class="math inline">\(t\)</span> and alive in site B at <span class="math inline">\(t-1\)</span></p></li>
+<li><p>D is for dead</p></li>
+<li><p>Observations</p></li>
+<li><p>1 not captured</p></li>
+<li><p>2 captured at site A</p></li>
+<li><p>3 captured at site B</p></li>
+</ul>
+<p>Vector of initial state probabilities</p>
+<p><span class="math display">\[\begin{matrix}
+&amp; \\
+\mathbf{\delta} =
+\left ( \vphantom{ \begin{matrix} 12 \end{matrix} } \right .
+\end{matrix}
+\hspace{-1.2em}
+\begin{matrix}
+z_t=AA &amp; z_t=AB &amp; z_t=BA &amp; z_t=BB &amp;z_t=D \\ \hdashline
+\pi^{AA} &amp; \pi^{AB} &amp; \pi^{BA} &amp; \pi^{BB} &amp; 0\\
+\end{matrix}
+\hspace{-0.2em}
+\begin{matrix}
+&amp; \\
+\left . \vphantom{ \begin{matrix} 12 \end{matrix} } \right )
+\begin{matrix}
+\end{matrix}
+\end{matrix}\]</span></p>
+<p>where <span class="math inline">\(\pi^{BB} = 1 - (\pi^{AA} + \pi^{AB} + \pi^{BA})\)</span>, and <span class="math inline">\(\pi^{ij}\)</span> at site <span class="math inline">\(j\)</span> when first captured at <span class="math inline">\(t\)</span> and site <span class="math inline">\(i\)</span> at <span class="math inline">\(t - 1\)</span>.</p>
+<p>Transition matrix</p>
+<p><span class="math display">\[\begin{matrix}
+&amp; \\
+\mathbf{\Gamma} =
+\left ( \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \\ 12 \\ 12\end{matrix} } \right .
+\end{matrix}
+\hspace{-1.2em}
+\begin{matrix}
+z_t=AA &amp; z_t=AB &amp; z_t=BA &amp; z_t=BB &amp; z_t=D \\ \hdashline
+\phi^{AAA} &amp; \phi^{AAB} &amp; 0 &amp; 0 &amp; 1 - \phi^{AAA} - \phi^{AAB}\\
+0 &amp; 0 &amp; \phi^{ABA} &amp; \phi^{ABB} &amp; 1 - \phi^{ABA} - \phi^{ABB}\\
+\phi^{BAA} &amp; \phi^{BAB} &amp; 0 &amp; 0 &amp; 1 - \phi^{BAA} - \phi^{BAB}\\
+0 &amp; 0 &amp; \phi^{BBA} &amp; \phi^{BBB} &amp; 1 - \phi^{BBA} - \phi^{BBB}\\
+0 &amp; 0 &amp; 0 &amp; 0 &amp; 1
+\end{matrix}
+\hspace{-0.2em}
+\begin{matrix}
+&amp; \\
+\left . \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \\ 12 \\ 12\end{matrix} } \right )
+\begin{matrix}
+z_{t-1}=AA \\ z_{t-1}=AB \\ z_{t-1}=BA \\ z_{t-1}=BB \\ z_{t-1}=D
+\end{matrix}
+\end{matrix}\]</span></p>
+<p><span class="math inline">\(\phi^{ijk}\)</span> is probability to be in site <span class="math inline">\(k\)</span> at time <span class="math inline">\(t + 1\)</span> for an individual
+present in site <span class="math inline">\(j\)</span> at <span class="math inline">\(t\)</span> and in site <span class="math inline">\(i\)</span> at <span class="math inline">\(t - 1\)</span></p>
+<p>Transition matrix, alternate parameterization</p>
+<p><span class="math display">\[\begin{matrix}
+&amp; \\
+\mathbf{\Gamma} =
+\left ( \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \\ 12 \\ 12\end{matrix} } \right .
+\end{matrix}
+\hspace{-1.2em}
+\begin{matrix}
+z_t=AA &amp; z_t=AB &amp; z_t=BA &amp; z_t=BB &amp; z_t=D \\ \hdashline
+\phi \psi^{AAA} &amp; \phi (1 - \psi^{AAA}) &amp; 0 &amp; 0 &amp; 1 - \phi\\
+0 &amp; 0 &amp; \phi (1 - \psi^{ABB}) &amp; \phi \psi^{ABB} &amp; 1 - \phi\\
+\phi \psi^{BAA} &amp; \phi (1 - \psi^{BAA}) &amp; 0 &amp; 0 &amp; 1 - \phi\\
+0 &amp; 0 &amp; \phi (1-\psi^{BBB}) &amp; \phi \psi^{BBB} &amp; 1 - \phi\\
+0 &amp; 0 &amp; 0 &amp; 0 &amp; 1
+\end{matrix}
+\hspace{-0.2em}
+\begin{matrix}
+&amp; \\
+\left . \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \\ 12 \\ 12\end{matrix} } \right )
+\begin{matrix}
+z_{t-1}=AA \\ z_{t-1}=AB \\ z_{t-1}=BA \\ z_{t-1}=BB \\ z_{t-1}=D
+\end{matrix}
+\end{matrix}\]</span></p>
+<p><span class="math inline">\(\phi\)</span> is the probability of surviving from one occasion to the next. <span class="math inline">\(\psi_{ijj}\)</span> is the probability an animal stays at the same site <span class="math inline">\(j\)</span> given that it was at site <span class="math inline">\(i\)</span> on the previous occasion.</p>
+<p>Observation matrix</p>
+<p><span class="math display">\[\begin{matrix}
+&amp; \\
+\mathbf{\Omega} =
+\left ( \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \\ 12 \\ 12\end{matrix} } \right .
+\end{matrix}
+\hspace{-1.2em}
+\begin{matrix}
+y_t=1 &amp; y_t=2 &amp; y_t=3 \\ \hdashline
+1 - p^A &amp; p^A &amp; 0\\
+1 - p^B &amp; 0 &amp; p^B\\
+1 - p^A &amp; p^A &amp; 0\\
+1 - p^B &amp; 0 &amp; p^B\\
+1 &amp; 0 &amp; 0
+\end{matrix}
+\hspace{-0.2em}
+\begin{matrix}
+&amp; \\
+\left . \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \\ 12 \\ 12\end{matrix} } \right )
+\begin{matrix}
+z_t=AA \\ z_t=AB \\ z_t=BA \\ z_t=BB \\ z_t=D
+\end{matrix}
+\end{matrix}\]</span></p>
+</div>
+<h3>References</h3>
+<div id="refs" class="references csl-bib-body hanging-indent" entry-spacing="0">
+<div id="ref-BrownieEtAl1993" class="csl-entry">
+Brownie, C., J. E. Hines, J. D. Nichols, K. H. Pollock, and J. B. Hestbeck. 1993. <span>“Capture-Recapture Studies for Multiple Strata Including Non-<span>M</span>arkovian Transitions.”</span> <em>Biometrics</em> 49: 1173–87.
+</div>
+<div id="ref-cole2014" class="csl-entry">
+Cole, D. J., B. J. T. Morgan, R. S. McCrea, R. Pradel, O. Gimenez, and R. Choquet. 2014. <span>“Does Your Species Have Memory? Analyzing Capture–Recapture Data with Memory Models.”</span> <em>Ecology and Evolution</em> 4 (11): 2124–33.
+</div>
+<div id="ref-hestbeck1991estimates" class="csl-entry">
+Hestbeck, J. B., J. D. Nichols, and R. A. Malecki. 1991. <span>“Estimates of Movement and Site Fidelity Using Mark-Resight Data of Wintering Canada Geese.”</span> <em>Ecology</em> 72 (2): 523–33.
+</div>
+<div id="ref-rouan2009memory" class="csl-entry">
+Rouan, L., R. Choquet, and R. Pradel. 2009. <span>“A General Framework for Modeling Memory in Capture—Recapture Data.”</span> <em>Journal of Agricultural, Biological, and Environmental Statistics</em> 14 (3): 338–55.
+</div>
+</div>
+<p style="text-align: center;">
+<a href="1.4-temporary-emigration.html"><button class="btn btn-default">Previous</button></a>
+<a href="1.6-ppchecks.html"><button class="btn btn-default">Next</button></a>
+</p>
+</div>
+</div>
+
+
+</div>
+
+<script>
+
+// add bootstrap table styles to pandoc tables
+$(document).ready(function () {
+  $('tr.header').parent('thead').parent('table').addClass('table table-condensed');
+});
+
+</script>
+
+</body>
+</html>
