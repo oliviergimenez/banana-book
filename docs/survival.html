@@ -108,7 +108,7 @@
 <span class="header-section-number">4.2</span> The Cormack-Jolly-Seber (CJS) model<a class="anchor" aria-label="anchor" href="#the-cormack-jolly-seber-cjs-model"><i class="fas fa-link"></i></a>
 </h2>
 <p>In Chapter <a href="hmmcapturerecapture.html#hmmcapturerecapture">3</a>, we introduced a capture-recapture model with constant survival and detection probabilities which we formulated as a HMM and fitted to data in NIMBLE. Historically, however, it was a slightly more complicated model that was first proposed – the so-called Cormack-Jolly-Seber (CJS) model – in which survival and recapture probabilities are time-varying. This feature of the CJS model is useful to account for variation due to environmental conditions in survival or to sampling effort in detection. Schematically the CJS model can be represented this way:</p>
-<div class="inline-figure"><img src="banana-book_files/figure-html/unnamed-chunk-263-1.png" width="672"></div>
+<div class="inline-figure"><img src="banana-book_files/figure-html/unnamed-chunk-181-1.png" width="672"></div>
 <p>Note that the states (in gray) and the observations (in white) do not change. We still have <span class="math inline">\(z = 1\)</span> for alive, <span class="math inline">\(z = 2\)</span> for dead, <span class="math inline">\(y = 1\)</span> for non-detected, and <span class="math inline">\(y = 2\)</span> for detected.</p>
 <p>Parameters are now indexed by time. The survival probability is defined as the probability of staying alive (or “ah, ha, ha, ha, stayin’ alive” like the Bee Gees would say) over the interval between <span class="math inline">\(t\)</span> and <span class="math inline">\(t+1\)</span>, that is <span class="math inline">\(\phi_t = \Pr(z_{t+1} = 1 | z_t = 1)\)</span>. The detection probability is defined as the probability of being observed at <span class="math inline">\(t\)</span> given you’re alive at <span class="math inline">\(t\)</span>, that is <span class="math inline">\(p_t = \Pr(y_{t} = 1 | z_t = 1)\)</span>. It is important to bear in mind for later (see Section <a href="survival.html#covariates">4.8</a>) that survival operates over an interval while detection occurs at a specific time.</p>
 <p>The CJS model is named after the three statisticians – Richard Cormack, George Jolly and George Seber – who each published independently a paper introducing more or less the same approach, a year apart ! In fact, Richard Cormack and George Jolly were working in the same corridor in Scotland back in the 1960’s. They would meet every day at coffee and would play some game together, but never mention work and were not aware of each other’s work.</p>
@@ -283,7 +283,7 @@ Overall, the code looks like:</p>
 <span>          params <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"phi[6]"</span><span class="op">)</span>,</span>
 <span>          pdf <span class="op">=</span> <span class="cn">FALSE</span>, </span>
 <span>          priors <span class="op">=</span> <span class="va">priors</span><span class="op">)</span></span></code></pre></div>
-<div class="inline-figure"><img src="banana-book_files/figure-html/unnamed-chunk-278-1.png" width="672"></div>
+<div class="inline-figure"><img src="banana-book_files/figure-html/unnamed-chunk-196-1.png" width="672"></div>
 <p>Clearly mixing (left panel in the plot above) is bad and there is a big overlap between the prior and the posterior for this parameter (right panel) suggesting that its prior was not well updated with the data. What is going on? If you could inspect the likelihood of the CJS model, you would realize that these two parameters <span class="math inline">\(\phi_6\)</span> and <span class="math inline">\(p_7\)</span> appear only as the product <span class="math inline">\(\phi_6 p_7\)</span> and cannot be estimated separately. In other words, one of these parameters is redundant, and you’d need an extra sampling occasion to be able to disentangle them. This is not a big issue as long as you’re aware of it and you do not attempt to ecologically interpret these parameters.</p>
 </div>
 <div id="cjsderivatives" class="section level2" number="4.5">
@@ -695,14 +695,14 @@ Overall, the code looks like:</p>
 <span><span class="va">df</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html">data.frame</a></span><span class="op">(</span>intercept <span class="op">=</span> <span class="va">intercept</span>, survival <span class="op">=</span> <span class="va">survival</span><span class="op">)</span></span>
 <span><span class="va">plot1</span> <span class="op">&lt;-</span> <span class="va">df</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html">%&gt;%</a></span></span>
 <span>  <span class="fu">ggplot</span><span class="op">(</span><span class="fu">aes</span><span class="op">(</span>x <span class="op">=</span> <span class="va">intercept</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu">geom_density</span><span class="op">(</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu">labs</span><span class="op">(</span>x <span class="op">=</span> <span class="st">"prior on intercept"</span><span class="op">)</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_density.html">geom_density</a></span><span class="op">(</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html">labs</a></span><span class="op">(</span>x <span class="op">=</span> <span class="st">"prior on intercept"</span><span class="op">)</span></span>
 <span><span class="va">plot2</span> <span class="op">&lt;-</span> <span class="va">df</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html">%&gt;%</a></span></span>
 <span>  <span class="fu">ggplot</span><span class="op">(</span><span class="fu">aes</span><span class="op">(</span>x <span class="op">=</span> <span class="va">survival</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu">geom_density</span><span class="op">(</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu">labs</span><span class="op">(</span>x <span class="op">=</span> <span class="st">"prior on survival"</span><span class="op">)</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_density.html">geom_density</a></span><span class="op">(</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html">labs</a></span><span class="op">(</span>x <span class="op">=</span> <span class="st">"prior on survival"</span><span class="op">)</span></span>
 <span><span class="va">plot1</span> <span class="op">+</span> <span class="va">plot2</span></span></code></pre></div>
-<div class="inline-figure"><img src="banana-book_files/figure-html/unnamed-chunk-301-1.png" width="672"></div>
+<div class="inline-figure"><img src="banana-book_files/figure-html/unnamed-chunk-219-1.png" width="672"></div>
 <p>Now if you go for a lower standard deviation for the intercept prior (left figure below), e.g. 1.5, the prior on survival is non-informative, looking like a uniform distribution between 0 and 1 (right figure below):</p>
 <div class="sourceCode" id="cb199"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/Random.html">set.seed</a></span><span class="op">(</span><span class="fl">123</span><span class="op">)</span></span>
@@ -713,14 +713,14 @@ Overall, the code looks like:</p>
 <span><span class="va">df</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html">data.frame</a></span><span class="op">(</span>intercept <span class="op">=</span> <span class="va">intercept</span>, survival <span class="op">=</span> <span class="va">survival</span><span class="op">)</span></span>
 <span><span class="va">plot1</span> <span class="op">&lt;-</span> <span class="va">df</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html">%&gt;%</a></span></span>
 <span>  <span class="fu">ggplot</span><span class="op">(</span><span class="fu">aes</span><span class="op">(</span>x <span class="op">=</span> <span class="va">intercept</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu">geom_density</span><span class="op">(</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu">labs</span><span class="op">(</span>x <span class="op">=</span> <span class="st">"prior on intercept"</span><span class="op">)</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_density.html">geom_density</a></span><span class="op">(</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html">labs</a></span><span class="op">(</span>x <span class="op">=</span> <span class="st">"prior on intercept"</span><span class="op">)</span></span>
 <span><span class="va">plot2</span> <span class="op">&lt;-</span> <span class="va">df</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html">%&gt;%</a></span></span>
 <span>  <span class="fu">ggplot</span><span class="op">(</span><span class="fu">aes</span><span class="op">(</span>x <span class="op">=</span> <span class="va">survival</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu">geom_density</span><span class="op">(</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu">labs</span><span class="op">(</span>x <span class="op">=</span> <span class="st">"prior on survival"</span><span class="op">)</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_density.html">geom_density</a></span><span class="op">(</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html">labs</a></span><span class="op">(</span>x <span class="op">=</span> <span class="st">"prior on survival"</span><span class="op">)</span></span>
 <span><span class="va">plot1</span> <span class="op">+</span> <span class="va">plot2</span></span></code></pre></div>
-<div class="inline-figure"><img src="banana-book_files/figure-html/unnamed-chunk-302-1.png" width="672"></div>
+<div class="inline-figure"><img src="banana-book_files/figure-html/unnamed-chunk-220-1.png" width="672"></div>
 <p>Now let’s go back to our model. We first define our flood covariate with 0 if nonflood year, and 1 if flood year:</p>
 <div class="sourceCode" id="cb200"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">flood</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="co"># 1981-1982 (nonflood)</span></span>
@@ -889,12 +889,12 @@ Overall, the code looks like:</p>
 <p>We can have a look to the results through a caterpillar plot of the regression parameters:</p>
 <div class="sourceCode" id="cb218"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/pkg/MCMCvis/man/MCMCplot.html">MCMCplot</a></span><span class="op">(</span>object <span class="op">=</span> <span class="va">mcmc.phiflowp</span>, params <span class="op">=</span> <span class="st">"beta"</span><span class="op">)</span></span></code></pre></div>
-<div class="inline-figure"><img src="banana-book_files/figure-html/unnamed-chunk-322-1.png" width="672"></div>
+<div class="inline-figure"><img src="banana-book_files/figure-html/unnamed-chunk-240-1.png" width="672"></div>
 <p>The posterior distribution of the slope (<code>beta[2]</code>) is centered on negative values, suggesting that as water flow increases, survival decreases.</p>
 <p>Let’s inspect the time-dependent survival probability:</p>
 <div class="sourceCode" id="cb219"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/pkg/MCMCvis/man/MCMCplot.html">MCMCplot</a></span><span class="op">(</span>object <span class="op">=</span> <span class="va">mcmc.phiflowp</span>, params <span class="op">=</span> <span class="st">"phi"</span>, ISB <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
-<div class="inline-figure"><img src="banana-book_files/figure-html/unnamed-chunk-324-1.png" width="672"></div>
+<div class="inline-figure"><img src="banana-book_files/figure-html/unnamed-chunk-242-1.png" width="672"></div>
 <p>Survival between 1982 and 1983 (<code>phi[2]</code>) was greatly affected and much lower than on average. This decrease corresponds to the high water flow in 1983 and the flood. These results are in line with our previous findings obtained by considering a discrete covariate for nonflood vs. flood years.</p>
 </div>
 </div>
@@ -1025,13 +1025,13 @@ Overall, the code looks like:</p>
 <code class="sourceCode R"><span><span class="va">df</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html">%&gt;%</a></span></span>
 <span>  <span class="fu">ggplot</span><span class="op">(</span><span class="op">)</span> <span class="op">+</span> </span>
 <span>  <span class="fu">aes</span><span class="op">(</span>x <span class="op">=</span> <span class="va">wing_length</span>, y <span class="op">=</span> <span class="va">survival</span><span class="op">)</span> <span class="op">+</span> </span>
-<span>  <span class="fu">geom_line</span><span class="op">(</span><span class="op">)</span> <span class="op">+</span> </span>
-<span>  <span class="fu">geom_ribbon</span><span class="op">(</span><span class="fu">aes</span><span class="op">(</span>ymin <span class="op">=</span> <span class="va">lci</span>, ymax <span class="op">=</span> <span class="va">uci</span><span class="op">)</span>, </span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_path.html">geom_line</a></span><span class="op">(</span><span class="op">)</span> <span class="op">+</span> </span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_ribbon.html">geom_ribbon</a></span><span class="op">(</span><span class="fu">aes</span><span class="op">(</span>ymin <span class="op">=</span> <span class="va">lci</span>, ymax <span class="op">=</span> <span class="va">uci</span><span class="op">)</span>, </span>
 <span>              fill <span class="op">=</span> <span class="st">"grey70"</span>, </span>
 <span>              alpha <span class="op">=</span> <span class="fl">0.5</span><span class="op">)</span> <span class="op">+</span> </span>
-<span>  <span class="fu">ylim</span><span class="op">(</span><span class="fl">0</span>,<span class="fl">1</span><span class="op">)</span> <span class="op">+</span> </span>
-<span>  <span class="fu">labs</span><span class="op">(</span>x <span class="op">=</span> <span class="st">"wing length"</span>, y <span class="op">=</span> <span class="st">"estimated survival"</span><span class="op">)</span></span></code></pre></div>
-<div class="inline-figure"><img src="banana-book_files/figure-html/unnamed-chunk-338-1.png" width="672"></div>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/lims.html">ylim</a></span><span class="op">(</span><span class="fl">0</span>,<span class="fl">1</span><span class="op">)</span> <span class="op">+</span> </span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html">labs</a></span><span class="op">(</span>x <span class="op">=</span> <span class="st">"wing length"</span>, y <span class="op">=</span> <span class="st">"estimated survival"</span><span class="op">)</span></span></code></pre></div>
+<div class="inline-figure"><img src="banana-book_files/figure-html/unnamed-chunk-256-1.png" width="672"></div>
 <p>The flat relationship between survival and wing length is confirmed.</p>
 </div>
 </div>
@@ -1153,11 +1153,11 @@ Overall, the code looks like:</p>
 <code class="sourceCode R"><span><span class="va">df</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html">%&gt;%</a></span></span>
 <span>  <span class="fu">ggplot</span><span class="op">(</span><span class="op">)</span> <span class="op">+</span> </span>
 <span>  <span class="fu">aes</span><span class="op">(</span>x <span class="op">=</span> <span class="va">wing_length</span>, y <span class="op">=</span> <span class="va">survival</span>, color <span class="op">=</span> <span class="va">sex</span><span class="op">)</span> <span class="op">+</span> </span>
-<span>  <span class="fu">geom_line</span><span class="op">(</span><span class="op">)</span> <span class="op">+</span> </span>
-<span>  <span class="fu">geom_ribbon</span><span class="op">(</span><span class="fu">aes</span><span class="op">(</span>ymin <span class="op">=</span> <span class="va">lci</span>, ymax <span class="op">=</span> <span class="va">uci</span>, fill <span class="op">=</span> <span class="va">sex</span><span class="op">)</span>, alpha <span class="op">=</span> <span class="fl">0.5</span><span class="op">)</span> <span class="op">+</span> </span>
-<span>  <span class="fu">ylim</span><span class="op">(</span><span class="fl">0</span>,<span class="fl">1</span><span class="op">)</span> <span class="op">+</span> </span>
-<span>  <span class="fu">labs</span><span class="op">(</span>x <span class="op">=</span> <span class="st">"wing length"</span>, y <span class="op">=</span> <span class="st">"estimated survival"</span>, color <span class="op">=</span> <span class="st">""</span>, fill <span class="op">=</span> <span class="st">""</span><span class="op">)</span></span></code></pre></div>
-<div class="inline-figure"><img src="banana-book_files/figure-html/unnamed-chunk-349-1.png" width="672"></div>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_path.html">geom_line</a></span><span class="op">(</span><span class="op">)</span> <span class="op">+</span> </span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_ribbon.html">geom_ribbon</a></span><span class="op">(</span><span class="fu">aes</span><span class="op">(</span>ymin <span class="op">=</span> <span class="va">lci</span>, ymax <span class="op">=</span> <span class="va">uci</span>, fill <span class="op">=</span> <span class="va">sex</span><span class="op">)</span>, alpha <span class="op">=</span> <span class="fl">0.5</span><span class="op">)</span> <span class="op">+</span> </span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/lims.html">ylim</a></span><span class="op">(</span><span class="fl">0</span>,<span class="fl">1</span><span class="op">)</span> <span class="op">+</span> </span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html">labs</a></span><span class="op">(</span>x <span class="op">=</span> <span class="st">"wing length"</span>, y <span class="op">=</span> <span class="st">"estimated survival"</span>, color <span class="op">=</span> <span class="st">""</span>, fill <span class="op">=</span> <span class="st">""</span><span class="op">)</span></span></code></pre></div>
+<div class="inline-figure"><img src="banana-book_files/figure-html/unnamed-chunk-267-1.png" width="672"></div>
 <p>Note that the two curves are not exactly parallel because we back-transformed the linear part of the relationship between survival and wing length. You may check that parallelism occurs on the logit scale:</p>
 <div class="sourceCode" id="cb245"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">predicted_lsurvivalM</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html">matrix</a></span><span class="op">(</span><span class="cn">NA</span>, nrow <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/length.html">length</a></span><span class="op">(</span><span class="va">beta1</span><span class="op">)</span>, </span>
@@ -1182,12 +1182,12 @@ Overall, the code looks like:</p>
 <span><span class="va">df</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html">%&gt;%</a></span></span>
 <span>  <span class="fu">ggplot</span><span class="op">(</span><span class="op">)</span> <span class="op">+</span> </span>
 <span>  <span class="fu">aes</span><span class="op">(</span>x <span class="op">=</span> <span class="va">wing_length</span>, y <span class="op">=</span> <span class="va">survival</span>, color <span class="op">=</span> <span class="va">sex</span><span class="op">)</span> <span class="op">+</span> </span>
-<span>  <span class="fu">geom_line</span><span class="op">(</span><span class="op">)</span> <span class="op">+</span> </span>
-<span>  <span class="fu">ylim</span><span class="op">(</span><span class="op">-</span><span class="fl">2</span>,<span class="fl">2</span><span class="op">)</span> <span class="op">+</span> </span>
-<span>  <span class="fu">labs</span><span class="op">(</span>x <span class="op">=</span> <span class="st">"wing length"</span>, </span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_path.html">geom_line</a></span><span class="op">(</span><span class="op">)</span> <span class="op">+</span> </span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/lims.html">ylim</a></span><span class="op">(</span><span class="op">-</span><span class="fl">2</span>,<span class="fl">2</span><span class="op">)</span> <span class="op">+</span> </span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html">labs</a></span><span class="op">(</span>x <span class="op">=</span> <span class="st">"wing length"</span>, </span>
 <span>       y <span class="op">=</span> <span class="st">"estimated survival (on the lgit scale)"</span>, </span>
 <span>       color <span class="op">=</span> <span class="st">""</span><span class="op">)</span></span></code></pre></div>
-<div class="inline-figure"><img src="banana-book_files/figure-html/unnamed-chunk-350-1.png" width="672"></div>
+<div class="inline-figure"><img src="banana-book_files/figure-html/unnamed-chunk-268-1.png" width="672"></div>
 </div>
 <div id="random-effects" class="section level3" number="4.8.4">
 <h3>
@@ -1471,7 +1471,7 @@ Overall, the code looks like:</p>
 <p>We illustrate how to incorporate prior information by acknowledging that species with similar body masses have similar survival. By gathering information on several other European passerines than the dipper, let’s assume we have built a regression of survival vs. body mass – an allometric relationship.</p>
 <p>Now knowing dippers weigh on average 59.8g, we’re in the position to build a prior for dipper survival probability by predicting its value using the regression. We obtain a predicted survival of 0.57 and a standard deviation of 0.075. Using an informative prior <code>phi ~ dnorm(0.57, sd = 0.073)</code> in NIMBLE instead of our <code>phi ~ dunif(0,1)</code>, we get a mean posterior of <span class="math inline">\(0.56\)</span> with credible interval <span class="math inline">\([0.52, 0.61]\)</span>. There’s barely no difference with the non-informative prior, quite a disappointment.</p>
 <p>Now let’s assume that we had only the three first years of data, what would have happened? We fit the model with constant parameters with both the non-informative and informative priors to the dataset from which we delete the final 4 years of data. Now the benefit of using the prior information becomes clear as the credible interval when prior information is ignored has a width of 0.53, which is more than twice as much as when prior information is used (0.24), illustrating the increased precision provided by the prior. We may assess visually this gain in precision by comparing the survival posterior distributions with and without informative prior:</p>
-<div class="inline-figure"><img src="banana-book_files/figure-html/unnamed-chunk-376-1.png" width="672"></div>
+<div class="inline-figure"><img src="banana-book_files/figure-html/unnamed-chunk-294-1.png" width="672"></div>
 <p>If the aim is to get an estimate of survival, Gilbert did not have to conduct further data collection after 3 years, and he could have reached the same precision as with 7 years of data by using prior information derived from body mass. In brief, the prior information was worth 4 years of field data. Of course, this is assuming that the ecological question remains the same whether you have 3 or 7 years of data, which is unlikely to be the case, as with long-term data, there is so much we can ask, more than “just” what annual survival probability is.</p>
 </div>
 <div id="moment-matching" class="section level3" number="4.9.2">
