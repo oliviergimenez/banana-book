@@ -8,6 +8,8 @@ See <https://www.oxfordbibliographies.com/display/document/obo-9780199830060/obo
 
 @pradel1997
 
+The purpose of the exercise is to estimate the accession to reproduction. The greater flamingo (Phoenicopterus ruber roseus) is a long-lived colonial waterbird that shows delayed maturity. No breeding attempt by a bird <3 yr old has ever been observed. The data used here come from a long term study in the Etang du Fangassier, part of the large complex of commercial salt pans of Salin de Giraud in the Camargue (southern France). They have been collected by the biological station of Tour du Valat and previously analyzed by Pradel et al. (1997). The data concern 7822 individuals ringed as young from 1977 to 1988 and resighted as breeders between 1983 and 1994. Of these, 1680 have been resighted breeding at least once. The observations as Pre-Breeder (chicks only) are coded 1. The observations as Breeder are coded 2. The capture histories are given in file FLAMINGO.TXT
+
 Transition matrix:
   
 $$\begin{matrix}
@@ -65,6 +67,173 @@ Juveniles are never detected.
 ## Stopover duration
 
 @guerin_advances_2017 for a comparison of method, would be great to reproduce all analyses. 
+
+
+Results
+
+```{r echo = FALSE}
+library(MCMCvis)
+load(here::here("dat","stopover.RData"))
+```
+
+Stopover duration
+
+```{r echo = FALSE}
+samps <- rbind(out[[1]], out[[2]])
+
+# Extract column names related to retention probabilities s[sex, time]
+s_cols <- grep("^s\\[", colnames(samps), value = TRUE)
+stopover_duration <- lapply(s_cols, function(col) 1 / (1 - samps[, col]))
+names(stopover_duration) <- make.names(s_cols)  # becomes e.g., s.1..1.
+
+# Combine into data.frame
+stopover_duration_df <- as.data.frame(stopover_duration)
+
+# Create a mapping of syntactic names → sex and time
+raw_names <- names(stopover_duration_df)
+
+# Extract sex and time from the original names
+sex_time <- do.call(rbind, lapply(raw_names, function(n) {
+  # Reverse the transformation done by make.names
+  # from s.1..3. → 1, 3
+  parts <- unlist(regmatches(n, regexec("s\\.(\\d+)\\.\\.(\\d+)\\.", n)))
+  c(sex = as.integer(parts[2]), time = as.integer(parts[3]))
+}))
+
+
+# Add names back and convert to data.frame
+colnames(sex_time) <- c("sex", "time")
+sex_time <- as.data.frame(sex_time)
+sex_time$param <- raw_names
+
+# Reshape to long format
+library(reshape2)
+stopover_long <- melt(stopover_duration_df, variable.name = "param", value.name = "duration")
+
+# Merge sex/time info
+stopover_long <- merge(stopover_long, sex_time, by = "param")
+
+# Compute summary statistics
+stopover_summary <- aggregate(duration ~ sex + time, data = stopover_long, FUN = function(x) {
+  c(mean = mean(x), median = median(x), lwr = quantile(x, 0.025), upr = quantile(x, 0.975))
+})
+
+stopover_summary <- do.call(data.frame, stopover_summary)
+colnames(stopover_summary) <- c("sex", "time", "mean", "median", "lwr_95", "upr_95")
+
+# Optional: turn sex into factor with labels
+stopover_summary$sex <- factor(stopover_summary$sex, levels = 1:2, labels = c("female", "male"))
+
+# View
+#print(stopover_summary)
+
+
+# Now you can summarise or plot!
+library(ggplot2)
+
+# Plot
+ggplot(stopover_summary, aes(x = time, y = mean, color = sex, fill = sex)) +
+  geom_line(size = 1.2) +
+  geom_ribbon(aes(ymin = lwr_95, ymax = upr_95), alpha = 0.2, color = NA) +
+  geom_point(aes(y = median), shape = 21, size = 2, fill = "white") +
+  labs(
+    x = "Time",
+    y = "Expected stopover duration (days)",
+    color = "Sex",
+    fill = "Sex",
+    title = "Time-specific stopover duration by sex"
+  ) +
+  theme_minimal(base_size = 14)
+```
+
+
+```{r echo = FALSE}
+ggplot(stopover_summary, aes(x = time, y = median)) +
+  geom_line(color = "steelblue", size = 1.2) +
+  #geom_ribbon(aes(ymin = lwr_95, ymax = upr_95), fill = "steelblue", alpha = 0.2) +
+  geom_point(aes(y = median), shape = 21, size = 2, fill = "white") +
+  facet_wrap(~ sex) +
+  labs(
+    x = "Time",
+    y = "Expected stopover duration (days)",
+    title = "Time-specific stopover duration by sex"
+  ) +
+  theme_minimal(base_size = 14)
+
+```
+
+
+Cumulative survival
+
+```{r echo = FALSE}
+# Get all s columns
+s_cols <- grep("^s\\[", colnames(samps), value = TRUE)
+
+# Sort by sex and time for safety
+s_cols_sorted <- s_cols[order(
+  as.numeric(sub("s\\[(\\d+),.*", "\\1", s_cols)),
+  as.numeric(sub("s\\[\\d+,\\s*(\\d+)\\]", "\\1", s_cols))
+)]
+
+
+# Separate columns by sex
+s_cols_by_sex <- split(s_cols_sorted, 
+                       sapply(s_cols_sorted, function(x) as.integer(sub("s\\[(\\d+),.*", "\\1", x))))
+# Result: list(female = c(...), male = c(...))
+
+cum_surv_list <- list()
+
+for (sex in names(s_cols_by_sex)) {
+  s_mat <- samps[, s_cols_by_sex[[sex]], drop = FALSE]
+  cum_surv_sex <- t(apply(s_mat, 1, cumprod))  # one row per posterior sample, one col per time
+  colnames(cum_surv_sex) <- paste0("cum_surv_", sex, "_t", seq_len(ncol(cum_surv_sex)))
+  cum_surv_list[[sex]] <- cum_surv_sex
+}
+
+# Combine
+cum_surv_all <- do.call(cbind, cum_surv_list)
+
+
+# Create summary data.frame
+summary_list <- list()
+
+for (col in colnames(cum_surv_all)) {
+  values <- cum_surv_all[, col]
+  summary_list[[col]] <- data.frame(
+    param = col,
+    mean = mean(values),
+    median = median(values),
+    lwr_95 = quantile(values, 0.025),
+    upr_95 = quantile(values, 0.975)
+  )
+}
+
+cumulative_survival_summary <- do.call(rbind, summary_list)
+
+# Extract sex and time from param name
+cumulative_survival_summary$sex <- sub("cum_surv_(\\d).*", "\\1", cumulative_survival_summary$param)
+cumulative_survival_summary$time <- as.integer(sub(".*_t(\\d+)", "\\1", cumulative_survival_summary$param))
+
+# Optional: label sex
+cumulative_survival_summary$sex <- factor(cumulative_survival_summary$sex, 
+                                          levels = c("1", "2"),
+                                          labels = c("female", "male"))
+
+
+ggplot(cumulative_survival_summary, aes(x = time, y = mean)) +
+  geom_line(aes(color = sex), size = 1.2) +
+  geom_ribbon(aes(ymin = lwr_95, ymax = upr_95, fill = sex), alpha = 0.2) +
+  labs(
+    title = "Cumulative survival (stopover retention)",
+    x = "Time",
+    y = "Cumulative probability of still being present",
+    color = "Sex", fill = "Sex"
+  ) +
+  theme_minimal(base_size = 14)
+
+```
+
+
 
 <!-- ## Tradeoffs {#casestudytradeoff} -->
 
