@@ -152,7 +152,7 @@ MCMCsummary(mcmc.phipmix, round = 2)
 # pp2 0.49 0.03 0.43 0.48  0.55 1.01   632
 
 # trace and posterior distribution
-MCMCtrace(mcmc.phipmix, pdf = FALSE, params = c("pi", "p1", "p2", "phi"))
+MCMCtrace(mcmc.phipmix, pdf = FALSE, params = c("pi", "pp1", "pp2", "phi"))
 
 # everything looks fine, but posterior means are far from values we used
 # to simulate data
@@ -161,9 +161,9 @@ MCMCtrace(mcmc.phipmix, pdf = FALSE, params = c("pi", "p1", "p2", "phi"))
 # use forward algo for HMM, and pooling of encounter histories. 
 
 # get rid of individuals for which first==K
-mask <- which(fc!=ncol(y)) # individuals that are not first encountered at last occasion
+mask <- which(first!=ncol(y)) # individuals that are not first encountered at last occasion
 y <- y[mask, ]                # keep only these
-fc <- fc[mask]
+first <- first[mask]
 
 # pool encounter histories
 y_weighted <- y %>% 
@@ -180,7 +180,7 @@ y <- y_weighted[,-1] # pooled data
 my.data <- list(y = y + 1)
 my.constants <- list(N = nrow(y), 
                      K = ncol(y), 
-                     first = fc,
+                     first = first,
                      size = size,
                      one = 1)
 # NIMBLE functions
@@ -317,7 +317,7 @@ mcmc.phipmix.marginalized <- nimbleMCMC(code = hmm.phipmix,
                                         nchains = n.chains)
 
 # numerical summaries
-MCMCvis::MCMCsummary(mcmc.phipmix, round = 2)
+MCMCvis::MCMCsummary(mcmc.phipmix.marginalized, round = 2)
 
 # mean   sd 2.5%  50% 97.5% Rhat n.eff
 # phi 0.72 0.02 0.69 0.72  0.75    1  1120
@@ -330,3 +330,164 @@ MCMCvis::MCMCsummary(mcmc.phipmix, round = 2)
 
 save(mcmc.phipmix, mcmc.phipmix.marginalized, file = "individual-heterogeneity-wolf.RData")
 
+
+
+
+
+# 
+# 
+# 
+# ############# WOLF REAL CASE STUDY
+# 
+# # read in data
+# y <- as.matrix(read.table(here::here("slides", "dat", "wolf.txt")))
+# # 1 seen
+# # 0 not seen
+# 
+# library(nimble)
+# 
+# hmm.phipmix <- nimbleCode({
+#   
+#   # priors
+#   phi ~ dunif(0, 1) # prior survival
+#   p1 ~ dunif(0, 1) # prior detection
+#   p2 ~ dunif(0, 1) # prior detection
+#   pi ~ dunif(0, 1) # prob init state 1
+#   
+#   # HMM ingredients
+#   gamma[1,1] <- phi      # Pr(alive 1 t -> alive 1 t+1)
+#   gamma[1,2] <- 0        # Pr(alive 1 t -> alive 2 t+1) // no transition
+#   gamma[1,3] <- 1 - phi  # Pr(alive t -> dead t+1)
+#   gamma[2,1] <- 0        # Pr(alive 1 t -> alive 1 t+1) // no transition
+#   gamma[2,2] <- phi      # Pr(alive 1 t -> alive 2 t+1) 
+#   gamma[2,3] <- 1 - phi  # Pr(alive t -> dead t+1)
+#   gamma[3,1] <- 0        # Pr(dead t -> alive 1 t+1)
+#   gamma[3,2] <- 0        # Pr(dead t -> alive 1 t+1)
+#   gamma[3,3] <- 1        # Pr(dead t -> dead t+1)
+#   delta[1] <- pi         # Pr(alive t = 1) = pi
+#   delta[2] <- 1 - pi     # Pr(alive t = 1) = 1 - pi
+#   delta[3] <- 0          # Pr(dead t = 1) = 0
+#   omega[1,1] <- 1 - p1   # Pr(alive state 1 t -> non-detected t)
+#   omega[1,2] <- p1       # Pr(alive state 1 t -> detected t)
+#   omega[2,1] <- 1 - p2   # Pr(alive state 2 t -> non-detected t)
+#   omega[2,2] <- p2       # Pr(alive state 2 t -> detected t)
+#   omega[3,1] <- 1        # Pr(dead t -> non-detected t)
+#   omega[3,2] <- 0        # Pr(dead t -> detected t)
+#   omega.init[1,1] <- 0   # Pr(alive state 1 t -> non-detected t)
+#   omega.init[1,2] <- 1       # Pr(alive state 1 t -> detected t)
+#   omega.init[2,1] <- 0   # Pr(alive state 2 t -> non-detected t)
+#   omega.init[2,2] <- 1       # Pr(alive state 2 t -> detected t)
+#   omega.init[3,1] <- 1        # Pr(dead t -> non-detected t)
+#   omega.init[3,2] <- 0        # Pr(dead t -> detected t)
+#   
+#   # likelihood
+#   for (i in 1:N){
+#     z[i,first[i]] ~ dcat(delta[1:3])
+#     y[i,first[i]] ~ dcat(omega.init[z[i,first[i]], 1:2])
+#     for (j in (first[i]+1):K){
+#       z[i,j] ~ dcat(gamma[z[i,j-1], 1:3])
+#       y[i,j] ~ dcat(omega[z[i,j], 1:2])
+#     }
+#   }
+# })
+# 
+# first <- apply(y, 1, function(x) min(which(x != 0)))
+# my.constants <- list(N = nrow(y), K = ncol(y), first = first)
+# my.data <- list(y = y + 1)
+# 
+# # initial values for unknown z
+# zinit <- y
+# for (i in 1:nrow(y)) {
+#   for (j in first[i]:ncol(y)) {
+#     if (j == first[i]) zinit[i,j] <- which(rmultinom(1, 1, c(1/2,1/2))==1) # pick alive state
+#     if (j > first[i]) zinit[i,j] <- zinit[i,j-1] # because no transition, state remains the same
+#   }
+# }
+# zinit <- as.matrix(zinit)
+# 
+# initial.values <- function() list(phi = runif(1,0,1),
+#                                   p1 = runif(1,0,1),
+#                                   p2 = runif(1,0,1),
+#                                   pi = runif(1,0,1),
+#                                   z = zinit)
+# 
+# parameters.to.save <- c("phi", "p1", "p2", "pi")
+# 
+# n.iter <- 10000
+# n.burnin <- 5000
+# n.chains <- 2
+# 
+# mcmc.phipmix <- nimbleMCMC(code = hmm.phipmix, 
+#                            constants = my.constants,
+#                            data = my.data,              
+#                            inits = initial.values,
+#                            monitors = parameters.to.save,
+#                            niter = n.iter,
+#                            nburnin = n.burnin, 
+#                            nchains = n.chains)
+# 
+# library(MCMCvis)
+# MCMCsummary(mcmc.phipmix, round = 2)
+# MCMCtrace(mcmc.phipmix, pdf = FALSE, params = c("pi", "p1", "p2"))
+# MCMCtrace(mcmc.phipmix, pdf = FALSE, params = c("phi"))
+# save(mcmc.phipmix, file = "wolf_het.RData")
+# 
+# 
+# # read in data
+# y <- as.matrix(read.table(here::here("slides", "dat", "wolf.txt")))
+# # 1 seen
+# # 0 not seen
+# 
+# hmm.phip <- nimbleCode({
+#   phi ~ dunif(0, 1) # prior survival
+#   p ~ dunif(0, 1) # prior detection
+#   # likelihood
+#   gamma[1,1] <- phi      # Pr(alive t -> alive t+1)
+#   gamma[1,2] <- 1 - phi  # Pr(alive t -> dead t+1)
+#   gamma[2,1] <- 0        # Pr(dead t -> alive t+1)
+#   gamma[2,2] <- 1        # Pr(dead t -> dead t+1)
+#   delta[1] <- 1          # Pr(alive t = 1) = 1
+#   delta[2] <- 0          # Pr(dead t = 1) = 0
+#   omega[1,1] <- 1 - p    # Pr(alive t -> non-detected t)
+#   omega[1,2] <- p        # Pr(alive t -> detected t)
+#   omega[2,1] <- 1        # Pr(dead t -> non-detected t)
+#   omega[2,2] <- 0        # Pr(dead t -> detected t)
+#   
+#   for (i in 1:N){
+#     z[i,first[i]] ~ dcat(delta[1:2])
+#     for (j in (first[i]+1):T){
+#       z[i,j] ~ dcat(gamma[z[i,j-1], 1:2])
+#       y[i,j] ~ dcat(omega[z[i,j], 1:2])
+#     }
+#   }
+# })
+# 
+# first <- apply(y, 1, function(x) min(which(x !=0)))
+# my.constants <- list(N = nrow(y), T = ncol(y), first = first)
+# my.data <- list(y = y + 1)
+# 
+# zinits <- y + 1 # non-detection -> alive
+# zinits[zinits == 2] <- 1 # dead -> alive
+# initial.values <- function() list(phi = runif(1,0,1),
+#                                   p = runif(1,0,1),
+#                                   z = zinits)
+# parameters.to.save <- c("phi", "p")
+# 
+# n.iter <- 10000
+# n.burnin <- 5000
+# n.chains <- 2
+# 
+# mcmc.phip <- nimbleMCMC(code = hmm.phip, 
+#                         constants = my.constants,
+#                         data = my.data,              
+#                         inits = initial.values,
+#                         monitors = parameters.to.save,
+#                         niter = n.iter,
+#                         nburnin = n.burnin, 
+#                         nchains = n.chains)
+# 
+# MCMCsummary(mcmc.phip, round = 2)
+# MCMCplot(mcmc.phip)
+# save(mcmc.phip, file = "wolf_homg.RData")
+# 
+# 

@@ -6,15 +6,15 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <title>Chapter 6 Covariates | Bayesian analysis of capture-recapture data with hidden Markov models</title>
 <meta name="author" content="Olivier Gimenez">
-<meta name="description" content="WORK IN PROGRESS  6.1 Covariate selection with reversible jump MCMC RJMCMC in Gimenez, Grégoire, and Lenormand (2009) on Common blackbirds or Gimenez et al. (2009) on White stork. As an...">
+<meta name="description" content="WORK IN PROGRESS  6.1 Covariate selection with Reversible Jump MCMC Simple CJS model with 10 covariates on survival. Check my Winbugs paper and BAPE book for content. Cite Vlad’s paper. Refer to...">
 <meta name="generator" content="bookdown 0.43 with bs4_book()">
 <meta property="og:title" content="Chapter 6 Covariates | Bayesian analysis of capture-recapture data with hidden Markov models">
 <meta property="og:type" content="book">
 <meta property="og:url" content="https://oliviergimenez.github.io/banana-book/covariateschapter.html">
-<meta property="og:description" content="WORK IN PROGRESS  6.1 Covariate selection with reversible jump MCMC RJMCMC in Gimenez, Grégoire, and Lenormand (2009) on Common blackbirds or Gimenez et al. (2009) on White stork. As an...">
+<meta property="og:description" content="WORK IN PROGRESS  6.1 Covariate selection with Reversible Jump MCMC Simple CJS model with 10 covariates on survival. Check my Winbugs paper and BAPE book for content. Cite Vlad’s paper. Refer to...">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="Chapter 6 Covariates | Bayesian analysis of capture-recapture data with hidden Markov models">
-<meta name="twitter:description" content="WORK IN PROGRESS  6.1 Covariate selection with reversible jump MCMC RJMCMC in Gimenez, Grégoire, and Lenormand (2009) on Common blackbirds or Gimenez et al. (2009) on White stork. As an...">
+<meta name="twitter:description" content="WORK IN PROGRESS  6.1 Covariate selection with Reversible Jump MCMC Simple CJS model with 10 covariates on survival. Check my Winbugs paper and BAPE book for content. Cite Vlad’s paper. Refer to...">
 <!-- JS --><script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.6/clipboard.min.js" integrity="sha256-inc5kl9MA1hkeYUt+EC3BhlIgyp/2jDIyBLS6k3UxPI=" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/fuse.js/6.4.6/fuse.js" integrity="sha512-zv6Ywkjyktsohkbp9bb45V6tEMoWhzFzXis+LrMehmJZZSys19Yxf1dopHx7WzIKxr5tK2dVcYmaCk2uqdjF4A==" crossorigin="anonymous"></script><script src="https://kit.fontawesome.com/6ecbd6c532.js" crossorigin="anonymous"></script><script src="libs/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <link href="libs/bootstrap-4.6.0/bootstrap.min.css" rel="stylesheet">
 <script src="libs/bootstrap-4.6.0/bootstrap.bundle.min.js"></script><script src="libs/bs3compat-0.9.0/transition.js"></script><script src="libs/bs3compat-0.9.0/tabs.js"></script><script src="libs/bs3compat-0.9.0/bs3compat.js"></script><link href="libs/bs4_book-1.0.0/bs4_book.css" rel="stylesheet">
@@ -100,43 +100,390 @@
 <p>WORK IN PROGRESS</p>
 <div id="covariate-selection-with-reversible-jump-mcmc" class="section level2" number="6.1">
 <h2>
-<span class="header-section-number">6.1</span> Covariate selection with reversible jump MCMC<a class="anchor" aria-label="anchor" href="#covariate-selection-with-reversible-jump-mcmc"><i class="fas fa-link"></i></a>
+<span class="header-section-number">6.1</span> Covariate selection with Reversible Jump MCMC<a class="anchor" aria-label="anchor" href="#covariate-selection-with-reversible-jump-mcmc"><i class="fas fa-link"></i></a>
 </h2>
-<p>RJMCMC in <span class="citation">Gimenez, Grégoire, and Lenormand (<a href="references.html#ref-gimenez2009fitness">2009</a>)</span> on Common blackbirds or <span class="citation">Gimenez et al. (<a href="references.html#ref-gimenez2009winbugs">2009</a>)</span> on White stork.</p>
-<p>As an illustration, we use data on the white stork <em>Ciconia ciconia</em> population in Baden Wurttemberg (Germany), consisting of 321 capture histories of individuals ringed as chicks between 1956 and 1971. From the 60’s to the 90’s, all Western European stork populations were declining <span class="citation">Bairlein (<a href="references.html#ref-bair91">1991</a>)</span>. This trend was likely the result of reduced food availability <span class="citation">Schaub, Kania, and U. (<a href="references.html#ref-schau05">2005</a>)</span> caused by severe droughts observed in the wintering ground of storks in the Sahel region. This hypothesis has been examined in several studies (<span class="citation">Kanyamibwa et al. (<a href="references.html#ref-kanya90">1990</a>)</span> and <span class="citation">Barbraud, Barbraud, and Barbraud (<a href="references.html#ref-barb99">1999</a>)</span>).</p>
-<p>Check out <a href="https://r-nimble.org/nimbleExamples/RJMCMC_example.html" class="uri">https://r-nimble.org/nimbleExamples/RJMCMC_example.html</a> and <a href="https://r-nimble.org/variable-selection-in-nimble-using-reversible-jump-mcmc" class="uri">https://r-nimble.org/variable-selection-in-nimble-using-reversible-jump-mcmc</a>.</p>
-<p>Somewhere explain how to use if-else in model code to consider alternative models, w/ some covariate in/out. Avoids rewriting all models, we see what’s changed, and it avoids errors. Example:</p>
+<p>Simple CJS model with 10 covariates on survival. Check my Winbugs paper and BAPE book for content. Cite Vlad’s paper. Refer to section in book about WAIC and model selection (I mention RJMCMC there I think).</p>
+<p>Results</p>
 <div class="sourceCode" id="cb317"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="kw">if</span><span class="op">(</span><span class="va">covariate</span><span class="op">)</span><span class="op">{</span></span>
-<span><span class="fu"><a href="https://rdrr.io/pkg/gtools/man/logit.html">logit</a></span><span class="op">(</span><span class="va">survival</span><span class="op">[</span><span class="va">t</span><span class="op">]</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="va">beta</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span> <span class="op">+</span> <span class="va">beta</span><span class="op">[</span><span class="fl">2</span><span class="op">]</span> <span class="op">*</span><span class="va">x</span><span class="op">[</span><span class="va">t</span><span class="op">]</span></span>
-<span><span class="op">}</span><span class="kw">else</span><span class="op">{</span></span>
-<span><span class="fu"><a href="https://rdrr.io/pkg/gtools/man/logit.html">logit</a></span><span class="op">(</span><span class="va">survival</span><span class="op">[</span><span class="va">t</span><span class="op">]</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="va">beta</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span></span>
-<span><span class="op">}</span><span class="co">#ifelse</span></span></code></pre></div>
-<p>then specify “covariate=TRUE/FALSE”.</p>
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/grep.html">grepl</a></span><span class="op">(</span><span class="st">'ksi'</span>, <span class="fu"><a href="https://rdrr.io/r/base/colnames.html">colnames</a></span><span class="op">(</span><span class="va">out</span><span class="op">)</span><span class="op">)</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html">%&gt;%</a></span> </span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/which.html">which</a></span><span class="op">(</span><span class="op">)</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html">%&gt;%</a></span></span>
+<span>  <span class="va">out</span><span class="op">[</span>, <span class="va">.</span><span class="op">]</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html">%&gt;%</a></span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/colSums.html">colMeans</a></span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="co">##  ksi[1]  ksi[2]  ksi[3]  ksi[4]  ksi[5]  ksi[6]  ksi[7] </span></span>
+<span><span class="co">## 0.02575 0.01720 0.01560 0.96120 0.04430 0.05350 0.02025 </span></span>
+<span><span class="co">##  ksi[8]  ksi[9] ksi[10] </span></span>
+<span><span class="co">## 0.03360 0.02630 0.02965</span></span></code></pre></div>
+<div class="sourceCode" id="cb318"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/grep.html">grepl</a></span><span class="op">(</span><span class="st">'beta'</span>, <span class="fu"><a href="https://rdrr.io/r/base/colnames.html">colnames</a></span><span class="op">(</span><span class="va">out</span><span class="op">)</span><span class="op">)</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html">%&gt;%</a></span> </span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/which.html">which</a></span><span class="op">(</span><span class="op">)</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html">%&gt;%</a></span></span>
+<span>  <span class="va">out</span><span class="op">[</span>, <span class="va">.</span><span class="op">]</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html">%&gt;%</a></span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/colSums.html">colMeans</a></span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="co">##    beta[1]    beta[2]    beta[3]    beta[4]    beta[5] </span></span>
+<span><span class="co">##  0.0027488 -0.0000100  0.0002316  0.3482938 -0.0062448 </span></span>
+<span><span class="co">##    beta[6]    beta[7]    beta[8]    beta[9]   beta[10] </span></span>
+<span><span class="co">##  0.0074798 -0.0015019  0.0045410  0.0021837 -0.0031392</span></span></code></pre></div>
 </div>
-<div id="naincov" class="section level2" number="6.2">
+<div id="sex-uncertainty" class="section level2" number="6.2">
 <h2>
-<span class="header-section-number">6.2</span> Missing values<a class="anchor" aria-label="anchor" href="#naincov"><i class="fas fa-link"></i></a>
+<span class="header-section-number">6.2</span> Sex uncertainty<a class="anchor" aria-label="anchor" href="#sex-uncertainty"><i class="fas fa-link"></i></a>
 </h2>
-<p>Work on missing values by <span class="citation">Bonner and Schwarz (<a href="references.html#ref-bonner2006">2006</a>)</span> (see <span class="citation">Gimenez et al. (<a href="references.html#ref-gimenez2009winbugs">2009</a>)</span>) and <span class="citation">Langrock and King (<a href="references.html#ref-langrock2013maximum">2013</a>)</span> and <span class="citation">Worthington, King, and Buckland (<a href="references.html#ref-worthington2015">2015</a>)</span>. See also <span class="citation">Rose et al. (<a href="references.html#ref-rose2018">2018</a>)</span>.</p>
+<p>E.g. <span class="citation">Pradel et al. (<a href="references.html#ref-pradel2008sex">2008</a>)</span>, see also <span class="citation">Genovart, Pradel, and Oro (<a href="references.html#ref-genovart_exploiting_2012">2012</a>)</span>.</p>
+<ul>
+<li><p>3 states</p></li>
+<li><p>alive as male (M)</p></li>
+<li><p>alive as female (F)</p></li>
+<li><p>dead (D)</p></li>
+<li><p>10 observations</p></li>
+<li><p>not seen (0)</p></li>
+<li><p>judged from copulation to be M (1)</p></li>
+<li><p>judged from begging food to be M (2)</p></li>
+<li><p>judged from coutship feeding to be M (3)</p></li>
+<li><p>judged from body size to be M (4)</p></li>
+<li><p>judged from copulation to be F (5)</p></li>
+<li><p>judged from begging food to be F (6)</p></li>
+<li><p>judged from coutship feeding to be F (7)</p></li>
+<li><p>judged from body size to be F (8)</p></li>
+<li><p>not judged (9)</p></li>
+</ul>
+<p>Vector of initial state probabilities</p>
+<p><span class="math display">\[\begin{matrix}
+&amp; \\
+\mathbf{\delta} =
+  \left ( \vphantom{ \begin{matrix} 12 \end{matrix} } \right .
+          \end{matrix}
+          \hspace{-1.2em}
+          \begin{matrix}
+          z_t=M &amp; z_t=F &amp; z_t=D \\ \hdashline
+          \pi &amp; 1 - \pi &amp; 0\\
+          \end{matrix}
+          \hspace{-0.2em}
+          \begin{matrix}
+          &amp; \\
+          \left . \vphantom{ \begin{matrix} 12 \end{matrix} } \right )
+\begin{matrix}
+\end{matrix}
+\end{matrix}\]</span></p>
+<p><span class="math inline">\(\pi\)</span> is the probability of being alive as a male, and <span class="math inline">\(1 - \pi\)</span> is the probability of being alive as a female.</p>
+<p>Transition matrix</p>
+<p><span class="math display">\[\begin{matrix}
+&amp; \\
+\mathbf{\Gamma} =
+  \left ( \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \end{matrix} } \right .
+          \end{matrix}
+          \hspace{-1.2em}
+          \begin{matrix}
+          z_t=M &amp; z_t=F &amp; z_t=D \\ \hdashline
+          \phi_M  &amp; 0 &amp; 1 - \phi_M\\
+          0 &amp; \phi_F &amp; 1 - \phi_F\\
+          0 &amp; 0 &amp; 1
+          \end{matrix}
+          \hspace{-0.2em}
+          \begin{matrix}
+          &amp; \\
+          \left . \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \end{matrix} } \right )
+\begin{matrix}
+z_{t-1}=M \\ z_{t-1}=F \\ z_{t-1}=D
+\end{matrix}
+\end{matrix}\]</span></p>
+<p><span class="math inline">\(\phi_M\)</span> is the survival probability of males, and <span class="math inline">\(\phi_F\)</span> that of females.</p>
+<p>Observation matrix (its transposed for convenience)</p>
+<p><span class="math display">\[\begin{matrix}
+&amp; \\
+\mathbf{\Gamma'} =
+  \left ( \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \\ 12 \\ 12 \\ 12 \\ 12 \\ 12 \\ 12 \\ 12 \end{matrix} } \right .
+          \end{matrix}
+          \hspace{-1.2em}
+          \begin{matrix}
+          z_t=M &amp; z_t=F &amp; z_t=D \\ \hdashline
+          1 - p  &amp; 1 - p &amp; 1\\
+          p e (1-m_4) m_1 x_1 &amp; p e (1-m_4) m_1 (1-x_1) &amp; 0\\
+          p e (1-m_4) m_2 x_2 &amp; p e (1-m_4) m_2 (1-x_2) &amp; 0\\
+          p e (1-m_4) m_3 x_3 &amp; p e (1-m_4) m_3 (1-x_3) &amp; 0\\
+          p e m_4 x_4 &amp; p e m_4 (1-x_4) &amp; 0\\
+          p e (1-m_4) m_1 (1-x_1) &amp; p e (1-m_4) m_1 x_1 &amp; 0\\
+          p e (1-m_4) m_2 (1-x_2) &amp; p e (1-m_4) m_2 x_2 &amp; 0\\
+          p e (1-m_4) m_3 (1-x_3) &amp; p e (1-m_4) m_3 x_3 &amp; 0\\
+          p e m_4 (1-x_4) &amp; p e m_4 x_4 &amp; 0\\
+          p (1-e) &amp; p (1-e) &amp; 0\\
+          \end{matrix}
+          \hspace{-0.2em}
+          \begin{matrix}
+          &amp; \\
+          \left . \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \\ 12 \\ 12 \\ 12 \\ 12 \\ 12 \\ 12 \\ 12\end{matrix} } \right )
+\begin{matrix}
+y_{t}=1 \\ y_{t}=2 \\ y_{t}=3 \\ y_{t}=4 \\ y_{t}=5 \\ y_{t}=6 \\ y_{t}=7 \\ y_{t}=8 \\ y_{t}=9 \\ y_{t}=10
+\end{matrix}
+\end{matrix}\]</span></p>
+<p>When an individual is encountered (with probability <span class="math inline">\(p\)</span>), there is some chance that it will be sexed (<span class="math inline">\(e\)</span>) based on its general appearance (body size: probability <span class="math inline">\(m_4\)</span>) or its behaviour (probability <span class="math inline">\(1 - m_4\)</span>). When behaviour is used, there are three different criteria (copulation, begging for food and courtship feeding), which occur with probabilities <span class="math inline">\(m_1\)</span>, <span class="math inline">\(m_2\)</span>, and <span class="math inline">\(m_3\)</span>, respectively. Finally, each criterion has its own reliability (probabilities <span class="math inline">\(x_1\)</span>, <span class="math inline">\(x_2\)</span>, <span class="math inline">\(x_3\)</span>, <span class="math inline">\(x_4\)</span>, where <span class="math inline">\(x_4\)</span> is the reliability of the body-size criterion). Might want to split this complex matrix in several steps, use binary tree as Figure 2 in <span class="citation">Genovart, Pradel, and Oro (<a href="references.html#ref-genovart_exploiting_2012">2012</a>)</span> (see also appendix S1 in <span class="citation">Genovart, Pradel, and Oro (<a href="references.html#ref-genovart_exploiting_2012">2012</a>)</span>).</p>
+<!-- sm=b(1); % b(1) survie male -->
+<!-- sf=b(2); % b(2) survie femelle -->
+<!-- p=zeros(10,1); -->
+<!-- p(1)=b(23); % b(23) capture occasion 1 %% oublie initialement -->
+<!-- p(2)=b(3); % b(3) capture occasion 2 -->
+<!-- p(3)=b(4); % b(4) capture occasion 3 -->
+<!-- p(4)=b(5); % b(5) capture occasion 4 -->
+<!-- p(5)=b(6); % b(6) capture occasion 5 -->
+<!-- p(6)=b(7); % b(7) capture occasion 6 -->
+<!-- p(7)=b(8); % b(8) capture occasion 7 -->
+<!-- p(8)=b(9); % b(9) capture occasion 8 -->
+<!-- p(9)=b(10); % b(10) capture occasion 9 -->
+<!-- p(10)=b(11); % b(11) capture occasion 10 -->
+<!-- sr=b(12); % b(12) sex-ratio = pourcentage de males -->
+<!-- % sr=0.4+0.2*b(12); % b(12) sex-ratio = pourcentage de males -->
+<!-- % sr=0.5; -->
+<!-- ja=b(13); % b(13) intercept de la proba qu'un individu soit juge (tendance lineaire en fonction du temps) -->
+<!-- jb=b(14); % b(14) pente de la proba qu'un individu soit juge (tendance lineaire en fonction du temps) -->
+<!-- m4a=b(15); % b(15) intercept de la proba cdle (au jugement) d'un jugement par body size -->
+<!-- m4b=b(16); % b(16) pente de la proba cdle (au jugement) d'un jugement par body size -->
+<!-- m1=b(17); % b(17) proba cdle (au jugement autre que par body size) d'un jugement par copulation -->
+<!-- % m1 proba cdle (au jugement autre que par body size) d'un jugement par copulation -->
+<!-- m2=(1-m1)*b(18); % b(18) proba cdle (au jugement autre que par body size ou copulation) d'un jugement par begging food -->
+<!-- % m2 proba cdle (au jugement autre que par body size) d'un jugement par begging food -->
+<!-- m3=1-m1-m2; -->
+<!-- % m3 proba cdle (au jugement autre que par body size) d'un jugement par courtship feeding -->
+<!-- e1=b(19); % b(19) proba (cdtnt au jugement par copulation) d'une erreur -->
+<!-- e2=b(20); % b(20) proba (cdtnt au jugement par begging food) d'une erreur -->
+<!-- e3=b(21); % b(21) proba (cdtnt au jugement par courtship feeding) d'une erreur -->
+<!-- e4=b(22); % b(122) proba (cdtnt au jugement par body size) d'une erreur -->
+<!-- % e4=0; %TEMPO 11-10-04 -->
+<!-- % probabilites des evenements (lignes) conditionnellement aux etats (colonnes) -->
+<!-- % male femelle mort(male) mort(femelle) -->
+<!-- % ------------------------------------------------------------------------------------ -->
+<!-- % 0-pas vu -->
+<!-- % 1-comportement copulatoire male -->
+<!-- % 2-role male dans "beging food" -->
+<!-- % 3-role male dans "courtship feeding" -->
+<!-- % 4-grande taille relative -->
+<!-- % 5-comportement copulatoire femelle -->
+<!-- % 6-role femelle dans "beging food" -->
+<!-- % 7-role femelle dans "courtship feeding" -->
+<!-- % 8-petite taille relative -->
+<!-- % 9-pas de jugement -->
+<p>Results</p>
+<pre><code>##      mean   sd 2.5%  50% 97.5% Rhat n.eff
+## e    0.07 0.00 0.07 0.07  0.07 1.01   589
+## m[1] 0.29 0.02 0.26 0.29  0.32 1.00   913
+## m[2] 0.60 0.02 0.56 0.60  0.63 1.00   892
+## m[3] 0.11 0.01 0.09 0.11  0.14 1.00   817
+## m[4] 0.17 0.01 0.14 0.17  0.19 1.01   949
+## p    0.65 0.00 0.64 0.65  0.66 1.00   394
+## phiF 0.90 0.01 0.89 0.90  0.91 1.01   205
+## phiM 0.89 0.01 0.88 0.89  0.90 1.01   279
+## pi   0.52 0.01 0.50 0.52  0.55 1.00   291
+## x[1] 0.52 0.03 0.45 0.52  0.58 1.01   915
+## x[2] 0.55 0.02 0.50 0.55  0.60 1.01   725
+## x[3] 0.54 0.05 0.44 0.55  0.65 1.00   927
+## x[4] 0.58 0.04 0.50 0.58  0.67 1.00   753</code></pre>
+<p>Compare with Table 5 in <span class="citation">Pradel et al. (<a href="references.html#ref-pradel2008sex">2008</a>)</span>. Note we should have used the generalized logit or Dirichlet prior. Some discrepancy with x that i can’t explain. Detection is constant, but making it time dependent does not change anything.</p>
+<p>Maybe try to implement it with nimbleEcology?</p>
 </div>
-<div id="sex-uncertainty" class="section level2" number="6.3">
+<div id="uncertainty-in-age" class="section level2" number="6.3">
 <h2>
-<span class="header-section-number">6.3</span> Sex uncertainty<a class="anchor" aria-label="anchor" href="#sex-uncertainty"><i class="fas fa-link"></i></a>
+<span class="header-section-number">6.3</span> Uncertainty in age<a class="anchor" aria-label="anchor" href="#uncertainty-in-age"><i class="fas fa-link"></i></a>
 </h2>
-<p><span class="citation">Pradel et al. (<a href="references.html#ref-pradel2008sex">2008</a>)</span> and <span class="citation">Genovart, Pradel, and Oro (<a href="references.html#ref-genovart_exploiting_2012">2012</a>)</span></p>
-</div>
-<div id="nonlinearities" class="section level2" number="6.4">
-<h2>
-<span class="header-section-number">6.4</span> Nonlinearities<a class="anchor" aria-label="anchor" href="#nonlinearities"><i class="fas fa-link"></i></a>
-</h2>
-<p>Splines à la <span class="citation">Gimenez et al. (<a href="references.html#ref-gimenez_semiparametric_2006">2006</a>)</span>, possibly w/ jagam <a href="https://rdrr.io/cran/mgcv/src/R/jagam.r" class="uri">https://rdrr.io/cran/mgcv/src/R/jagam.r</a>.</p>
-</div>
-<div id="spatial" class="section level2" number="6.5">
-<h2>
-<span class="header-section-number">6.5</span> Spatial<a class="anchor" aria-label="anchor" href="#spatial"><i class="fas fa-link"></i></a>
-</h2>
-<p>3D Splines as in <span class="citation">Péron et al. (<a href="references.html#ref-Peron2011">2011</a>)</span>. (I)CAR as in <span class="citation">Saracco et al. (<a href="references.html#ref-saracco2010icar">2010</a>)</span> (see (<a href="https://github.com/Andrew9Lawson/Bayesian-DM-code-examples" class="uri">https://github.com/Andrew9Lawson/Bayesian-DM-code-examples</a>, <a href="https://github.com/Andrew9Lawson/Bayesian_DM_Nimble_code/tree/ICAR-and-other-code" class="uri">https://github.com/Andrew9Lawson/Bayesian_DM_Nimble_code/tree/ICAR-and-other-code</a> and <a href="https://r-nimble.org/html_manual/cha-spatial.html" class="uri">https://r-nimble.org/html_manual/cha-spatial.html</a> for NIMBLE implementation). Add RSR <span class="citation">Khan and Calder (<a href="references.html#ref-khan2022rsr">2022</a>)</span> (see Jags code at <a href="https://gist.github.com/oliviergimenez/0d5519654adef09060581eb49e2128ce" class="uri">https://gist.github.com/oliviergimenez/0d5519654adef09060581eb49e2128ce</a>).</p>
+<p>E.g. <span class="citation">Gervasi et al. (<a href="references.html#ref-Gervasi2017">2017</a>)</span>. See also <span class="citation">Gowan et al. (<a href="references.html#ref-gowan2021uncertainty">2021</a>)</span> for uncertainty in age and size</p>
+<ul>
+<li><p>3 states</p></li>
+<li><p>alive as cub (C)</p></li>
+<li><p>alive as adult (A)</p></li>
+<li><p>dead (D)</p></li>
+<li><p>4 observations</p></li>
+<li><p>not detected (1)</p></li>
+<li><p>detected as cub by both criteria (2)</p></li>
+<li><p>detected as cub by criterion 1 (3)</p></li>
+<li><p>detected as adult by both criteria (4)</p></li>
+</ul>
+<p>Vector of initial state probabilities</p>
+<p><span class="math display">\[\begin{matrix}
+&amp; \\
+\mathbf{\delta} =
+  \left ( \vphantom{ \begin{matrix} 12 \end{matrix} } \right .
+          \end{matrix}
+          \hspace{-1.2em}
+          \begin{matrix}
+          z_t=C &amp; z_t=A &amp; z_t=D \\ \hdashline
+          \pi &amp; 1 - \pi &amp; 0\\
+          \end{matrix}
+          \hspace{-0.2em}
+          \begin{matrix}
+          &amp; \\
+          \left . \vphantom{ \begin{matrix} 12 \end{matrix} } \right )
+\begin{matrix}
+\end{matrix}
+\end{matrix}\]</span></p>
+<p><span class="math inline">\(\pi\)</span> is the probability of being alive as a cub, and <span class="math inline">\(1 - \pi\)</span> is the probability of being alive as an adult.</p>
+<p>Transition matrix</p>
+<p><span class="math display">\[\begin{matrix}
+&amp; \\
+\mathbf{\Gamma} =
+  \left ( \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \end{matrix} } \right .
+          \end{matrix}
+          \hspace{-1.2em}
+          \begin{matrix}
+          z_t=C &amp; z_t=A &amp; z_t=D \\ \hdashline
+          0  &amp; \phi_C &amp; 1 - \phi_C\\
+          0 &amp; \phi_A &amp; 1 - \phi_A\\
+          0 &amp; 0 &amp; 1
+          \end{matrix}
+          \hspace{-0.2em}
+          \begin{matrix}
+          &amp; \\
+          \left . \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \end{matrix} } \right )
+\begin{matrix}
+z_{t-1}=C \\ z_{t-1}=A \\ z_{t-1}=D
+\end{matrix}
+\end{matrix}\]</span></p>
+<p><span class="math inline">\(\phi_C\)</span> is the survival probability of cubs, and <span class="math inline">\(\phi_A\)</span> that of adults.</p>
+<p>Detection matrix</p>
+<p>We need to introduce intermediate observations, say <span class="math inline">\(y'\)</span></p>
+<ul>
+<li>not detected (1)</li>
+<li>detected as cub (2)</li>
+<li>detected as adult (2)</li>
+</ul>
+<p><span class="math display">\[\begin{matrix}
+&amp; \\
+\mathbf{\Gamma_1} =
+  \left ( \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \end{matrix} } \right .
+          \end{matrix}
+          \hspace{-1.2em}
+          \begin{matrix}
+          y'_t=1 &amp; y'_t=2 &amp; y'_t=3 \\ \hdashline
+          1-p_C  &amp; p_C &amp; 0\\
+          1-p_A &amp; 0 &amp; 1 - p_A\\
+          1 &amp; 0 &amp; 0
+          \end{matrix}
+          \hspace{-0.2em}
+          \begin{matrix}
+          &amp; \\
+          \left . \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \end{matrix} } \right )
+\begin{matrix}
+z_{t}=C \\ z_{t}=A \\ z_{t}=D
+\end{matrix}
+\end{matrix}\]</span></p>
+<p><span class="math inline">\(p_C\)</span> is detection for cubs, and <span class="math inline">\(p_A\)</span> for adults.</p>
+<p>Classification</p>
+<ul>
+<li>not detected (1)</li>
+<li>detected as cub by both criteria (2)</li>
+<li>detected as cub by criterion 1 (3)</li>
+<li>detected as adult by both criteria (4)</li>
+</ul>
+<p><span class="math display">\[\begin{matrix}
+&amp; \\
+\mathbf{\Omega_2} =
+    \left ( \vphantom{ \begin{matrix} 12 \\ 12 \\ 12\end{matrix} } \right .
+\end{matrix}
+\hspace{-1.2em}
+\begin{matrix}
+    y_t=1 &amp; y_t=2 &amp; y_t=3 &amp; y_t=4\\ \hdashline
+1 &amp; 0 &amp; 0 &amp; 0\\
+0 &amp; \beta_{C,CC} &amp; \beta_{C,CA} &amp; 1 - \beta_{C,CC} - \beta_{C,CA}\\
+0 &amp; \beta_{A,CC} &amp; \beta_{A,CA} &amp; 1 - \beta_{A,CC} - \beta_{A,CA}\\
+\end{matrix}
+\hspace{-0.2em}
+\begin{matrix}
+&amp; \\
+\left . \vphantom{ \begin{matrix} 12 \\ 12 \\ 12\end{matrix} } \right )
+    \begin{matrix}
+    y'_{t}=1 \\ y'_{t}=2 \\ y'_{t}=3
+    \end{matrix}
+\end{matrix}\]</span></p>
+<p>where <span class="math inline">\(\beta_{C,CC}\)</span> prob that, being a cub, and individual is classified with both criteria, <span class="math inline">\(\beta_{C,CA}\)</span> prob that, being a cub, an individual is classified as cub with criterion 1 and as adult with criterion 2, <span class="math inline">\(\beta_{A,CC}\)</span> probability that, being an adult, an individual is classified as cub with both criteria, <span class="math inline">\(\beta_{A,CA}\)</span> probability that, being an adult, an individual is classified as cub with criterion 1 and as adult with criterion 2.</p>
+<p>Matrix product of the two <span class="math inline">\(\mathbf{\Omega_1} \mathbf{\Omega_2}\)</span> to get observation matrix, possible in NIMBLE even though time consuming. Better to write the product explicitely.</p>
+<p><span class="math display">\[\begin{matrix}
+&amp; \\
+\mathbf{\Omega} =
+    \left ( \vphantom{ \begin{matrix} 12 \\ 12 \\ 12\end{matrix} } \right .
+\end{matrix}
+\hspace{-1.2em}
+\begin{matrix}
+    y_t=1 &amp; y_t=2 &amp; y_t=3 &amp; y_t=4\\ \hdashline
+1-p_C &amp; p_C \beta_{C,CC} &amp; p_C \beta_{C,CA} &amp; p_C (1 - \beta_{C,CC} - \beta_{C,CA})\\
+1-p_A &amp; p_A \beta_{A,CC} &amp; p_A \beta_{A,CA} &amp; p_A (1 - \beta_{A,CC} - \beta_{A,CA})\\
+1 &amp; 0 &amp; 0 &amp; 0\\
+\end{matrix}
+\hspace{-0.2em}
+\begin{matrix}
+&amp; \\
+\left . \vphantom{ \begin{matrix} 12 \\ 12 \\ 12\end{matrix} } \right )
+    \begin{matrix}
+    z_{t}=1 \\ z_{t}=2 \\ z_{t}=3
+    \end{matrix}
+\end{matrix}\]</span></p>
+<p>Data</p>
+<!-- ```{r} -->
+<!-- # Three states: 1) alive as cub; 2) Alive as adult; 3) Dead -->
+<!-- # Four events: 0) Not detected; 1) Detected as cub with both criteria; 2) Detected as cub only with criterion 1; 3) Detected as adult -->
+<!-- # Six groups: 1) Females unknown age; 2) Males unknown age; 3) Adult females; 4) Adult males; 5) Female cubs; 6) Male cubs -->
+<!-- # The initial state is fixed to zero for groups 3 and 4 (known adults) and to one for groups 5 and 6 (known cubs) -->
+<!-- ``` -->
+<!-- ```{r} -->
+<!-- # Step 1: Read file -->
+<!-- lines <- readLines("/Users/oliviergimenez/Dropbox/OG/GITHUB/book/matos/case-studies/covariates/age-uncertainty/bear-age-vincenzo/apennine-bear") -->
+<!-- # Step 2: Process lines -->
+<!-- processed_lines <- sapply(lines, function(line) { -->
+<!--   # Remove semicolon -->
+<!--   line <- gsub(";", "", line) -->
+<!--   # Split into parts -->
+<!--   parts <- strsplit(line, " ")[[1]] -->
+<!--   # Split the first part (7-digit number) into separate digits -->
+<!--   digits <- unlist(strsplit(parts[1], split = "")) -->
+<!--   # Combine all elements: digits + the other numbers -->
+<!--   all_values <- c(digits, parts[-1]) -->
+<!--   # Paste back as space-separated string -->
+<!--   paste(all_values, collapse = " ") -->
+<!-- }) -->
+<!-- # Step 3: Optionally convert to data frame -->
+<!-- df <- read.table(text = processed_lines, header = FALSE) -->
+<!-- # Step 4: Check -->
+<!-- head(df) -->
+<!-- # Step 4: Create sex and age columns -->
+<!-- group_info <- data.frame( -->
+<!--   sex = c("Female", "Male", "Female", "Male", "Female", "Male"), -->
+<!--   age = c("Unknown", "Unknown", "Adult", "Adult", "Cub", "Cub") -->
+<!-- ) -->
+<!-- # Step 5: Identify the group with '1' for each row -->
+<!-- group_index <- apply(df[, 8:13], 1, function(x) which(x == 1)) -->
+<!-- # Step 6: Add sex and age columns -->
+<!-- df$sex <- group_info$sex[group_index] -->
+<!-- df$age <- group_info$age[group_index] -->
+<!-- # Step 7: Drop indicator columns (optional) -->
+<!-- df_clean <- df[, -c(8:13)] -->
+<!-- # Step 8: Write to file -->
+<!-- write.table(df_clean, file = "output_with_sex_age.txt", row.names = FALSE, col.names = FALSE, quote = FALSE, sep = " ") -->
+<!-- ``` -->
+<p>Results</p>
+<pre><code>##         mean   sd 2.5%  50% 97.5% Rhat n.eff
+## betaACA 0.05 0.02 0.02 0.04  0.08 1.00  4114
+## betaACC 0.02 0.01 0.00 0.02  0.05 1.00  4211
+## betaCCA 0.57 0.12 0.33 0.58  0.79 1.00   966
+## betaCCC 0.30 0.10 0.13 0.29  0.50 1.00   998
+## p       0.71 0.04 0.63 0.71  0.79 1.00  3329
+## phiA[1] 0.88 0.03 0.80 0.88  0.94 1.00  4195
+## phiA[2] 0.82 0.06 0.69 0.82  0.92 1.00  3643
+## phiC    0.53 0.13 0.28 0.53  0.78 1.00  3563
+## pi      0.27 0.09 0.12 0.26  0.49 1.02  1416</code></pre>
+<p>Compare with Table 3 in <span class="citation">Gervasi et al. (<a href="references.html#ref-Gervasi2017">2017</a>)</span>. Note we should have used the generalized logit or Dirichlet prior. Also uncertainty similar in estimates. Detection is different in structure, which might explain different in initial state prob estimate.</p>
+<!-- ## Covariate selection with reversible jump MCMC -->
+<!-- RJMCMC in @gimenez2009fitness on Common blackbirds or @gimenez2009winbugs on White stork. -->
+<!-- As an illustration, we use data on the white stork *Ciconia ciconia* population in Baden Wurttemberg (Germany), consisting of 321 capture histories of individuals ringed as chicks between 1956 and 1971. From the 60's to the 90's, all Western European stork populations were declining @bair91. This trend was likely the result of reduced food availability @schau05 caused by severe droughts observed in the wintering ground of storks in the Sahel region. This hypothesis has been examined in several studies (@kanya90 and @barb99).  -->
+<!-- Check out <https://r-nimble.org/nimbleExamples/RJMCMC_example.html> and <https://r-nimble.org/variable-selection-in-nimble-using-reversible-jump-mcmc>. -->
+<!-- Somewhere explain how to use if-else in model code to consider alternative models, w/ some covariate in/out. Avoids rewriting all models, we see what's changed, and it avoids errors. Example: -->
+<!-- ```{r eval = FALSE} -->
+<!-- if(covariate){ -->
+<!-- logit(survival[t]) <- beta[1] + beta[2] *x[t] -->
+<!-- }else{ -->
+<!-- logit(survival[t]) <- beta[1] -->
+<!-- }#ifelse -->
+<!-- ``` -->
+<!-- then specify "covariate=TRUE/FALSE". -->
+<!-- ## Missing values {#naincov} -->
+<!-- Work on missing values by @bonner2006 (see @gimenez2009winbugs) and @langrock2013maximum and @worthington2015. See also @rose2018. -->
+<!-- ## Nonlinearities -->
+<!-- Splines à la @gimenez_semiparametric_2006, possibly w/ jagam <https://rdrr.io/cran/mgcv/src/R/jagam.r>.  -->
+<!-- ## Spatial -->
+<!-- 3D Splines as in @Peron2011. (I)CAR as in @saracco2010icar (see  (<https://github.com/Andrew9Lawson/Bayesian-DM-code-examples>, <https://github.com/Andrew9Lawson/Bayesian_DM_Nimble_code/tree/ICAR-and-other-code> and <https://r-nimble.org/html_manual/cha-spatial.html> for NIMBLE implementation). Add RSR @khan2022rsr (see Jags code at <https://gist.github.com/oliviergimenez/0d5519654adef09060581eb49e2128ce>).  -->
 
 </div>
 </div>
@@ -147,11 +494,9 @@
     <nav id="toc" data-toggle="toc" aria-label="On this page"><h2>On this page</h2>
       <ul class="nav navbar-nav">
 <li><a class="nav-link" href="#covariateschapter"><span class="header-section-number">6</span> Covariates</a></li>
-<li><a class="nav-link" href="#covariate-selection-with-reversible-jump-mcmc"><span class="header-section-number">6.1</span> Covariate selection with reversible jump MCMC</a></li>
-<li><a class="nav-link" href="#naincov"><span class="header-section-number">6.2</span> Missing values</a></li>
-<li><a class="nav-link" href="#sex-uncertainty"><span class="header-section-number">6.3</span> Sex uncertainty</a></li>
-<li><a class="nav-link" href="#nonlinearities"><span class="header-section-number">6.4</span> Nonlinearities</a></li>
-<li><a class="nav-link" href="#spatial"><span class="header-section-number">6.5</span> Spatial</a></li>
+<li><a class="nav-link" href="#covariate-selection-with-reversible-jump-mcmc"><span class="header-section-number">6.1</span> Covariate selection with Reversible Jump MCMC</a></li>
+<li><a class="nav-link" href="#sex-uncertainty"><span class="header-section-number">6.2</span> Sex uncertainty</a></li>
+<li><a class="nav-link" href="#uncertainty-in-age"><span class="header-section-number">6.3</span> Uncertainty in age</a></li>
 </ul>
 
       <div class="book-extra">
@@ -169,7 +514,7 @@
 <footer class="bg-primary text-light mt-5"><div class="container"><div class="row">
 
   <div class="col-12 col-md-6 mt-3">
-    <p>"<strong>Bayesian analysis of capture-recapture data with hidden Markov models</strong>: Theory and case studies in R and NIMBLE" was written by Olivier Gimenez. It was last built on 2025-08-06.</p>
+    <p>"<strong>Bayesian analysis of capture-recapture data with hidden Markov models</strong>: Theory and case studies in R and NIMBLE" was written by Olivier Gimenez. It was last built on 2025-08-08.</p>
   </div>
 
   <div class="col-12 col-md-6 mt-3">

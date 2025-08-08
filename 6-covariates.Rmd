@@ -2,38 +2,432 @@
 
 WORK IN PROGRESS
 
-## Covariate selection with reversible jump MCMC
+## Covariate selection with Reversible Jump MCMC
 
-RJMCMC in @gimenez2009fitness on Common blackbirds or @gimenez2009winbugs on White stork.
+Simple CJS model with 10 covariates on survival. Check my Winbugs paper and BAPE book for content. Cite Vlad's paper. Refer to section in book about WAIC and model selection (I mention RJMCMC there I think).
 
-As an illustration, we use data on the white stork *Ciconia ciconia* population in Baden Wurttemberg (Germany), consisting of 321 capture histories of individuals ringed as chicks between 1956 and 1971. From the 60's to the 90's, all Western European stork populations were declining @bair91. This trend was likely the result of reduced food availability @schau05 caused by severe droughts observed in the wintering ground of storks in the Sahel region. This hypothesis has been examined in several studies (@kanya90 and @barb99). 
+Results
 
-Check out <https://r-nimble.org/nimbleExamples/RJMCMC_example.html> and <https://r-nimble.org/variable-selection-in-nimble-using-reversible-jump-mcmc>.
-
-Somewhere explain how to use if-else in model code to consider alternative models, w/ some covariate in/out. Avoids rewriting all models, we see what's changed, and it avoids errors. Example:
-
-```{r eval = FALSE}
-if(covariate){
-logit(survival[t]) <- beta[1] + beta[2] *x[t]
-}else{
-logit(survival[t]) <- beta[1]
-}#ifelse
+```{r echo = FALSE}
+load(here::here("dat","rjmcmc.RData"))
+#MCMCsummary(out, round = 2)
 ```
 
-then specify "covariate=TRUE/FALSE".
+```{r}
+grepl('ksi', colnames(out)) %>% 
+  which() %>%
+  out[, .] %>%
+  colMeans()
+```
 
-## Missing values {#naincov}
+```{r}
+grepl('beta', colnames(out)) %>% 
+  which() %>%
+  out[, .] %>%
+  colMeans()
+```
 
-Work on missing values by @bonner2006 (see @gimenez2009winbugs) and @langrock2013maximum and @worthington2015. See also @rose2018.
+
 
 ## Sex uncertainty
 
-@pradel2008sex and @genovart_exploiting_2012
+E.g. @pradel2008sex, see also @genovart_exploiting_2012.
 
-## Nonlinearities
++ 3 states
++ alive as male (M)
++ alive as female (F)
++ dead (D)
 
-Splines à la @gimenez_semiparametric_2006, possibly w/ jagam <https://rdrr.io/cran/mgcv/src/R/jagam.r>. 
++ 10 observations
++ not seen (0)
++ judged from copulation to be M (1)
++ judged from begging food to be M (2)
++ judged from coutship feeding to be M (3)
++ judged from body size to be M (4)
++ judged from copulation to be F (5)
++ judged from begging food to be F (6)
++ judged from coutship feeding to be F (7)
++ judged from body size to be F (8)
++ not judged (9)
 
-## Spatial
+Vector of initial state probabilities
 
-3D Splines as in @Peron2011. (I)CAR as in @saracco2010icar (see  (<https://github.com/Andrew9Lawson/Bayesian-DM-code-examples>, <https://github.com/Andrew9Lawson/Bayesian_DM_Nimble_code/tree/ICAR-and-other-code> and <https://r-nimble.org/html_manual/cha-spatial.html> for NIMBLE implementation). Add RSR @khan2022rsr (see Jags code at <https://gist.github.com/oliviergimenez/0d5519654adef09060581eb49e2128ce>). 
+$$\begin{matrix}
+& \\
+\mathbf{\delta} =
+  \left ( \vphantom{ \begin{matrix} 12 \end{matrix} } \right .
+          \end{matrix}
+          \hspace{-1.2em}
+          \begin{matrix}
+          z_t=M & z_t=F & z_t=D \\ \hdashline
+          \pi & 1 - \pi & 0\\
+          \end{matrix}
+          \hspace{-0.2em}
+          \begin{matrix}
+          & \\
+          \left . \vphantom{ \begin{matrix} 12 \end{matrix} } \right )
+\begin{matrix}
+\end{matrix}
+\end{matrix}$$
+
+$\pi$ is the probability of being alive as a male, and $1 - \pi$ is the probability of being alive as a female.
+
+Transition matrix
+
+$$\begin{matrix}
+& \\
+\mathbf{\Gamma} =
+  \left ( \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \end{matrix} } \right .
+          \end{matrix}
+          \hspace{-1.2em}
+          \begin{matrix}
+          z_t=M & z_t=F & z_t=D \\ \hdashline
+          \phi_M  & 0 & 1 - \phi_M\\
+          0 & \phi_F & 1 - \phi_F\\
+          0 & 0 & 1
+          \end{matrix}
+          \hspace{-0.2em}
+          \begin{matrix}
+          & \\
+          \left . \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \end{matrix} } \right )
+\begin{matrix}
+z_{t-1}=M \\ z_{t-1}=F \\ z_{t-1}=D
+\end{matrix}
+\end{matrix}$$
+  
+$\phi_M$ is the survival probability of males, and $\phi_F$ that of females.
+
+Observation matrix (its transposed for convenience)
+
+$$\begin{matrix}
+& \\
+\mathbf{\Gamma'} =
+  \left ( \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \\ 12 \\ 12 \\ 12 \\ 12 \\ 12 \\ 12 \\ 12 \end{matrix} } \right .
+          \end{matrix}
+          \hspace{-1.2em}
+          \begin{matrix}
+          z_t=M & z_t=F & z_t=D \\ \hdashline
+          1 - p  & 1 - p & 1\\
+          p e (1-m_4) m_1 x_1 & p e (1-m_4) m_1 (1-x_1) & 0\\
+          p e (1-m_4) m_2 x_2 & p e (1-m_4) m_2 (1-x_2) & 0\\
+          p e (1-m_4) m_3 x_3 & p e (1-m_4) m_3 (1-x_3) & 0\\
+          p e m_4 x_4 & p e m_4 (1-x_4) & 0\\
+          p e (1-m_4) m_1 (1-x_1) & p e (1-m_4) m_1 x_1 & 0\\
+          p e (1-m_4) m_2 (1-x_2) & p e (1-m_4) m_2 x_2 & 0\\
+          p e (1-m_4) m_3 (1-x_3) & p e (1-m_4) m_3 x_3 & 0\\
+          p e m_4 (1-x_4) & p e m_4 x_4 & 0\\
+          p (1-e) & p (1-e) & 0\\
+          \end{matrix}
+          \hspace{-0.2em}
+          \begin{matrix}
+          & \\
+          \left . \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \\ 12 \\ 12 \\ 12 \\ 12 \\ 12 \\ 12 \\ 12\end{matrix} } \right )
+\begin{matrix}
+y_{t}=1 \\ y_{t}=2 \\ y_{t}=3 \\ y_{t}=4 \\ y_{t}=5 \\ y_{t}=6 \\ y_{t}=7 \\ y_{t}=8 \\ y_{t}=9 \\ y_{t}=10
+\end{matrix}
+\end{matrix}$$
+
+When an individual is encountered (with probability $p$), there is some chance that it will be sexed ($e$) based on its general appearance (body size: probability $m_4$) or its behaviour (probability $1 - m_4$). When behaviour is used, there are three different criteria (copulation, begging for food and courtship feeding), which occur with probabilities $m_1$, $m_2$, and $m_3$, respectively. Finally, each criterion has its own reliability (probabilities $x_1$, $x_2$, $x_3$, $x_4$, where $x_4$ is the reliability of the body-size criterion). Might want to split this complex matrix in several steps, use binary tree as Figure 2 in @genovart_exploiting_2012 (see also appendix S1 in @genovart_exploiting_2012). 
+
+<!-- sm=b(1); % b(1) survie male -->
+<!-- sf=b(2); % b(2) survie femelle -->
+<!-- p=zeros(10,1); -->
+<!-- p(1)=b(23); % b(23) capture occasion 1 %% oublie initialement -->
+<!-- p(2)=b(3); % b(3) capture occasion 2 -->
+<!-- p(3)=b(4); % b(4) capture occasion 3 -->
+<!-- p(4)=b(5); % b(5) capture occasion 4 -->
+<!-- p(5)=b(6); % b(6) capture occasion 5 -->
+<!-- p(6)=b(7); % b(7) capture occasion 6 -->
+<!-- p(7)=b(8); % b(8) capture occasion 7 -->
+<!-- p(8)=b(9); % b(9) capture occasion 8 -->
+<!-- p(9)=b(10); % b(10) capture occasion 9 -->
+<!-- p(10)=b(11); % b(11) capture occasion 10 -->
+<!-- sr=b(12); % b(12) sex-ratio = pourcentage de males -->
+<!-- % sr=0.4+0.2*b(12); % b(12) sex-ratio = pourcentage de males -->
+<!-- % sr=0.5; -->
+<!-- ja=b(13); % b(13) intercept de la proba qu'un individu soit juge (tendance lineaire en fonction du temps) -->
+<!-- jb=b(14); % b(14) pente de la proba qu'un individu soit juge (tendance lineaire en fonction du temps) -->
+<!-- m4a=b(15); % b(15) intercept de la proba cdle (au jugement) d'un jugement par body size -->
+<!-- m4b=b(16); % b(16) pente de la proba cdle (au jugement) d'un jugement par body size -->
+<!-- m1=b(17); % b(17) proba cdle (au jugement autre que par body size) d'un jugement par copulation -->
+<!-- % m1 proba cdle (au jugement autre que par body size) d'un jugement par copulation -->
+<!-- m2=(1-m1)*b(18); % b(18) proba cdle (au jugement autre que par body size ou copulation) d'un jugement par begging food -->
+<!-- % m2 proba cdle (au jugement autre que par body size) d'un jugement par begging food -->
+<!-- m3=1-m1-m2; -->
+<!-- % m3 proba cdle (au jugement autre que par body size) d'un jugement par courtship feeding -->
+<!-- e1=b(19); % b(19) proba (cdtnt au jugement par copulation) d'une erreur -->
+<!-- e2=b(20); % b(20) proba (cdtnt au jugement par begging food) d'une erreur -->
+<!-- e3=b(21); % b(21) proba (cdtnt au jugement par courtship feeding) d'une erreur -->
+<!-- e4=b(22); % b(122) proba (cdtnt au jugement par body size) d'une erreur -->
+<!-- % e4=0; %TEMPO 11-10-04 -->
+
+<!-- % probabilites des evenements (lignes) conditionnellement aux etats (colonnes) -->
+<!-- % male femelle mort(male) mort(femelle) -->
+<!-- % ------------------------------------------------------------------------------------ -->
+<!-- % 0-pas vu -->
+<!-- % 1-comportement copulatoire male -->
+<!-- % 2-role male dans "beging food" -->
+<!-- % 3-role male dans "courtship feeding" -->
+<!-- % 4-grande taille relative -->
+<!-- % 5-comportement copulatoire femelle -->
+<!-- % 6-role femelle dans "beging food" -->
+<!-- % 7-role femelle dans "courtship feeding" -->
+<!-- % 8-petite taille relative -->
+<!-- % 9-pas de jugement -->
+
+Results
+
+```{r echo = FALSE}
+load(here::here("dat","sex.RData"))
+MCMCsummary(out, round = 2)
+```
+
+Compare with Table 5 in @pradel2008sex. Note we should have used the generalized logit or Dirichlet prior. Some discrepancy with x that i can't explain. Detection is constant, but making it time dependent does not change anything. 
+
+Maybe try to implement it with nimbleEcology?
+
+## Uncertainty in age
+
+E.g. @Gervasi2017. See also @gowan2021uncertainty for uncertainty in age and size
+
++ 3 states
++ alive as cub (C)
++ alive as adult (A)
++ dead (D)
+
++ 4 observations
++ not detected (1)
++ detected as cub by both criteria (2)
++ detected as cub by criterion 1 (3)
++ detected as adult by both criteria (4)
+
+Vector of initial state probabilities
+
+$$\begin{matrix}
+& \\
+\mathbf{\delta} =
+  \left ( \vphantom{ \begin{matrix} 12 \end{matrix} } \right .
+          \end{matrix}
+          \hspace{-1.2em}
+          \begin{matrix}
+          z_t=C & z_t=A & z_t=D \\ \hdashline
+          \pi & 1 - \pi & 0\\
+          \end{matrix}
+          \hspace{-0.2em}
+          \begin{matrix}
+          & \\
+          \left . \vphantom{ \begin{matrix} 12 \end{matrix} } \right )
+\begin{matrix}
+\end{matrix}
+\end{matrix}$$
+
+$\pi$ is the probability of being alive as a cub, and $1 - \pi$ is the probability of being alive as an adult.
+
+Transition matrix
+
+$$\begin{matrix}
+& \\
+\mathbf{\Gamma} =
+  \left ( \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \end{matrix} } \right .
+          \end{matrix}
+          \hspace{-1.2em}
+          \begin{matrix}
+          z_t=C & z_t=A & z_t=D \\ \hdashline
+          0  & \phi_C & 1 - \phi_C\\
+          0 & \phi_A & 1 - \phi_A\\
+          0 & 0 & 1
+          \end{matrix}
+          \hspace{-0.2em}
+          \begin{matrix}
+          & \\
+          \left . \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \end{matrix} } \right )
+\begin{matrix}
+z_{t-1}=C \\ z_{t-1}=A \\ z_{t-1}=D
+\end{matrix}
+\end{matrix}$$
+  
+$\phi_C$ is the survival probability of cubs, and $\phi_A$ that of adults.
+
+Detection matrix
+
+We need to introduce intermediate observations, say $y'$
+
++ not detected (1)
++ detected as cub (2)
++ detected as adult (2)
+
+
+$$\begin{matrix}
+& \\
+\mathbf{\Gamma_1} =
+  \left ( \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \end{matrix} } \right .
+          \end{matrix}
+          \hspace{-1.2em}
+          \begin{matrix}
+          y'_t=1 & y'_t=2 & y'_t=3 \\ \hdashline
+          1-p_C  & p_C & 0\\
+          1-p_A & 0 & 1 - p_A\\
+          1 & 0 & 0
+          \end{matrix}
+          \hspace{-0.2em}
+          \begin{matrix}
+          & \\
+          \left . \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \end{matrix} } \right )
+\begin{matrix}
+z_{t}=C \\ z_{t}=A \\ z_{t}=D
+\end{matrix}
+\end{matrix}$$
+  
+$p_C$ is detection for cubs, and $p_A$ for adults.
+
+Classification
+
++ not detected (1)
++ detected as cub by both criteria (2)
++ detected as cub by criterion 1 (3)
++ detected as adult by both criteria (4)
+
+$$\begin{matrix}
+& \\
+\mathbf{\Omega_2} =
+    \left ( \vphantom{ \begin{matrix} 12 \\ 12 \\ 12\end{matrix} } \right .
+\end{matrix}
+\hspace{-1.2em}
+\begin{matrix}
+    y_t=1 & y_t=2 & y_t=3 & y_t=4\\ \hdashline
+1 & 0 & 0 & 0\\
+0 & \beta_{C,CC} & \beta_{C,CA} & 1 - \beta_{C,CC} - \beta_{C,CA}\\
+0 & \beta_{A,CC} & \beta_{A,CA} & 1 - \beta_{A,CC} - \beta_{A,CA}\\
+\end{matrix}
+\hspace{-0.2em}
+\begin{matrix}
+& \\
+\left . \vphantom{ \begin{matrix} 12 \\ 12 \\ 12\end{matrix} } \right )
+    \begin{matrix}
+    y'_{t}=1 \\ y'_{t}=2 \\ y'_{t}=3
+    \end{matrix}
+\end{matrix}$$
+
+where $\beta_{C,CC}$ prob that, being a cub, and individual is classified with both criteria, $\beta_{C,CA}$ prob that, being a cub, an individual is classified as cub with criterion 1 and as adult with criterion 2, $\beta_{A,CC}$ probability that, being an adult, an individual is classified as cub with both criteria, $\beta_{A,CA}$ probability that, being an adult, an individual is classified as cub with criterion 1 and as adult with criterion 2.
+
+Matrix product of the two $\mathbf{\Omega_1} \mathbf{\Omega_2}$ to get observation matrix, possible in NIMBLE even though time consuming. Better to write the product explicitely. 
+
+$$\begin{matrix}
+& \\
+\mathbf{\Omega} =
+    \left ( \vphantom{ \begin{matrix} 12 \\ 12 \\ 12\end{matrix} } \right .
+\end{matrix}
+\hspace{-1.2em}
+\begin{matrix}
+    y_t=1 & y_t=2 & y_t=3 & y_t=4\\ \hdashline
+1-p_C & p_C \beta_{C,CC} & p_C \beta_{C,CA} & p_C (1 - \beta_{C,CC} - \beta_{C,CA})\\
+1-p_A & p_A \beta_{A,CC} & p_A \beta_{A,CA} & p_A (1 - \beta_{A,CC} - \beta_{A,CA})\\
+1 & 0 & 0 & 0\\
+\end{matrix}
+\hspace{-0.2em}
+\begin{matrix}
+& \\
+\left . \vphantom{ \begin{matrix} 12 \\ 12 \\ 12\end{matrix} } \right )
+    \begin{matrix}
+    z_{t}=1 \\ z_{t}=2 \\ z_{t}=3
+    \end{matrix}
+\end{matrix}$$
+
+Data
+
+<!-- ```{r} -->
+<!-- # Three states: 1) alive as cub; 2) Alive as adult; 3) Dead -->
+<!-- # Four events: 0) Not detected; 1) Detected as cub with both criteria; 2) Detected as cub only with criterion 1; 3) Detected as adult -->
+<!-- # Six groups: 1) Females unknown age; 2) Males unknown age; 3) Adult females; 4) Adult males; 5) Female cubs; 6) Male cubs -->
+<!-- # The initial state is fixed to zero for groups 3 and 4 (known adults) and to one for groups 5 and 6 (known cubs) -->
+<!-- ``` -->
+
+
+<!-- ```{r} -->
+<!-- # Step 1: Read file -->
+<!-- lines <- readLines("/Users/oliviergimenez/Dropbox/OG/GITHUB/book/matos/case-studies/covariates/age-uncertainty/bear-age-vincenzo/apennine-bear") -->
+
+<!-- # Step 2: Process lines -->
+<!-- processed_lines <- sapply(lines, function(line) { -->
+<!--   # Remove semicolon -->
+<!--   line <- gsub(";", "", line) -->
+
+<!--   # Split into parts -->
+<!--   parts <- strsplit(line, " ")[[1]] -->
+
+<!--   # Split the first part (7-digit number) into separate digits -->
+<!--   digits <- unlist(strsplit(parts[1], split = "")) -->
+
+<!--   # Combine all elements: digits + the other numbers -->
+<!--   all_values <- c(digits, parts[-1]) -->
+
+<!--   # Paste back as space-separated string -->
+<!--   paste(all_values, collapse = " ") -->
+<!-- }) -->
+
+<!-- # Step 3: Optionally convert to data frame -->
+<!-- df <- read.table(text = processed_lines, header = FALSE) -->
+
+<!-- # Step 4: Check -->
+<!-- head(df) -->
+
+<!-- # Step 4: Create sex and age columns -->
+<!-- group_info <- data.frame( -->
+<!--   sex = c("Female", "Male", "Female", "Male", "Female", "Male"), -->
+<!--   age = c("Unknown", "Unknown", "Adult", "Adult", "Cub", "Cub") -->
+<!-- ) -->
+
+<!-- # Step 5: Identify the group with '1' for each row -->
+<!-- group_index <- apply(df[, 8:13], 1, function(x) which(x == 1)) -->
+
+<!-- # Step 6: Add sex and age columns -->
+<!-- df$sex <- group_info$sex[group_index] -->
+<!-- df$age <- group_info$age[group_index] -->
+
+<!-- # Step 7: Drop indicator columns (optional) -->
+<!-- df_clean <- df[, -c(8:13)] -->
+
+<!-- # Step 8: Write to file -->
+<!-- write.table(df_clean, file = "output_with_sex_age.txt", row.names = FALSE, col.names = FALSE, quote = FALSE, sep = " ") -->
+<!-- ``` -->
+
+Results
+
+```{r echo = FALSE}
+load(here::here("dat","age.RData"))
+MCMCsummary(out, round = 2)
+```
+
+Compare with Table 3 in @Gervasi2017. Note we should have used the generalized logit or Dirichlet prior. Also uncertainty similar in estimates. Detection is different in structure, which might explain different in initial state prob estimate. 
+
+<!-- ## Covariate selection with reversible jump MCMC -->
+
+<!-- RJMCMC in @gimenez2009fitness on Common blackbirds or @gimenez2009winbugs on White stork. -->
+
+<!-- As an illustration, we use data on the white stork *Ciconia ciconia* population in Baden Wurttemberg (Germany), consisting of 321 capture histories of individuals ringed as chicks between 1956 and 1971. From the 60's to the 90's, all Western European stork populations were declining @bair91. This trend was likely the result of reduced food availability @schau05 caused by severe droughts observed in the wintering ground of storks in the Sahel region. This hypothesis has been examined in several studies (@kanya90 and @barb99).  -->
+
+<!-- Check out <https://r-nimble.org/nimbleExamples/RJMCMC_example.html> and <https://r-nimble.org/variable-selection-in-nimble-using-reversible-jump-mcmc>. -->
+
+<!-- Somewhere explain how to use if-else in model code to consider alternative models, w/ some covariate in/out. Avoids rewriting all models, we see what's changed, and it avoids errors. Example: -->
+
+<!-- ```{r eval = FALSE} -->
+<!-- if(covariate){ -->
+<!-- logit(survival[t]) <- beta[1] + beta[2] *x[t] -->
+<!-- }else{ -->
+<!-- logit(survival[t]) <- beta[1] -->
+<!-- }#ifelse -->
+<!-- ``` -->
+
+<!-- then specify "covariate=TRUE/FALSE". -->
+
+<!-- ## Missing values {#naincov} -->
+
+<!-- Work on missing values by @bonner2006 (see @gimenez2009winbugs) and @langrock2013maximum and @worthington2015. See also @rose2018. -->
+
+<!-- ## Nonlinearities -->
+
+<!-- Splines à la @gimenez_semiparametric_2006, possibly w/ jagam <https://rdrr.io/cran/mgcv/src/R/jagam.r>.  -->
+
+<!-- ## Spatial -->
+
+<!-- 3D Splines as in @Peron2011. (I)CAR as in @saracco2010icar (see  (<https://github.com/Andrew9Lawson/Bayesian-DM-code-examples>, <https://github.com/Andrew9Lawson/Bayesian_DM_Nimble_code/tree/ICAR-and-other-code> and <https://r-nimble.org/html_manual/cha-spatial.html> for NIMBLE implementation). Add RSR @khan2022rsr (see Jags code at <https://gist.github.com/oliviergimenez/0d5519654adef09060581eb49e2128ce>).  -->

@@ -4,15 +4,13 @@ WORK IN PROGRESS
 
 ## Individual heterogeneity
 
-On wolf, see @cubaynes_importance_2010, @gimenez_individual_2010, or go full non-parametric w/ @turek_bayesian_2021. See @pradel2009 for black-headed gull example. 
+Gray wolf is a social species with hierarchy in packs which may reflect in demography. Shirley Pledger in a series of papers developed heterogeneity models in which individuals are assigned in two or more classes with class-specific survival/detection probabilities. @cubaynes_importance_2010 used HMMs to account for heterogeneity in the detection process due to social status, see also @pradel2009 w/ example on black-headed gull. Dominant individuals tend to use path more often than others, and these paths are where we look for scats.
 
-Our example is about individual heterogeneity and how to account for it with HMMs. Gray wolf is a social species with hierarchy in packs which may reflect in species demography. As an example, we'll work with gray wolves.
+You may consider more classes, and select among models, see @cubaynes2012, not an easy problem. Alternatively, you may also go for a non-parametric approach and let the data tell you how many classes you need. This is relatively easy to do in NIMBLE, see @turek_bayesian_2021. More about individual heterogeneity in @gimenez2018ih.
 
-```{r pixwolf, echo=FALSE, fig.cap="Dominance in wolves.", fig.align='center'}
-knitr::include_graphics("images/wolfdominance.jpg")
-```
-
-Gray wolf is a social species with hierarchy in packs which may reflect in demography. Shirley Pledger in a series of papers developed heterogeneity models in which individuals are assigned in two or more classes with class-specific survival/detection probabilities. @cubaynes_importance_2010 used HMMs to account for heterogeneity in the detection process due to social status, see also @pradel2009. Dominant individuals tend to use path more often than others, and these paths are where we look for scats.
+<!-- ```{r pixwolf, echo=FALSE, fig.cap="Dominance in wolves.", fig.align='center'} -->
+<!-- knitr::include_graphics("images/wolfdominance.jpg") -->
+<!-- ``` -->
 
 Individual heterogeneity
 
@@ -122,132 +120,111 @@ z_{t}=A1 \\ z_{t}=A2 \\ z_{t}=D
   
 $p^1$ is detection for individuals in class 1, and $p^2$ that of individuals in class 2.
 
+Data
+
+We simulate data, for fun. 
+
+```{r eval = FALSE}
+# generate heterogeneous detection probabilities
+phi <- 0.7 # survival
+prop_class1 <- 0.2 # pi
+p_class1 <- 0.8 # low prop are highly detectable
+p_class2 <- 0.3
+nind <- 400 # nb of ind
+nyear <- 10 # duration of the study
+```
+
+
 Results
 
 ```{r echo = FALSE}
 library(MCMCvis)
-load(here::here("dat","wolf_het.RData"))
+load(here::here("dat","individual-heterogeneity-wolf.RData"))
+```
+
+Naive results, with problem:
+```{r}
 MCMCsummary(mcmc.phipmix, round = 2)
 ```
 
-We have lowly detectable individuals (class A1 with $p^1$) in proportion 62%. And highly (or so) detectable individuals (class A2 with $p^2$) in proportion 38%. Note that interpretation of classes is made a posteriori. Survival is 81%.
-
-```{r, echo = FALSE}
-library(MCMCvis)
-load(here::here("dat","wolf_het.RData"))
-MCMCplot(mcmc.phipmix)
-```
+<!-- ```{r, echo = FALSE} -->
+<!-- library(MCMCvis) -->
+<!-- load(here::here("dat","wolf_het.RData")) -->
+<!-- MCMCplot(mcmc.phipmix) -->
+<!-- ``` -->
 
 From the simulations I run, seems like the categorical sampler on latent states gets stuck in places that depend on initial values. Changing for the slice sampler improves thing a bit, but not that much. Only option is to get rid of the states and use the marginalized likelihood. Nice illustration of the use of simulations (to check model is doing ok, estimated are valid, etc.), changing samplers, nimbleEcology, NIMBLE functions, etc. 
 
-You may consider more classes, and select among models, see @cubaynes2012. You may also go for a non-parametric approach and let the data tell you how many classes you need. This is relatively easy to do in NIMBLE, see @turek_bayesian_2021. More about individual heterogeneity in @gimenez2018ih.
+Some detailed explanations, thanks Daniel!
 
-> Bottom line, the way this model is written is completely destined for failure. The state-space formulation that's written, with the two different groups for individuals (high detection and low detection) sets the model up for failure, and it will never work correctly when written this way. Briefly:
+The usual formulation creates a serious limitation: individuals are not allowed to switch between groups over time (e.g., from class 1 to class 2), because the transition matrix does not permit it. In other words, any individual seen > 1 time (it's detected after the first observation occasion) can *never* change group assignments away from their initial value group assignment. Why this formulation fails? The problem is subtle but fundamental: in a standard HMM, transitions between states are governed by a Markov process. If the transition matrix says an individual in class 1 today must stay in class 1 (or die), then the individual is permanently locked in that class. As a result, once an individual is assigned to a group through its initial latent state (e.g., class 1), it can never change class during sampling. Even worse, any individual seen on multiple occasions (say, years 1 and 4) must stay alive during those years, the latent state cannot “jump” between classes without violating the transition constraints, therefore, the initial class assignment is fixed forever, and the sampler cannot explore the alternative class, no matter how much data supports it.
 
-> For any individual that is seen at any time t > 1 (that is, individuals seen again after the first sighting), the detection history looks something like:
-1 0 0 1 .....  (1 represents detection).
-The initial values for the latent z state are either :
-1 1 1 1 1.....
-or
-2 2 2 2 2
-putting that individual into one of the two groups (1 or 2 always).
-when sampling, the latent z can *never * transition to the other group, from group 2 to group 1, or from group 1 to group 2.  It will be stuck where ever it started.
-If the categorical sampler tries to change the *final* state from the initial value of (say) 2 to 1,
-then this transition is deemed to be impossible by the prior (defined by the gamma state transition matrix), since the state at the previous time was 2, and 2 in one period (the previous period) does not permit a state of 1 in the next time period.
-SImilarly, if the first (or any intermediate) value of z attempts to transition from (say) 2 to 1, then the *following* state is still 1, and that dependency does not allow the state in question to change to 1, because a state of 1 cannot have the next state be 2.
-Even if some "dead" states (3's) are added to the end of the z vector over the course of MCMC sampling, and say z becomes:
-1 1 1 1 3 3
-The 3's can never propagate "earlier" than shown here (since there are detections at t=1 and t=4, so the individual cannot be in state 3 at time t=4), so the problem described above will always be the case, and this individual will *always* remain in group 1, no matter how long you run the MCMC.
+<!-- > Bottom line, the way this model is written is completely destined for failure. The state-space formulation that's written, with the two different groups for individuals (high detection and low detection) sets the model up for failure, and it will never work correctly when written this way. Briefly: -->
 
-> The only time an individual (with the model written as such) could change between groups (1 -> 2, or 2 -> 1) from their initial group assignment of zinit, would be if the individual is *only* observed on the first time period, the detection history is:
-1 0 0 0 0 0,
-Then say the initial value for z is:
-1 1 1 1 1 1 (always in group 1),
-then the sampler at some point could begin transitioning the final 1 into state 3 (dead), so after an MCMC iteration, the z for this individual could be:
-1 1 1 1 1 3,
-then if we're lucky, the sampler on the final 1 would some time change it to a 3:
-1 1 1 1 3 3
-then this could happen again later:
-1 1 1 3 3 3
-and again:
-1 1 3 3 3 3
-and once again:
-1 3 3 3 3 3
-and *only now*, finally, if we're lucky, the sampler operating on the first value of the z vector could change this group assignment from 1 to 2:
-2 3 3 3 3 3
-And that's the only situation when individuals can possibly change groups in this model.
+<!-- > For any individual that is seen at any time t > 1 (that is, individuals seen again after the first sighting), the detection history looks something like: -->
+<!-- 1 0 0 1 ..... (1 represents detection). -->
+<!-- The initial values for the latent z state are either : -->
+<!-- 1 1 1 1 1..... -->
+<!-- or -->
+<!-- 2 2 2 2 2 -->
+<!-- putting that individual into one of the two groups (1 or 2 always). -->
+<!-- when sampling, the latent z can *never * transition to the other group, from group 2 to group 1, or from group 1 to group 2. It will be stuck where ever it started. -->
+<!-- If the categorical sampler tries to change the *final* state from the initial value of (say) 2 to 1, -->
+<!-- then this transition is deemed to be impossible by the prior (defined by the gamma state transition matrix), since the state at the previous time was 2, and 2 in one period (the previous period) does not permit a state of 1 in the next time period. -->
+<!-- SImilarly, if the first (or any intermediate) value of z attempts to transition from (say) 2 to 1, then the *following* state is still 1, and that dependency does not allow the state in question to change to 1, because a state of 1 cannot have the next state be 2. -->
+<!-- Even if some "dead" states (3's) are added to the end of the z vector over the course of MCMC sampling, and say z becomes: -->
+<!-- 1 1 1 1 3 3 -->
+<!-- The 3's can never propagate "earlier" than shown here (since there are detections at t=1 and t=4, so the individual cannot be in state 3 at time t=4), so the problem described above will always be the case, and this individual will *always* remain in group 1, no matter how long you run the MCMC. -->
 
-> The problem again, is that any individual seen > 1 time (it's resighted after the first observation occasion) can *never* change group assignments away from their initial value group assignment.  So, this model is destined for failure.
+<!-- > The only time an individual (with the model written as such) could change between groups (1 -> 2, or 2 -> 1) from their initial group assignment of zinit, would be if the individual is *only* observed on the first time period, the detection history is: -->
+<!-- 1 0 0 0 0 0, -->
+<!-- Then say the initial value for z is: -->
+<!-- 1 1 1 1 1 1 (always in group 1), -->
+<!-- then the sampler at some point could begin transitioning the final 1 into state 3 (dead), so after an MCMC iteration, the z for this individual could be: -->
+<!-- 1 1 1 1 1 3, -->
+<!-- then if we're lucky, the sampler on the final 1 would some time change it to a 3: -->
+<!-- 1 1 1 1 3 3 -->
+<!-- then this could happen again later: -->
+<!-- 1 1 1 3 3 3 -->
+<!-- and again: -->
+<!-- 1 1 3 3 3 3 -->
+<!-- and once again: -->
+<!-- 1 3 3 3 3 3 -->
+<!-- and *only now*, finally, if we're lucky, the sampler operating on the first value of the z vector could change this group assignment from 1 to 2: -->
+<!-- 2 3 3 3 3 3 -->
+<!-- And that's the only situation when individuals can possibly change groups in this model. -->
 
-> There are many ways one could fix this:
-- Marginalize over the z's as you did (perhaps using nimbleEcology)
-- Write the model differently, using a binary latent indicator variable to represent the group assignment of each individual.  This could also work for > 2 groups, where the group indicator variable follows a categorical prior
-- Use a latent state formulation as you have, but write a custom MCMC sampler to update entire rows of the z matrix (the latent state variables for one individual for all time periods) simultaneously, thus enabling transitions between groups
-- Probably other ways, also.
+<!-- > The problem again, is that any individual seen > 1 time (it's resighted after the first observation occasion) can *never* change group assignments away from their initial value group assignment. So, this model is destined for failure. -->
 
+
+<!-- > There are many ways one could fix this: -->
+<!-- - Marginalize over the z's as you did (perhaps using nimbleEcology) -->
+<!-- - Write the model differently, using a binary latent indicator variable to represent the group assignment of each individual. This could also work for > 2 groups, where the group indicator variable follows a categorical prior -->
+<!-- - Use a latent state formulation as you have, but write a custom MCMC sampler to update entire rows of the z matrix (the latent state variables for one individual for all time periods) simultaneously, thus enabling transitions between groups -->
+<!-- - Probably other ways, also. -->
+
+There are several solutions
+
++ Marginalize over the latent states: Instead of sampling the latent states $z$, you can marginalize them out, which avoids the group-switching problem entirely. This is the principle behind the `nimbleEcology` package.
+
++ Use a group-level latent variable: Rather than coding groups as HMM states, define a latent group assignment (e.g., `g[i] ~ dcat(pi[1:2])`) for each individual. The HMM then conditions on that fixed group, allowing for proper inference and switching during MCMC.
+
++ Custom block sampler: Design a custom MCMC sampler that updates the entire latent history of an individual (`z[i, 1:K]`) at once. This allows for group-switching in a consistent way, though it's more advanced and computationally heavier.
+
+We explore the first solution. 
+
+Now with marginalized version:
+```{r}
+MCMCsummary(mcmc.phipmix.marginalized, round = 2)
+```
+
+We have lowly detectable individuals (class A1 with $p^1$) in proportion 27%. And highly (or so) detectable individuals (class A2 with $p^2$) in proportion 79%. Note that interpretation of classes is made a posteriori. Survival is 72%.
+
+In summary: When modeling unobservable individual heterogeneity (e.g., detection classes) in an HMM, avoid encoding group identity as a dynamic state. Instead, treat it as a fixed latent variable, or marginalize it out. Otherwise, the model is unable to explore the full posterior and will yield biased or unreliable estimates.
 
 <!-- I'm not an expert on the BNP facilities offered in NIMBLE, but I think I can comment: the stick-breaking representation (as you're using), and the CRP distribution, are modelling the same Dirichlet process.  They differ in the MCMC sampling algorithms which are applied to each, automatically, by NIMBLE's MCMC.  Translating your code between these two (mathematically identical) representations is a relatively small and straight-forward exercise.  The relative performance of the different sampling algorithms, as applied to each representation, could differ, would depend on the model and the data, and is generally difficult to predict. -->
 
 <!-- Changing between the stick-breaking representation and the CRP representation, the categorical distribution would persist in your model.  And Perry's comments are correct, that (in particular for a large number of categories, e.g. large values of H or HH in your code) the categorical sampler (which is applied to the categorical distribution) would become arbitrarily inefficient, in that it evaluates the posterior density for every category value (H or HH times), then samples directly from that posterior distribution.  And that you could hopefully reduce this inefficiency by writing a customized sampling strategy (a custom-written MCMC sampler), to update your categorical distributions, in a more efficient (less wasteful) manner. -->
-
-
-## Trap dep {#trapdep}
-
-Multievent formulation à la @pradeltrapdep2012. Also add example w/ individual time-varying covariate. 
-
-## Transience {#transience}
-
-Multievent treatment à la @genovart2019. Remind of the two age-classes on survival technique. 
-
-## Temporary emigration
-
-Multistate treatment as in @schaub2004te. See example in @bancila2018te.
-
-Transition matrix:
-  
-$$\begin{matrix}
-& \\
-\mathbf{\Gamma} =
-  \left ( \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \end{matrix} } \right .
-          \end{matrix}
-          \hspace{-1.2em}
-          \begin{matrix}
-          z_t=\text{in} & z_t=\text{out} & z_t=\text{D} \\ \hdashline
-          \phi (1-\psi^{\text{in} \rightarrow \text{out}}) & \phi \psi^{\text{in} \rightarrow \text{out}} & 1 - \phi\\
-          \phi \psi^{\text{out} \rightarrow \text{in}} & \phi (1-\psi^{\text{out} \rightarrow \text{in}}) & 1 - \phi\\
-          0 & 0 & 1
-          \end{matrix}
-          \hspace{-0.2em}
-          \begin{matrix}
-          & \\
-          \left . \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \end{matrix} } \right )
-\begin{matrix}
-z_{t-1}=\text{in} \\ z_{t-1}=\text{out} \\ z_{t-1}=\text{D}
-\end{matrix}
-\end{matrix}$$
-  
-Observation matrix:
-  
-$$\begin{matrix}
-& \\
-\mathbf{\Omega} =
-  \left ( \vphantom{ \begin{matrix} 12 \\ 12 \end{matrix} } \right .
-          \end{matrix}
-          \hspace{-1.2em}
-          \begin{matrix}
-          y_t=1 & y_t=2 \\ \hdashline
-          1 - p & p\\
-          1 & 0\\
-          1 & 0
-          \end{matrix}
-          \hspace{-0.2em}
-          \begin{matrix}
-          & \\
-          \left . \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \end{matrix} } \right )
-\begin{matrix}
-z_{t}=\text{in} \\ z_{t}=\text{out} \\ z_{t}=\text{D}
-\end{matrix}
-\end{matrix}$$
 
 
 ## Memory model {#memorymodel}
@@ -424,238 +401,75 @@ z_t=AA \\ z_t=AB \\ z_t=BA \\ z_t=BB \\ z_t=D
 \end{matrix}
 \end{matrix}$$
 
-```{r eval = FALSE, echo = FALSE}
-library(tidyverse)
-library(nimble)
-geese <- read_csv(here::here("dat", "geese.csv"), col_names = TRUE)
-#geese <- read_csv2(here::here("slides", "dat", "allgeese.csv"), col_names = TRUE) %>%
-#  uncount(weights = `158`)
+Implementation w/ nimbleEcology, much easier as we do not have to initialize the latent states $z$. 
 
-y <- geese %>%
-  as.matrix()
-y2 <- y
-y2[y2==3] <- 0
-mask <- apply(y2, 1, sum)
-y <- y2[mask!=0,]
-dim(y)
-first <- apply(y, 1, function(x) min(which(x != 0)))
+Results
 
-# memory model
-
-# To fit a model in which the survival-transition probabilities 
-# depend of the two sites previously occupied we have to consider 
-# a specific set of states composed of all the couples of sites 
-# (sites occupied at times t-1 and t) plus the state “dead”. 
-
-
-# Obs = non-detection, detected in site 1, detected in site 2 = 1, 2, 3
-# States = couples of sites occupied: { 11, 12, 21, 22, dead } = {1 2 3 4 5}
-
-memory <- nimbleCode({
-  
-  # -------------------------------------------------
-  # Parameters:
-  # phi111: survival-mov probability from state 11 to state 11
-  # phi112: survival-mov probability from state 11 to state 12
-  # phi121: survival-mov probability from state 12 to state 21
-  # phi122: survival-mov probability from state 12 to state 22
-  # phi211: survival-mov probability from state 21 to state 11
-  # phi212: survival-mov probability from state 21 to state 12
-  # phi221: survival-mov probability from state 22 to state 21
-  # phi222: survival-mov probability from state 22 to state 22
-  # det1: detection probability site 1
-  # det2: detection probability site 2
-  # pi11: init stat prob 11
-  # pi12: init stat prob 12
-  # pi21: init stat prob 21
-  # pi22: init stat prob 22
-  # -------------------------------------------------
-  # States (S):
-  # 1 alive 11
-  # 2 alive 12
-  # 3 alive 21
-  # 4 alive 22
-  # 5 dead
-  # Observations (O):  
-  # 1 not seen
-  # 2 seen at site 1 
-  # 3 seen at site 2
-  # -------------------------------------------------
-  
-  # priors
-  pi[1:4] ~ ddirch(beta[1:4]) # pi11, pi12, pi21, pi22
-  det1 ~ dunif(0, 1)
-  det2 ~ dunif(0, 1)
-  phi11[1:3] ~ ddirch(alpha[1:3]) # phi111, phi112, 1-sum
-  phi12[1:3] ~ ddirch(alpha[1:3]) # phi121, phi122, 1-sum
-  phi21[1:3] ~ ddirch(alpha[1:3]) # phi211, phi212, 1-sum
-  phi22[1:3] ~ ddirch(alpha[1:3]) # phi221, phi222, 1-sum
-  
-  # probabilities of state z(t+1) given z(t)
-  gamma[1,1] <- phi11[1]
-  gamma[1,2] <- phi11[2]
-  gamma[1,3] <- 0
-  gamma[1,4] <- 0
-  gamma[1,5] <- phi11[3]
-  gamma[2,1] <- 0
-  gamma[2,2] <- 0
-  gamma[2,3] <- phi12[1]
-  gamma[2,4] <- phi12[2]
-  gamma[2,5] <- phi12[3]
-  gamma[3,1] <- phi21[1]
-  gamma[3,2] <- phi21[2]
-  gamma[3,3] <- 0
-  gamma[3,4] <- 0
-  gamma[3,5] <- phi21[3]
-  gamma[4,1] <- 0
-  gamma[4,2] <- 0
-  gamma[4,3] <- phi22[1]
-  gamma[4,4] <- phi22[2]
-  gamma[4,5] <- phi22[3]
-  gamma[5,1] <- 0
-  gamma[5,2] <- 0
-  gamma[5,3] <- 0
-  gamma[5,4] <- 0
-  gamma[5,5] <- 1
-  
-  delta[1] <- pi[1]
-  delta[2] <- pi[2]
-  delta[3] <- pi[3]
-  delta[4] <- pi[4]
-  delta[5] <- 0
-  
-  # probabilities of y(t) given z(t)
-  omega[1,1] <- 1 - det1
-  omega[1,2] <- det1
-  omega[1,3] <- 0
-  omega[2,1] <- 1 - det2
-  omega[2,2] <- 0
-  omega[2,3] <- det2
-  omega[3,1] <- 1 - det1
-  omega[3,2] <- det1
-  omega[3,3] <- 0
-  omega[4,1] <- 1 - det2
-  omega[4,2] <- 0
-  omega[4,3] <- det2
-  omega[5,1] <- 1
-  omega[5,2] <- 0
-  omega[5,3] <- 0
-  
-  omega.init[1,1] <- 0
-  omega.init[1,2] <- 1
-  omega.init[1,3] <- 0
-  omega.init[2,1] <- 0
-  omega.init[2,2] <- 0
-  omega.init[2,3] <- 1
-  omega.init[3,1] <- 0
-  omega.init[3,2] <- 1
-  omega.init[3,3] <- 0
-  omega.init[4,1] <- 0
-  omega.init[4,2] <- 0
-  omega.init[4,3] <- 1
-  omega.init[5,1] <- 1
-  omega.init[5,2] <- 0
-  omega.init[5,3] <- 0
-
-  # Likelihood 
-  for (i in 1:N){
-    # Define latent state at first capture
-    z[i,first[i]] ~ dcat(delta[1:5])
-    y[i,first[i]] ~ dcat(omega.init[z[i,first[i]],1:3])
-    for (t in (first[i]+1):K){
-      # State process: draw S(t) given S(t-1)
-      z[i,t] ~ dcat(gamma[z[i,t-1],1:5])
-      # Observation process: draw O(t) given S(t)
-      y[i,t] ~ dcat(omega[z[i,t],1:3])
-    }
-  }
-})
-
-
-# initial values for unknown z 
-# not optimal since it ignores impossible transitions in the surv-mov matrix
-zinit <- y
-for (i in 1:nrow(y)) {
-  for (j in 1:ncol(y)) {
-    if (j > first[i] & y[i,j]==0) {zinit[i,j] <- which(rmultinom(1, 1, c(1/4,1/4,1/4,1/4))==1)}
-    if (j > first[i] & y[i,j]==1) {zinit[i,j] <- which(rmultinom(1, 1, c(1/4,1/4,1/4,1/4))==1)}
-    if (j > first[i] & y[i,j]==2) {zinit[i,j] <- which(rmultinom(1, 1, c(1/4,1/4,1/4,1/4))==1)}
-#    if (j > first[i] & y[i,j]==1) {zinit[i,j] <- which(rmultinom(1, 1, c(1/2,0,1/2,0))==1)}
-#    if (j > first[i] & y[i,j]==2) {zinit[i,j] <- which(rmultinom(1, 1, c(0,1/2,0,1/2))==1)}
-    if (j < first[i]) {zinit[i,j] <- 0}
-  }
-}
-zinit <- as.matrix(zinit)
-
-# constants
-my.constants <- list(first = first, 
-                     K = ncol(y), 
-                     N = nrow(y))
-
-# Initial values
-initial.values <- function(){list(phi11 = rdirch(1, rep(1,3)), 
-                                  phi12 = rdirch(1, rep(1,3)), 
-                                  phi21 = rdirch(1, rep(1,3)), 
-                                  phi22 = rdirch(1, rep(1,3)),
-                                  det1 = runif(1, 0, 1), 
-                                  det2 = runif(1, 0, 1), 
-                                  pi = rdirch(1, rep(1,4)),
-                                  z = zinit)}  
-
-# data
-my.data <- list(y = y + 1,
-                alpha = rep(1,3),
-                beta = rep(1,4))
-
-# MCMC settings
-parameters.to.save <- c("phi11", "phi12","phi21", "phi22", "det1", "det2", "pi")
-n.iter <- 5000
-n.burnin <- 2500
-n.chains <- 2
-
-mcmc.memory <- nimbleMCMC(code = memory,
-                          constants = my.constants,
-                          data = my.data,
-                          inits = initial.values,
-                          monitors = parameters.to.save,
-                          niter = n.iter,
-                          nburnin = n.burnin,
-                          nchains = n.chains)
-
-save(mcmc.memory, file = "dat/memory.RData")
+```{r echo = FALSE}
 library(MCMCvis)
-MCMCsummary(mcmc.memory, round = 2)
-MCMCplot(mcmc.memory)
-MCMCtrace(mcmc.memory, params = c("det1","det2"), pdf = FALSE)
-
-## PROBLEM: p1 and p2 seem to be updated, but Rhat  = Inf and neff = 0; 
-# inspecting their posterior distribution
-## it feels like they are not updated, two modes corresp to the two chains. 
-# Usually, it means that these parameters are not used in the model.
-
-# Need to amend the way I simulate initial values!! 
-# If z not needed, use weighted marginaled likelihood? And whole dataset!!
-
-hmm.phip <- nimbleModel(code = memory,
-                        constants = my.constants,
-                        data = my.data,
-                        inits = initial.values())
-phip.mcmc <- buildMCMC(hmm.phip)
-phip.model <- compileNimble(hmm.phip) 
-c.phip.mcmc <- compileNimble(phip.mcmc, project = phip.model)
-c.phip.mcmc$run(10000)
-samples <- as.matrix(c.phip.mcmc$mvSamples)
-summary(samples[,"det1"])
+load(here::here("dat","memory.RData"))
+MCMCsummary(out, round = 2)
 ```
 
-## Posterior predictive check {#ppchecks}
 
-Classical m-array (minimal sufficient statistics for CJS model) as in @paganin2023computational. Individual performance in @chambert2014 and @nater2020trout. Sojourn time is geometric assumption in @conn2018.
+## Trap dep {#trapdep}
 
-For the CJS model, we would use the so-called m-array which gathers the elements $m_{ij}$ for the number of marked individuals initially released at time $i$ that were first detected again at time $j$. 
+Multievent formulation à la @pradeltrapdep2012. Also add example w/ individual time-varying covariate. 
 
-Refer to a case study. With m-array and Nimble functions. Refer to paper by Paganin & de Valpine and use code in https://github.com/salleuska/fastCPPP. Also papers by Chambert et al. (individual performance) and Conn et al. (geometric time, and hidden semi-Markov models).
 
-<!-- This has an m-array structure. The number of individuals released at occasion $i$ ($R_i$) and the number of first recaptures at occasion $j$, given release at occasion $i$ ($m_{ij}$) are provided. For example, 38 birds were released in 1969 among which, 22 were first recaptured in 1970, and 16 (= 38 - 22) were never observed again. -->
 
-Check out <https://r-nimble.org/nimbleExamples/posterior_predictive.html>.
+
+
+<!-- ## Transience {#transience} -->
+
+<!-- Multievent treatment à la @genovart2019. Remind of the two age-classes on survival technique.  -->
+
+<!-- ## Temporary emigration -->
+
+<!-- Multistate treatment as in @schaub2004te. See example in @bancila2018te. -->
+
+<!-- Transition matrix: -->
+
+<!-- $$\begin{matrix} -->
+<!-- & \\ -->
+<!-- \mathbf{\Gamma} = -->
+<!--   \left ( \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \end{matrix} } \right . -->
+<!--           \end{matrix} -->
+<!--           \hspace{-1.2em} -->
+<!--           \begin{matrix} -->
+<!--           z_t=\text{in} & z_t=\text{out} & z_t=\text{D} \\ \hdashline -->
+<!--           \phi (1-\psi^{\text{in} \rightarrow \text{out}}) & \phi \psi^{\text{in} \rightarrow \text{out}} & 1 - \phi\\ -->
+<!--           \phi \psi^{\text{out} \rightarrow \text{in}} & \phi (1-\psi^{\text{out} \rightarrow \text{in}}) & 1 - \phi\\ -->
+<!--           0 & 0 & 1 -->
+<!--           \end{matrix} -->
+<!--           \hspace{-0.2em} -->
+<!--           \begin{matrix} -->
+<!--           & \\ -->
+<!--           \left . \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \end{matrix} } \right ) -->
+<!-- \begin{matrix} -->
+<!-- z_{t-1}=\text{in} \\ z_{t-1}=\text{out} \\ z_{t-1}=\text{D} -->
+<!-- \end{matrix} -->
+<!-- \end{matrix}$$ -->
+
+<!-- Observation matrix: -->
+
+<!-- $$\begin{matrix} -->
+<!-- & \\ -->
+<!-- \mathbf{\Omega} = -->
+<!--   \left ( \vphantom{ \begin{matrix} 12 \\ 12 \end{matrix} } \right . -->
+<!--           \end{matrix} -->
+<!--           \hspace{-1.2em} -->
+<!--           \begin{matrix} -->
+<!--           y_t=1 & y_t=2 \\ \hdashline -->
+<!--           1 - p & p\\ -->
+<!--           1 & 0\\ -->
+<!--           1 & 0 -->
+<!--           \end{matrix} -->
+<!--           \hspace{-0.2em} -->
+<!--           \begin{matrix} -->
+<!--           & \\ -->
+<!--           \left . \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \end{matrix} } \right ) -->
+<!-- \begin{matrix} -->
+<!-- z_{t}=\text{in} \\ z_{t}=\text{out} \\ z_{t}=\text{D} -->
+<!-- \end{matrix} -->
+<!-- \end{matrix}$$ -->

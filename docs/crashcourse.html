@@ -254,7 +254,7 @@ Figure 1.3: MCMC article cover. Source: The Journal of Chemical Physics – <a h
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">sample_from_posterior</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/Beta.html">rbeta</a></span><span class="op">(</span><span class="fl">1000</span>, <span class="fl">20</span>, <span class="fl">39</span><span class="op">)</span> <span class="co"># draw 1000 values from posterior survival beta(20,39)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/mean.html">mean</a></span><span class="op">(</span><span class="va">sample_from_posterior</span><span class="op">)</span> <span class="co"># compute mean with Monte Carlo integration</span></span>
-<span><span class="co">## [1] 0.3388</span></span></code></pre></div>
+<span><span class="co">## [1] 0.338</span></span></code></pre></div>
 <p>You may check that the mean we have just calculated matches closely the expectation of a beta distribution:</p>
 <div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fl">20</span><span class="op">/</span><span class="op">(</span><span class="fl">20</span><span class="op">+</span><span class="fl">39</span><span class="op">)</span> <span class="co"># expectation of beta(20,39)</span></span>
@@ -263,7 +263,7 @@ Figure 1.3: MCMC article cover. Source: The Journal of Chemical Physics – <a h
 <div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/stats/quantile.html">quantile</a></span><span class="op">(</span><span class="va">sample_from_posterior</span>, probs <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="fl">2.5</span><span class="op">/</span><span class="fl">100</span>, <span class="fl">97.5</span><span class="op">/</span><span class="fl">100</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">##   2.5%  97.5% </span></span>
-<span><span class="co">## 0.2199 0.4548</span></span></code></pre></div>
+<span><span class="co">## 0.2252 0.4602</span></span></code></pre></div>
 </div>
 <div id="markovmodelmcmc" class="section level3" number="1.5.2">
 <h3>
@@ -543,6 +543,7 @@ In rows the weather today, and in columns the weather tomorrow. The cells give t
 <p>The chain starts at value 0.99 and rapidly stabilises, with values bouncing back and forth around 0.3 from the 100th iteration onwards. You may choose the shaded area as the burn-in, and discard the first 100th values.</p>
 <p>We see from the trace plot below that we need at least 100 iterations to achieve convergence toward an average survival around 0.3. It is always better to be conservative when specifying the length of the burn-in period, and in this example, we would use 250 or even 500 iterations as a burn-in. The length of the burn-in period can be determined by performing preliminary MCMC short runs.</p>
 <p>Inspecting the trace plot for a single run of the Markov chain is useful. However, we usually run the Markov chain several times, starting from different over-dispersed points, to check that all runs achieve the same stationary distribution. This approach is formalised by using the Brooks-Gelman-Rubin (BGR) statistic <span class="math inline">\(\hat{R}\)</span> which measures the ratio of the total variability combining multiple chains (between-chain plus within-chain) to the within-chain variability. The BGR statistic asks whether there is a chain effect, and is very much alike the <span class="math inline">\(F\)</span> test in an analysis of variance. Values below 1.1 indicate likely convergence.</p>
+<p><strong>Should be below 1.01, see Vehtari et al. 2021.</strong></p>
 <p>Back to our example, we run two Markov chains with starting values 0.2 and 0.8 using 100 up to 5000 iterations, and calculate the BGR statistic using half the number of iterations as the length of the burn-in (code not shown):</p>
 <div class="inline-figure"><img src="banana-book_files/figure-html/bgr-1.png" width="672"></div>
 <p>We get a value of the BGR statistic near 1 by up to 2000 iterations, which suggests that with 2000 iterations as a burn-in, there is no evidence of a lack of convergence.</p>
@@ -608,6 +609,7 @@ In rows the weather today, and in columns the weather tomorrow. The cells give t
 <span><span class="co">## 2           1    1934</span></span>
 <span><span class="co">## 3          10     230</span></span></code></pre></div>
 <p>As expected, <code>n.eff</code> is less than the number of MCMC iterations because of autocorrelation. Only when the standard deviation of the proposal distribution is 1 is the mixing good and we get a satisfying effective sample size.</p>
+<p><strong>Should be greater than 400. Vehtari, Aki, Andrew Gelman, Daniel Simpson, Bob Carpenter, and Paul-Christian Bürkner (June 2021). “Rank-Normalization, Folding, and Localization: An Improved Rˆ for Assessing Convergence of MCMC (with Discussion)”. In: Bayesian Analysis 16.2, pp. 667–718.issn: 1936-0975, 1931-6690.doi:10.1214/20-BA1221.</strong></p>
 </div>
 <div id="what-if-you-have-issues-of-convergence" class="section level3" number="1.6.3">
 <h3>
@@ -687,7 +689,7 @@ In rows the weather today, and in columns the weather tomorrow. The cells give t
 <footer class="bg-primary text-light mt-5"><div class="container"><div class="row">
 
   <div class="col-12 col-md-6 mt-3">
-    <p>"<strong>Bayesian analysis of capture-recapture data with hidden Markov models</strong>: Theory and case studies in R and NIMBLE" was written by Olivier Gimenez. It was last built on 2025-08-06.</p>
+    <p>"<strong>Bayesian analysis of capture-recapture data with hidden Markov models</strong>: Theory and case studies in R and NIMBLE" was written by Olivier Gimenez. It was last built on 2025-08-08.</p>
   </div>
 
   <div class="col-12 col-md-6 mt-3">
