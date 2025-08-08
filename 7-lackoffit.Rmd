@@ -414,11 +414,125 @@ MCMCsummary(out, round = 2)
 
 ## Trap dep {#trapdep}
 
-Multievent formulation à la @pradeltrapdep2012. Also add example w/ individual time-varying covariate. 
+Multievent formulation à la @pradeltrapdep2012. Also add example w/ individual time-varying covariate. Application w/ data from Ana' paper in 2011. 
+
++ States
++ A ‘trap aware’ – its original state when it is first released after marking
++ U ‘trap unaware’ which follows any occasion where it is not captured
++ D is for dead
+
++ Observations
++ 1 not detected
++ 2 detected
+
+Vector of initial state probabilities
+
+$$\begin{matrix}
+& \\
+\mathbf{\delta} =
+\left ( \vphantom{ \begin{matrix} 12 \end{matrix} } \right .
+\end{matrix}
+\hspace{-1.2em}
+\begin{matrix}
+z_t=A & z_t=U & z_t=D \\ \hdashline
+\pi & 1 - \pi & 0\\
+\end{matrix}
+\hspace{-0.2em}
+\begin{matrix}
+& \\
+\left . \vphantom{ \begin{matrix} 12 \end{matrix} } \right )
+\begin{matrix}
+\end{matrix}
+\end{matrix}$$
+
+where $\pi$ is prob.
+
+Transition matrix
+
+$$\begin{matrix}
+& \\
+\mathbf{\Gamma} =
+\left ( \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \end{matrix} } \right .
+\end{matrix}
+\hspace{-1.2em}
+\begin{matrix}
+z_t=A & z_t=U & z_t=D \\ \hdashline
+\phi p' & \phi (1-p') & 1 - \phi\\
+\phi p & \phi (1-p) & 1 - \phi\\
+0 & 0 & 1
+\end{matrix}
+\hspace{-0.2em}
+\begin{matrix}
+& \\
+\left . \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \end{matrix} } \right )
+\begin{matrix}
+z_{t-1}=A \\ z_{t-1}=U \\ z_{t-1}=D
+\end{matrix}
+\end{matrix}$$
+
+Product of survival process and trap awareness process can be written.
+
+Observation matrix
+
+$$\begin{matrix}
+& \\
+\mathbf{\Omega} =
+\left ( \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \end{matrix} } \right .
+\end{matrix}
+\hspace{-1.2em}
+\begin{matrix}
+y_t=1 & y_t=2 \\ \hdashline
+0 & 1 \\
+1 & 0 \\
+1 & 0 
+\end{matrix}
+\hspace{-0.2em}
+\begin{matrix}
+& \\
+\left . \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \end{matrix} } \right )
+\begin{matrix}
+z_{t}=A \\ z_{t}=U \\ z_{t}=D
+\end{matrix}
+\end{matrix}$$
 
 
+Data
 
 
+<!-- ```{r} -->
+<!-- # Read the file -->
+<!-- lines <- readLines("dat/Calonectris diomedea dataset.txt") -->
+
+<!-- # Keep only the first 8 characters and split them into individual bits with spaces -->
+<!-- processed <- sapply(substr(lines, 1, 8), function(x) paste(strsplit(x, "")[[1]], collapse = " ")) -->
+
+<!-- # Save the result -->
+<!-- writeLines(processed, "cleaned_data.txt") -->
+<!-- ``` -->
+
+
+Apply gof to detect trap-dep and transience. For transience, age since marking, but not HMM treatment possible. For trap-dep, got for HMM. 
+
+Results
+
+With trap-dependence
+
+```{r echo = FALSE}
+library(MCMCvis)
+load(here::here("dat","calonectris-w-trap-dep.RData"))
+MCMCsummary(out, round = 2)
+```
+
+Without trap-dependence
+
+
+```{r echo = FALSE}
+library(MCMCvis)
+load(here::here("dat","calonectris-wo-trap-dep.RData"))
+MCMCsummary(out, round = 2)
+```
+
+Can be generalized to sites, states, see @pradeltrapdep2012.
 
 <!-- ## Transience {#transience} -->
 
