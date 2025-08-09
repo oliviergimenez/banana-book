@@ -172,153 +172,103 @@ MCMCsummary(out, round = 2)
 
 save(out, file = "stopover.RData")
 
+library(MCMCvis)
+load(here::here("dat","stopover.RData"))
 
 samps <- rbind(out[[1]], out[[2]])
 
-# Extract column names related to retention probabilities s[sex, time]
-s_cols <- grep("^s\\[", colnames(samps), value = TRUE)
-stopover_duration <- lapply(s_cols, function(col) 1 / (1 - samps[, col]))
-names(stopover_duration) <- make.names(s_cols)  # becomes e.g., s.1..1.
+library(tidyverse)
 
-# Combine into data.frame
-stopover_duration_df <- as.data.frame(stopover_duration)
+# samps: matrix from rbind(out[[1]], out[[2]])
+df <- as.data.frame(samps) %>% mutate(iter = row_number())
 
-# Create a mapping of syntactic names → sex and time
-raw_names <- names(stopover_duration_df)
-
-# Extract sex and time from the original names
-sex_time <- do.call(rbind, lapply(raw_names, function(n) {
-  # Reverse the transformation done by make.names
-  # from s.1..3. → 1, 3
-  parts <- unlist(regmatches(n, regexec("s\\.(\\d+)\\.\\.(\\d+)\\.", n)))
-  c(sex = as.integer(parts[2]), time = as.integer(parts[3]))
-}))
-
-
-# Add names back and convert to data.frame
-colnames(sex_time) <- c("sex", "time")
-sex_time <- as.data.frame(sex_time)
-sex_time$param <- raw_names
-
-# Reshape to long format
-library(reshape2)
-stopover_long <- melt(stopover_duration_df, variable.name = "param", value.name = "duration")
-
-# Merge sex/time info
-stopover_long <- merge(stopover_long, sex_time, by = "param")
-
-# Compute summary statistics
-stopover_summary <- aggregate(duration ~ sex + time, data = stopover_long, FUN = function(x) {
-  c(mean = mean(x), median = median(x), lwr = quantile(x, 0.025), upr = quantile(x, 0.975))
-})
-
-stopover_summary <- do.call(data.frame, stopover_summary)
-colnames(stopover_summary) <- c("sex", "time", "mean", "median", "lwr_95", "upr_95")
-
-# Optional: turn sex into factor with labels
-stopover_summary$sex <- factor(stopover_summary$sex, levels = 1:2, labels = c("female", "male"))
-
-# View
-print(stopover_summary)
-
-
-# Now you can summarise or plot!
-library(ggplot2)
-
-# Plot
-ggplot(stopover_summary, aes(x = time, y = mean, color = sex, fill = sex)) +
-  geom_line(size = 1.2) +
-  geom_ribbon(aes(ymin = lwr_95, ymax = upr_95), alpha = 0.2, color = NA) +
-  geom_point(aes(y = median), shape = 21, size = 2, fill = "white") +
-  labs(
-    x = "Time",
-    y = "Expected stopover duration (days)",
-    color = "Sex",
-    fill = "Sex",
-    title = "Time-specific stopover duration by sex"
-  ) +
-  theme_minimal(base_size = 14)
-
-
-ggplot(stopover_summary, aes(x = time, y = median)) +
-  geom_line(color = "steelblue", size = 1.2) +
-  #geom_ribbon(aes(ymin = lwr_95, ymax = upr_95), fill = "steelblue", alpha = 0.2) +
-  geom_point(aes(y = median), shape = 21, size = 2, fill = "white") +
-  facet_wrap(~ sex) +
-  labs(
-    x = "Time",
-    y = "Expected stopover duration (days)",
-    title = "Time-specific stopover duration by sex"
-  ) +
-  theme_minimal(base_size = 14)
-
-
-#------ cumulative survival
-
-# Get all s columns
-s_cols <- grep("^s\\[", colnames(samps), value = TRUE)
-
-# Sort by sex and time for safety
-s_cols_sorted <- s_cols[order(
-  as.numeric(sub("s\\[(\\d+),.*", "\\1", s_cols)),
-  as.numeric(sub("s\\[\\d+,\\s*(\\d+)\\]", "\\1", s_cols))
-)]
-
-
-# Separate columns by sex
-s_cols_by_sex <- split(s_cols_sorted, 
-                       sapply(s_cols_sorted, function(x) as.integer(sub("s\\[(\\d+),.*", "\\1", x))))
-# Result: list(female = c(...), male = c(...))
-
-cum_surv_list <- list()
-
-for (sex in names(s_cols_by_sex)) {
-  s_mat <- samps[, s_cols_by_sex[[sex]], drop = FALSE]
-  cum_surv_sex <- t(apply(s_mat, 1, cumprod))  # one row per posterior sample, one col per time
-  colnames(cum_surv_sex) <- paste0("cum_surv_", sex, "_t", seq_len(ncol(cum_surv_sex)))
-  cum_surv_list[[sex]] <- cum_surv_sex
+# Helpers to tidy blocks like r[i,j] and s[i,j]
+tidy_block <- function(df, prefix){
+  df %>%
+    select(iter, matches(paste0("^", prefix, "\\["))) %>%
+    pivot_longer(-iter, names_to = "param", values_to = "value") %>%
+    mutate(
+      i = as.integer(str_match(param, paste0(prefix, "\\[(\\d+),"))[,2]),
+      j = as.integer(str_match(param, ",\\s*(\\d+)\\]")[,2]),
+      sex = ifelse(i == 1, "Female", "Male"),
+      week = j
+    ) %>%
+    select(iter, sex, week, value)
 }
 
-# Combine
-cum_surv_all <- do.call(cbind, cum_surv_list)
+r_long <- tidy_block(df, "r")
+s_long <- tidy_block(df, "s")
 
-
-# Create summary data.frame
-summary_list <- list()
-
-for (col in colnames(cum_surv_all)) {
-  values <- cum_surv_all[, col]
-  summary_list[[col]] <- data.frame(
-    param = col,
-    mean = mean(values),
-    median = median(values),
-    lwr_95 = quantile(values, 0.025),
-    upr_95 = quantile(values, 0.975)
+# -------- r: arrival probability, both sexes on one figure --------
+r_sum <- r_long %>%
+  group_by(sex, week) %>%
+  summarise(
+    mean = mean(value),
+    median = median(value),
+    l95 = quantile(value, 0.025),
+    u95 = quantile(value, 0.975),
+    .groups = "drop"
   )
+
+p_r <- ggplot(r_sum, aes(x = week, y = mean, color = sex, fill = sex, group = sex)) +
+  geom_ribbon(aes(ymin = l95, ymax = u95), alpha = 0.20, linewidth = 0) +
+  geom_line(size = 1) +
+  labs(x = "Week", y = "Arrival probability (posterior mean & 95% CI)",
+       title = "Arrival probability r by sex") +
+  theme_bw() +
+  theme(legend.position = "top")
+p_r
+
+
+
+# ---- s -> expected stopover duration from each arrival week ----
+# duration[w] = 1 + sum_{k=1..K-w} prod_{u=w..w+k-1} s[u]
+# (stops at K-1 so staying past last week doesn't add observable time)
+compute_duration_curve <- function(s_vec){
+  s_vec <- pmin(s_vec, 0.999999)        # guard against s=1 exactly
+  K <- length(s_vec)
+  dur <- numeric(K)
+  for(w in 1:K){
+    if(w == K){
+      dur[w] <- 1
+    } else {
+      dur[w] <- 1 + sum(cumprod(s_vec[w:(K-1)]))
+    }
+  }
+  dur
 }
 
-cumulative_survival_summary <- do.call(rbind, summary_list)
+K_weeks <- max(s_long$week)
 
-# Extract sex and time from param name
-cumulative_survival_summary$sex <- sub("cum_surv_(\\d).*", "\\1", cumulative_survival_summary$param)
-cumulative_survival_summary$time <- as.integer(sub(".*_t(\\d+)", "\\1", cumulative_survival_summary$param))
+duration_draws <- s_long %>%
+  arrange(iter, sex, week) %>%
+  group_by(iter, sex) %>%
+  summarise(
+    duration = list(compute_duration_curve(value)),
+    .groups = "drop"
+  ) %>%
+  mutate(week = list(seq_len(K_weeks))) %>%
+  unnest(c(week, duration))
 
-# Optional: label sex
-cumulative_survival_summary$sex <- factor(cumulative_survival_summary$sex, 
-                                          levels = c("1", "2"),
-                                          labels = c("female", "male"))
+duration_sum <- duration_draws %>%
+  group_by(sex, week) %>%
+  summarise(
+    mean = mean(duration),
+    median = median(duration),
+    l95 = quantile(duration, 0.025),
+    u95 = quantile(duration, 0.975),
+    .groups = "drop"
+  )
 
+p_dur <- ggplot(duration_sum, aes(x = week, y = mean, color = sex, fill = sex, group = sex)) +
+  geom_ribbon(aes(ymin = l95, ymax = u95), alpha = 0.20, linewidth = 0) +
+  geom_line(size = 1) +
+  labs(x = "Week", y = "Stopover duration (weeks)",
+       title = "Expected stopover duration from arrival week (posterior mean & 95% CI)") +
+  theme_bw() +
+  theme(legend.position = "top")
+p_dur
 
-ggplot(cumulative_survival_summary, aes(x = time, y = mean)) +
-  geom_line(aes(color = sex), size = 1.2) +
-  geom_ribbon(aes(ymin = lwr_95, ymax = upr_95, fill = sex), alpha = 0.2) +
-  labs(
-    title = "Cumulative survival (stopover retention)",
-    x = "Time",
-    y = "Cumulative probability of still being present",
-    color = "Sex", fill = "Sex"
-  ) +
-  theme_minimal(base_size = 14)
 
 
 # a linear date effect on arrival probability associated with a sex effect, 
