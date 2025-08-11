@@ -1,35 +1,489 @@
-# Covariates {#covariateschapter}
+# Dealing with covariates {#covariateschapter}
 
-WORK IN PROGRESS
+## Introduction
+
+Capture–recapture models often aim not just to estimate demographic parameters, but also to understand what drives their variation as we have seen in Chapter \@ref(survival). In this chapter, we explore how to incorporate covariates -- whether measured at the individual or temporal scale. We cover selecting covariates from a potentially large set, using an extension of standard MCMC algorithms known as reversible jump MCMC (RJMCMC), and handling uncertainty in key covariates, namely age or sex, when these are not perfectly known for all individuals.
 
 ## Covariate selection with Reversible Jump MCMC
 
-Simple CJS model with 10 covariates on survival. Check my Winbugs paper and BAPE book for content. Cite Vlad's paper. Refer to section in book about WAIC and model selection (I mention RJMCMC there I think).
+### Motivation
 
-Results
+In Section \@ref(waic), we used WAIC to figure our which model, among several candidates, was best supported by the data. Each model there represented a different ecological hypothesis. Now when you are in a situation where you have several individual or temporal covariates that might explain variation in some demographic parameters, say survival as in Section \@ref(covariates), things can quickly become a bit more tedious. 
+
+Let's look at a real-world example: The white stork (*Ciconia ciconia*) population in Baden-Württemberg, Germany. From the 1960s to the 1990s, all Western European stork populations were in decline. One leading hypothesis was that these declines were driven by reduced food availability, itself caused by severe droughts in the storks' wintering grounds in the Sahel region (e.g. @kanya90, @grosbois_assessing_2008).
+
+To explore this idea, we'll use rainfall measurements from 10 meteorological stations chosen to represent the storks' wintering area: Diourbel, Gao, Kayes, Kita, Maradi, Mopti, Ouahigouya, Ségou, Tahoua, and Tombouctou. The data we have are the cumulative rainfall amounts (in mm) over June, July, August, and September -- roughly the rainy season in the Sahel.
+
+```{r echo = FALSE}
+# dakar	diourbel (2)	gao (3)	kandi	kayes (5)	kita (6)	koutiala	maradi (8)	mopti (9)	natitingou	ouahigouya (11)	sikasso	ségou (13)	tahoua (14)	tombouctou (15) 
+rainfall_raw <- as.matrix(read.table(here::here("dat", "pluies.txt")))
+# select Diourbel, Gao, Kayes, Kita, Maradi, Mopti, Ouahigouya, Ségou, Tahoua, and Tombouctou
+filter <- c(2,3,5,6,8,9,11,13,14,15)
+rainfall_raw <- rainfall_raw[,filter]
+mean_rainfall <- apply(rainfall_raw, 2, mean)
+sd_rainfall <- apply(rainfall_raw, 2, sd)
+rainfall <- (rainfall_raw - matrix(rep(mean_rainfall, 16), ncol = 10, byrow = T)) / matrix(rep(sd_rainfall, 16), ncol = 10, byrow = T)
+colnames(rainfall_raw) <- c("Diourbel", "Gao", "Kayes", "Kita", "Maradi", "Mopti", "Ouahigouya", "Ségou", "Tahoua", "Tombouctou")
+head(rainfall_raw)
+```
+
+Our question is: Which combination of these stations best explains variation in survival? If we tried to answer this by testing every possible model, we would have to consider every subset of the 10 stations and compare 1024 models (2^10 combinations). That's far too many for a WAIC-based approach to be practical.
+
+Instead of comparing all possible models one by one, we can use Reversible Jump MCMC (RJMCMC). RJMCMC is an extension of standard Bayesian inference that treats the model itself as an extra (discrete) parameter. In this framework, the posterior distribution spans both the parameter space (e.g. regression coefficients) and the model space (e.g. which covariates are included).
+
+To work out the (marginal) posterior probability of each model, we integrate over the parameters using MCMC. Standard MCMC algorithms cannot handle this model-switching scenario, but RJMCMC is designed precisely for it and can explore parameters and models together within a single Markov chain. In other words, RJMCMC can 'jump' between models, turning covariates on or off. RJMCMC is like a hiker exploring different trails (models), stopping along each one to take measurements (parameters) before deciding whether to switch to another. From this, we can estimate the posterior probability that each covariate influences survival, as well as model-averaged regression coefficients and survival estimates that account for both parameter and model uncertainty. 
+
+We won't dive into the mathematical details here but don't worry, you can still follow the analysis without them. Check out Chapter 7 of @king_bayesian_2009 (see also @gimenez2009winbugs) if you're interested in. 
+
+### Model and NIMBLE implementation
+
+For our example, we'll work with data from 321 encounter histories of white storks ringed as chicks between 1956 and 1970. We'll fit a Cormack–Jolly–Seber (CJS) model with time-dependent survival and constant detection probability, as described in Section \@ref(cjsderivatives). We model the survival probability `phi` as a linear function of our covariates stored in `x`. To handle model selection inside the RJMCMC, we use a clever trick: for each covariate, we introduce an indicator variable `ksi` that can take the value 1 (covariate is included in the model) or 0 (covariate is excluded). We then combine the regression coefficients `beta` with these indicators into a single vector `betaksi`. This means that if `ksi[j] = 0`, the effect of covariate `j` is zero, effectively removing it from the model. Here's how it works in the NIMBLE code:
+```{r eval = FALSE}
+for (t in 1:(T-1)){
+  logit(phi[t]) <- intercept + inprod(betaksi[1:10], x[t, 1:10])
+  gamma[1,1,t] <- phi[t]      # Pr(alive t -> alive t+1)
+  gamma[1,2,t] <- 1 - phi[t]  # Pr(alive t -> dead t+1)
+  gamma[2,1,t] <- 0           # Pr(dead t -> alive t+1)
+  gamma[2,2,t] <- 1           # Pr(dead t -> dead t+1)
+}
+```
+
+For the indicators and regression coefficients:
+```{r eval = FALSE}
+for (j in 1:10){
+  betaksi[j] <- beta[j] * ksi[j]
+  ksi[j] ~ dbern(psi) ## indicator variable associated with betaj
+}
+psi ~ dbeta(1, 1) ## hyperprior on inclusion probability
+for (j in 1:10){
+  beta[j] ~ dnorm(0, sd = 1.5) # prior slopes
+}
+intercept ~ dnorm(0, sd = 1.5) # prior intercept
+```
+
+The prior on `psi` controls the overall tendency to include covariates in the model. Setting it to `dbeta(1, 1)` makes all inclusion probabilities equally likely, so the data drive the selection. The priors on `beta` and the `intercept` (not consider in the selection) are weakly informative.
+
+As we saw in Section \@ref(change-sampler), NIMBLE allows you to change the default sampler. Here, we're going to do something slightly different and use NIMBLE's `configureRJ()` function to set up RJMCMC for variable selection. The function `configureRJ()` modifies an existing MCMC configuration so that RJMCMC is used to sample certain parameters, allowing covariates to be turned on or off during the run. It uses a univariate normal proposal distribution, and you can adjust the proposal mean and scale. The main arguments are:  
+- `targetNodes`: The parameters you want to apply variable selection to (e.g. `beta`);  
+- `indicatorNodes`: The indicator variables paired with the target nodes (e.g. `ksi`);  
+- `control`: A list for fine-tuning the proposal with `mean` the mean of the proposal distribution (default is 0), `scale` the standard deviation of the proposal (default is 1) and `fixedValue` the value a variable takes when excluded (default is 0). 
+
+Here's how we apply it to our white stork example:
+```{r eval = FALSE}
+## Build the model and configure default MCMC
+RJsurvival <- nimbleModel(code = hmm.phirjmcmcp, 
+                          constants = my.constants,
+                          data = my.data,
+                          inits = initial.values())
+
+Csurvival <- compileNimble(RJsurvival)
+
+RJsurvivalConf <- configureMCMC(RJsurvival)
+RJsurvivalConf$addMonitors('ksi')
+
+# Switch to reversible jump sampling for the betas
+configureRJ(conf = RJsurvivalConf,
+            targetNodes = 'beta',
+            indicatorNodes = 'ksi',
+            control = list(mean = 0, scale = 2))
+```
+
+We then build, compile, and run the RJMCMC:
+```{r eval = FALSE}
+survivalMCMC <- buildMCMC(RJsurvivalConf)
+CsurvivalMCMC <- compileNimble(survivalMCMC, project = RJsurvival)
+samples <- runMCMC(mcmc = CsurvivalMCMC, 
+                   niter = n.iter,
+                   nburnin = n.burnin,
+                   nchains = n.chains)
+```
+
+When we run this MCMC, `configureRJ()` takes care of proposing moves that either keep a covariate in the model or drop it out by setting its `ksi` value to 0. If a covariate is included (`ksi = 1`), the sampler updates its regression coefficient `beta` using the specified normal proposal distribution. If it's excluded (`ksi = 0`), the coefficient is fixed at zero (our `fixedValue`). Over many iterations, the chain 'jumps' between different combinations of covariates, building up posterior probabilities for each one's inclusion. This means we can later summarise which covariates are most likely to affect survival (via their inclusion probabilities), and model-averaged estimates of survival that incorporate the uncertainty about which covariates belong in the model. This is what we do in `R` in the next section. 
+
+### Results
 
 ```{r echo = FALSE}
 load(here::here("dat","rjmcmc.RData"))
 #MCMCsummary(out, round = 2)
 ```
 
-```{r}
-grepl('ksi', colnames(out)) %>% 
-  which() %>%
-  out[, .] %>%
-  colMeans()
+The RJMCMC run gives us the posterior probabilities of different models where each model corresponds to a specific combination of covariates. In our white stork example, the results clearly show that the model including only the rainfall at the Kita station (covariate #4) is best supported by the data. 
+
+To get these results, we first combine the MCMC samples from our two chains:
+```{r eval = FALSE}
+# Gather two chains
+out <- rbind(samples[[1]], samples[[2]])
 ```
 
+Next, we look at the inclusion indicators `ksi`, which take value 1 if a covariate is in the model and 0 if not. The posterior mean of each `ksi[j]` is simply the estimated probability that covariate j is included:
 ```{r}
-grepl('beta', colnames(out)) %>% 
-  which() %>%
-  out[, .] %>%
-  colMeans()
+# Number of covariates
+K <- 10
+
+# Extract only ksi columns, in order ksi[1], ..., ksi[10]
+ksi <- out[, paste0("ksi[", 1:K, "]")]
+
+# Posterior inclusion probabilities for each covariate
+inclusion_prob <- colMeans(ksi)
+inclusion_prob
 ```
 
+The posterior inclusion probabilities tell us how likely each covariate is to appear in the 'true' model given the data and priors. Here, `ksi[4]` -- the Kita station -- stands out, with an inclusion probability around 0.96.
 
+We can also identify the most probable models visited by the RJMCMC. Each MCMC draw corresponds to a model, which we encode as a binary string (e.g., "0101001001"):
+```{r}
+# Encode each model draw as a string of 0s and 1s
+model_id <- apply(ksi, 1, paste0, collapse = "")
 
-## Sex uncertainty
+# Empirical posterior model probabilities
+post_model_prob <- sort(prop.table(table(model_id)), decreasing = TRUE)
+
+# Show the top models
+head(data.frame(model = names(post_model_prob), 
+                prob = as.numeric(post_model_prob)), 10)
+```
+
+The posterior model probabilities rank the different combinations of covariates, and in our case, the model containing only the rainfall at Kita is clearly dominant.
+
+In conclusion, a very high inclusion probability for Kita (covariate #4) and a dominant model containing only Kita indicate that this station's rainfall is strongly linked to survival, while others are not.
+
+Now turning to inference, we'd like to get model-averaged parameters. Each covariate's effect is 'on' only when its indicator (`ksi`) is 1. Multiplying `beta` by `ksi` zeros out the effect when that covariate is excluded. Summarising `betaksi` across draws gives the model-averaged effect on the logit scale:
+```{r}
+# Pull posterior draws
+beta  <- out[, paste0("beta[", 1:K, "]")]
+
+# Model-averaged coefficients on the logit scale
+betaksi <- beta * ksi
+
+# Summaries: mean, 95% credible intervals, and Pr(effect > 0)
+df_betaksi <- data.frame(
+  mean  = apply(betaksi, 2, mean),
+  low  = apply(betaksi, 2, quantile, probs = 2.5/100),
+  high  = apply(betaksi, 2, quantile, probs = 97.5/100),
+  P_gt0 = apply(betaksi > 0, 2, mean))
+
+round(df_betaksi, 3)
+```
+
+A large `P_gt0` (e.g., > 0.95) suggests strong evidence that the covariate increases survival (on the logit scale), while values near 0.5 mean the direction is uncertain.
+
+Now let's get model-averaged survival estimates over time. For each MCMC draw, we build the linear predictor with all covariates using `beta * ksi`, add the intercept, then inverse-logit to get survival `phi`: 
+```{r}
+invlogit <- function(x) 1 / (1 + exp(-x))
+
+# Table of covariate values
+X <- rainfall[1:(16 - 1), 1:K]
+
+# Intercept MCMC draws
+intercept <- out[, "intercept"]
+
+# Linear predictor for every time t (rows) and every MCMC draw (columns)
+eta <- X %*% t(betaksi) 
+eta <- sweep(eta, 2, intercept, "+")  # add intercept per draw
+
+# Back-transform to survival probabilities
+phi_draws <- invlogit(eta)
+
+# Summaries by time
+df_phi <- data.frame(
+  mean  = apply(phi_draws, 1, mean),
+  low  = apply(phi_draws, 1, quantile, probs = 2.5/100),
+  high  = apply(phi_draws, 1, quantile, probs = 97.5/100))
+
+ggplot(df_phi, aes(x = 1956:1970, y = mean)) +
+  geom_ribbon(aes(ymin = low, ymax = high), alpha = 0.2) +
+  geom_line(size = 0.9) +
+  geom_point() +
+  labs(
+    x = "Years (interval start)",
+    y = "Survival probability",
+    title = "Model-averaged survival with 95% credible intervals"
+  )
+```
+
+Shaded ribbons show 95% credible intervals; the solid line is the posterior mean of survival, model-averaged over covariate inclusion.
+
+## Uncertainty in age
+
+### Motivation 
+
+Age matters. Survival and other demographic parameters often differ between young and older animals, so if we blur age classes we can end up telling the wrong story about population dynamics. In Section \@ref(agecov), we incorporated age as a covariate in capture-recapture models, assuming it was perfectly known. With non-invasive genetics (Figure \@ref(fig:marking)), though, age is not observed: a DNA profile can identify who was there, but not how old they were. If we ignore that uncertainty, survival estimates can be biased. As we saw in Section \@ref(multievent), HMM capture–recapture models can handle this kind of problem by treating age as a hidden state and separating it from what we actually observe in the field. 
+
+A neat example comes from Apennine brown bears in @Gervasi2017 (see also @gowan2021uncertainty). Because you cannot age a bear from its DNA, the authors paired genetics with field information to classify detections into two broad age classes, cubs (<1 year) and adults (≥1 year). To do so, they used two criteria. First, classify a newly detected bear as a cub in that year if it was sampled at least once on the same date and site as a known adult female and they shared ≥1 allele at every locus (mother–offspring consistent). That's the lenient criterion (P1). Second, apply a stricter criterion (P2): make the same mother–offspring call, but require two or more such co-sampling occasions with the same female, again on the same date and site each time. 
+
+Why two criteria? Because there's a trade-off. P1 is better at catching real cubs (more sensitive) but risks misclassifying some adults as cubs; P2 is more conservative about calling 'cub', so it reduces false cubs but misses some true ones. 
+
+Instead of pretending these criteria are perfect, the authors model the misclassification explicitly: age is hidden, 'cub/adult by P1/P2' is what we observe, and their model estimates both classification accuracy and age-specific survival at the same time. That way, uncertainty is propagated into the demographic estimates rather than swept under the rug.
+
+Here, I show how to encode that logic in an HMM with NIMBLE: define the hidden age states, write the transition (survival) and detection components, and add a classification step that links hidden age to the observed P1/P2 outcomes. We'll also see how a small subset of known-age individuals (e.g., live-trapped or aged beforehand) anchors the classification step. The payoff is a set of age-specific survival estimates that are robust to imperfect age assignment, which is exactly what we need for sound ecological inference and management.
+
+### Model and NIMBLE implementation
+
+To estimate bear survival, we have at our disposal a 12-year time series of non-invasive genetic sampling data, collected between 2003 and 2014. To build up our model, we first define the states and observations:
+
+- states 
+    - alive as cub (C)
+    - alive as adult (A)
+    - dead (D)
+
+- observations  
+    - not detected (1)
+    - detected and classified as cub by both criteria (2)
+    - detected and classified as cub by P1 only (3)
+    - detected and classified as adult by both criteria (4)
+
+Now we turn to writing our model. 
+
+We start with the vector of initial states. Unknown-age individuals enter as a mixture of cub/adult with probabilities $\pi$ and $1-\pi$: 
+
+$$\begin{matrix}
+& \\
+\mathbf{\delta} =
+  \left ( \vphantom{ \begin{matrix} 12 \end{matrix} } \right .
+          \end{matrix}
+          \hspace{-1.2em}
+          \begin{matrix}
+          z_t=C & z_t=A & z_t=D \\ \hdashline
+          \pi & 1 - \pi & 0\\
+          \end{matrix}
+          \hspace{-0.2em}
+          \begin{matrix}
+          & \\
+          \left . \vphantom{ \begin{matrix} 12 \end{matrix} } \right )
+\begin{matrix}
+\end{matrix}
+\end{matrix}$$
+
+where $\pi$ is the probability of being alive as a cub, and $1 - \pi$ is the probability of being alive as an adult. For bears known-age at first detection, we fix the initial state accordingly. In NIMBLE we implement this with an individual-specific $\delta_i$ using `equals()` to pin known ages:
+```{r eval = FALSE}
+# Initial state
+# age[i] == 0 → unknown → use probabilistic delta: pi, 1 - pi
+# age[i] == 1 → known cub → force delta to [1, 0, 0]
+# age[i] == 2 → known adult → force delta to [0, 1, 0]
+for (i in 1:N){
+  delta[1, i] <- equals(age[i], 0) * pi + equals(age[i], 1)  # Pr(C)
+  delta[2, i] <- equals(age[i], 0) * (1 - pi) + equals(age[i], 2)  # Pr(A)
+  delta[3, i] <- 0
+}
+```
+
+We proceed with the transition matrix that contains the survival probabilities. A cub either survives and becomes adult next year ($\phi_C$), or dies; adults either survive in the same class ($\phi_A$) or die: 
+$$\begin{matrix}
+& \\
+\mathbf{\Gamma} =
+  \left ( \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \end{matrix} } \right .
+          \end{matrix}
+          \hspace{-1.2em}
+          \begin{matrix}
+          z_t=C & z_t=A & z_t=D \\ \hdashline
+          0  & \phi_C & 1 - \phi_C\\
+          0 & \phi_A & 1 - \phi_A\\
+          0 & 0 & 1
+          \end{matrix}
+          \hspace{-0.2em}
+          \begin{matrix}
+          & \\
+          \left . \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \end{matrix} } \right )
+\begin{matrix}
+z_{t-1}=C \\ z_{t-1}=A \\ z_{t-1}=D
+\end{matrix}
+\end{matrix}$$
+  
+Following the paper, adult survival is sex-specific; cub survival is common to both sexes:
+```{r eval = FALSE}
+# Transition matrix
+for (i in 1:N){
+  gamma[1,1,i] <- 0
+  gamma[1,2,i] <- phiC
+  gamma[1,3,i] <- 1 - phiC
+  gamma[2,1,i] <- 0
+  gamma[2,2,i] <- phiA[sex[i]]   # sex-specific adult survival (1=f, 2=m)
+  gamma[2,3,i] <- 1 - phiA[sex[i]]
+  gamma[3,1,i] <- 0
+  gamma[3,2,i] <- 0
+  gamma[3,3,i] <- 1
+}
+```
+
+Last step is about the observations, which arise in two steps: detection then classification. For the detection matrix, we need to introduce intermediate observations, say $y'$ for not detected (1), detected as cub (2) and detected as adult (2): 
+$$\begin{matrix}
+& \\
+\mathbf{\Gamma_1} =
+  \left ( \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \end{matrix} } \right .
+          \end{matrix}
+          \hspace{-1.2em}
+          \begin{matrix}
+          y'_t=1 & y'_t=2 & y'_t=3 \\ \hdashline
+          1-p_C  & p_C & 0\\
+          1-p_A & 0 & 1 - p_A\\
+          1 & 0 & 0
+          \end{matrix}
+          \hspace{-0.2em}
+          \begin{matrix}
+          & \\
+          \left . \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \end{matrix} } \right )
+\begin{matrix}
+z_{t}=C \\ z_{t}=A \\ z_{t}=D
+\end{matrix}
+\end{matrix}$$
+
+where $p_C$ is detection for cubs, and $p_A$ that for adults. Then the classification matrix is: 
+$$\begin{matrix}
+& \\
+\mathbf{\Omega_2} =
+    \left ( \vphantom{ \begin{matrix} 12 \\ 12 \\ 12\end{matrix} } \right .
+\end{matrix}
+\hspace{-1.2em}
+\begin{matrix}
+    y_t=1 & y_t=2 & y_t=3 & y_t=4\\ \hdashline
+1 & 0 & 0 & 0\\
+0 & \beta_{C,CC} & \beta_{C,CA} & 1 - \beta_{C,CC} - \beta_{C,CA}\\
+0 & \beta_{A,CC} & \beta_{A,CA} & 1 - \beta_{A,CC} - \beta_{A,CA}\\
+\end{matrix}
+\hspace{-0.2em}
+\begin{matrix}
+& \\
+\left . \vphantom{ \begin{matrix} 12 \\ 12 \\ 12\end{matrix} } \right )
+    \begin{matrix}
+    y'_{t}=1 \\ y'_{t}=2 \\ y'_{t}=3
+    \end{matrix}
+\end{matrix}$$
+
+where $\beta_{C,CC}$ is the probability that, being a cub, and individual is classified with both criteria, $\beta_{C,CA}$ is the probability that, being a cub, an individual is classified as cub with P1 and as adult with P2, $\beta_{A,CC}$ is the probability that, being an adult, an individual is classified as cub with both criteria, $\beta_{A,CA}$ is the probability that, being an adult, an individual is classified as cub with P1 and as adult with P2.
+
+The observation matrix is the product of the two detection and classification matrices $\mathbf{\Omega_1} \mathbf{\Omega_2}$: 
+$$\begin{matrix}
+& \\
+\mathbf{\Omega} =
+    \left ( \vphantom{ \begin{matrix} 12 \\ 12 \\ 12\end{matrix} } \right .
+\end{matrix}
+\hspace{-1.2em}
+\begin{matrix}
+    y_t=1 & y_t=2 & y_t=3 & y_t=4\\ \hdashline
+1-p_C & p_C \beta_{C,CC} & p_C \beta_{C,CA} & p_C (1 - \beta_{C,CC} - \beta_{C,CA})\\
+1-p_A & p_A \beta_{A,CC} & p_A \beta_{A,CA} & p_A (1 - \beta_{A,CC} - \beta_{A,CA})\\
+1 & 0 & 0 & 0\\
+\end{matrix}
+\hspace{-0.2em}
+\begin{matrix}
+& \\
+\left . \vphantom{ \begin{matrix} 12 \\ 12 \\ 12\end{matrix} } \right )
+    \begin{matrix}
+    z_{t}=1 \\ z_{t}=2 \\ z_{t}=3
+    \end{matrix}
+\end{matrix}$$
+
+In code, we write $\mathbf{\Omega_1} \mathbf{\Omega_2}$ directly (faster than doing the matrix multiplication at each iteration). For simplicity we use a single detection probability $p$ for both ages, but you can let $p$ vary by age/sex/year or sampling method, as in the paper:
+```{r eval = FALSE}
+# Observation matrix
+omega[1,1] <- 1 - p
+omega[1,2] <- p * betaCCC
+omega[1,3] <- p * betaCCA
+omega[1,4] <- p * (1 - betaCCC - betaCCA)
+
+omega[2,1] <- 1 - p
+omega[2,2] <- p * betaACC
+omega[2,3] <- p * betaACA
+omega[2,4] <- p * (1 - betaACC - betaACA)
+
+omega[3,1] <- 1
+omega[3,2] <- 0
+omega[3,3] <- 0
+omega[3,4] <- 0
+```
+
+At first detection, the event 'not detected' is impossible by construction (we condition on the first detection). We therefore use an initial observation matrix $\mathbf{\Omega}_{\text{init}}$ with $p$ set to 1 (not shown). 
+
+The likelihood and priors are handled as usual. 
+
+### Results
+
+Here are the raw results: 
+```{r echo = FALSE}
+library(MCMCvis)
+load(here::here("dat","age.RData"))
+MCMCsummary(out, round = 2)
+```
+
+which we can arrange in a table to compare them with the results obtained by @Gervasi2017:
+```{r results='asis', message=FALSE, echo=FALSE}
+library(MCMCvis)
+library(knitr)
+
+# Request 'phiA' unindexed; MCMCsummary will return phiA[1], phiA[2]
+params_request <- c("phiC","phiA","p","pi",
+                    "betaCCC","betaCCA","betaACC","betaACA")
+
+ours <- MCMCsummary(out, params = params_request)
+rn <- rownames(ours)
+
+# Find and order phiA elements safely
+phiA_rows <- rn[startsWith(rn, "phiA[")]
+phiA_idx  <- as.integer(sub("phiA\\[|\\]", "", phiA_rows))
+phiA_rows <- phiA_rows[order(phiA_idx)]
+
+# Final row order used everywhere below
+rows <- c("phiC", phiA_rows, "p", "pi", "betaCCC", "betaCCA", "betaACC", "betaACA")
+
+# Formatter: mean (L–U)
+fmt <- function(m, l, u) sprintf("%.2f (%.2f–%.2f)", m, l, u)
+ours_fmt <- setNames(
+  mapply(fmt, ours[rows, "mean"], ours[rows, "2.5%"], ours[rows, "97.5%"]),
+  rows
+)
+
+# Paper values (Gervasi et al. 2017, Table 3; detection is overall average from text)
+paper_fmt <- c(
+  "phiC"       = "0.51 (0.22–0.79)",
+  "phiA[1]"    = "0.92 (0.87–0.95)",   # adult female
+  "phiA[2]"    = "0.85 (0.76–0.91)",   # adult male
+  "p"          = "≈0.71 (0.62–0.79)",  # overall average across designs/years
+  "pi"         = "0.062 (0.007–0.396)",
+  "betaCCC"    = "0.40 (0.15–0.72)",   # C_{c,cc}
+  "betaCCA"    = "0.60 (0.28–0.85)",   # C_{c,ca}
+  "betaACC"    = "0.067 (0.024–0.174)",# C_{a,cc}
+  "betaACA"    = "0.191 (0.110–0.309)" # C_{a,ca}
+)
+
+# Pretty labels with math; no special symbols to keep MathJax happy
+labels <- c(
+  "phiC"       = "$\\phi_C$ (cub survival)",
+  "phiA[1]"    = "$\\phi_{A,f}$ (adult female)",
+  "phiA[2]"    = "$\\phi_{A,m}$ (adult male)",
+  "p"          = "$p$ (detection)",
+  "pi"         = "$\\pi$ (cub at first detection)",
+  "betaCCC"    = "$C_{c,cc}$ (cub by both)",
+  "betaCCA"    = "$C_{c,ca}$ (cub by P1 only)",
+  "betaACC"    = "$C_{a,cc}$ (adult→cub by both)",
+  "betaACA"    = "$C_{a,ca}$ (adult→cub by P1 only)"
+)
+
+tab <- data.frame(
+  Quantity = unname(labels[rows]),
+  `Our (NIMBLE)` = unname(ours_fmt[rows]),
+  `Gervasi et al. (2017)` = unname(paper_fmt[rows]),
+  check.names = FALSE
+)
+
+kable(
+  tab,
+  align = c("l","c","c"),
+  escape = FALSE,
+  caption = "Comparison of parameter estimates for the same HMM to account for age uncertainty: our NIMBLE fit vs. Gervasi et al. (2017, Table 3). Intervals are 95% credible intervals for NIMBLE and confidence intervals for Gervasi et al.. Detection in Gervasi et al. varies by design/year; we report their overall average."
+)
+```
+
+Our NIMBLE fit reproduces the main biological signals reported for the Apennine brown bear. Survival shows the expected ordering, that cubs << adults, and adult females > adult males -- with estimates that closely match the published analysis. The credible/confidence intervals overlap broadly, indicating good agreement.
+
+Our detection estimate aligns with the study's average detection, even though their analysis lets detection vary by design and year rather than assuming a single constant value.
+
+For age classification (linking the hidden age to P1/P2 outcomes), mapping our parameters to theirs, we found lower adult-as-cub misclassification than the paper (and thus a higher probability that detected adults are correctly called 'adult by both'), which still matches their qualitative take: the stricter criterion (P2) performs very well for adults.
+
+The main divergence is in the initial state mix. Intervals overlap, but the means differ. A likely explanation is model structure: we used a single, constant detection probability, while the published analysis allows detection to vary by sampling design and year -- and detectability does vary meaningfully across methods and years. Collapsing this heterogeneity into one $p$ can nudge the mixture at first detection toward a higher cub fraction to explain patterns that the richer detection model attributes to design/year effects.
+
+In conclusion, we managed to recover the core findings of the published study (age- and sex-specific survival and average detection). Small discrepancies appear mainly in adult misclassification rates and $\pi$. To mirror @Gervasi2017 even more closely, the natural next step is to let $p$ vary by sampling design/year (an information I did not have), as in their best supported model.
+
+## Uncertainty in sex
 
 E.g. @pradel2008sex, see also @genovart_exploiting_2012.
 
@@ -185,220 +639,6 @@ MCMCsummary(out, round = 2)
 Compare with Table 5 in @pradel2008sex. Note we should have used the generalized logit or Dirichlet prior. Some discrepancy with x that i can't explain. Detection is constant, but making it time dependent does not change anything. 
 
 Maybe try to implement it with nimbleEcology?
-
-## Uncertainty in age
-
-E.g. @Gervasi2017. See also @gowan2021uncertainty for uncertainty in age and size
-
-+ 3 states
-+ alive as cub (C)
-+ alive as adult (A)
-+ dead (D)
-
-+ 4 observations
-+ not detected (1)
-+ detected as cub by both criteria (2)
-+ detected as cub by criterion 1 (3)
-+ detected as adult by both criteria (4)
-
-Vector of initial state probabilities
-
-$$\begin{matrix}
-& \\
-\mathbf{\delta} =
-  \left ( \vphantom{ \begin{matrix} 12 \end{matrix} } \right .
-          \end{matrix}
-          \hspace{-1.2em}
-          \begin{matrix}
-          z_t=C & z_t=A & z_t=D \\ \hdashline
-          \pi & 1 - \pi & 0\\
-          \end{matrix}
-          \hspace{-0.2em}
-          \begin{matrix}
-          & \\
-          \left . \vphantom{ \begin{matrix} 12 \end{matrix} } \right )
-\begin{matrix}
-\end{matrix}
-\end{matrix}$$
-
-$\pi$ is the probability of being alive as a cub, and $1 - \pi$ is the probability of being alive as an adult.
-
-Transition matrix
-
-$$\begin{matrix}
-& \\
-\mathbf{\Gamma} =
-  \left ( \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \end{matrix} } \right .
-          \end{matrix}
-          \hspace{-1.2em}
-          \begin{matrix}
-          z_t=C & z_t=A & z_t=D \\ \hdashline
-          0  & \phi_C & 1 - \phi_C\\
-          0 & \phi_A & 1 - \phi_A\\
-          0 & 0 & 1
-          \end{matrix}
-          \hspace{-0.2em}
-          \begin{matrix}
-          & \\
-          \left . \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \end{matrix} } \right )
-\begin{matrix}
-z_{t-1}=C \\ z_{t-1}=A \\ z_{t-1}=D
-\end{matrix}
-\end{matrix}$$
-  
-$\phi_C$ is the survival probability of cubs, and $\phi_A$ that of adults.
-
-Detection matrix
-
-We need to introduce intermediate observations, say $y'$
-
-+ not detected (1)
-+ detected as cub (2)
-+ detected as adult (2)
-
-
-$$\begin{matrix}
-& \\
-\mathbf{\Gamma_1} =
-  \left ( \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \end{matrix} } \right .
-          \end{matrix}
-          \hspace{-1.2em}
-          \begin{matrix}
-          y'_t=1 & y'_t=2 & y'_t=3 \\ \hdashline
-          1-p_C  & p_C & 0\\
-          1-p_A & 0 & 1 - p_A\\
-          1 & 0 & 0
-          \end{matrix}
-          \hspace{-0.2em}
-          \begin{matrix}
-          & \\
-          \left . \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \end{matrix} } \right )
-\begin{matrix}
-z_{t}=C \\ z_{t}=A \\ z_{t}=D
-\end{matrix}
-\end{matrix}$$
-  
-$p_C$ is detection for cubs, and $p_A$ for adults.
-
-Classification
-
-+ not detected (1)
-+ detected as cub by both criteria (2)
-+ detected as cub by criterion 1 (3)
-+ detected as adult by both criteria (4)
-
-$$\begin{matrix}
-& \\
-\mathbf{\Omega_2} =
-    \left ( \vphantom{ \begin{matrix} 12 \\ 12 \\ 12\end{matrix} } \right .
-\end{matrix}
-\hspace{-1.2em}
-\begin{matrix}
-    y_t=1 & y_t=2 & y_t=3 & y_t=4\\ \hdashline
-1 & 0 & 0 & 0\\
-0 & \beta_{C,CC} & \beta_{C,CA} & 1 - \beta_{C,CC} - \beta_{C,CA}\\
-0 & \beta_{A,CC} & \beta_{A,CA} & 1 - \beta_{A,CC} - \beta_{A,CA}\\
-\end{matrix}
-\hspace{-0.2em}
-\begin{matrix}
-& \\
-\left . \vphantom{ \begin{matrix} 12 \\ 12 \\ 12\end{matrix} } \right )
-    \begin{matrix}
-    y'_{t}=1 \\ y'_{t}=2 \\ y'_{t}=3
-    \end{matrix}
-\end{matrix}$$
-
-where $\beta_{C,CC}$ prob that, being a cub, and individual is classified with both criteria, $\beta_{C,CA}$ prob that, being a cub, an individual is classified as cub with criterion 1 and as adult with criterion 2, $\beta_{A,CC}$ probability that, being an adult, an individual is classified as cub with both criteria, $\beta_{A,CA}$ probability that, being an adult, an individual is classified as cub with criterion 1 and as adult with criterion 2.
-
-Matrix product of the two $\mathbf{\Omega_1} \mathbf{\Omega_2}$ to get observation matrix, possible in NIMBLE even though time consuming. Better to write the product explicitely. 
-
-$$\begin{matrix}
-& \\
-\mathbf{\Omega} =
-    \left ( \vphantom{ \begin{matrix} 12 \\ 12 \\ 12\end{matrix} } \right .
-\end{matrix}
-\hspace{-1.2em}
-\begin{matrix}
-    y_t=1 & y_t=2 & y_t=3 & y_t=4\\ \hdashline
-1-p_C & p_C \beta_{C,CC} & p_C \beta_{C,CA} & p_C (1 - \beta_{C,CC} - \beta_{C,CA})\\
-1-p_A & p_A \beta_{A,CC} & p_A \beta_{A,CA} & p_A (1 - \beta_{A,CC} - \beta_{A,CA})\\
-1 & 0 & 0 & 0\\
-\end{matrix}
-\hspace{-0.2em}
-\begin{matrix}
-& \\
-\left . \vphantom{ \begin{matrix} 12 \\ 12 \\ 12\end{matrix} } \right )
-    \begin{matrix}
-    z_{t}=1 \\ z_{t}=2 \\ z_{t}=3
-    \end{matrix}
-\end{matrix}$$
-
-Data
-
-<!-- ```{r} -->
-<!-- # Three states: 1) alive as cub; 2) Alive as adult; 3) Dead -->
-<!-- # Four events: 0) Not detected; 1) Detected as cub with both criteria; 2) Detected as cub only with criterion 1; 3) Detected as adult -->
-<!-- # Six groups: 1) Females unknown age; 2) Males unknown age; 3) Adult females; 4) Adult males; 5) Female cubs; 6) Male cubs -->
-<!-- # The initial state is fixed to zero for groups 3 and 4 (known adults) and to one for groups 5 and 6 (known cubs) -->
-<!-- ``` -->
-
-
-<!-- ```{r} -->
-<!-- # Step 1: Read file -->
-<!-- lines <- readLines("/Users/oliviergimenez/Dropbox/OG/GITHUB/book/matos/case-studies/covariates/age-uncertainty/bear-age-vincenzo/apennine-bear") -->
-
-<!-- # Step 2: Process lines -->
-<!-- processed_lines <- sapply(lines, function(line) { -->
-<!--   # Remove semicolon -->
-<!--   line <- gsub(";", "", line) -->
-
-<!--   # Split into parts -->
-<!--   parts <- strsplit(line, " ")[[1]] -->
-
-<!--   # Split the first part (7-digit number) into separate digits -->
-<!--   digits <- unlist(strsplit(parts[1], split = "")) -->
-
-<!--   # Combine all elements: digits + the other numbers -->
-<!--   all_values <- c(digits, parts[-1]) -->
-
-<!--   # Paste back as space-separated string -->
-<!--   paste(all_values, collapse = " ") -->
-<!-- }) -->
-
-<!-- # Step 3: Optionally convert to data frame -->
-<!-- df <- read.table(text = processed_lines, header = FALSE) -->
-
-<!-- # Step 4: Check -->
-<!-- head(df) -->
-
-<!-- # Step 4: Create sex and age columns -->
-<!-- group_info <- data.frame( -->
-<!--   sex = c("Female", "Male", "Female", "Male", "Female", "Male"), -->
-<!--   age = c("Unknown", "Unknown", "Adult", "Adult", "Cub", "Cub") -->
-<!-- ) -->
-
-<!-- # Step 5: Identify the group with '1' for each row -->
-<!-- group_index <- apply(df[, 8:13], 1, function(x) which(x == 1)) -->
-
-<!-- # Step 6: Add sex and age columns -->
-<!-- df$sex <- group_info$sex[group_index] -->
-<!-- df$age <- group_info$age[group_index] -->
-
-<!-- # Step 7: Drop indicator columns (optional) -->
-<!-- df_clean <- df[, -c(8:13)] -->
-
-<!-- # Step 8: Write to file -->
-<!-- write.table(df_clean, file = "output_with_sex_age.txt", row.names = FALSE, col.names = FALSE, quote = FALSE, sep = " ") -->
-<!-- ``` -->
-
-Results
-
-```{r echo = FALSE}
-load(here::here("dat","age.RData"))
-MCMCsummary(out, round = 2)
-```
-
-Compare with Table 3 in @Gervasi2017. Note we should have used the generalized logit or Dirichlet prior. Also uncertainty similar in estimates. Detection is different in structure, which might explain different in initial state prob estimate. 
 
 <!-- ## Covariate selection with reversible jump MCMC -->
 
