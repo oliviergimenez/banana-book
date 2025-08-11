@@ -90,6 +90,7 @@ hmm.sex <- nimbleCode({
   omega[1,8] <- p * e * (1 - m[4]) * m[3] * (1 - x[3])      
   omega[1,9] <- p * e * m[4] * (1 - x[4])      
   omega[1,10] <- p * (1 - e)      
+  
   omega[2,1] <- 1 - p                                  
   omega[2,2] <- p * e * (1 - m[4]) * m[1] * (1 - x[1])      
   omega[2,3] <- p * e * (1 - m[4]) * m[2] * (1 - x[2])      
@@ -100,6 +101,7 @@ hmm.sex <- nimbleCode({
   omega[2,8] <- p * e * (1 - m[4]) * m[3] * x[3]   
   omega[2,9] <- p * e * m[4] * x[4]   
   omega[2,10] <- p * (1 - e)      
+  
   omega[3,1] <- 1                                  
   omega[3,2] <- 0     
   omega[3,3] <- 0     

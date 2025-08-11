@@ -203,11 +203,11 @@ ggplot(df_phi, aes(x = 1956:1970, y = mean)) +
 
 Shaded ribbons show 95% credible intervals; the solid line is the posterior mean of survival, model-averaged over covariate inclusion.
 
-## Uncertainty in age
+## Uncertainty in age {#ageuncertainty}
 
 ### Motivation 
 
-Age matters. Survival and other demographic parameters often differ between young and older animals, so if we blur age classes we can end up telling the wrong story about population dynamics. In Section \@ref(agecov), we incorporated age as a covariate in capture-recapture models, assuming it was perfectly known. With non-invasive genetics (Figure \@ref(fig:marking)), though, age is not observed: a DNA profile can identify who was there, but not how old they were. If we ignore that uncertainty, survival estimates can be biased. As we saw in Section \@ref(multievent), HMM capture–recapture models can handle this kind of problem by treating age as a hidden state and separating it from what we actually observe in the field. 
+Survival and other demographic parameters often differ between young and older animals, so if we blur age classes we can end up telling the wrong story about population dynamics. In Section \@ref(agecov), we incorporated age as a covariate in capture-recapture models, assuming it was perfectly known. With non-invasive genetics (Figure \@ref(fig:marking)), though, age is not observed: a DNA profile can identify who was there, but not how old they were. If we ignore that uncertainty, survival estimates can be biased. As we saw in Section \@ref(multievent), HMM capture–recapture models can handle this kind of problem by treating age as a hidden state and separating it from what we actually observe in the field. 
 
 A neat example comes from Apennine brown bears in @Gervasi2017 (see also @gowan2021uncertainty). Because you cannot age a bear from its DNA, the authors paired genetics with field information to classify detections into two broad age classes, cubs (<1 year) and adults (≥1 year). To do so, they used two criteria. First, classify a newly detected bear as a cub in that year if it was sampled at least once on the same date and site as a known adult female and they shared ≥1 allele at every locus (mother–offspring consistent). That's the lenient criterion (P1). Second, apply a stricter criterion (P2): make the same mother–offspring call, but require two or more such co-sampling occasions with the same female, again on the same date and site each time. 
 
@@ -485,27 +485,42 @@ In conclusion, we managed to recover the core findings of the published study (a
 
 ## Uncertainty in sex
 
-E.g. @pradel2008sex, see also @genovart_exploiting_2012.
+### Motivation
 
-+ 3 states
-+ alive as male (M)
-+ alive as female (F)
-+ dead (D)
+Many species show sex differences in demographic parameters, so mislabeling sex or discarding uncertain cases can bias the very patterns we want to estimate. In monomorphic birds for example, field sexing relies on behaviour (e.g., copulation posture, courtship displays, relative body size), and those clues vary in reliability; in the Audouin's gull (*Larus audouinii*) study that motivates this section, ~80% of individuals were never sexed in the field, making “known-sex only” analyses both wasteful and biased toward higher survival. 
 
-+ 10 observations
-+ not seen (0)
-+ judged from copulation to be M (1)
-+ judged from begging food to be M (2)
-+ judged from coutship feeding to be M (3)
-+ judged from body size to be M (4)
-+ judged from copulation to be F (5)
-+ judged from begging food to be F (6)
-+ judged from coutship feeding to be F (7)
-+ judged from body size to be F (8)
-+ not judged (9)
+@pradel2008sex (see also @genovart_exploiting_2012) turned this problem into a HMM inference task: treat sex as a hidden state (male/female/dead) and model the sex-assignment process itself. The model developed by Pradel, Genovart and colleagues separates (i) the probability of attempting a sex judgment (with a time trend, because sexing effort increased) from (ii) criterion-specific accuracy for four behavioural clues (copulation, courtship feeding, begging for food, body size). 
 
-Vector of initial state probabilities
+<!-- Two practical findings drive their design: (1) even the least reliable clue (body size) adds information and improves precision when its error rate is estimated, and (2) a small anchor set of genetically sexed birds (24 individuals) is enough to break the model’s inherent dual-solution/label-switching symmetry and stabilize sex ratio and sex-specific survival estimates (Table 5). -->
 
+In brief, the message is: when field classifications are uncertain, exploit them rather than filter them out—use HMM to couple biological states to imperfect observations and propagate classification uncertainty into survival. 
+
+That philosophy mirrors the age-uncertainty Section \@ref(ageuncertainty) we just completed: there, age was hidden and P1/P2 provided noisy age labels; here, sex is hidden and multiple behavioural criteria provide noisy sex labels. 
+
+### Model and NIMBLE implementation
+
+To estimate Audouin's gull survival, we have at our disposal a dataset with 4093 marked birds from a colony at the Ebro Delta (Spain), collected over 10 years. To build up our model, we first define the states and observations:
+  
+- states  
+    - alive as male (M)
+    - alive as female (F)
+    - dead (D)
+
+- observations  
+    - not seen (1)
+    - judged from copulation to be male (2)
+    - judged from begging food to be male (3)
+    - judged from coutship feeding to be male (4)
+    - judged from body size to be male (5)
+    - judged from copulation to be female (6)
+    - judged from begging food to be female (7)
+    - judged from coutship feeding to be female (8)
+    - judged from body size to be female (9)
+    - not judged (10). 
+
+Now we turn to writing our model. 
+
+We start with the vector of initial states. Unknown-sex individuals enter as a mixture of male/female with probabilities $\pi$ and $1-\pi$: 
 $$\begin{matrix}
 & \\
 \mathbf{\delta} =
@@ -524,10 +539,7 @@ $$\begin{matrix}
 \end{matrix}
 \end{matrix}$$
 
-$\pi$ is the probability of being alive as a male, and $1 - \pi$ is the probability of being alive as a female.
-
-Transition matrix
-
+We proceed with the transition matrix that contains the survival probabilities. A male either survives next year as a male ($\phi_M$), or dies; the same happens for females (with probability $\phi_F$): 
 $$\begin{matrix}
 & \\
 \mathbf{\Gamma} =
@@ -549,10 +561,24 @@ z_{t-1}=M \\ z_{t-1}=F \\ z_{t-1}=D
 \end{matrix}
 \end{matrix}$$
   
-$\phi_M$ is the survival probability of males, and $\phi_F$ that of females.
+The vector of initial states and the matrix of transition probabilities are written as usual in NIMBLE:
+```{r eval = FALSE}
+  delta[1] <- pi
+  delta[2] <- 1 - pi
+  delta[3] <- 0
+  
+  gamma[1,1] <- phiM            
+  gamma[1,2] <- 0               
+  gamma[1,3] <- 1 - phiM        
+  gamma[2,1] <- 0               
+  gamma[2,2] <- phiF            
+  gamma[2,3] <- 1 - phiF        
+  gamma[3,1] <- 0               
+  gamma[3,2] <- 0               
+  gamma[3,3] <- 1               
+```
 
-Observation matrix (its transposed for convenience)
-
+Last step is the observation matrix, which we write as follows (its transposed for convenience):
 $$\begin{matrix}
 & \\
 \mathbf{\Gamma'} =
@@ -581,7 +607,49 @@ y_{t}=1 \\ y_{t}=2 \\ y_{t}=3 \\ y_{t}=4 \\ y_{t}=5 \\ y_{t}=6 \\ y_{t}=7 \\ y_{
 \end{matrix}
 \end{matrix}$$
 
-When an individual is encountered (with probability $p$), there is some chance that it will be sexed ($e$) based on its general appearance (body size: probability $m_4$) or its behaviour (probability $1 - m_4$). When behaviour is used, there are three different criteria (copulation, begging for food and courtship feeding), which occur with probabilities $m_1$, $m_2$, and $m_3$, respectively. Finally, each criterion has its own reliability (probabilities $x_1$, $x_2$, $x_3$, $x_4$, where $x_4$ is the reliability of the body-size criterion). Might want to split this complex matrix in several steps, use binary tree as Figure 2 in @genovart_exploiting_2012 (see also appendix S1 in @genovart_exploiting_2012). 
+This matrix is a bit more complex than what we have encountered before, and needs some explanations. When an individual is encountered (with probability $p$), there is some chance that it will be sexed ($e$) based on its general appearance (body size: probability $m_4$) or its behaviour (probability $1 - m_4$). When behaviour is used, there are three different criteria (copulation, begging for food and courtship feeding), which occur with probabilities $m_1$, $m_2$, and $m_3$, respectively. Finally, each criterion has its own reliability (probabilities $x_1$, $x_2$, $x_3$, $x_4$, where $x_4$ is the reliability of the body-size criterion). 
+
+I admit that this matrix representation can be difficult to grasp at once. It can be easier to split the observation matrix in several steps, like encountering, sexing, body size sexing, sex determination and correctness, then to sketch a decision treeMaybe a binary tree like in  Figure 2 in @genovart_exploiting_2012 (see also appendix S1 in @genovart_exploiting_2012).
+
+In code, this gives: 
+```{r eval = FALSE}
+omega[1,1] <- 1 - p                                  
+omega[1,2] <- p * e * (1 - m[4]) * m[1] * x[1]      
+omega[1,3] <- p * e * (1 - m[4]) * m[2] * x[2]      
+omega[1,4] <- p * e * (1 - m[4]) * m[3] * x[3]      
+omega[1,5] <- p * e * m[4] * x[4]      
+omega[1,6] <- p * e * (1 - m[4]) * m[1] * (1 - x[1])      
+omega[1,7] <- p * e * (1 - m[4]) * m[2] * (1 - x[2])      
+omega[1,8] <- p * e * (1 - m[4]) * m[3] * (1 - x[3])      
+omega[1,9] <- p * e * m[4] * (1 - x[4])      
+omega[1,10] <- p * (1 - e)      
+
+omega[2,1] <- 1 - p                                  
+omega[2,2] <- p * e * (1 - m[4]) * m[1] * (1 - x[1])      
+omega[2,3] <- p * e * (1 - m[4]) * m[2] * (1 - x[2])      
+omega[2,4] <- p * e * (1 - m[4]) * m[3] * (1 - x[3])      
+omega[2,5] <- p * e * m[4] * (1 - x[4])      
+omega[2,6] <- p * e * (1 - m[4]) * m[1] * x[1]      
+omega[2,7] <- p * e * (1 - m[4]) * m[2] * x[2]     
+omega[2,8] <- p * e * (1 - m[4]) * m[3] * x[3]   
+omega[2,9] <- p * e * m[4] * x[4]   
+omega[2,10] <- p * (1 - e)      
+
+omega[3,1] <- 1                                  
+omega[3,2] <- 0     
+omega[3,3] <- 0     
+omega[3,4] <- 0     
+omega[3,5] <- 0     
+omega[3,6] <- 0     
+omega[3,7] <- 0     
+omega[3,8] <- 0     
+omega[3,9] <- 0     
+omega[3,10] <- 0     
+```
+
+At first detection, the observation 'not detected' is impossible by construction (we condition on the first detection). We therefore use an initial observation matrix $\mathbf{\Omega}_{\text{init}}$ with $p$ set to 1 (not shown). 
+
+The likelihood and priors are handled as usual. 
 
 <!-- sm=b(1); % b(1) survie male -->
 <!-- sf=b(2); % b(2) survie femelle -->
@@ -629,16 +697,138 @@ When an individual is encountered (with probability $p$), there is some chance t
 <!-- % 8-petite taille relative -->
 <!-- % 9-pas de jugement -->
 
-Results
+### Results
+
+Here are the raw results: 
 
 ```{r echo = FALSE}
+library(MCMCvis)
 load(here::here("dat","sex.RData"))
 MCMCsummary(out, round = 2)
 ```
 
-Compare with Table 5 in @pradel2008sex. Note we should have used the generalized logit or Dirichlet prior. Some discrepancy with x that i can't explain. Detection is constant, but making it time dependent does not change anything. 
+which we can arrange in a table to compare them with the results obtained by @pradel2008sex:
+```{r results='asis', echo=FALSE, message=FALSE, warning=FALSE}
+library(MCMCvis)
+library(knitr)
 
-Maybe try to implement it with nimbleEcology?
+# --- Pull our summaries
+params_req <- c("pi","phiF","phiM","m","x")   # m = criterion use; x = correctness p_i
+ours <- MCMCsummary(out, params = params_req)
+rn   <- rownames(ours)
+
+# Locate and order m[i] and x[i]
+m_rows <- rn[startsWith(rn, "m[")]
+m_rows <- m_rows[order(as.integer(sub("m\\[|\\]", "", m_rows)))]
+x_rows <- rn[startsWith(rn, "x[")]
+x_rows <- x_rows[order(as.integer(sub("x\\[|\\]", "", x_rows)))]
+
+# Helper: "mean (L–U)"
+fmt <- function(m, l, u) sprintf("%.2f (%.2f–%.2f)", m, l, u)
+
+# Our core
+ours_fmt <- c(
+  "pi"   = fmt(ours["pi","mean"],    ours["pi","2.5%"],    ours["pi","97.5%"]),
+  "phiF" = fmt(ours["phiF","mean"],  ours["phiF","2.5%"],  ours["phiF","97.5%"]),
+  "phiM" = fmt(ours["phiM","mean"],  ours["phiM","2.5%"],  ours["phiM","97.5%"])
+)
+
+# Our m[i] (criterion use)
+ours_m_fmt <- setNames(
+  mapply(fmt, ours[m_rows,"mean"], ours[m_rows,"2.5%"], ours[m_rows,"97.5%"]),
+  m_rows
+)
+
+# Our error rates = 1 - x[i]
+err_mean <- 1 - ours[x_rows,"mean"]
+err_lcl  <- 1 - ours[x_rows,"97.5%"]
+err_ucl  <- 1 - ours[x_rows,"2.5%"]
+ours_err_fmt <- setNames(mapply(fmt, err_mean, err_lcl, err_ucl), x_rows)
+
+# ---- Pradel et al. (2007), Table 5, Model B (RUN 6) ----
+# Core (means with SEs)
+pr_core <- c(
+  "pi"   = "0.5325 (SE 0.0286)",
+  "phiF" = "0.9122 (SE 0.0142)",
+  "phiM" = "0.8597 (SE 0.0141)"
+)
+
+# m1..m3 constants; m4 time-varying (we'll print exact m4(t) in the caption)
+pr_m <- c(
+  "m[1]" = "0.2904 (const.)",
+  "m[2]" = "0.5973 (const.)",
+  "m[3]" = "0.1123 (const.)",
+  "m[4]" = "time-varying (see caption)"
+)
+
+# Error rates (mean with SE)
+pr_err <- c(
+  "x[1]" = "0.0577 (SE 0.0407)",
+  "x[2]" = "0.0561 (SE 0.0308)",
+  "x[3]" = "0.0000 (SE 0.1553)",
+  "x[4]" = "0.0928 (SE 0.0741)"
+)
+
+# Nice labels
+crit_labs <- c("Copulation","Begging","Courtship feeding","Body size")
+m_labs <- setNames(paste0("$m_", 1:4, "$ (", crit_labs, ")"), paste0("m[",1:4,"]"))
+e_labs <- setNames(paste0("Error (", crit_labs, ")"), paste0("x[",1:4,"]"))
+top_labs <- c(
+  "pi"   = "$\\mu$ (proportion male)",
+  "phiF" = "$\\phi_F$ (female survival)",
+  "phiM" = "$\\phi_M$ (male survival)"
+)
+
+# Assemble comparison table
+tab <- data.frame(
+  Quantity = c(unname(top_labs[c("pi","phiF","phiM")]), unname(m_labs), unname(e_labs)),
+  `Our (NIMBLE)` = c(
+    ours_fmt[c("pi","phiF","phiM")],
+    unname(ours_m_fmt[paste0("m[",1:4,"]")]),
+    unname(ours_err_fmt[paste0("x[",1:4,"]")])
+  ),
+  `Pradel et al. (2007) Table 5, Model B` = c(
+    pr_core[c("pi","phiF","phiM")],
+    pr_m[paste0("m[",1:4,"]")],
+    pr_err[paste0("x[",1:4,"]")]
+  ),
+  check.names = FALSE
+)
+
+# ---- Build caption with explicit m4(t) values ----
+# RUN 6: logit(m4_t) = a + b*t
+a <- -7.3979
+b <-  0.6258
+T <- 10                       # years reported for p(t) in RUN 6
+t <- 1:T
+m4_pred <- plogis(a + b * t)  # predicted m4(t)
+m4_str  <- paste(sprintf("%.3f", m4_pred), collapse = ", ")
+cap <- paste0(
+  "Comparison with Pradel et al. (2007) Table 5, Model B (no genetically sexed anchors). ",
+  "Our error rates are 1 − x[i]. ",
+  "Pradel's m4 is time-varying; the estimates provided by the main author for m4(t) were for t=1..", T, ": ",
+  m4_str, "."
+)
+
+kable(
+  tab,
+  align = c("l","c","c"),
+  escape = FALSE,
+  caption = cap
+)
+``` 
+
+Our NIMBLE fit recovers the main biological signals reported for the Audouin's gulls analysis. Survival shows the expected ordering -- adult females ≥ adult males -- with broadly overlapping intervals and means that are close to the published model. In our run, the female--male gap is a bit smaller (≈0.90 vs 0.89), but the direction matches the paper's message (higher female survival).
+
+We used a single, constant detection probability and obtained $p≈0.65$, which sits near the middle of the year‐specific values reported in the paper. 
+
+The estimated probabilities of which clue is used align closely with the published analysis for the three 'behavioural' criteria: $m_1 \approx 0.29$ (copulation), $m_2 \approx 0.60$ (begging), $m_3 \approx 0.11$ (courtship feeding). The paper lets body size use vary over time; our constant estimate ($m_4 \approx 0.17$) should be read as a pooled average across years—consistent with their finding of a low but increasing use of this criterion.
+
+The main tension with lies in the error rates by criterion. The published analysis finds low misclassification (roughly 5–10% for most criteria, with a very imprecise estimate for courtship feeding). Our fit suggests substantially higher error across criteria. That discrepancy is where we expect sensitivity when there are no known‐sex anchors (and some components are simplified). Without anchors, the model can admit dual solutions (swapping sex labels and flipping error probabilities) that fit nearly equally well; small modelling choices or initial values can tip the chain toward one mode, see @pradel2008sex. 
+
+Our estimate of the proportion of males at first encounter ($\mu \approx 0.52$) agrees closely with the published result, reinforcing that the state mix is well constrained by the data even when sex is uncertain.
+
+To conclude, the sex‐uncertainty HMM retrieves the core demographic pattern (female ≥ male survival) and matches the paper on overall detectability and the use of criteria. To mirror the published results more closely, one could add a small anchor set of genetically sexed individuals (an information used in @pradel2008sex but that I did not have).
 
 <!-- ## Covariate selection with reversible jump MCMC -->
 

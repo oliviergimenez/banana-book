@@ -303,15 +303,15 @@
 <p>Shaded ribbons show 95% credible intervals; the solid line is the posterior mean of survival, model-averaged over covariate inclusion.</p>
 </div>
 </div>
-<div id="uncertainty-in-age" class="section level2" number="6.3">
+<div id="ageuncertainty" class="section level2" number="6.3">
 <h2>
-<span class="header-section-number">6.3</span> Uncertainty in age<a class="anchor" aria-label="anchor" href="#uncertainty-in-age"><i class="fas fa-link"></i></a>
+<span class="header-section-number">6.3</span> Uncertainty in age<a class="anchor" aria-label="anchor" href="#ageuncertainty"><i class="fas fa-link"></i></a>
 </h2>
 <div id="motivation-1" class="section level3" number="6.3.1">
 <h3>
 <span class="header-section-number">6.3.1</span> Motivation<a class="anchor" aria-label="anchor" href="#motivation-1"><i class="fas fa-link"></i></a>
 </h3>
-<p>Age matters. Survival and other demographic parameters often differ between young and older animals, so if we blur age classes we can end up telling the wrong story about population dynamics. In Section <a href="survival.html#agecov">4.8.5</a>, we incorporated age as a covariate in capture-recapture models, assuming it was perfectly known. With non-invasive genetics (Figure <a href="survival.html#fig:marking">4.1</a>), though, age is not observed: a DNA profile can identify who was there, but not how old they were. If we ignore that uncertainty, survival estimates can be biased. As we saw in Section <a href="dispersal.html#multievent">5.7</a>, HMM capture–recapture models can handle this kind of problem by treating age as a hidden state and separating it from what we actually observe in the field.</p>
+<p>Survival and other demographic parameters often differ between young and older animals, so if we blur age classes we can end up telling the wrong story about population dynamics. In Section <a href="survival.html#agecov">4.8.5</a>, we incorporated age as a covariate in capture-recapture models, assuming it was perfectly known. With non-invasive genetics (Figure <a href="survival.html#fig:marking">4.1</a>), though, age is not observed: a DNA profile can identify who was there, but not how old they were. If we ignore that uncertainty, survival estimates can be biased. As we saw in Section <a href="dispersal.html#multievent">5.7</a>, HMM capture–recapture models can handle this kind of problem by treating age as a hidden state and separating it from what we actually observe in the field.</p>
 <p>A neat example comes from Apennine brown bears in <span class="citation">Gervasi et al. (<a href="references.html#ref-Gervasi2017">2017</a>)</span> (see also <span class="citation">Gowan et al. (<a href="references.html#ref-gowan2021uncertainty">2021</a>)</span>). Because you cannot age a bear from its DNA, the authors paired genetics with field information to classify detections into two broad age classes, cubs (&lt;1 year) and adults (≥1 year). To do so, they used two criteria. First, classify a newly detected bear as a cub in that year if it was sampled at least once on the same date and site as a known adult female and they shared ≥1 allele at every locus (mother–offspring consistent). That’s the lenient criterion (P1). Second, apply a stricter criterion (P2): make the same mother–offspring call, but require two or more such co-sampling occasions with the same female, again on the same date and site each time.</p>
 <p>Why two criteria? Because there’s a trade-off. P1 is better at catching real cubs (more sensitive) but risks misclassifying some adults as cubs; P2 is more conservative about calling ‘cub’, so it reduces false cubs but misses some true ones.</p>
 <p>Instead of pretending these criteria are perfect, the authors model the misclassification explicitly: age is hidden, ‘cub/adult by P1/P2’ is what we observe, and their model estimates both classification accuracy and age-specific survival at the same time. That way, uncertainty is propagated into the demographic estimates rather than swept under the rug.</p>
@@ -585,26 +585,47 @@ z_{t}=C \\ z_{t}=A \\ z_{t}=D
 <h2>
 <span class="header-section-number">6.4</span> Uncertainty in sex<a class="anchor" aria-label="anchor" href="#uncertainty-in-sex"><i class="fas fa-link"></i></a>
 </h2>
-<p>E.g. <span class="citation">Pradel et al. (<a href="references.html#ref-pradel2008sex">2008</a>)</span>, see also <span class="citation">Genovart, Pradel, and Oro (<a href="references.html#ref-genovart_exploiting_2012">2012</a>)</span>.</p>
+<div id="motivation-2" class="section level3" number="6.4.1">
+<h3>
+<span class="header-section-number">6.4.1</span> Motivation<a class="anchor" aria-label="anchor" href="#motivation-2"><i class="fas fa-link"></i></a>
+</h3>
+<p>Many species show sex differences in demographic parameters, so mislabeling sex or discarding uncertain cases can bias the very patterns we want to estimate. In monomorphic birds for example, field sexing relies on behaviour (e.g., copulation posture, courtship displays, relative body size), and those clues vary in reliability; in the Audouin’s gull (<em>Larus audouinii</em>) study that motivates this section, ~80% of individuals were never sexed in the field, making “known-sex only” analyses both wasteful and biased toward higher survival.</p>
+<p><span class="citation">Pradel et al. (<a href="references.html#ref-pradel2008sex">2008</a>)</span> (see also <span class="citation">Genovart, Pradel, and Oro (<a href="references.html#ref-genovart_exploiting_2012">2012</a>)</span>) turned this problem into a HMM inference task: treat sex as a hidden state (male/female/dead) and model the sex-assignment process itself. The model developed by Pradel, Genovart and colleagues separates (i) the probability of attempting a sex judgment (with a time trend, because sexing effort increased) from (ii) criterion-specific accuracy for four behavioural clues (copulation, courtship feeding, begging for food, body size).</p>
+<!-- Two practical findings drive their design: (1) even the least reliable clue (body size) adds information and improves precision when its error rate is estimated, and (2) a small anchor set of genetically sexed birds (24 individuals) is enough to break the model’s inherent dual-solution/label-switching symmetry and stabilize sex ratio and sex-specific survival estimates (Table 5). -->
+<p>In brief, the message is: when field classifications are uncertain, exploit them rather than filter them out—use HMM to couple biological states to imperfect observations and propagate classification uncertainty into survival.</p>
+<p>That philosophy mirrors the age-uncertainty Section <a href="covariateschapter.html#ageuncertainty">6.3</a> we just completed: there, age was hidden and P1/P2 provided noisy age labels; here, sex is hidden and multiple behavioural criteria provide noisy sex labels.</p>
+</div>
+<div id="model-and-nimble-implementation-2" class="section level3" number="6.4.2">
+<h3>
+<span class="header-section-number">6.4.2</span> Model and NIMBLE implementation<a class="anchor" aria-label="anchor" href="#model-and-nimble-implementation-2"><i class="fas fa-link"></i></a>
+</h3>
+<p>To estimate Audouin’s gull survival, we have at our disposal a dataset with 4093 marked birds from a colony at the Ebro Delta (Spain), collected over 10 years. To build up our model, we first define the states and observations:</p>
 <ul>
-<li><p>3 states</p></li>
-<li><p>alive as male (M)</p></li>
-<li><p>alive as female (F)</p></li>
-<li><p>dead (D)</p></li>
-<li><p>10 observations</p></li>
-<li><p>not seen (0)</p></li>
-<li><p>judged from copulation to be M (1)</p></li>
-<li><p>judged from begging food to be M (2)</p></li>
-<li><p>judged from coutship feeding to be M (3)</p></li>
-<li><p>judged from body size to be M (4)</p></li>
-<li><p>judged from copulation to be F (5)</p></li>
-<li><p>judged from begging food to be F (6)</p></li>
-<li><p>judged from coutship feeding to be F (7)</p></li>
-<li><p>judged from body size to be F (8)</p></li>
-<li><p>not judged (9)</p></li>
+<li>states
+<ul>
+<li>alive as male (M)</li>
+<li>alive as female (F)</li>
+<li>dead (D)</li>
 </ul>
-<p>Vector of initial state probabilities</p>
-<p><span class="math display">\[\begin{matrix}
+</li>
+<li>observations
+<ul>
+<li>not seen (1)</li>
+<li>judged from copulation to be male (2)</li>
+<li>judged from begging food to be male (3)</li>
+<li>judged from coutship feeding to be male (4)</li>
+<li>judged from body size to be male (5)</li>
+<li>judged from copulation to be female (6)</li>
+<li>judged from begging food to be female (7)</li>
+<li>judged from coutship feeding to be female (8)</li>
+<li>judged from body size to be female (9)</li>
+<li>not judged (10).</li>
+</ul>
+</li>
+</ul>
+<p>Now we turn to writing our model.</p>
+<p>We start with the vector of initial states. Unknown-sex individuals enter as a mixture of male/female with probabilities <span class="math inline">\(\pi\)</span> and <span class="math inline">\(1-\pi\)</span>:
+<span class="math display">\[\begin{matrix}
 &amp; \\
 \mathbf{\delta} =
   \left ( \vphantom{ \begin{matrix} 12 \end{matrix} } \right .
@@ -621,9 +642,8 @@ z_{t}=C \\ z_{t}=A \\ z_{t}=D
 \begin{matrix}
 \end{matrix}
 \end{matrix}\]</span></p>
-<p><span class="math inline">\(\pi\)</span> is the probability of being alive as a male, and <span class="math inline">\(1 - \pi\)</span> is the probability of being alive as a female.</p>
-<p>Transition matrix</p>
-<p><span class="math display">\[\begin{matrix}
+<p>We proceed with the transition matrix that contains the survival probabilities. A male either survives next year as a male (<span class="math inline">\(\phi_M\)</span>), or dies; the same happens for females (with probability <span class="math inline">\(\phi_F\)</span>):
+<span class="math display">\[\begin{matrix}
 &amp; \\
 \mathbf{\Gamma} =
   \left ( \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \end{matrix} } \right .
@@ -643,9 +663,23 @@ z_{t}=C \\ z_{t}=A \\ z_{t}=D
 z_{t-1}=M \\ z_{t-1}=F \\ z_{t-1}=D
 \end{matrix}
 \end{matrix}\]</span></p>
-<p><span class="math inline">\(\phi_M\)</span> is the survival probability of males, and <span class="math inline">\(\phi_F\)</span> that of females.</p>
-<p>Observation matrix (its transposed for convenience)</p>
-<p><span class="math display">\[\begin{matrix}
+<p>The vector of initial states and the matrix of transition probabilities are written as usual in NIMBLE:</p>
+<div class="sourceCode" id="cb331"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span>  <span class="va">delta</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="va">pi</span></span>
+<span>  <span class="va">delta</span><span class="op">[</span><span class="fl">2</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span> <span class="op">-</span> <span class="va">pi</span></span>
+<span>  <span class="va">delta</span><span class="op">[</span><span class="fl">3</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0</span></span>
+<span>  </span>
+<span>  <span class="va">gamma</span><span class="op">[</span><span class="fl">1</span>,<span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="va">phiM</span>            </span>
+<span>  <span class="va">gamma</span><span class="op">[</span><span class="fl">1</span>,<span class="fl">2</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0</span>               </span>
+<span>  <span class="va">gamma</span><span class="op">[</span><span class="fl">1</span>,<span class="fl">3</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span> <span class="op">-</span> <span class="va">phiM</span>        </span>
+<span>  <span class="va">gamma</span><span class="op">[</span><span class="fl">2</span>,<span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0</span>               </span>
+<span>  <span class="va">gamma</span><span class="op">[</span><span class="fl">2</span>,<span class="fl">2</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="va">phiF</span>            </span>
+<span>  <span class="va">gamma</span><span class="op">[</span><span class="fl">2</span>,<span class="fl">3</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span> <span class="op">-</span> <span class="va">phiF</span>        </span>
+<span>  <span class="va">gamma</span><span class="op">[</span><span class="fl">3</span>,<span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0</span>               </span>
+<span>  <span class="va">gamma</span><span class="op">[</span><span class="fl">3</span>,<span class="fl">2</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0</span>               </span>
+<span>  <span class="va">gamma</span><span class="op">[</span><span class="fl">3</span>,<span class="fl">3</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span>               </span></code></pre></div>
+<p>Last step is the observation matrix, which we write as follows (its transposed for convenience):
+<span class="math display">\[\begin{matrix}
 &amp; \\
 \mathbf{\Gamma'} =
   \left ( \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \\ 12 \\ 12 \\ 12 \\ 12 \\ 12 \\ 12 \\ 12 \end{matrix} } \right .
@@ -672,7 +706,44 @@ z_{t-1}=M \\ z_{t-1}=F \\ z_{t-1}=D
 y_{t}=1 \\ y_{t}=2 \\ y_{t}=3 \\ y_{t}=4 \\ y_{t}=5 \\ y_{t}=6 \\ y_{t}=7 \\ y_{t}=8 \\ y_{t}=9 \\ y_{t}=10
 \end{matrix}
 \end{matrix}\]</span></p>
-<p>When an individual is encountered (with probability <span class="math inline">\(p\)</span>), there is some chance that it will be sexed (<span class="math inline">\(e\)</span>) based on its general appearance (body size: probability <span class="math inline">\(m_4\)</span>) or its behaviour (probability <span class="math inline">\(1 - m_4\)</span>). When behaviour is used, there are three different criteria (copulation, begging for food and courtship feeding), which occur with probabilities <span class="math inline">\(m_1\)</span>, <span class="math inline">\(m_2\)</span>, and <span class="math inline">\(m_3\)</span>, respectively. Finally, each criterion has its own reliability (probabilities <span class="math inline">\(x_1\)</span>, <span class="math inline">\(x_2\)</span>, <span class="math inline">\(x_3\)</span>, <span class="math inline">\(x_4\)</span>, where <span class="math inline">\(x_4\)</span> is the reliability of the body-size criterion). Might want to split this complex matrix in several steps, use binary tree as Figure 2 in <span class="citation">Genovart, Pradel, and Oro (<a href="references.html#ref-genovart_exploiting_2012">2012</a>)</span> (see also appendix S1 in <span class="citation">Genovart, Pradel, and Oro (<a href="references.html#ref-genovart_exploiting_2012">2012</a>)</span>).</p>
+<p>This matrix is a bit more complex than what we have encountered before, and needs some explanations. When an individual is encountered (with probability <span class="math inline">\(p\)</span>), there is some chance that it will be sexed (<span class="math inline">\(e\)</span>) based on its general appearance (body size: probability <span class="math inline">\(m_4\)</span>) or its behaviour (probability <span class="math inline">\(1 - m_4\)</span>). When behaviour is used, there are three different criteria (copulation, begging for food and courtship feeding), which occur with probabilities <span class="math inline">\(m_1\)</span>, <span class="math inline">\(m_2\)</span>, and <span class="math inline">\(m_3\)</span>, respectively. Finally, each criterion has its own reliability (probabilities <span class="math inline">\(x_1\)</span>, <span class="math inline">\(x_2\)</span>, <span class="math inline">\(x_3\)</span>, <span class="math inline">\(x_4\)</span>, where <span class="math inline">\(x_4\)</span> is the reliability of the body-size criterion).</p>
+<p>I admit that this matrix representation can be difficult to grasp at once. It can be easier to split the observation matrix in several steps, like encountering, sexing, body size sexing, sex determination and correctness, then to sketch a decision treeMaybe a binary tree like in Figure 2 in <span class="citation">Genovart, Pradel, and Oro (<a href="references.html#ref-genovart_exploiting_2012">2012</a>)</span> (see also appendix S1 in <span class="citation">Genovart, Pradel, and Oro (<a href="references.html#ref-genovart_exploiting_2012">2012</a>)</span>).</p>
+<p>In code, this gives:</p>
+<div class="sourceCode" id="cb332"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">omega</span><span class="op">[</span><span class="fl">1</span>,<span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span> <span class="op">-</span> <span class="va">p</span>                                  </span>
+<span><span class="va">omega</span><span class="op">[</span><span class="fl">1</span>,<span class="fl">2</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="va">p</span> <span class="op">*</span> <span class="va">e</span> <span class="op">*</span> <span class="op">(</span><span class="fl">1</span> <span class="op">-</span> <span class="va">m</span><span class="op">[</span><span class="fl">4</span><span class="op">]</span><span class="op">)</span> <span class="op">*</span> <span class="va">m</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span> <span class="op">*</span> <span class="va">x</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span>      </span>
+<span><span class="va">omega</span><span class="op">[</span><span class="fl">1</span>,<span class="fl">3</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="va">p</span> <span class="op">*</span> <span class="va">e</span> <span class="op">*</span> <span class="op">(</span><span class="fl">1</span> <span class="op">-</span> <span class="va">m</span><span class="op">[</span><span class="fl">4</span><span class="op">]</span><span class="op">)</span> <span class="op">*</span> <span class="va">m</span><span class="op">[</span><span class="fl">2</span><span class="op">]</span> <span class="op">*</span> <span class="va">x</span><span class="op">[</span><span class="fl">2</span><span class="op">]</span>      </span>
+<span><span class="va">omega</span><span class="op">[</span><span class="fl">1</span>,<span class="fl">4</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="va">p</span> <span class="op">*</span> <span class="va">e</span> <span class="op">*</span> <span class="op">(</span><span class="fl">1</span> <span class="op">-</span> <span class="va">m</span><span class="op">[</span><span class="fl">4</span><span class="op">]</span><span class="op">)</span> <span class="op">*</span> <span class="va">m</span><span class="op">[</span><span class="fl">3</span><span class="op">]</span> <span class="op">*</span> <span class="va">x</span><span class="op">[</span><span class="fl">3</span><span class="op">]</span>      </span>
+<span><span class="va">omega</span><span class="op">[</span><span class="fl">1</span>,<span class="fl">5</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="va">p</span> <span class="op">*</span> <span class="va">e</span> <span class="op">*</span> <span class="va">m</span><span class="op">[</span><span class="fl">4</span><span class="op">]</span> <span class="op">*</span> <span class="va">x</span><span class="op">[</span><span class="fl">4</span><span class="op">]</span>      </span>
+<span><span class="va">omega</span><span class="op">[</span><span class="fl">1</span>,<span class="fl">6</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="va">p</span> <span class="op">*</span> <span class="va">e</span> <span class="op">*</span> <span class="op">(</span><span class="fl">1</span> <span class="op">-</span> <span class="va">m</span><span class="op">[</span><span class="fl">4</span><span class="op">]</span><span class="op">)</span> <span class="op">*</span> <span class="va">m</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span> <span class="op">*</span> <span class="op">(</span><span class="fl">1</span> <span class="op">-</span> <span class="va">x</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span><span class="op">)</span>      </span>
+<span><span class="va">omega</span><span class="op">[</span><span class="fl">1</span>,<span class="fl">7</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="va">p</span> <span class="op">*</span> <span class="va">e</span> <span class="op">*</span> <span class="op">(</span><span class="fl">1</span> <span class="op">-</span> <span class="va">m</span><span class="op">[</span><span class="fl">4</span><span class="op">]</span><span class="op">)</span> <span class="op">*</span> <span class="va">m</span><span class="op">[</span><span class="fl">2</span><span class="op">]</span> <span class="op">*</span> <span class="op">(</span><span class="fl">1</span> <span class="op">-</span> <span class="va">x</span><span class="op">[</span><span class="fl">2</span><span class="op">]</span><span class="op">)</span>      </span>
+<span><span class="va">omega</span><span class="op">[</span><span class="fl">1</span>,<span class="fl">8</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="va">p</span> <span class="op">*</span> <span class="va">e</span> <span class="op">*</span> <span class="op">(</span><span class="fl">1</span> <span class="op">-</span> <span class="va">m</span><span class="op">[</span><span class="fl">4</span><span class="op">]</span><span class="op">)</span> <span class="op">*</span> <span class="va">m</span><span class="op">[</span><span class="fl">3</span><span class="op">]</span> <span class="op">*</span> <span class="op">(</span><span class="fl">1</span> <span class="op">-</span> <span class="va">x</span><span class="op">[</span><span class="fl">3</span><span class="op">]</span><span class="op">)</span>      </span>
+<span><span class="va">omega</span><span class="op">[</span><span class="fl">1</span>,<span class="fl">9</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="va">p</span> <span class="op">*</span> <span class="va">e</span> <span class="op">*</span> <span class="va">m</span><span class="op">[</span><span class="fl">4</span><span class="op">]</span> <span class="op">*</span> <span class="op">(</span><span class="fl">1</span> <span class="op">-</span> <span class="va">x</span><span class="op">[</span><span class="fl">4</span><span class="op">]</span><span class="op">)</span>      </span>
+<span><span class="va">omega</span><span class="op">[</span><span class="fl">1</span>,<span class="fl">10</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="va">p</span> <span class="op">*</span> <span class="op">(</span><span class="fl">1</span> <span class="op">-</span> <span class="va">e</span><span class="op">)</span>      </span>
+<span></span>
+<span><span class="va">omega</span><span class="op">[</span><span class="fl">2</span>,<span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span> <span class="op">-</span> <span class="va">p</span>                                  </span>
+<span><span class="va">omega</span><span class="op">[</span><span class="fl">2</span>,<span class="fl">2</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="va">p</span> <span class="op">*</span> <span class="va">e</span> <span class="op">*</span> <span class="op">(</span><span class="fl">1</span> <span class="op">-</span> <span class="va">m</span><span class="op">[</span><span class="fl">4</span><span class="op">]</span><span class="op">)</span> <span class="op">*</span> <span class="va">m</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span> <span class="op">*</span> <span class="op">(</span><span class="fl">1</span> <span class="op">-</span> <span class="va">x</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span><span class="op">)</span>      </span>
+<span><span class="va">omega</span><span class="op">[</span><span class="fl">2</span>,<span class="fl">3</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="va">p</span> <span class="op">*</span> <span class="va">e</span> <span class="op">*</span> <span class="op">(</span><span class="fl">1</span> <span class="op">-</span> <span class="va">m</span><span class="op">[</span><span class="fl">4</span><span class="op">]</span><span class="op">)</span> <span class="op">*</span> <span class="va">m</span><span class="op">[</span><span class="fl">2</span><span class="op">]</span> <span class="op">*</span> <span class="op">(</span><span class="fl">1</span> <span class="op">-</span> <span class="va">x</span><span class="op">[</span><span class="fl">2</span><span class="op">]</span><span class="op">)</span>      </span>
+<span><span class="va">omega</span><span class="op">[</span><span class="fl">2</span>,<span class="fl">4</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="va">p</span> <span class="op">*</span> <span class="va">e</span> <span class="op">*</span> <span class="op">(</span><span class="fl">1</span> <span class="op">-</span> <span class="va">m</span><span class="op">[</span><span class="fl">4</span><span class="op">]</span><span class="op">)</span> <span class="op">*</span> <span class="va">m</span><span class="op">[</span><span class="fl">3</span><span class="op">]</span> <span class="op">*</span> <span class="op">(</span><span class="fl">1</span> <span class="op">-</span> <span class="va">x</span><span class="op">[</span><span class="fl">3</span><span class="op">]</span><span class="op">)</span>      </span>
+<span><span class="va">omega</span><span class="op">[</span><span class="fl">2</span>,<span class="fl">5</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="va">p</span> <span class="op">*</span> <span class="va">e</span> <span class="op">*</span> <span class="va">m</span><span class="op">[</span><span class="fl">4</span><span class="op">]</span> <span class="op">*</span> <span class="op">(</span><span class="fl">1</span> <span class="op">-</span> <span class="va">x</span><span class="op">[</span><span class="fl">4</span><span class="op">]</span><span class="op">)</span>      </span>
+<span><span class="va">omega</span><span class="op">[</span><span class="fl">2</span>,<span class="fl">6</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="va">p</span> <span class="op">*</span> <span class="va">e</span> <span class="op">*</span> <span class="op">(</span><span class="fl">1</span> <span class="op">-</span> <span class="va">m</span><span class="op">[</span><span class="fl">4</span><span class="op">]</span><span class="op">)</span> <span class="op">*</span> <span class="va">m</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span> <span class="op">*</span> <span class="va">x</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span>      </span>
+<span><span class="va">omega</span><span class="op">[</span><span class="fl">2</span>,<span class="fl">7</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="va">p</span> <span class="op">*</span> <span class="va">e</span> <span class="op">*</span> <span class="op">(</span><span class="fl">1</span> <span class="op">-</span> <span class="va">m</span><span class="op">[</span><span class="fl">4</span><span class="op">]</span><span class="op">)</span> <span class="op">*</span> <span class="va">m</span><span class="op">[</span><span class="fl">2</span><span class="op">]</span> <span class="op">*</span> <span class="va">x</span><span class="op">[</span><span class="fl">2</span><span class="op">]</span>     </span>
+<span><span class="va">omega</span><span class="op">[</span><span class="fl">2</span>,<span class="fl">8</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="va">p</span> <span class="op">*</span> <span class="va">e</span> <span class="op">*</span> <span class="op">(</span><span class="fl">1</span> <span class="op">-</span> <span class="va">m</span><span class="op">[</span><span class="fl">4</span><span class="op">]</span><span class="op">)</span> <span class="op">*</span> <span class="va">m</span><span class="op">[</span><span class="fl">3</span><span class="op">]</span> <span class="op">*</span> <span class="va">x</span><span class="op">[</span><span class="fl">3</span><span class="op">]</span>   </span>
+<span><span class="va">omega</span><span class="op">[</span><span class="fl">2</span>,<span class="fl">9</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="va">p</span> <span class="op">*</span> <span class="va">e</span> <span class="op">*</span> <span class="va">m</span><span class="op">[</span><span class="fl">4</span><span class="op">]</span> <span class="op">*</span> <span class="va">x</span><span class="op">[</span><span class="fl">4</span><span class="op">]</span>   </span>
+<span><span class="va">omega</span><span class="op">[</span><span class="fl">2</span>,<span class="fl">10</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="va">p</span> <span class="op">*</span> <span class="op">(</span><span class="fl">1</span> <span class="op">-</span> <span class="va">e</span><span class="op">)</span>      </span>
+<span></span>
+<span><span class="va">omega</span><span class="op">[</span><span class="fl">3</span>,<span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span>                                  </span>
+<span><span class="va">omega</span><span class="op">[</span><span class="fl">3</span>,<span class="fl">2</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0</span>     </span>
+<span><span class="va">omega</span><span class="op">[</span><span class="fl">3</span>,<span class="fl">3</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0</span>     </span>
+<span><span class="va">omega</span><span class="op">[</span><span class="fl">3</span>,<span class="fl">4</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0</span>     </span>
+<span><span class="va">omega</span><span class="op">[</span><span class="fl">3</span>,<span class="fl">5</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0</span>     </span>
+<span><span class="va">omega</span><span class="op">[</span><span class="fl">3</span>,<span class="fl">6</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0</span>     </span>
+<span><span class="va">omega</span><span class="op">[</span><span class="fl">3</span>,<span class="fl">7</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0</span>     </span>
+<span><span class="va">omega</span><span class="op">[</span><span class="fl">3</span>,<span class="fl">8</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0</span>     </span>
+<span><span class="va">omega</span><span class="op">[</span><span class="fl">3</span>,<span class="fl">9</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0</span>     </span>
+<span><span class="va">omega</span><span class="op">[</span><span class="fl">3</span>,<span class="fl">10</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0</span>     </span></code></pre></div>
+<p>At first detection, the observation ‘not detected’ is impossible by construction (we condition on the first detection). We therefore use an initial observation matrix <span class="math inline">\(\mathbf{\Omega}_{\text{init}}\)</span> with <span class="math inline">\(p\)</span> set to 1 (not shown).</p>
+<p>The likelihood and priors are handled as usual.</p>
 <!-- sm=b(1); % b(1) survie male -->
 <!-- sf=b(2); % b(2) survie femelle -->
 <!-- p=zeros(10,1); -->
@@ -717,7 +788,12 @@ y_{t}=1 \\ y_{t}=2 \\ y_{t}=3 \\ y_{t}=4 \\ y_{t}=5 \\ y_{t}=6 \\ y_{t}=7 \\ y_{
 <!-- % 7-role femelle dans "courtship feeding" -->
 <!-- % 8-petite taille relative -->
 <!-- % 9-pas de jugement -->
-<p>Results</p>
+</div>
+<div id="results-2" class="section level3" number="6.4.3">
+<h3>
+<span class="header-section-number">6.4.3</span> Results<a class="anchor" aria-label="anchor" href="#results-2"><i class="fas fa-link"></i></a>
+</h3>
+<p>Here are the raw results:</p>
 <pre><code>##      mean   sd 2.5%  50% 97.5% Rhat n.eff
 ## e    0.07 0.00 0.07 0.07  0.07 1.01   589
 ## m[1] 0.29 0.02 0.26 0.29  0.32 1.00   913
@@ -732,8 +808,104 @@ y_{t}=1 \\ y_{t}=2 \\ y_{t}=3 \\ y_{t}=4 \\ y_{t}=5 \\ y_{t}=6 \\ y_{t}=7 \\ y_{
 ## x[2] 0.55 0.02 0.50 0.55  0.60 1.01   725
 ## x[3] 0.54 0.05 0.44 0.55  0.65 1.00   927
 ## x[4] 0.58 0.04 0.50 0.58  0.67 1.00   753</code></pre>
-<p>Compare with Table 5 in <span class="citation">Pradel et al. (<a href="references.html#ref-pradel2008sex">2008</a>)</span>. Note we should have used the generalized logit or Dirichlet prior. Some discrepancy with x that i can’t explain. Detection is constant, but making it time dependent does not change anything.</p>
-<p>Maybe try to implement it with nimbleEcology?</p>
+<p>which we can arrange in a table to compare them with the results obtained by <span class="citation">Pradel et al. (<a href="references.html#ref-pradel2008sex">2008</a>)</span>:</p>
+<div class="inline-table"><table class="table table-sm">
+<caption>
+<span id="tab:unnamed-chunk-376">Table 6.2: </span>Comparison with Pradel et al. (2007) Table 5, Model B (no genetically sexed anchors). Our error rates are 1 − x[i]. Pradel’s m4 is time-varying; the estimates provided by the main author for m4(t) were for t=1..10: 0.001, 0.002, 0.004, 0.007, 0.014, 0.026, 0.047, 0.084, 0.146, 0.242.</caption>
+<colgroup>
+<col width="5%">
+<col width="30%">
+<col width="20%">
+<col width="43%">
+</colgroup>
+<thead><tr class="header">
+<th align="left"></th>
+<th align="left">Quantity</th>
+<th align="center">Our (NIMBLE)</th>
+<th align="center">Pradel et al. (2007) Table 5, Model B</th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td align="left">pi</td>
+<td align="left">
+<span class="math inline">\(\mu\)</span> (proportion male)</td>
+<td align="center">0.52 (0.50–0.55)</td>
+<td align="center">0.5325 (SE 0.0286)</td>
+</tr>
+<tr class="even">
+<td align="left">phiF</td>
+<td align="left">
+<span class="math inline">\(\phi_F\)</span> (female survival)</td>
+<td align="center">0.90 (0.89–0.91)</td>
+<td align="center">0.9122 (SE 0.0142)</td>
+</tr>
+<tr class="odd">
+<td align="left">phiM</td>
+<td align="left">
+<span class="math inline">\(\phi_M\)</span> (male survival)</td>
+<td align="center">0.89 (0.88–0.90)</td>
+<td align="center">0.8597 (SE 0.0141)</td>
+</tr>
+<tr class="even">
+<td align="left">m[1]</td>
+<td align="left">
+<span class="math inline">\(m_1\)</span> (Copulation)</td>
+<td align="center">0.29 (0.26–0.32)</td>
+<td align="center">0.2904 (const.)</td>
+</tr>
+<tr class="odd">
+<td align="left">m[2]</td>
+<td align="left">
+<span class="math inline">\(m_2\)</span> (Begging)</td>
+<td align="center">0.60 (0.56–0.63)</td>
+<td align="center">0.5973 (const.)</td>
+</tr>
+<tr class="even">
+<td align="left">m[3]</td>
+<td align="left">
+<span class="math inline">\(m_3\)</span> (Courtship feeding)</td>
+<td align="center">0.11 (0.09–0.14)</td>
+<td align="center">0.1123 (const.)</td>
+</tr>
+<tr class="odd">
+<td align="left">m[4]</td>
+<td align="left">
+<span class="math inline">\(m_4\)</span> (Body size)</td>
+<td align="center">0.17 (0.14–0.19)</td>
+<td align="center">time-varying (see caption)</td>
+</tr>
+<tr class="even">
+<td align="left">x[1]</td>
+<td align="left">Error (Copulation)</td>
+<td align="center">0.48 (0.42–0.55)</td>
+<td align="center">0.0577 (SE 0.0407)</td>
+</tr>
+<tr class="odd">
+<td align="left">x[2]</td>
+<td align="left">Error (Begging)</td>
+<td align="center">0.45 (0.40–0.50)</td>
+<td align="center">0.0561 (SE 0.0308)</td>
+</tr>
+<tr class="even">
+<td align="left">x[3]</td>
+<td align="left">Error (Courtship feeding)</td>
+<td align="center">0.46 (0.35–0.56)</td>
+<td align="center">0.0000 (SE 0.1553)</td>
+</tr>
+<tr class="odd">
+<td align="left">x[4]</td>
+<td align="left">Error (Body size)</td>
+<td align="center">0.42 (0.33–0.50)</td>
+<td align="center">0.0928 (SE 0.0741)</td>
+</tr>
+</tbody>
+</table></div>
+<p>Our NIMBLE fit recovers the main biological signals reported for the Audouin’s gulls analysis. Survival shows the expected ordering – adult females ≥ adult males – with broadly overlapping intervals and means that are close to the published model. In our run, the female–male gap is a bit smaller (≈0.90 vs 0.89), but the direction matches the paper’s message (higher female survival).</p>
+<p>We used a single, constant detection probability and obtained <span class="math inline">\(p≈0.65\)</span>, which sits near the middle of the year‐specific values reported in the paper.</p>
+<p>The estimated probabilities of which clue is used align closely with the published analysis for the three ‘behavioural’ criteria: <span class="math inline">\(m_1 \approx 0.29\)</span> (copulation), <span class="math inline">\(m_2 \approx 0.60\)</span> (begging), <span class="math inline">\(m_3 \approx 0.11\)</span> (courtship feeding). The paper lets body size use vary over time; our constant estimate (<span class="math inline">\(m_4 \approx 0.17\)</span>) should be read as a pooled average across years—consistent with their finding of a low but increasing use of this criterion.</p>
+<p>The main tension with lies in the error rates by criterion. The published analysis finds low misclassification (roughly 5–10% for most criteria, with a very imprecise estimate for courtship feeding). Our fit suggests substantially higher error across criteria. That discrepancy is where we expect sensitivity when there are no known‐sex anchors (and some components are simplified). Without anchors, the model can admit dual solutions (swapping sex labels and flipping error probabilities) that fit nearly equally well; small modelling choices or initial values can tip the chain toward one mode, see <span class="citation">Pradel et al. (<a href="references.html#ref-pradel2008sex">2008</a>)</span>.</p>
+<p>Our estimate of the proportion of males at first encounter (<span class="math inline">\(\mu \approx 0.52\)</span>) agrees closely with the published result, reinforcing that the state mix is well constrained by the data even when sex is uncertain.</p>
+<p>To conclude, the sex‐uncertainty HMM retrieves the core demographic pattern (female ≥ male survival) and matches the paper on overall detectability and the use of criteria. To mirror the published results more closely, one could add a small anchor set of genetically sexed individuals (an information used in <span class="citation">Pradel et al. (<a href="references.html#ref-pradel2008sex">2008</a>)</span> but that I did not have).</p>
 <!-- ## Covariate selection with reversible jump MCMC -->
 <!-- RJMCMC in @gimenez2009fitness on Common blackbirds or @gimenez2009winbugs on White stork. -->
 <!-- As an illustration, we use data on the white stork *Ciconia ciconia* population in Baden Wurttemberg (Germany), consisting of 321 capture histories of individuals ringed as chicks between 1956 and 1971. From the 60's to the 90's, all Western European stork populations were declining @bair91. This trend was likely the result of reduced food availability @schau05 caused by severe droughts observed in the wintering ground of storks in the Sahel region. This hypothesis has been examined in several studies (@kanya90 and @barb99).  -->
@@ -756,6 +928,7 @@ y_{t}=1 \\ y_{t}=2 \\ y_{t}=3 \\ y_{t}=4 \\ y_{t}=5 \\ y_{t}=6 \\ y_{t}=7 \\ y_{
 
 </div>
 </div>
+</div>
   <div class="chapter-nav">
 <div class="prev"><a href="introduction-7.html">Introduction</a></div>
 <div class="next"><a href="lackoffit.html"><span class="header-section-number">7</span> Addressing model lack of fit</a></div>
@@ -772,13 +945,19 @@ y_{t}=1 \\ y_{t}=2 \\ y_{t}=3 \\ y_{t}=4 \\ y_{t}=5 \\ y_{t}=6 \\ y_{t}=7 \\ y_{
 </ul>
 </li>
 <li>
-<a class="nav-link" href="#uncertainty-in-age"><span class="header-section-number">6.3</span> Uncertainty in age</a><ul class="nav navbar-nav">
+<a class="nav-link" href="#ageuncertainty"><span class="header-section-number">6.3</span> Uncertainty in age</a><ul class="nav navbar-nav">
 <li><a class="nav-link" href="#motivation-1"><span class="header-section-number">6.3.1</span> Motivation</a></li>
 <li><a class="nav-link" href="#model-and-nimble-implementation-1"><span class="header-section-number">6.3.2</span> Model and NIMBLE implementation</a></li>
 <li><a class="nav-link" href="#results-1"><span class="header-section-number">6.3.3</span> Results</a></li>
 </ul>
 </li>
-<li><a class="nav-link" href="#uncertainty-in-sex"><span class="header-section-number">6.4</span> Uncertainty in sex</a></li>
+<li>
+<a class="nav-link" href="#uncertainty-in-sex"><span class="header-section-number">6.4</span> Uncertainty in sex</a><ul class="nav navbar-nav">
+<li><a class="nav-link" href="#motivation-2"><span class="header-section-number">6.4.1</span> Motivation</a></li>
+<li><a class="nav-link" href="#model-and-nimble-implementation-2"><span class="header-section-number">6.4.2</span> Model and NIMBLE implementation</a></li>
+<li><a class="nav-link" href="#results-2"><span class="header-section-number">6.4.3</span> Results</a></li>
+</ul>
+</li>
 </ul>
 
       <div class="book-extra">
