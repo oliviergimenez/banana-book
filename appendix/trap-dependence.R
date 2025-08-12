@@ -9,6 +9,17 @@
 # read in data
 y <- as.matrix(read.table(here::here("dat", "calonectris_diomedea.txt")))
 
+# gof
+library(R2ucare)
+size <- rep(1, nrow(y))
+overall_CJS(y, size)
+# test for transience
+test3sr(y, size)
+# test for trap-dependence:
+test2ct(y, size)
+
+
+
 # OBS
 # 1 not seen
 # 2 seen
@@ -29,7 +40,7 @@ hmm.td <- nimbleCode({
   phi2 <- beta[2]
   p ~ dunif(0, 1) # prior detection
   pprime ~ dunif(0, 1) # prior detection
-  pi ~ dunif(0, 1) # prob init state 1
+  #pi ~ dunif(0, 1) # prob init state 1
   
   # HMM ingredients
   for (i in 1:N){
@@ -47,8 +58,8 @@ hmm.td <- nimbleCode({
     }
   }
   
-  delta[1] <- pi                      # Pr(alive t = 1) = pi
-  delta[2] <- 1 - pi                  # Pr(alive t = 1) = 1 - pi
+  delta[1] <- 1                      # Pr(alive t = 1) = pi
+  delta[2] <- 0                  # Pr(alive t = 1) = 1 - pi
   delta[3] <- 0                       # Pr(dead t = 1) = 0
   omega[1,1] <- 0                     # Pr(alive state 1 t -> non-detected t)
   omega[1,2] <- 1                     # Pr(alive state 1 t -> detected t)
@@ -76,6 +87,7 @@ hmm.td <- nimbleCode({
 
 # age effect via an individual by time covariate and use nested indexing 
 # to distinguish survival over the interval after first detection from survival afterwards: 
+first <- apply(y, 1, function(x) min(which(x != 0)))
 age <- matrix(NA, nrow = nrow(y), ncol = ncol(y) - 1)
 for (i in 1:nrow(age)){
   for (j in 1:ncol(age)){
@@ -84,7 +96,6 @@ for (i in 1:nrow(age)){
   }
 }
 
-first <- apply(y, 1, function(x) min(which(x != 0)))
 my.constants <- list(N = nrow(y), K = ncol(y), first = first, age = age)
 my.data <- list(y = y + 1)
 
@@ -106,7 +117,7 @@ my.data <- list(y = y + 1)
 # 
 
 # Alternative approach: Viterbi-like initialization
-create_initial_z <- function(y, first, phi = 0.9, p = 0.5, pprime = 0.5, pi = 0.5) {
+create_initial_z <- function(y, first, phi = 0.9, p = 0.5, pprime = 0.5, pi = 1) {
   N <- nrow(y)
   K <- ncol(y)
   zinit <- matrix(3, N, K)  # initialize all as dead
@@ -183,13 +194,13 @@ initial.values <- function() {
   p <- runif(1, 0, 1)
   pprime <- runif(1, 0, 1)
   pi <- runif(1, 0, 1)
-  zinit <- create_initial_z(y, first, phi, p, pprime, pi)
-  list(beta = beta, p = p, pprime = pprime, pi = pi, z = zinit)
+  zinit <- create_initial_z(y, first, phi = beta[1], p, pprime, pi = 1)
+  list(beta = beta, p = p, pprime = pprime, z = zinit)
 }
 
 initial.values()
 
-parameters.to.save <- c("phi1", "phi2", "p", "pprime", "pi")
+parameters.to.save <- c("phi1", "phi2", "p", "pprime")
 
 n.iter <- 2500
 n.burnin <- 500

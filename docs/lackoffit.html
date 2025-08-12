@@ -6,15 +6,15 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <title>Chapter 7 Addressing model lack of fit | Bayesian analysis of capture-recapture data with hidden Markov models</title>
 <meta name="author" content="Olivier Gimenez">
-<meta name="description" content="WORK IN PROGRESS  7.1 Individual heterogeneity Gray wolf is a social species with hierarchy in packs which may reflect in demography. Shirley Pledger in a series of papers developed heterogeneity...">
+<meta name="description" content="7.1 Introduction Capture–recapture models rely on assumptions that must hold for inference to be reliable. In Section 4.7, we saw what can go wrong and how to diagnose those issues. In this...">
 <meta name="generator" content="bookdown 0.43 with bs4_book()">
 <meta property="og:title" content="Chapter 7 Addressing model lack of fit | Bayesian analysis of capture-recapture data with hidden Markov models">
 <meta property="og:type" content="book">
 <meta property="og:url" content="https://oliviergimenez.github.io/banana-book/lackoffit.html">
-<meta property="og:description" content="WORK IN PROGRESS  7.1 Individual heterogeneity Gray wolf is a social species with hierarchy in packs which may reflect in demography. Shirley Pledger in a series of papers developed heterogeneity...">
+<meta property="og:description" content="7.1 Introduction Capture–recapture models rely on assumptions that must hold for inference to be reliable. In Section 4.7, we saw what can go wrong and how to diagnose those issues. In this...">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="Chapter 7 Addressing model lack of fit | Bayesian analysis of capture-recapture data with hidden Markov models">
-<meta name="twitter:description" content="WORK IN PROGRESS  7.1 Individual heterogeneity Gray wolf is a social species with hierarchy in packs which may reflect in demography. Shirley Pledger in a series of papers developed heterogeneity...">
+<meta name="twitter:description" content="7.1 Introduction Capture–recapture models rely on assumptions that must hold for inference to be reliable. In Section 4.7, we saw what can go wrong and how to diagnose those issues. In this...">
 <!-- JS --><script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.6/clipboard.min.js" integrity="sha256-inc5kl9MA1hkeYUt+EC3BhlIgyp/2jDIyBLS6k3UxPI=" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/fuse.js/6.4.6/fuse.js" integrity="sha512-zv6Ywkjyktsohkbp9bb45V6tEMoWhzFzXis+LrMehmJZZSys19Yxf1dopHx7WzIKxr5tK2dVcYmaCk2uqdjF4A==" crossorigin="anonymous"></script><script src="https://kit.fontawesome.com/6ecbd6c532.js" crossorigin="anonymous"></script><script src="libs/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <link href="libs/bootstrap-4.6.0/bootstrap.min.css" rel="stylesheet">
 <script src="libs/bootstrap-4.6.0/bootstrap.bundle.min.js"></script><script src="libs/bs3compat-0.9.0/transition.js"></script><script src="libs/bs3compat-0.9.0/tabs.js"></script><script src="libs/bs3compat-0.9.0/bs3compat.js"></script><link href="libs/bs4_book-1.0.0/bs4_book.css" rel="stylesheet">
@@ -97,203 +97,174 @@
 <h1>
 <span class="header-section-number">7</span> Addressing model lack of fit<a class="anchor" aria-label="anchor" href="#lackoffit"><i class="fas fa-link"></i></a>
 </h1>
-<p>WORK IN PROGRESS</p>
-<div id="individual-heterogeneity" class="section level2" number="7.1">
+<div id="introduction-9" class="section level2" number="7.1">
 <h2>
-<span class="header-section-number">7.1</span> Individual heterogeneity<a class="anchor" aria-label="anchor" href="#individual-heterogeneity"><i class="fas fa-link"></i></a>
+<span class="header-section-number">7.1</span> Introduction<a class="anchor" aria-label="anchor" href="#introduction-9"><i class="fas fa-link"></i></a>
 </h2>
-<p>Gray wolf is a social species with hierarchy in packs which may reflect in demography. Shirley Pledger in a series of papers developed heterogeneity models in which individuals are assigned in two or more classes with class-specific survival/detection probabilities. <span class="citation">Cubaynes et al. (<a href="references.html#ref-cubaynes_importance_2010">2010</a>)</span> used HMMs to account for heterogeneity in the detection process due to social status, see also <span class="citation">Pradel (<a href="references.html#ref-pradel2009">2009</a>)</span> w/ example on black-headed gull. Dominant individuals tend to use path more often than others, and these paths are where we look for scats.</p>
-<p>You may consider more classes, and select among models, see <span class="citation">Cubaynes et al. (<a href="references.html#ref-cubaynes2012">2012</a>)</span>, not an easy problem. Alternatively, you may also go for a non-parametric approach and let the data tell you how many classes you need. This is relatively easy to do in NIMBLE, see <span class="citation">Turek, Wehrhahn, and Gimenez (<a href="references.html#ref-turek_bayesian_2021">2021</a>)</span>. More about individual heterogeneity in <span class="citation">Gimenez, Cam, and Gaillard (<a href="references.html#ref-gimenez2018ih">2018</a>)</span>.</p>
-<!-- ```{r pixwolf, echo=FALSE, fig.cap="Dominance in wolves.", fig.align='center'} -->
-<!-- knitr::include_graphics("images/wolfdominance.jpg") -->
-<!-- ``` -->
-<p>Individual heterogeneity</p>
+<p>Capture–recapture models rely on assumptions that must hold for inference to be reliable. In Section <a href="survival.html#gof">4.7</a>, we saw what can go wrong and how to diagnose those issues. In this chapter, we turn to remedies and show how to fix them by building models that explicitly accommodate lack of fit. We focus on three themes: trap-dependence (detection today affects detection tomorrow), memory in the state process (the Markov assumption is too short – transitions depend on more than the current state), and individual heterogeneity (persistent differences among animals).</p>
+</div>
+<div id="trapdep" class="section level2" number="7.2">
+<h2>
+<span class="header-section-number">7.2</span> Accounting for trap-dependence<a class="anchor" aria-label="anchor" href="#trapdep"><i class="fas fa-link"></i></a>
+</h2>
+<div id="motivation-3" class="section level3" number="7.2.1">
+<h3>
+<span class="header-section-number">7.2.1</span> Motivation<a class="anchor" aria-label="anchor" href="#motivation-3"><i class="fas fa-link"></i></a>
+</h3>
+<p>Capture–recapture inference can go sideways when detection depends on past capture. If animals become trap‐shy (avoid traps) or trap‐happy (seek them) after being caught, the independence assumption breaks, and survival or detection can be biased if we ignore it. Tests for this trap‐dependence exist, see Section <a href="survival.html#gof">4.7</a>, and surveys show it’s common across taxa – roughly 70% of reviewed studies reported evidence for it <span class="citation">Pradel and Sanz-Aguilar (<a href="references.html#ref-pradeltrapdep2012">2012</a>)</span>.</p>
+<p>The fix is to encode the behavioural response. Following <span class="citation">Pradel and Sanz-Aguilar (<a href="references.html#ref-pradeltrapdep2012">2012</a>)</span>, we treat trap‐awareness as a (possibly temporary) state: right after a capture, individuals move to a “trap‐aware” state with its own detection probability, so that detection at time <span class="math inline">\(t+1\)</span> can differ for animals caught vs. not caught at <span class="math inline">\(t\)</span>. This HMM formulation avoids awkward data splitting, plays nicely with age or covariates, and is equivalent to the classic approach when both are fitted to the same data. Importantly, in the authors’ example, ignoring trap‐dependence underestimated survival, illustrating why modelling trap-dependence matters.</p>
+<p>Here, we adopt that logic in NIMBLE: define a trap‐aware state, let detection depend on it, and keep the rest of the HMM machinery unchanged.</p>
+</div>
+<div id="model-and-nimble-implementation-3" class="section level3" number="7.2.2">
+<h3>
+<span class="header-section-number">7.2.2</span> Model and NIMBLE implementation<a class="anchor" aria-label="anchor" href="#model-and-nimble-implementation-3"><i class="fas fa-link"></i></a>
+</h3>
+<p>For our example, we’ll work with data from 519 encounter histories of Cory’s shearwaters (<em>Calonectris diomedea</em>) marked as adults between 2001 and 2008 at Pantaleu Islet (Balearic Archipelago, Spain). If you perform goodness-of-fit tests on this dataset, as in Section <a href="survival.html#gof">4.7</a>, you will end up with a significant trap-dependence effect (as well as a transience effect). To build up our model and explicitely account for this lack of fit, we first define the states and observations:</p>
 <ul>
-<li><p>3 states</p></li>
-<li><p>alive in class 1 (A1)</p></li>
-<li><p>alive in class 2 (A2)</p></li>
-<li><p>dead (D)</p></li>
-<li><p>2 observations</p></li>
-<li><p>not captured (1)</p></li>
-<li><p>captured (2)</p></li>
+<li><p>states<br>
+- A ‘trap aware’ is the original state of an individual when it is first released after marking<br>
+- U ‘trap unaware’ which follows any occasion where it is not captured<br>
+- D is for dead</p></li>
+<li><p>observations<br>
+- not detected (1)<br>
+- detected (2)</p></li>
 </ul>
-<p>Vector of initial state probabilities</p>
-<p><span class="math display">\[\begin{matrix}
+<p>Now we turn to writing our model.</p>
+<p>We start with the vector of initial states. Individuals enter as trap-aware with probability 1:
+<span class="math display">\[\begin{matrix}
 &amp; \\
 \mathbf{\delta} =
-  \left ( \vphantom{ \begin{matrix} 12 \end{matrix} } \right .
-          \end{matrix}
-          \hspace{-1.2em}
-          \begin{matrix}
-          z_t=A1 &amp; z_t=A2 &amp; z_t=D \\ \hdashline
-          \pi &amp; 1 - \pi &amp; 0\\
-          \end{matrix}
-          \hspace{-0.2em}
-          \begin{matrix}
-          &amp; \\
-          \left . \vphantom{ \begin{matrix} 12 \end{matrix} } \right )
+\left ( \vphantom{ \begin{matrix} 12 \end{matrix} } \right .
+\end{matrix}
+\hspace{-1.2em}
+\begin{matrix}
+z_t=A &amp; z_t=U &amp; z_t=D \\ \hdashline
+1 &amp; 0 &amp; 0\\
+\end{matrix}
+\hspace{-0.2em}
+\begin{matrix}
+&amp; \\
+\left . \vphantom{ \begin{matrix} 12 \end{matrix} } \right )
 \begin{matrix}
 \end{matrix}
 \end{matrix}\]</span></p>
-<p><span class="math inline">\(\pi\)</span> is the probability of being alive in class 1. <span class="math inline">\(1 - \pi\)</span> is the probability of being in class 2.</p>
-<p>Transition matrix</p>
-<p><span class="math display">\[\begin{matrix}
+<p>We proceed with the transition matrix:
+<span class="math display">\[\begin{matrix}
 &amp; \\
 \mathbf{\Gamma} =
-  \left ( \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \end{matrix} } \right .
-          \end{matrix}
-          \hspace{-1.2em}
-          \begin{matrix}
-          z_t=A1 &amp; z_t=A2 &amp; z_t=D \\ \hdashline
-          \phi  &amp; 0 &amp; 1 - \phi\\
-          0 &amp; \phi &amp; 1 - \phi\\
-          0 &amp; 0 &amp; 1
-          \end{matrix}
-          \hspace{-0.2em}
-          \begin{matrix}
-          &amp; \\
-          \left . \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \end{matrix} } \right )
-\begin{matrix}
-z_{t-1}=A1 \\ z_{t-1}=A2 \\ z_{t-1}=D
+\left ( \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \end{matrix} } \right .
 \end{matrix}
-\end{matrix}\]</span></p>
-<p><span class="math inline">\(\phi\)</span> is the survival probability, which could be made heterogeneous.</p>
-<p>Transition matrix, with change in heterogeneity class</p>
-<p><span class="math display">\[\begin{matrix}
+\hspace{-1.2em}
+\begin{matrix}
+z_t=A &amp; z_t=U &amp; z_t=D \\ \hdashline
+\phi p' &amp; \phi (1-p') &amp; 1 - \phi\\
+\phi p &amp; \phi (1-p) &amp; 1 - \phi\\
+0 &amp; 0 &amp; 1
+\end{matrix}
+\hspace{-0.2em}
+\begin{matrix}
 &amp; \\
-\mathbf{\Gamma} =
-  \left ( \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \end{matrix} } \right .
-          \end{matrix}
-          \hspace{-1.2em}
-          \begin{matrix}
-          z_t=A1 &amp; z_t=A2 &amp; z_t=D \\ \hdashline
-          \phi (1-\psi^{12}) &amp; \phi \psi^{12} &amp; 1 - \phi\\
-          \phi \psi^{21} &amp; \phi (1-\psi^{21}) &amp; 1 - \phi\\
-          0 &amp; 0 &amp; 1
-          \end{matrix}
-          \hspace{-0.2em}
-          \begin{matrix}
-          &amp; \\
-          \left . \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \end{matrix} } \right )
+\left . \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \end{matrix} } \right )
 \begin{matrix}
-z_{t-1}=A1 \\ z_{t-1}=A2 \\ z_{t-1}=D
+z_{t-1}=A \\ z_{t-1}=U \\ z_{t-1}=D
 \end{matrix}
 \end{matrix}\]</span></p>
-<p><span class="math inline">\(\psi^{12}\)</span> is the probability for an individual to change class of heterogeneity, from 1 to 2. <span class="math inline">\(\psi^{21}\)</span> is the probability for an individual to change class of heterogeneity, from 2 to 1.</p>
-<p>Observation matrix</p>
-<p><span class="math display">\[\begin{matrix}
+<p>You might have noticed something ususual in that <span class="math inline">\(\mathbf{\Gamma}\)</span> contains both the survival and detection probabilities. Why is that? We track three hidden states from the end of session <span class="math inline">\(t\)</span> to <span class="math inline">\(t+1\)</span>: <span class="math inline">\(A =\)</span> trap-aware (the bird was just caught at <span class="math inline">\(t\)</span>), <span class="math inline">\(U =\)</span> trap-unaware (not caught at <span class="math inline">\(t\)</span>), and <span class="math inline">\(D =\)</span> dead. Between sessions, everyone either survives with probability <span class="math inline">\(\phi\)</span> or dies with <span class="math inline">\(1 - \phi\)</span> (which moves them to <span class="math inline">\(D\)</span>, an absorbing state). If alive at <span class="math inline">\(t+1\)</span>, the awareness flag for the next session is set by whether the bird gets caught at <span class="math inline">\(t+1\)</span>: those caught will be <span class="math inline">\(A\)</span> next time, those not caught will be <span class="math inline">\(U\)</span>. Because capture probabilities can differ by current awareness, we allow <span class="math inline">\(p'\)</span> for birds that were <span class="math inline">\(A\)</span> at <span class="math inline">\(t\)</span> and <span class="math inline">\(p\)</span> for birds that were <span class="math inline">\(U\)</span> at <span class="math inline">\(t\)</span>. If <span class="math inline">\(p'&gt;p\)</span> you have trap-happy behaviour (recently caught birds are easier to catch next time); if <span class="math inline">\(p'&lt;p\)</span>, it’s trap-shy. This ‘survive → update awareness via capture’ factorization is what the transition matrix formalizes.</p>
+<p>Following the paper, adult survival is age-specific to account for a transient effect, see Section <a href="survival.html#gof">4.7</a>:</p>
+<div class="sourceCode" id="cb334"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Transition matrix</span></span>
+<span>  <span class="kw">for</span> <span class="op">(</span><span class="va">i</span> <span class="kw">in</span> <span class="fl">1</span><span class="op">:</span><span class="va">N</span><span class="op">)</span><span class="op">{</span></span>
+<span>    <span class="kw">for</span> <span class="op">(</span><span class="va">t</span> <span class="kw">in</span> <span class="va">first</span><span class="op">[</span><span class="va">i</span><span class="op">]</span><span class="op">:</span><span class="op">(</span><span class="va">K</span><span class="op">-</span><span class="fl">1</span><span class="op">)</span><span class="op">)</span><span class="op">{</span></span>
+<span>      <span class="va">phi</span><span class="op">[</span><span class="va">i</span>,<span class="va">t</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="va">beta</span><span class="op">[</span><span class="va">age</span><span class="op">[</span><span class="va">i</span>,<span class="va">t</span><span class="op">]</span><span class="op">]</span> <span class="co"># beta1 = phi1, beta2 = phi2+</span></span>
+<span>      <span class="va">gamma</span><span class="op">[</span><span class="fl">1</span>,<span class="fl">1</span>,<span class="va">i</span>,<span class="va">t</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="va">phi</span><span class="op">[</span><span class="va">i</span>,<span class="va">t</span><span class="op">]</span> <span class="op">*</span> <span class="va">pprime</span></span>
+<span>      <span class="va">gamma</span><span class="op">[</span><span class="fl">1</span>,<span class="fl">2</span>,<span class="va">i</span>,<span class="va">t</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="va">phi</span><span class="op">[</span><span class="va">i</span>,<span class="va">t</span><span class="op">]</span> <span class="op">*</span> <span class="op">(</span><span class="fl">1</span> <span class="op">-</span> <span class="va">pprime</span><span class="op">)</span></span>
+<span>      <span class="va">gamma</span><span class="op">[</span><span class="fl">1</span>,<span class="fl">3</span>,<span class="va">i</span>,<span class="va">t</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span> <span class="op">-</span> <span class="va">phi</span><span class="op">[</span><span class="va">i</span>,<span class="va">t</span><span class="op">]</span></span>
+<span>      <span class="va">gamma</span><span class="op">[</span><span class="fl">2</span>,<span class="fl">1</span>,<span class="va">i</span>,<span class="va">t</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="va">phi</span><span class="op">[</span><span class="va">i</span>,<span class="va">t</span><span class="op">]</span> <span class="op">*</span> <span class="va">p</span></span>
+<span>      <span class="va">gamma</span><span class="op">[</span><span class="fl">2</span>,<span class="fl">2</span>,<span class="va">i</span>,<span class="va">t</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="va">phi</span><span class="op">[</span><span class="va">i</span>,<span class="va">t</span><span class="op">]</span> <span class="op">*</span> <span class="op">(</span><span class="fl">1</span> <span class="op">-</span> <span class="va">p</span><span class="op">)</span></span>
+<span>      <span class="va">gamma</span><span class="op">[</span><span class="fl">2</span>,<span class="fl">3</span>,<span class="va">i</span>,<span class="va">t</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span> <span class="op">-</span> <span class="va">phi</span><span class="op">[</span><span class="va">i</span>,<span class="va">t</span><span class="op">]</span> </span>
+<span>      <span class="va">gamma</span><span class="op">[</span><span class="fl">3</span>,<span class="fl">1</span>,<span class="va">i</span>,<span class="va">t</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0</span></span>
+<span>      <span class="va">gamma</span><span class="op">[</span><span class="fl">3</span>,<span class="fl">2</span>,<span class="va">i</span>,<span class="va">t</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0</span> </span>
+<span>      <span class="va">gamma</span><span class="op">[</span><span class="fl">3</span>,<span class="fl">3</span>,<span class="va">i</span>,<span class="va">t</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span></span>
+<span>    <span class="op">}</span></span>
+<span>  <span class="op">}</span></span></code></pre></div>
+<p>In the code above, age is passed in the data and created as follows:</p>
+<div class="sourceCode" id="cb335"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Age effect via an individual x time covariate and use of nested indexing </span></span>
+<span><span class="co"># to distinguish survival over the interval after first detection from survival afterwards: </span></span>
+<span><span class="va">age</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html">matrix</a></span><span class="op">(</span><span class="cn">NA</span>, nrow <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html">nrow</a></span><span class="op">(</span><span class="va">y</span><span class="op">)</span>, ncol <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html">ncol</a></span><span class="op">(</span><span class="va">y</span><span class="op">)</span> <span class="op">-</span> <span class="fl">1</span><span class="op">)</span></span>
+<span><span class="kw">for</span> <span class="op">(</span><span class="va">i</span> <span class="kw">in</span> <span class="fl">1</span><span class="op">:</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html">nrow</a></span><span class="op">(</span><span class="va">age</span><span class="op">)</span><span class="op">)</span><span class="op">{</span></span>
+<span>  <span class="kw">for</span> <span class="op">(</span><span class="va">j</span> <span class="kw">in</span> <span class="fl">1</span><span class="op">:</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html">ncol</a></span><span class="op">(</span><span class="va">age</span><span class="op">)</span><span class="op">)</span><span class="op">{</span></span>
+<span>    <span class="kw">if</span> <span class="op">(</span><span class="va">j</span> <span class="op">==</span> <span class="va">first</span><span class="op">[</span><span class="va">i</span><span class="op">]</span><span class="op">)</span> <span class="va">age</span><span class="op">[</span><span class="va">i</span>,<span class="va">j</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span> <span class="co"># age = 1</span></span>
+<span>    <span class="kw">if</span> <span class="op">(</span><span class="va">j</span> <span class="op">&gt;</span> <span class="va">first</span><span class="op">[</span><span class="va">i</span><span class="op">]</span><span class="op">)</span> <span class="va">age</span><span class="op">[</span><span class="va">i</span>,<span class="va">j</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">2</span>  <span class="co"># age &gt; 1</span></span>
+<span>  <span class="op">}</span></span>
+<span><span class="op">}</span></span></code></pre></div>
+<p>Last step is the observation matrix:
+<span class="math display">\[\begin{matrix}
 &amp; \\
 \mathbf{\Omega} =
-  \left ( \vphantom{ \begin{matrix} 12 \\ 12 \\ 12\end{matrix} } \right .
-          \end{matrix}
-          \hspace{-1.2em}
-          \begin{matrix}
-          y_t=1 &amp; y_t=2\\ \hdashline
-          1 - p^1 &amp; p^1\\
-          1 - p^2 &amp; p^2\\
-          1 &amp; 0
-          \end{matrix}
-          \hspace{-0.2em}
-          \begin{matrix}
-          &amp; \\
-          \left . \vphantom{ \begin{matrix} 12 \\ 12 \\ 12\end{matrix} } \right )
+\left ( \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \end{matrix} } \right .
+\end{matrix}
+\hspace{-1.2em}
 \begin{matrix}
-z_{t}=A1 \\ z_{t}=A2 \\ z_{t}=D
+y_t=1 &amp; y_t=2 \\ \hdashline
+0 &amp; 1 \\
+1 &amp; 0 \\
+1 &amp; 0
+\end{matrix}
+\hspace{-0.2em}
+\begin{matrix}
+&amp; \\
+\left . \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \end{matrix} } \right )
+\begin{matrix}
+z_{t}=A \\ z_{t}=U \\ z_{t}=D
 \end{matrix}
 \end{matrix}\]</span></p>
-<p><span class="math inline">\(p^1\)</span> is detection for individuals in class 1, and <span class="math inline">\(p^2\)</span> that of individuals in class 2.</p>
-<p>Data</p>
-<p>We simulate data, for fun.</p>
-<div class="sourceCode" id="cb334"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># generate heterogeneous detection probabilities</span></span>
-<span><span class="va">phi</span> <span class="op">&lt;-</span> <span class="fl">0.7</span> <span class="co"># survival</span></span>
-<span><span class="va">prop_class1</span> <span class="op">&lt;-</span> <span class="fl">0.2</span> <span class="co"># pi</span></span>
-<span><span class="va">p_class1</span> <span class="op">&lt;-</span> <span class="fl">0.8</span> <span class="co"># low prop are highly detectable</span></span>
-<span><span class="va">p_class2</span> <span class="op">&lt;-</span> <span class="fl">0.3</span></span>
-<span><span class="va">nind</span> <span class="op">&lt;-</span> <span class="fl">400</span> <span class="co"># nb of ind</span></span>
-<span><span class="va">nyear</span> <span class="op">&lt;-</span> <span class="fl">10</span> <span class="co"># duration of the study</span></span></code></pre></div>
-<p>Results</p>
-<p>Naive results, with problem:</p>
-<div class="sourceCode" id="cb335"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/pkg/MCMCvis/man/MCMCsummary.html">MCMCsummary</a></span><span class="op">(</span><span class="va">mcmc.phipmix</span>, round <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span>
-<span><span class="co">##     mean   sd 2.5%  50% 97.5% Rhat n.eff</span></span>
-<span><span class="co">## phi 0.70 0.01 0.67 0.70  0.73 1.00  1074</span></span>
-<span><span class="co">## pi  0.70 0.03 0.63 0.70  0.76 1.01   722</span></span>
-<span><span class="co">## pp1 0.45 0.02 0.40 0.45  0.49 1.00   492</span></span>
-<span><span class="co">## pp2 0.49 0.03 0.43 0.48  0.55 1.01   632</span></span></code></pre></div>
-<!-- ```{r, echo = FALSE} -->
-<!-- library(MCMCvis) -->
-<!-- load(here::here("dat","wolf_het.RData")) -->
-<!-- MCMCplot(mcmc.phipmix) -->
-<!-- ``` -->
-<p>From the simulations I run, seems like the categorical sampler on latent states gets stuck in places that depend on initial values. Changing for the slice sampler improves thing a bit, but not that much. Only option is to get rid of the states and use the marginalized likelihood. Nice illustration of the use of simulations (to check model is doing ok, estimated are valid, etc.), changing samplers, nimbleEcology, NIMBLE functions, etc.</p>
-<p>Some detailed explanations, thanks Daniel!</p>
-<p>The usual formulation creates a serious limitation: individuals are not allowed to switch between groups over time (e.g., from class 1 to class 2), because the transition matrix does not permit it. In other words, any individual seen &gt; 1 time (it’s detected after the first observation occasion) can <em>never</em> change group assignments away from their initial value group assignment. Why this formulation fails? The problem is subtle but fundamental: in a standard HMM, transitions between states are governed by a Markov process. If the transition matrix says an individual in class 1 today must stay in class 1 (or die), then the individual is permanently locked in that class. As a result, once an individual is assigned to a group through its initial latent state (e.g., class 1), it can never change class during sampling. Even worse, any individual seen on multiple occasions (say, years 1 and 4) must stay alive during those years, the latent state cannot “jump” between classes without violating the transition constraints, therefore, the initial class assignment is fixed forever, and the sampler cannot explore the alternative class, no matter how much data supports it.</p>
-<!-- > Bottom line, the way this model is written is completely destined for failure. The state-space formulation that's written, with the two different groups for individuals (high detection and low detection) sets the model up for failure, and it will never work correctly when written this way. Briefly: -->
-<!-- > For any individual that is seen at any time t > 1 (that is, individuals seen again after the first sighting), the detection history looks something like: -->
-<!-- 1 0 0 1 ..... (1 represents detection). -->
-<!-- The initial values for the latent z state are either : -->
-<!-- 1 1 1 1 1..... -->
-<!-- or -->
-<!-- 2 2 2 2 2 -->
-<!-- putting that individual into one of the two groups (1 or 2 always). -->
-<!-- when sampling, the latent z can *never * transition to the other group, from group 2 to group 1, or from group 1 to group 2. It will be stuck where ever it started. -->
-<!-- If the categorical sampler tries to change the *final* state from the initial value of (say) 2 to 1, -->
-<!-- then this transition is deemed to be impossible by the prior (defined by the gamma state transition matrix), since the state at the previous time was 2, and 2 in one period (the previous period) does not permit a state of 1 in the next time period. -->
-<!-- SImilarly, if the first (or any intermediate) value of z attempts to transition from (say) 2 to 1, then the *following* state is still 1, and that dependency does not allow the state in question to change to 1, because a state of 1 cannot have the next state be 2. -->
-<!-- Even if some "dead" states (3's) are added to the end of the z vector over the course of MCMC sampling, and say z becomes: -->
-<!-- 1 1 1 1 3 3 -->
-<!-- The 3's can never propagate "earlier" than shown here (since there are detections at t=1 and t=4, so the individual cannot be in state 3 at time t=4), so the problem described above will always be the case, and this individual will *always* remain in group 1, no matter how long you run the MCMC. -->
-<!-- > The only time an individual (with the model written as such) could change between groups (1 -> 2, or 2 -> 1) from their initial group assignment of zinit, would be if the individual is *only* observed on the first time period, the detection history is: -->
-<!-- 1 0 0 0 0 0, -->
-<!-- Then say the initial value for z is: -->
-<!-- 1 1 1 1 1 1 (always in group 1), -->
-<!-- then the sampler at some point could begin transitioning the final 1 into state 3 (dead), so after an MCMC iteration, the z for this individual could be: -->
-<!-- 1 1 1 1 1 3, -->
-<!-- then if we're lucky, the sampler on the final 1 would some time change it to a 3: -->
-<!-- 1 1 1 1 3 3 -->
-<!-- then this could happen again later: -->
-<!-- 1 1 1 3 3 3 -->
-<!-- and again: -->
-<!-- 1 1 3 3 3 3 -->
-<!-- and once again: -->
-<!-- 1 3 3 3 3 3 -->
-<!-- and *only now*, finally, if we're lucky, the sampler operating on the first value of the z vector could change this group assignment from 1 to 2: -->
-<!-- 2 3 3 3 3 3 -->
-<!-- And that's the only situation when individuals can possibly change groups in this model. -->
-<!-- > The problem again, is that any individual seen > 1 time (it's resighted after the first observation occasion) can *never* change group assignments away from their initial value group assignment. So, this model is destined for failure. -->
-<!-- > There are many ways one could fix this: -->
-<!-- - Marginalize over the z's as you did (perhaps using nimbleEcology) -->
-<!-- - Write the model differently, using a binary latent indicator variable to represent the group assignment of each individual. This could also work for > 2 groups, where the group indicator variable follows a categorical prior -->
-<!-- - Use a latent state formulation as you have, but write a custom MCMC sampler to update entire rows of the z matrix (the latent state variables for one individual for all time periods) simultaneously, thus enabling transitions between groups -->
-<!-- - Probably other ways, also. -->
-<p>There are several solutions</p>
-<ul>
-<li><p>Marginalize over the latent states: Instead of sampling the latent states <span class="math inline">\(z\)</span>, you can marginalize them out, which avoids the group-switching problem entirely. This is the principle behind the <code>nimbleEcology</code> package.</p></li>
-<li><p>Use a group-level latent variable: Rather than coding groups as HMM states, define a latent group assignment (e.g., <code>g[i] ~ dcat(pi[1:2])</code>) for each individual. The HMM then conditions on that fixed group, allowing for proper inference and switching during MCMC.</p></li>
-<li><p>Custom block sampler: Design a custom MCMC sampler that updates the entire latent history of an individual (<code>z[i, 1:K]</code>) at once. This allows for group-switching in a consistent way, though it’s more advanced and computationally heavier.</p></li>
-</ul>
-<p>We explore the first solution.</p>
-<p>Now with marginalized version:</p>
+<p>If an animal is trap-aware at <span class="math inline">\(t\)</span>, that means that it has just been captured. If it is trap unaware or dead, it has not been captured during this session. In code, we write:</p>
 <div class="sourceCode" id="cb336"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/pkg/MCMCvis/man/MCMCsummary.html">MCMCsummary</a></span><span class="op">(</span><span class="va">mcmc.phipmix.marginalized</span>, round <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span>
-<span><span class="co">##     mean   sd 2.5%  50% 97.5% Rhat n.eff</span></span>
-<span><span class="co">## phi 0.72 0.02 0.69 0.72  0.75    1  1120</span></span>
-<span><span class="co">## pi  0.72 0.08 0.54 0.73  0.87    1   298</span></span>
-<span><span class="co">## pp1 0.27 0.05 0.18 0.27  0.35    1   343</span></span>
-<span><span class="co">## pp2 0.79 0.07 0.65 0.79  0.92    1   336</span></span></code></pre></div>
-<p>We have lowly detectable individuals (class A1 with <span class="math inline">\(p^1\)</span>) in proportion 27%. And highly (or so) detectable individuals (class A2 with <span class="math inline">\(p^2\)</span>) in proportion 79%. Note that interpretation of classes is made a posteriori. Survival is 72%.</p>
-<p>In summary: When modeling unobservable individual heterogeneity (e.g., detection classes) in an HMM, avoid encoding group identity as a dynamic state. Instead, treat it as a fixed latent variable, or marginalize it out. Otherwise, the model is unable to explore the full posterior and will yield biased or unreliable estimates.</p>
-<!-- I'm not an expert on the BNP facilities offered in NIMBLE, but I think I can comment: the stick-breaking representation (as you're using), and the CRP distribution, are modelling the same Dirichlet process.  They differ in the MCMC sampling algorithms which are applied to each, automatically, by NIMBLE's MCMC.  Translating your code between these two (mathematically identical) representations is a relatively small and straight-forward exercise.  The relative performance of the different sampling algorithms, as applied to each representation, could differ, would depend on the model and the data, and is generally difficult to predict. -->
-<!-- Changing between the stick-breaking representation and the CRP representation, the categorical distribution would persist in your model.  And Perry's comments are correct, that (in particular for a large number of categories, e.g. large values of H or HH in your code) the categorical sampler (which is applied to the categorical distribution) would become arbitrarily inefficient, in that it evaluates the posterior density for every category value (H or HH times), then samples directly from that posterior distribution.  And that you could hopefully reduce this inefficiency by writing a customized sampling strategy (a custom-written MCMC sampler), to update your categorical distributions, in a more efficient (less wasteful) manner. -->
+<code class="sourceCode R"><span><span class="co"># Observation matrix</span></span>
+<span>  <span class="va">omega</span><span class="op">[</span><span class="fl">1</span>,<span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0</span></span>
+<span>  <span class="va">omega</span><span class="op">[</span><span class="fl">1</span>,<span class="fl">2</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span></span>
+<span>  <span class="va">omega</span><span class="op">[</span><span class="fl">2</span>,<span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span></span>
+<span>  <span class="va">omega</span><span class="op">[</span><span class="fl">2</span>,<span class="fl">2</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0</span></span>
+<span>  <span class="va">omega</span><span class="op">[</span><span class="fl">3</span>,<span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span></span>
+<span>  <span class="va">omega</span><span class="op">[</span><span class="fl">3</span>,<span class="fl">2</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0</span></span></code></pre></div>
+<p>The likelihood and priors are handled as usual.</p>
 </div>
-<div id="memorymodel" class="section level2" number="7.2">
+<div id="results-3" class="section level3" number="7.2.3">
+<h3>
+<span class="header-section-number">7.2.3</span> Results<a class="anchor" aria-label="anchor" href="#results-3"><i class="fas fa-link"></i></a>
+</h3>
+<p>Here are the raw results with trap-dependence:</p>
+<pre><code>##        mean   sd 2.5%  50% 97.5% Rhat n.eff
+## p      0.45 0.06 0.34 0.45  0.56 1.00   126
+## phi1   0.76 0.02 0.71 0.76  0.80 1.00   395
+## phi2   0.87 0.02 0.84 0.87  0.91 1.01   173
+## pprime 0.79 0.02 0.75 0.79  0.82 1.00   183</code></pre>
+<p>Our estimates are very (very) similar to those obtained by <span class="citation">Pradel and Sanz-Aguilar (<a href="references.html#ref-pradeltrapdep2012">2012</a>)</span>, check out their Table 1. Interestingly, when we fit the same model by ignoring trap-dependence, we get the following results:</p>
+<pre><code>##      mean   sd 2.5%  50% 97.5% Rhat n.eff
+## p    0.78 0.02 0.75 0.78  0.81 1.00   489
+## phi1 0.74 0.02 0.70 0.74  0.79 1.00   615
+## phi2 0.84 0.01 0.82 0.84  0.87 1.01   569</code></pre>
+<p>When compared the our previous estimates, we see that ignoring trap-dependence leads to an underestimation of survival, either <span class="math inline">\(\phi_1\)</span> the transient survival or <span class="math inline">\(\phi_{2}\)</span> the resident survival.</p>
+<p>The approach described here can be conveniently extended to several sites or states, see <span class="citation">Pradel and Sanz-Aguilar (<a href="references.html#ref-pradeltrapdep2012">2012</a>)</span>.</p>
+</div>
+</div>
+<div id="memorymodel" class="section level2" number="7.3">
 <h2>
-<span class="header-section-number">7.2</span> Memory model<a class="anchor" aria-label="anchor" href="#memorymodel"><i class="fas fa-link"></i></a>
+<span class="header-section-number">7.3</span> Allowing your Markov models to remember<a class="anchor" aria-label="anchor" href="#memorymodel"><i class="fas fa-link"></i></a>
 </h2>
+<div id="motivation-4" class="section level3" number="7.3.1">
+<h3>
+<span class="header-section-number">7.3.1</span> Motivation<a class="anchor" aria-label="anchor" href="#motivation-4"><i class="fas fa-link"></i></a>
+</h3>
 <p>How to make your models remember?</p>
 <p>So far, the dynamics of the states are first-order Makovian. The site where you will be depends only on the site where you are, and not on the sites you were previously. How to relax this assumption, and go second-order Markovian?</p>
 <p>Memory models were initially proposed by <span class="citation">Hestbeck, Nichols, and Malecki (<a href="references.html#ref-hestbeck1991estimates">1991</a>)</span> and <span class="citation">Brownie et al. (<a href="references.html#ref-BrownieEtAl1993">1993</a>)</span>, then formulated as HMMs in <span class="citation">Rouan, Choquet, and Pradel (<a href="references.html#ref-rouan2009memory">2009</a>)</span>. See also <span class="citation">D. J. Cole et al. (<a href="references.html#ref-cole2014">2014</a>)</span>.</p>
+</div>
+<div id="model-and-nimble-implementation-4" class="section level3" number="7.3.2">
+<h3>
+<span class="header-section-number">7.3.2</span> Model and NIMBLE implementation<a class="anchor" aria-label="anchor" href="#model-and-nimble-implementation-4"><i class="fas fa-link"></i></a>
+</h3>
 <p>Remember HMM model for dispersal between 2 sites</p>
 <p>Transition matrix</p>
 <p><span class="math display">\[\begin{matrix}
@@ -443,7 +414,11 @@ z_t=AA \\ z_t=AB \\ z_t=BA \\ z_t=BB \\ z_t=D
 \end{matrix}
 \end{matrix}\]</span></p>
 <p>Implementation w/ nimbleEcology, much easier as we do not have to initialize the latent states <span class="math inline">\(z\)</span>.</p>
-<p>Results</p>
+</div>
+<div id="results-4" class="section level3" number="7.3.3">
+<h3>
+<span class="header-section-number">7.3.3</span> Results<a class="anchor" aria-label="anchor" href="#results-4"><i class="fas fa-link"></i></a>
+</h3>
 <pre><code>##          mean   sd 2.5%  50% 97.5% Rhat n.eff
 ## det1     0.45 0.01 0.43 0.45  0.47 1.01   296
 ## det2     0.41 0.01 0.39 0.41  0.42 1.05   244
@@ -460,108 +435,470 @@ z_t=AA \\ z_t=AB \\ z_t=BA \\ z_t=BB \\ z_t=D
 ## phi22[2] 0.63 0.01 0.61 0.63  0.64 1.01  1140
 ## phi22[3] 0.31 0.01 0.30 0.31  0.33 1.00   965</code></pre>
 </div>
-<div id="trapdep" class="section level2" number="7.3">
+</div>
+<div id="accomodating-individual-heterogeneity" class="section level2" number="7.4">
 <h2>
-<span class="header-section-number">7.3</span> Trap dep<a class="anchor" aria-label="anchor" href="#trapdep"><i class="fas fa-link"></i></a>
+<span class="header-section-number">7.4</span> Accomodating individual heterogeneity<a class="anchor" aria-label="anchor" href="#accomodating-individual-heterogeneity"><i class="fas fa-link"></i></a>
 </h2>
-<p>Multievent formulation à la <span class="citation">Pradel and Sanz-Aguilar (<a href="references.html#ref-pradeltrapdep2012">2012</a>)</span>. Also add example w/ individual time-varying covariate. Application w/ data from Ana’ paper in 2011.</p>
+<div id="motivation-5" class="section level3" number="7.4.1">
+<h3>
+<span class="header-section-number">7.4.1</span> Motivation<a class="anchor" aria-label="anchor" href="#motivation-5"><i class="fas fa-link"></i></a>
+</h3>
+<p>I’ve worked with large carnivores for almost two decades, and they’re what pulled me into HMMs – especially gray wolves. Wolves are social, live in hierarchical packs, and that structure shows up in demography. It also shows up in how we detect them: dominant individuals use trails and roads more often, and that’s pretty much where we search for scats for DNA-based identification. The result is individual heterogeneity in detection, with some wolves being more detectable (via DNA) than others.</p>
+<p>Shirley Pledger in a series of papers developed so–called mixture models in which individuals are assigned in two or more classes with class-specific survival/detection probabilities. If we ignore that variation, estimates can be biased and lack-of-fit tests light up. In <span class="citation">Cubaynes et al. (<a href="references.html#ref-cubaynes_importance_2010">2010</a>)</span>, we used an HMM formulation to capture heterogeneity in detection linked to social status (see also <span class="citation">Pradel (<a href="references.html#ref-pradel2009">2009</a>)</span>).</p>
+<p>In what follows, I’ll show how to build and fit these finite–mixture HMM using simulated data so we control the truth. This gives a practical template for dealing with heterogeneity whenever behavior or status makes some individuals easier (or more difficult) to find than others.</p>
+<!-- ```{r pixwolf, echo=FALSE, fig.cap="Dominance in wolves.", fig.align='center'} -->
+<!-- knitr::include_graphics("images/wolfdominance.jpg") -->
+<!-- ``` -->
+</div>
+<div id="model-and-nimble-implementation-5" class="section level3" number="7.4.2">
+<h3>
+<span class="header-section-number">7.4.2</span> Model and NIMBLE implementation<a class="anchor" aria-label="anchor" href="#model-and-nimble-implementation-5"><i class="fas fa-link"></i></a>
+</h3>
+<p>To build up our model, we first define the states and observations:</p>
 <ul>
-<li><p>States</p></li>
-<li><p>A ‘trap aware’ – its original state when it is first released after marking</p></li>
-<li><p>U ‘trap unaware’ which follows any occasion where it is not captured</p></li>
-<li><p>D is for dead</p></li>
-<li><p>Observations</p></li>
-<li><p>1 not detected</p></li>
-<li><p>2 detected</p></li>
+<li>States
+<ul>
+<li>alive in class 1 (A1)</li>
+<li>alive in class 2 (A2)</li>
+<li>dead (D)</li>
 </ul>
-<p>Vector of initial state probabilities</p>
-<p><span class="math display">\[\begin{matrix}
+</li>
+<li>Observations
+<ul>
+<li>not captured (1)</li>
+<li>captured (2)</li>
+</ul>
+</li>
+</ul>
+<p>Now we turn to writing our model.</p>
+<p>We start with the vector of initial states. Individuals enter as a mixture of A1/A2 with probabilities <span class="math inline">\(\pi\)</span> and <span class="math inline">\(1-\pi\)</span>:
+<span class="math display">\[\begin{matrix}
 &amp; \\
 \mathbf{\delta} =
-\left ( \vphantom{ \begin{matrix} 12 \end{matrix} } \right .
-\end{matrix}
-\hspace{-1.2em}
-\begin{matrix}
-z_t=A &amp; z_t=U &amp; z_t=D \\ \hdashline
-\pi &amp; 1 - \pi &amp; 0\\
-\end{matrix}
-\hspace{-0.2em}
-\begin{matrix}
-&amp; \\
-\left . \vphantom{ \begin{matrix} 12 \end{matrix} } \right )
+  \left ( \vphantom{ \begin{matrix} 12 \end{matrix} } \right .
+          \end{matrix}
+          \hspace{-1.2em}
+          \begin{matrix}
+          z_t=A1 &amp; z_t=A2 &amp; z_t=D \\ \hdashline
+          \pi &amp; 1 - \pi &amp; 0\\
+          \end{matrix}
+          \hspace{-0.2em}
+          \begin{matrix}
+          &amp; \\
+          \left . \vphantom{ \begin{matrix} 12 \end{matrix} } \right )
 \begin{matrix}
 \end{matrix}
 \end{matrix}\]</span></p>
-<p>where <span class="math inline">\(\pi\)</span> is prob.</p>
-<p>Transition matrix</p>
-<p><span class="math display">\[\begin{matrix}
+<p>where <span class="math inline">\(\pi\)</span> is the probability of being alive in A1, and <span class="math inline">\(1 - \pi\)</span> is the probability of being in A2.</p>
+<p>We proceed with the transition matrix that contains the survival probabilities:
+<span class="math display">\[\begin{matrix}
 &amp; \\
 \mathbf{\Gamma} =
-\left ( \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \end{matrix} } \right .
-\end{matrix}
-\hspace{-1.2em}
+  \left ( \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \end{matrix} } \right .
+          \end{matrix}
+          \hspace{-1.2em}
+          \begin{matrix}
+          z_t=A1 &amp; z_t=A2 &amp; z_t=D \\ \hdashline
+          \phi  &amp; 0 &amp; 1 - \phi\\
+          0 &amp; \phi &amp; 1 - \phi\\
+          0 &amp; 0 &amp; 1
+          \end{matrix}
+          \hspace{-0.2em}
+          \begin{matrix}
+          &amp; \\
+          \left . \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \end{matrix} } \right )
 \begin{matrix}
-z_t=A &amp; z_t=U &amp; z_t=D \\ \hdashline
-\phi p' &amp; \phi (1-p') &amp; 1 - \phi\\
-\phi p &amp; \phi (1-p) &amp; 1 - \phi\\
-0 &amp; 0 &amp; 1
-\end{matrix}
-\hspace{-0.2em}
-\begin{matrix}
-&amp; \\
-\left . \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \end{matrix} } \right )
-\begin{matrix}
-z_{t-1}=A \\ z_{t-1}=U \\ z_{t-1}=D
+z_{t-1}=A1 \\ z_{t-1}=A2 \\ z_{t-1}=D
 \end{matrix}
 \end{matrix}\]</span></p>
-<p>Product of survival process and trap awareness process can be written.</p>
-<p>Observation matrix</p>
-<p><span class="math display">\[\begin{matrix}
+<p>where <span class="math inline">\(\phi\)</span> is the survival probability. In NIMBLE, we write:</p>
+<div class="sourceCode" id="cb340"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Transition matrix</span></span>
+<span><span class="va">gamma</span><span class="op">[</span><span class="fl">1</span>,<span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="va">phi</span>      <span class="co"># A1(t)-&gt;A1(t+1)</span></span>
+<span><span class="va">gamma</span><span class="op">[</span><span class="fl">1</span>,<span class="fl">2</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0</span>        <span class="co"># A1(t)-&gt;A2(t+1)</span></span>
+<span><span class="va">gamma</span><span class="op">[</span><span class="fl">1</span>,<span class="fl">3</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span> <span class="op">-</span> <span class="va">phi</span>  <span class="co"># A1(t)-&gt;D(t+1)</span></span>
+<span><span class="va">gamma</span><span class="op">[</span><span class="fl">2</span>,<span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0</span>        <span class="co"># A2(t)-&gt;A1(t+1)</span></span>
+<span><span class="va">gamma</span><span class="op">[</span><span class="fl">2</span>,<span class="fl">2</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="va">phi</span>      <span class="co"># A2(t)-&gt;A2(t+1)</span></span>
+<span><span class="va">gamma</span><span class="op">[</span><span class="fl">2</span>,<span class="fl">3</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span> <span class="op">-</span> <span class="va">phi</span>  <span class="co"># A2(t)-&gt;D(t+1)</span></span>
+<span><span class="va">gamma</span><span class="op">[</span><span class="fl">3</span>,<span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0</span>        <span class="co"># D(t)-&gt;A1(t+1)</span></span>
+<span><span class="va">gamma</span><span class="op">[</span><span class="fl">3</span>,<span class="fl">2</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0</span>        <span class="co"># D(t)-&gt;A2(t+1)</span></span>
+<span><span class="va">gamma</span><span class="op">[</span><span class="fl">3</span>,<span class="fl">3</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span>        <span class="co"># D(t)-&gt;D(t+1)</span></span></code></pre></div>
+<p>Survival could be made heterogeneous; to do so, we’d need to amend the transition matrix as follows:
+<span class="math display">\[\begin{matrix}
+&amp; \\
+\mathbf{\Gamma} =
+  \left ( \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \end{matrix} } \right .
+          \end{matrix}
+          \hspace{-1.2em}
+          \begin{matrix}
+          z_t=A1 &amp; z_t=A2 &amp; z_t=D \\ \hdashline
+          \phi (1-\psi^{12}) &amp; \phi \psi^{12} &amp; 1 - \phi\\
+          \phi \psi^{21} &amp; \phi (1-\psi^{21}) &amp; 1 - \phi\\
+          0 &amp; 0 &amp; 1
+          \end{matrix}
+          \hspace{-0.2em}
+          \begin{matrix}
+          &amp; \\
+          \left . \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \end{matrix} } \right )
+\begin{matrix}
+z_{t-1}=A1 \\ z_{t-1}=A2 \\ z_{t-1}=D
+\end{matrix}
+\end{matrix}\]</span></p>
+<p>where <span class="math inline">\(\psi^{12}\)</span> is the probability for an individual to change class of heterogeneity, from A1 to A2, and <span class="math inline">\(\psi^{21}\)</span> is the probability for an individual to change class of heterogeneity, from A2 to A1.</p>
+<p>Last step is the observation matrix, which we write as follows:
+<span class="math display">\[\begin{matrix}
 &amp; \\
 \mathbf{\Omega} =
-\left ( \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \end{matrix} } \right .
-\end{matrix}
-\hspace{-1.2em}
+  \left ( \vphantom{ \begin{matrix} 12 \\ 12 \\ 12\end{matrix} } \right .
+          \end{matrix}
+          \hspace{-1.2em}
+          \begin{matrix}
+          y_t=1 &amp; y_t=2\\ \hdashline
+          1 - p^1 &amp; p^1\\
+          1 - p^2 &amp; p^2\\
+          1 &amp; 0
+          \end{matrix}
+          \hspace{-0.2em}
+          \begin{matrix}
+          &amp; \\
+          \left . \vphantom{ \begin{matrix} 12 \\ 12 \\ 12\end{matrix} } \right )
 \begin{matrix}
-y_t=1 &amp; y_t=2 \\ \hdashline
-0 &amp; 1 \\
-1 &amp; 0 \\
-1 &amp; 0
-\end{matrix}
-\hspace{-0.2em}
-\begin{matrix}
-&amp; \\
-\left . \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \end{matrix} } \right )
-\begin{matrix}
-z_{t}=A \\ z_{t}=U \\ z_{t}=D
+z_{t}=A1 \\ z_{t}=A2 \\ z_{t}=D
 \end{matrix}
 \end{matrix}\]</span></p>
-<p>Data</p>
-<!-- ```{r} -->
-<!-- # Read the file -->
-<!-- lines <- readLines("dat/Calonectris diomedea dataset.txt") -->
-<!-- # Keep only the first 8 characters and split them into individual bits with spaces -->
-<!-- processed <- sapply(substr(lines, 1, 8), function(x) paste(strsplit(x, "")[[1]], collapse = " ")) -->
-<!-- # Save the result -->
-<!-- writeLines(processed, "cleaned_data.txt") -->
-<!-- ``` -->
-<p>Apply gof to detect trap-dep and transience. For transience, age since marking, but not HMM treatment possible. For trap-dep, got for HMM.</p>
-<p>Results</p>
-<p>With trap-dependence</p>
-<pre><code>##        mean   sd 2.5%  50% 97.5% Rhat n.eff
-## p      0.46 0.06 0.36 0.46  0.57 1.03    87
-## phi1   0.75 0.02 0.71 0.75  0.80 1.00   405
-## phi2   0.87 0.02 0.84 0.87  0.90 1.08   128
-## pi     1.00 0.00 0.99 1.00  1.00 1.00   371
-## pprime 0.79 0.02 0.75 0.79  0.82 1.01   238</code></pre>
-<p>Without trap-dependence</p>
-<pre><code>##      mean   sd 2.5%  50% 97.5% Rhat n.eff
-## p    0.78 0.02 0.75 0.78  0.81 1.00   489
-## phi1 0.74 0.02 0.70 0.74  0.79 1.00   615
-## phi2 0.84 0.01 0.82 0.84  0.87 1.01   569</code></pre>
-<p>Can be generalized to sites, states, see <span class="citation">Pradel and Sanz-Aguilar (<a href="references.html#ref-pradeltrapdep2012">2012</a>)</span>.</p>
-<!-- ## Transience {#transience} -->
-<!-- Multievent treatment à la @genovart2019. Remind of the two age-classes on survival technique.  -->
+<p>where <span class="math inline">\(p^1\)</span> is detection for individuals in A1, and <span class="math inline">\(p^2\)</span> that of individuals in A2. In NIMBLE, this translates into:</p>
+<div class="sourceCode" id="cb341"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Observation matrix</span></span>
+<span><span class="va">omega</span><span class="op">[</span><span class="fl">1</span>,<span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span> <span class="op">-</span> <span class="va">p1</span>   <span class="co"># A1(t)-&gt;0(t)</span></span>
+<span><span class="va">omega</span><span class="op">[</span><span class="fl">1</span>,<span class="fl">2</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="va">p1</span>       <span class="co"># A1(t)-&gt;1(t)</span></span>
+<span><span class="va">omega</span><span class="op">[</span><span class="fl">2</span>,<span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span> <span class="op">-</span> <span class="va">p2</span>   <span class="co"># A2(t)-&gt;0(t)</span></span>
+<span><span class="va">omega</span><span class="op">[</span><span class="fl">2</span>,<span class="fl">2</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="va">p2</span>       <span class="co"># A2(t)-&gt;1(t)</span></span>
+<span><span class="va">omega</span><span class="op">[</span><span class="fl">3</span>,<span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span>         <span class="co"># D(t)-&gt;0(t)</span></span>
+<span><span class="va">omega</span><span class="op">[</span><span class="fl">3</span>,<span class="fl">2</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0</span>         <span class="co"># D(t)-&gt;1(t)</span></span></code></pre></div>
+<p>At first detection, the observation ‘not detected’ is impossible by construction (we condition on the first detection). We therefore use an initial observation matrix <span class="math inline">\(\mathbf{\Omega}_{\text{init}}\)</span> with <span class="math inline">\(p_1 = p_2\)</span> set to 1 (not shown).</p>
+<p>Instead of real data, we simulate data, which is useful to identify problems in our analysis as we will illustrate below. We simulate a finite–mixture scenario where individuals differ in detection but share the same survival. Each animal is assigned to one of two latent classes: a small, highly detectable group (class A1; proportion <span class="math inline">\(\pi = 0.2\)</span>, <span class="math inline">\(p_1=0.8\)</span>) and a larger, less detectable group (class A2; proportion <span class="math inline">\(1-\pi = 0.8\)</span>, <span class="math inline">\(p_2=0.3\)</span>). Everyone starts captured at the first occasion (this mimics the CJS conditioning on first capture), then the latent alive state <span class="math inline">\(z_{i,t}\)</span> evolves with constant survival <span class="math inline">\(\phi = 0.7\)</span>. If an individual is alive at time <span class="math inline">\(t\)</span>, it’s observed with its own detection probability <span class="math inline">\(p_i\)</span> (either <span class="math inline">\(p_1\)</span> or <span class="math inline">\(p_2\)</span> depending on class). The result is a matrix of 0/1 encounter histories <span class="math inline">\(y\)</span> with built-in individual heterogeneity in detection, plus bookkeeping objects: <code>which_mixture</code> (true class), <code>detection</code> (each animal’s <span class="math inline">\(p_i\)</span>), and <code>z</code> (true alive states). We simulate the fate of 400 animals over 10 years.</p>
+<div class="sourceCode" id="cb342"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Simulate encounter histories with individual heterogeneity (finite mixture)</span></span>
+<span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/Random.html">set.seed</a></span><span class="op">(</span><span class="fl">1234</span><span class="op">)</span>           <span class="co"># for reproducibility</span></span>
+<span></span>
+<span><span class="co"># --- Parameters</span></span>
+<span><span class="va">phi</span> <span class="op">&lt;-</span> <span class="fl">0.7</span>               <span class="co"># apparent survival (same for all)</span></span>
+<span><span class="va">prop_class1</span> <span class="op">&lt;-</span> <span class="fl">0.2</span>       <span class="co"># mixture proportion pi: Pr(class 1)</span></span>
+<span><span class="va">p_class1</span> <span class="op">&lt;-</span> <span class="fl">0.8</span>          <span class="co"># detection if in class 1 (high detectability)</span></span>
+<span><span class="va">p_class2</span> <span class="op">&lt;-</span> <span class="fl">0.3</span>          <span class="co"># detection if in class 2 (low detectability)</span></span>
+<span></span>
+<span><span class="va">nind</span> <span class="op">&lt;-</span> <span class="fl">400</span>              <span class="co"># number of individuals</span></span>
+<span><span class="va">nyear</span> <span class="op">&lt;-</span> <span class="fl">10</span>              <span class="co"># number of occasions</span></span>
+<span></span>
+<span><span class="co"># --- Storage</span></span>
+<span><span class="va">z</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html">matrix</a></span><span class="op">(</span><span class="cn">NA</span>, <span class="va">nind</span>, <span class="va">nyear</span><span class="op">)</span>    <span class="co"># latent alive state</span></span>
+<span><span class="va">x</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html">matrix</a></span><span class="op">(</span><span class="cn">NA</span>, <span class="va">nind</span>, <span class="va">nyear</span><span class="op">)</span>    <span class="co"># observed detections (0/1, with NAs before first)</span></span>
+<span><span class="va">y</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html">matrix</a></span><span class="op">(</span><span class="cn">NA</span>, <span class="va">nind</span>, <span class="va">nyear</span><span class="op">)</span>    <span class="co"># final encounter histories (0/1)</span></span>
+<span><span class="va">first</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html">rep</a></span><span class="op">(</span><span class="fl">1</span>, <span class="va">nind</span><span class="op">)</span>           <span class="co"># first-capture occasion (here: all start at 1)</span></span>
+<span><span class="va">detection</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html">rep</a></span><span class="op">(</span><span class="cn">NA</span>, <span class="va">nind</span><span class="op">)</span>      <span class="co"># each individual’s p_i</span></span>
+<span><span class="va">which_mixture</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html">rep</a></span><span class="op">(</span><span class="cn">NA</span>, <span class="va">nind</span><span class="op">)</span>  <span class="co"># latent class: 1 or 0 (class 2)</span></span>
+<span></span>
+<span><span class="co"># --- Assign individuals to classes, then give them class-specific detection</span></span>
+<span><span class="kw">for</span> <span class="op">(</span><span class="va">i</span> <span class="kw">in</span> <span class="fl">1</span><span class="op">:</span><span class="va">nind</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="va">which_mixture</span><span class="op">[</span><span class="va">i</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/Binomial.html">rbinom</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">1</span>, <span class="va">prop_class1</span><span class="op">)</span> <span class="co"># 1 with prob pi, else 0</span></span>
+<span>  <span class="va">detection</span><span class="op">[</span><span class="va">i</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="kw">if</span> <span class="op">(</span><span class="va">which_mixture</span><span class="op">[</span><span class="va">i</span><span class="op">]</span> <span class="op">==</span> <span class="fl">1</span><span class="op">)</span> <span class="va">p_class1</span> <span class="kw">else</span> <span class="va">p_class2</span></span>
+<span><span class="op">}</span></span>
+<span></span>
+<span><span class="co"># --- Generate latent states and observations</span></span>
+<span><span class="co"># Everyone is alive and detected at first capture (CJS conditioning)</span></span>
+<span><span class="kw">for</span> <span class="op">(</span><span class="va">i</span> <span class="kw">in</span> <span class="fl">1</span><span class="op">:</span><span class="va">nind</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="va">z</span><span class="op">[</span><span class="va">i</span>, <span class="va">first</span><span class="op">[</span><span class="va">i</span><span class="op">]</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span></span>
+<span>  <span class="va">x</span><span class="op">[</span><span class="va">i</span>, <span class="va">first</span><span class="op">[</span><span class="va">i</span><span class="op">]</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span></span>
+<span></span>
+<span>  <span class="co"># From the second occasion on:</span></span>
+<span>  <span class="kw">for</span> <span class="op">(</span><span class="va">j</span> <span class="kw">in</span> <span class="op">(</span><span class="va">first</span><span class="op">[</span><span class="va">i</span><span class="op">]</span> <span class="op">+</span> <span class="fl">1</span><span class="op">)</span><span class="op">:</span><span class="va">nyear</span><span class="op">)</span> <span class="op">{</span></span>
+<span>    <span class="co"># Alive state: survive from previous if alive; else remain 0</span></span>
+<span>    <span class="va">z</span><span class="op">[</span><span class="va">i</span>, <span class="va">j</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/Binomial.html">rbinom</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">1</span>, <span class="va">phi</span> <span class="op">*</span> <span class="va">z</span><span class="op">[</span><span class="va">i</span>, <span class="va">j</span> <span class="op">-</span> <span class="fl">1</span><span class="op">]</span><span class="op">)</span></span>
+<span></span>
+<span>    <span class="co"># Observation: if alive, detect with p_i; if dead, 0</span></span>
+<span>    <span class="va">x</span><span class="op">[</span><span class="va">i</span>, <span class="va">j</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/Binomial.html">rbinom</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">1</span>, <span class="va">z</span><span class="op">[</span><span class="va">i</span>, <span class="va">j</span><span class="op">]</span> <span class="op">*</span> <span class="va">detection</span><span class="op">[</span><span class="va">i</span><span class="op">]</span><span class="op">)</span></span>
+<span>  <span class="op">}</span></span>
+<span><span class="op">}</span></span>
+<span></span>
+<span><span class="co"># --- Final encounter histories: replace NAs (before first) with 0</span></span>
+<span><span class="va">y</span> <span class="op">&lt;-</span> <span class="va">x</span></span>
+<span><span class="va">y</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/NA.html">is.na</a></span><span class="op">(</span><span class="va">y</span><span class="op">)</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0</span></span></code></pre></div>
+<p>The simulated data look like:</p>
+<div class="sourceCode" id="cb343"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/head.html">head</a></span><span class="op">(</span><span class="va">y</span><span class="op">)</span></span>
+<span><span class="co">##      [,1] [,2] [,3] [,4] [,5] [,6] [,7] [,8] [,9] [,10]</span></span>
+<span><span class="co">## [1,]    1    0    0    0    0    0    0    0    0     0</span></span>
+<span><span class="co">## [2,]    1    0    0    0    0    0    0    0    0     0</span></span>
+<span><span class="co">## [3,]    1    0    0    0    0    0    0    0    0     0</span></span>
+<span><span class="co">## [4,]    1    0    1    0    0    0    0    0    0     0</span></span>
+<span><span class="co">## [5,]    1    0    0    0    0    0    0    0    0     0</span></span>
+<span><span class="co">## [6,]    1    1    0    0    0    0    0    0    0     0</span></span></code></pre></div>
+<p>Now when I fit the model above to these data, I get the following results:</p>
+<pre><code>##     mean   sd 2.5%  50% 97.5% Rhat n.eff
+## phi 0.70 0.01 0.67 0.70  0.73 1.00  1074
+## pi  0.70 0.03 0.63 0.70  0.76 1.01   722
+## pp1 0.45 0.02 0.40 0.45  0.49 1.00   492
+## pp2 0.49 0.03 0.43 0.48  0.55 1.01   632</code></pre>
+<p>These estimates diverge markedly from the values used to simulate the data:</p>
+<div class="inline-table"><table class="table table-sm">
+<caption>
+<span id="tab:unnamed-chunk-389">Table 7.1: </span>Comparison of posterior estimates from NIMBLE with the data-generating values for a finite–mixture HMM.</caption>
+<thead><tr class="header">
+<th align="left">Parameter</th>
+<th align="center">True value</th>
+<th align="center">Posterior mean (95% credible interval)</th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td align="left">phi</td>
+<td align="center">0.7</td>
+<td align="center">0.70 (0.67–0.73)</td>
+</tr>
+<tr class="even">
+<td align="left">pi</td>
+<td align="center">0.2</td>
+<td align="center">0.70 (0.63–0.76)</td>
+</tr>
+<tr class="odd">
+<td align="left">pp1</td>
+<td align="center">0.8</td>
+<td align="center">0.45 (0.40–0.49)</td>
+</tr>
+<tr class="even">
+<td align="left">pp2</td>
+<td align="center">0.3</td>
+<td align="center">0.49 (0.43–0.55)</td>
+</tr>
+</tbody>
+</table></div>
+<p>Why is that? The HMM formulation we used for capturing heterogeneity creates a limitation: individuals are not allowed to switch between classes over time (e.g., from A1 to A2), because the transition matrix does not permit it. In other words, any individual seen &gt; 1 time (it’s detected after the first observation occasion) can <em>never</em> change class assignments away from their initial value class assignment. Why this formulation fails? The problem is subtle but fundamental: in a HMM, transitions between states are governed by a Markov process. If the transition matrix says an individual in A1 today must stay in A1 (or die), then the individual is permanently locked in that class. As a result, once an individual is assigned to a class through its initial latent state (e.g., A1), it can never change class during sampling. Even worse, any individual seen on multiple occasions (say, years 1 and 4) must stay alive during those years, the latent state cannot ‘jump’ between classes without violating the transition constraints, therefore, the initial class assignment is fixed forever, and the MCMC sampler cannot explore the alternative class, no matter how much data supports it.</p>
+<p>I must confess, I got stuck in that trap, and it was only because I used simulations that I could identify the problem. I then asked the NIMBLE team for help, and Daniel Turek came up with the explanation – thanks, Daniel!</p>
+<p>Fortunately, there are several solutions to this problem:</p>
+<ul>
+<li><p>Marginalize over the latent states: Instead of sampling the latent states <span class="math inline">\(z\)</span>, you can marginalize them out, which avoids the class-switching problem entirely. This is the principle behind the <code>nimbleEcology</code> package, see Section <a href="hmmcapturerecapture.html#nimbleecologyintro">3.8.3.2</a>.</p></li>
+<li><p>Use a class-level latent variable: Rather than coding classes as HMM states, define a latent class assignment (e.g., <code>g[i] ~ dcat(pi[1:2])</code>) for each individual. The HMM then conditions on that fixed class, allowing for proper inference and switching during MCMC.</p></li>
+<li><p>Custom block sampler: Design a custom MCMC sampler that updates the entire latent history of an individual (<code>z[i, 1:K]</code>) at once. This allows for class-switching in a consistent way, though it’s more advanced and computationally heavier.</p></li>
+</ul>
+<p>Here I will adopt the first solution and use some material we saw in Section <a href="hmmcapturerecapture.html#marginalization">3.8</a>. In NIMBLE, we start by writing our own functions for the HMM likelihood, using the backward algorithm:</p>
+<div class="sourceCode" id="cb345"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Goal: integrate out latent states z using a custom density (forward algorithm),</span></span>
+<span><span class="co"># and speed things up by pooling identical encounter histories with a weight "size".</span></span>
+<span></span>
+<span><span class="co"># Get rid of individuals for which first==K</span></span>
+<span><span class="va">mask</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/which.html">which</a></span><span class="op">(</span><span class="va">first</span><span class="op">!=</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html">ncol</a></span><span class="op">(</span><span class="va">y</span><span class="op">)</span><span class="op">)</span> <span class="co"># individuals that are not first encountered at last occasion</span></span>
+<span><span class="va">y</span> <span class="op">&lt;-</span> <span class="va">y</span><span class="op">[</span><span class="va">mask</span>, <span class="op">]</span>                <span class="co"># keep only these</span></span>
+<span><span class="va">first</span> <span class="op">&lt;-</span> <span class="va">first</span><span class="op">[</span><span class="va">mask</span><span class="op">]</span></span>
+<span><span class="co"># Rationale: if first == K (first seen at last occasion), there is no post-capture interval</span></span>
+<span><span class="co"># to inform phi/p; removing them simplifies the forward recursion and avoids degenerate len=1 cases.</span></span>
+<span></span>
+<span><span class="co"># Pool encounter histories</span></span>
+<span><span class="va">y_weighted</span> <span class="op">&lt;-</span> <span class="va">y</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html">%&gt;%</a></span> </span>
+<span>  <span class="fu">as_tibble</span><span class="op">(</span><span class="op">)</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html">%&gt;%</a></span> </span>
+<span>  <span class="fu">group_by_all</span><span class="op">(</span><span class="op">)</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html">%&gt;%</a></span>                 <span class="co"># group by entire encounter history (all columns)</span></span>
+<span>  <span class="fu">summarise</span><span class="op">(</span>size <span class="op">=</span> <span class="fu">n</span><span class="op">(</span><span class="op">)</span><span class="op">)</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html">%&gt;%</a></span>          <span class="co"># count how many individuals share that history</span></span>
+<span>  <span class="fu">relocate</span><span class="op">(</span><span class="va">size</span><span class="op">)</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html">%&gt;%</a></span>                 <span class="co"># move the "size" column to the front</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/matrix.html">as.matrix</a></span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/head.html">head</a></span><span class="op">(</span><span class="va">y_weighted</span><span class="op">)</span></span>
+<span><span class="va">size</span> <span class="op">&lt;-</span> <span class="va">y_weighted</span><span class="op">[</span>,<span class="fl">1</span><span class="op">]</span> <span class="co"># nb of individuals w/ a particular encounter history</span></span>
+<span><span class="va">y</span> <span class="op">&lt;-</span> <span class="va">y_weighted</span><span class="op">[</span>,<span class="op">-</span><span class="fl">1</span><span class="op">]</span>   <span class="co"># pooled data: one row per unique history</span></span>
+<span></span>
+<span><span class="co"># Assemble data and constants</span></span>
+<span><span class="co"># +1 because the custom distribution expects categories 1..2 (not 0/1)</span></span>
+<span><span class="va">my.data</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>y <span class="op">=</span> <span class="va">y</span> <span class="op">+</span> <span class="fl">1</span><span class="op">)</span></span>
+<span><span class="va">my.constants</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>N <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html">nrow</a></span><span class="op">(</span><span class="va">y</span><span class="op">)</span>, </span>
+<span>                     K <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html">ncol</a></span><span class="op">(</span><span class="va">y</span><span class="op">)</span>, </span>
+<span>                     first <span class="op">=</span> <span class="va">first</span>,</span>
+<span>                     size <span class="op">=</span> <span class="va">size</span>,</span>
+<span>                     one <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
+<span><span class="co"># "one" is a dummy constant used in a dconstraint (to prevent label switching).</span></span>
+<span></span>
+<span><span class="co"># NIMBLE functions</span></span>
+<span><span class="co"># Custom HMM *density* for pooled histories via forward algorithm (alpha recursion)</span></span>
+<span><span class="va">dwolfHMM</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimbleFunction.html">nimbleFunction</a></span><span class="op">(</span></span>
+<span>  run <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">x</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/double.html">double</a></span><span class="op">(</span><span class="fl">1</span><span class="op">)</span>, </span>
+<span>                 <span class="va">probInit</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/double.html">double</a></span><span class="op">(</span><span class="fl">1</span><span class="op">)</span>, <span class="co"># vector of initial states (delta)</span></span>
+<span>                 <span class="va">probObs</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/double.html">double</a></span><span class="op">(</span><span class="fl">2</span><span class="op">)</span>,  <span class="co"># observation matrix (omega)</span></span>
+<span>                 <span class="va">probObse</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/double.html">double</a></span><span class="op">(</span><span class="fl">2</span><span class="op">)</span>, <span class="co"># observation matrix used at first occasion (conditioning)</span></span>
+<span>                 <span class="va">probTrans</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/double.html">double</a></span><span class="op">(</span><span class="fl">2</span><span class="op">)</span>,<span class="co"># transition matrix (gamma)</span></span>
+<span>                 <span class="va">size</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/double.html">double</a></span><span class="op">(</span><span class="fl">0</span><span class="op">)</span>,     <span class="co"># multiplicity of this history</span></span>
+<span>                 <span class="va">len</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/double.html">double</a></span><span class="op">(</span><span class="fl">0</span>, default <span class="op">=</span> <span class="fl">0</span><span class="op">)</span>, <span class="co"># number of sampling occasions</span></span>
+<span>                 <span class="va">log</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/integer.html">integer</a></span><span class="op">(</span><span class="fl">0</span>, default <span class="op">=</span> <span class="fl">0</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
+<span>    <span class="co"># Initial forward probs:</span></span>
+<span>    <span class="co"># multiply initial state probs by the observation prob at the first datum x[1]</span></span>
+<span>    <span class="co"># (probObs at t=first is effectively 1 due to CJS conditioning; handled via 'probObse').</span></span>
+<span>    <span class="va">alpha</span> <span class="op">&lt;-</span> <span class="va">probInit</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">3</span><span class="op">]</span> <span class="op">*</span> <span class="va">probObse</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">3</span>,<span class="va">x</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span><span class="co"># * probObs[1:3,x[1]] == 1 due to conditioning on first detection</span></span>
+<span>    <span class="kw">for</span> <span class="op">(</span><span class="va">t</span> <span class="kw">in</span> <span class="fl">2</span><span class="op">:</span><span class="va">len</span><span class="op">)</span> <span class="op">{</span></span>
+<span>      <span class="co"># standard forward step: alpha_t = (alpha_{t-1} * Gamma) .* Omega(:, y_t)</span></span>
+<span>      <span class="va">alpha</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">3</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="op">(</span><span class="va">alpha</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">3</span><span class="op">]</span> <span class="op"><a href="https://rdrr.io/r/base/matmult.html">%*%</a></span> <span class="va">probTrans</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">3</span>,<span class="fl">1</span><span class="op">:</span><span class="fl">3</span><span class="op">]</span><span class="op">)</span> <span class="op">*</span> <span class="va">probObs</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">3</span>,<span class="va">x</span><span class="op">[</span><span class="va">t</span><span class="op">]</span><span class="op">]</span></span>
+<span>    <span class="op">}</span></span>
+<span>    <span class="co"># Pooling: multiply the log-likelihood by 'size'</span></span>
+<span>    <span class="va">logL</span> <span class="op">&lt;-</span> <span class="va">size</span> <span class="op">*</span> <span class="fu"><a href="https://rdrr.io/r/base/Log.html">log</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/sum.html">sum</a></span><span class="op">(</span><span class="va">alpha</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">3</span><span class="op">]</span><span class="op">)</span><span class="op">)</span></span>
+<span>    <span class="fu">returnType</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/double.html">double</a></span><span class="op">(</span><span class="fl">0</span><span class="op">)</span><span class="op">)</span></span>
+<span>    <span class="kw">if</span> <span class="op">(</span><span class="va">log</span><span class="op">)</span> <span class="kw"><a href="https://rdrr.io/r/base/function.html">return</a></span><span class="op">(</span><span class="va">logL</span><span class="op">)</span></span>
+<span>    <span class="kw"><a href="https://rdrr.io/r/base/function.html">return</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/Log.html">exp</a></span><span class="op">(</span><span class="va">logL</span><span class="op">)</span><span class="op">)</span></span>
+<span>  <span class="op">}</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Matching *random generator* (required by NIMBLE for custom distributions)</span></span>
+<span><span class="co"># Generates one synthetic history consistent with the HMM; not used in MCMC, but needed to register the dist.</span></span>
+<span><span class="va">rwolfHMM</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimbleFunction.html">nimbleFunction</a></span><span class="op">(</span></span>
+<span>  run <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">n</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/integer.html">integer</a></span><span class="op">(</span><span class="op">)</span>,</span>
+<span>                 <span class="va">probInit</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/double.html">double</a></span><span class="op">(</span><span class="fl">1</span><span class="op">)</span>,</span>
+<span>                 <span class="va">probObs</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/double.html">double</a></span><span class="op">(</span><span class="fl">2</span><span class="op">)</span>,</span>
+<span>                 <span class="va">probObse</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/double.html">double</a></span><span class="op">(</span><span class="fl">2</span><span class="op">)</span>,</span>
+<span>                 <span class="va">probTrans</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/double.html">double</a></span><span class="op">(</span><span class="fl">2</span><span class="op">)</span>,</span>
+<span>                 <span class="va">size</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/double.html">double</a></span><span class="op">(</span><span class="fl">0</span><span class="op">)</span>,</span>
+<span>                 <span class="va">len</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/double.html">double</a></span><span class="op">(</span><span class="fl">0</span>, default <span class="op">=</span> <span class="fl">0</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
+<span>    <span class="fu">returnType</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/double.html">double</a></span><span class="op">(</span><span class="fl">1</span><span class="op">)</span><span class="op">)</span></span>
+<span>    <span class="va">z</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/numeric.html">numeric</a></span><span class="op">(</span><span class="va">len</span><span class="op">)</span> <span class="co"># latent states</span></span>
+<span>    <span class="va">z</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/Categorical.html">rcat</a></span><span class="op">(</span>n <span class="op">=</span> <span class="fl">1</span>, prob <span class="op">=</span> <span class="va">probInit</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">3</span><span class="op">]</span><span class="op">)</span> <span class="co"># all individuals alive at t = 0 (by construction)</span></span>
+<span>    <span class="va">y</span> <span class="op">&lt;-</span> <span class="va">z</span></span>
+<span>    <span class="va">y</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">2</span> <span class="co"># all individuals are detected at t = 0 (CJS conditioning)</span></span>
+<span>    <span class="kw">for</span> <span class="op">(</span><span class="va">t</span> <span class="kw">in</span> <span class="fl">2</span><span class="op">:</span><span class="va">len</span><span class="op">)</span><span class="op">{</span></span>
+<span>      <span class="co"># state at t given state at t-1</span></span>
+<span>      <span class="va">z</span><span class="op">[</span><span class="va">t</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/Categorical.html">rcat</a></span><span class="op">(</span>n <span class="op">=</span> <span class="fl">1</span>, prob <span class="op">=</span> <span class="va">probTrans</span><span class="op">[</span><span class="va">z</span><span class="op">[</span><span class="va">t</span><span class="op">-</span><span class="fl">1</span><span class="op">]</span>,<span class="fl">1</span><span class="op">:</span><span class="fl">3</span><span class="op">]</span><span class="op">)</span> </span>
+<span>      <span class="co"># observation at t given state at t</span></span>
+<span>      <span class="va">y</span><span class="op">[</span><span class="va">t</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/Categorical.html">rcat</a></span><span class="op">(</span>n <span class="op">=</span> <span class="fl">1</span>, prob <span class="op">=</span> <span class="va">probObs</span><span class="op">[</span><span class="va">z</span><span class="op">[</span><span class="va">t</span><span class="op">]</span>,<span class="fl">1</span><span class="op">:</span><span class="fl">2</span><span class="op">]</span><span class="op">)</span> </span>
+<span>    <span class="op">}</span></span>
+<span>    <span class="kw"><a href="https://rdrr.io/r/base/function.html">return</a></span><span class="op">(</span><span class="va">y</span><span class="op">)</span></span>
+<span>  <span class="op">}</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Register the custom density/generator in the global environment</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/assign.html">assign</a></span><span class="op">(</span><span class="st">'dwolfHMM'</span>, <span class="va">dwolfHMM</span>, <span class="va">.GlobalEnv</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/assign.html">assign</a></span><span class="op">(</span><span class="st">'rwolfHMM'</span>, <span class="va">rwolfHMM</span>, <span class="va">.GlobalEnv</span><span class="op">)</span></span></code></pre></div>
+<p>Now the NIMBLE code for the model, at last:</p>
+<div class="sourceCode" id="cb346"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Model code</span></span>
+<span><span class="va">hmm.phipmix</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimbleCode.html">nimbleCode</a></span><span class="op">(</span><span class="op">{</span></span>
+<span>  </span>
+<span>  <span class="co"># -------------------------------------------------</span></span>
+<span>  <span class="co"># Parameters:</span></span>
+<span>  <span class="co"># pi: initial state probability C1   (mixture weight for class 1)</span></span>
+<span>  <span class="co"># phi: survival probability          (shared across classes)</span></span>
+<span>  <span class="co"># pp1: recapture probability C1      (detection for class 1)</span></span>
+<span>  <span class="co"># pp2: recapture probability C2      (detection for class 2)</span></span>
+<span>  <span class="co"># -------------------------------------------------</span></span>
+<span>  <span class="co"># States (S):</span></span>
+<span>  <span class="co"># 1 alive (A1)  -&gt; class 1</span></span>
+<span>  <span class="co"># 2 alive (A2)  -&gt; class 2</span></span>
+<span>  <span class="co"># 5 dead (D)</span></span>
+<span>  <span class="co"># Observations (O):</span></span>
+<span>  <span class="co"># 1 neither seen nor recovered (0)</span></span>
+<span>  <span class="co"># 2 seen alive (1)</span></span>
+<span>  <span class="co"># -------------------------------------------------</span></span>
+<span>  </span>
+<span>  <span class="co"># priors</span></span>
+<span>  <span class="va">phi</span> <span class="op">~</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html">dunif</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1</span><span class="op">)</span> <span class="co"># prior survival</span></span>
+<span>  <span class="va">one</span> <span class="op">~</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/Constraint.html">dconstraint</a></span><span class="op">(</span><span class="va">pp1</span> <span class="op">&lt;</span> <span class="va">pp2</span><span class="op">)</span> <span class="co"># to avoid label switching (enforces an ordering)</span></span>
+<span>  <span class="va">pp1</span> <span class="op">~</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html">dunif</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1</span><span class="op">)</span> <span class="co"># prior detection (class 1)</span></span>
+<span>  <span class="va">pp2</span> <span class="op">~</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html">dunif</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1</span><span class="op">)</span> <span class="co"># prior detection (class 2)</span></span>
+<span>  <span class="va">pi</span> <span class="op">~</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html">dunif</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1</span><span class="op">)</span>  <span class="co"># prob init state 1 (mixture proportion for class 1)</span></span>
+<span>  </span>
+<span>  <span class="co"># transition matrix (classes are persistent; no switching between A1 and A2)</span></span>
+<span>  <span class="va">gamma</span><span class="op">[</span><span class="fl">1</span>,<span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="va">phi</span>      <span class="co"># A1(t)-&gt;A1(t+1)</span></span>
+<span>  <span class="va">gamma</span><span class="op">[</span><span class="fl">1</span>,<span class="fl">2</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0</span>        <span class="co"># A1(t)-&gt;A2(t+1)</span></span>
+<span>  <span class="va">gamma</span><span class="op">[</span><span class="fl">1</span>,<span class="fl">3</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span> <span class="op">-</span> <span class="va">phi</span>  <span class="co"># A1(t)-&gt;D(t+1)</span></span>
+<span>  <span class="va">gamma</span><span class="op">[</span><span class="fl">2</span>,<span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0</span>        <span class="co"># A2(t)-&gt;A1(t+1)</span></span>
+<span>  <span class="va">gamma</span><span class="op">[</span><span class="fl">2</span>,<span class="fl">2</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="va">phi</span>      <span class="co"># A2(t)-&gt;A2(t+1)</span></span>
+<span>  <span class="va">gamma</span><span class="op">[</span><span class="fl">2</span>,<span class="fl">3</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span> <span class="op">-</span> <span class="va">phi</span>  <span class="co"># A2(t)-&gt;D(t+1)</span></span>
+<span>  <span class="va">gamma</span><span class="op">[</span><span class="fl">3</span>,<span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0</span>        <span class="co"># D(t)-&gt;A1(t+1)</span></span>
+<span>  <span class="va">gamma</span><span class="op">[</span><span class="fl">3</span>,<span class="fl">2</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0</span>        <span class="co"># D(t)-&gt;A2(t+1)</span></span>
+<span>  <span class="va">gamma</span><span class="op">[</span><span class="fl">3</span>,<span class="fl">3</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span>        <span class="co"># D(t)-&gt;D(t+1)</span></span>
+<span>  </span>
+<span>  <span class="co"># vector of initial state probs (mixture at first capture)</span></span>
+<span>  <span class="va">delta</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="va">pi</span>         <span class="co"># A1(first)</span></span>
+<span>  <span class="va">delta</span><span class="op">[</span><span class="fl">2</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span> <span class="op">-</span> <span class="va">pi</span>     <span class="co"># A2(first)</span></span>
+<span>  <span class="va">delta</span><span class="op">[</span><span class="fl">3</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0</span>          <span class="co"># D(first)</span></span>
+<span>  </span>
+<span>  <span class="co"># observation matrix (detection differs by class; dead are never seen)</span></span>
+<span>  <span class="va">omega</span><span class="op">[</span><span class="fl">1</span>,<span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span> <span class="op">-</span> <span class="va">pp1</span>   <span class="co"># A1(t)-&gt;0(t)</span></span>
+<span>  <span class="va">omega</span><span class="op">[</span><span class="fl">1</span>,<span class="fl">2</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="va">pp1</span>       <span class="co"># A1(t)-&gt;1(t)</span></span>
+<span>  <span class="va">omega</span><span class="op">[</span><span class="fl">2</span>,<span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span> <span class="op">-</span> <span class="va">pp2</span>   <span class="co"># A2(t)-&gt;0(t)</span></span>
+<span>  <span class="va">omega</span><span class="op">[</span><span class="fl">2</span>,<span class="fl">2</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="va">pp2</span>       <span class="co"># A2(t)-&gt;1(t)</span></span>
+<span>  <span class="va">omega</span><span class="op">[</span><span class="fl">3</span>,<span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span>         <span class="co"># D(t)-&gt;0(t)</span></span>
+<span>  <span class="va">omega</span><span class="op">[</span><span class="fl">3</span>,<span class="fl">2</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0</span>         <span class="co"># D(t)-&gt;1(t)</span></span>
+<span>  </span>
+<span>  <span class="co"># 'omegae' is used only at the first datum inside the custom density</span></span>
+<span>  <span class="co"># to implement CJS conditioning (everyone is detected at first capture)</span></span>
+<span>  <span class="va">omegae</span><span class="op">[</span><span class="fl">1</span>,<span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0</span>        <span class="co"># A1(t)-&gt;0(t)</span></span>
+<span>  <span class="va">omegae</span><span class="op">[</span><span class="fl">1</span>,<span class="fl">2</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span>        <span class="co"># A1(t)-&gt;1(t)</span></span>
+<span>  <span class="va">omegae</span><span class="op">[</span><span class="fl">2</span>,<span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0</span>        <span class="co"># A2(t)-&gt;0(t)</span></span>
+<span>  <span class="va">omegae</span><span class="op">[</span><span class="fl">2</span>,<span class="fl">2</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span>        <span class="co"># A2(t)-&gt;1(t)</span></span>
+<span>  <span class="va">omegae</span><span class="op">[</span><span class="fl">3</span>,<span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span>        <span class="co"># D(t)-&gt;0(t)</span></span>
+<span>  <span class="va">omegae</span><span class="op">[</span><span class="fl">3</span>,<span class="fl">2</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0</span>        <span class="co"># D(t)-&gt;1(t)</span></span>
+<span>  </span>
+<span>  <span class="co"># likelihood</span></span>
+<span>  <span class="kw">for</span><span class="op">(</span><span class="va">i</span> <span class="kw">in</span> <span class="fl">1</span><span class="op">:</span><span class="va">N</span><span class="op">)</span> <span class="op">{</span></span>
+<span>    <span class="co"># One weighted likelihood contribution per *unique* encounter history,</span></span>
+<span>    <span class="co"># using the forward algorithm implemented in dwolfHMM.</span></span>
+<span>    <span class="va">y</span><span class="op">[</span><span class="va">i</span>,<span class="va">first</span><span class="op">[</span><span class="va">i</span><span class="op">]</span><span class="op">:</span><span class="va">K</span><span class="op">]</span> <span class="op">~</span> <span class="fu">dwolfHMM</span><span class="op">(</span>probInit <span class="op">=</span> <span class="va">delta</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">3</span><span class="op">]</span>,      <span class="co"># initial state probs</span></span>
+<span>                               probObs <span class="op">=</span> <span class="va">omega</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">3</span>,<span class="fl">1</span><span class="op">:</span><span class="fl">2</span><span class="op">]</span>,   <span class="co"># observation matrix</span></span>
+<span>                               probObse <span class="op">=</span> <span class="va">omegae</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">3</span>,<span class="fl">1</span><span class="op">:</span><span class="fl">2</span><span class="op">]</span>, <span class="co"># obs matrix for first occasion (conditioning)</span></span>
+<span>                               probTrans <span class="op">=</span> <span class="va">gamma</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">3</span>,<span class="fl">1</span><span class="op">:</span><span class="fl">3</span><span class="op">]</span>, <span class="co"># transition matrix</span></span>
+<span>                               size <span class="op">=</span> <span class="va">size</span><span class="op">[</span><span class="va">i</span><span class="op">]</span>,             <span class="co"># weight: how many individuals share this history</span></span>
+<span>                               len <span class="op">=</span> <span class="va">K</span> <span class="op">-</span> <span class="va">first</span><span class="op">[</span><span class="va">i</span><span class="op">]</span> <span class="op">+</span> <span class="fl">1</span><span class="op">)</span>     <span class="co"># number of occasions for this history</span></span>
+<span>  <span class="op">}</span></span>
+<span><span class="op">}</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Initial values (cool thing, we do not need inits for the latent states anymore!!)</span></span>
+<span><span class="va">initial.values</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>phi <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html">runif</a></span><span class="op">(</span><span class="fl">1</span>,<span class="fl">0</span>,<span class="fl">1</span><span class="op">)</span>,</span>
+<span>                                  pp1 <span class="op">=</span> <span class="fl">0.3</span>,</span>
+<span>                                  pp2 <span class="op">=</span> <span class="fl">0.8</span>,</span>
+<span>                                  pi <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html">runif</a></span><span class="op">(</span><span class="fl">1</span>,<span class="fl">0</span>,<span class="fl">1</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co"># Note: 'one' is provided in constants; no init needed. The pp1&lt;pp2 constraint</span></span>
+<span><span class="co"># prevents label switching by fixing the class ordering.</span></span>
+<span></span>
+<span><span class="co"># Parameters to be monitored</span></span>
+<span><span class="va">parameters.to.save</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"phi"</span>, <span class="st">"pp1"</span>, <span class="st">"pp2"</span>, <span class="st">"pi"</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Run NIMBLE</span></span>
+<span><span class="va">out</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimbleMCMC.html">nimbleMCMC</a></span><span class="op">(</span>code <span class="op">=</span> <span class="va">hmm.phipmix</span>, </span>
+<span>                  constants <span class="op">=</span> <span class="va">my.constants</span>,</span>
+<span>                  data <span class="op">=</span> <span class="va">my.data</span>,              </span>
+<span>                  inits <span class="op">=</span> <span class="va">initial.values</span>,</span>
+<span>                  monitors <span class="op">=</span> <span class="va">parameters.to.save</span>,</span>
+<span>                  niter <span class="op">=</span> <span class="va">n.iter</span>,</span>
+<span>                  nburnin <span class="op">=</span> <span class="va">n.burnin</span>, </span>
+<span>                  nchains <span class="op">=</span> <span class="va">n.chains</span><span class="op">)</span></span></code></pre></div>
+<p>The results look fine now:</p>
+<div class="inline-table"><table class="table table-sm">
+<caption>
+<span id="tab:unnamed-chunk-392">Table 7.2: </span>Posterior estimates vs. data-generating values for a finite–mixture HMM, when a marginalized likelihood is used.</caption>
+<thead><tr class="header">
+<th align="left">Parameter</th>
+<th align="center">True value</th>
+<th align="center">Posterior mean (95% credible interval)</th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td align="left">phi</td>
+<td align="center">0.7</td>
+<td align="center">0.72 (0.69–0.75)</td>
+</tr>
+<tr class="even">
+<td align="left">pi</td>
+<td align="center">0.8</td>
+<td align="center">0.72 (0.54–0.87)</td>
+</tr>
+<tr class="odd">
+<td align="left">pp1</td>
+<td align="center">0.3</td>
+<td align="center">0.27 (0.18–0.35)</td>
+</tr>
+<tr class="even">
+<td align="left">pp2</td>
+<td align="center">0.8</td>
+<td align="center">0.79 (0.65–0.92)</td>
+</tr>
+</tbody>
+</table></div>
+<p>In summary, when modeling unobservable individual heterogeneity (e.g., detection classes) in an HMM, avoid encoding class identity as a dynamic state. Instead, treat it as a fixed latent variable, or marginalize it out. Otherwise, the model is unable to explore the full posterior and will yield biased or unreliable estimates.</p>
+<p>A question that remains is the number of classes we should use. In other words, why 2 classes and not 3 or 4? One option is to fit models with more classes and select among them (see <span class="citation">Cubaynes et al. (<a href="references.html#ref-cubaynes2012">2012</a>)</span>). Alternatively, you can take a non-parametric route and let the data decide how many classes are needed; this is relatively easy in NIMBLE (see <span class="citation">Turek, Wehrhahn, and Gimenez (<a href="references.html#ref-turek_bayesian_2021">2021</a>)</span>).</p>
+<p>For broader context on individual heterogeneity, see <span class="citation">Gimenez, Cam, and Gaillard (<a href="references.html#ref-gimenez2018ih">2018</a>)</span>. Finally, remember that these hidden classes were introduced by Pledger and colleagues primarily to correct bias in survival or abundance when heterogeneity is ignored; interpreting the classes biologically after fitting should be done with caution.</p>
+<!-- I'm not an expert on the BNP facilities offered in NIMBLE, but I think I can comment: the stick-breaking representation (as you're using), and the CRP distribution, are modelling the same Dirichlet process.  They differ in the MCMC sampling algorithms which are applied to each, automatically, by NIMBLE's MCMC.  Translating your code between these two (mathematically identical) representations is a relatively small and straight-forward exercise.  The relative performance of the different sampling algorithms, as applied to each representation, could differ, would depend on the model and the data, and is generally difficult to predict. -->
+<!-- Changing between the stick-breaking representation and the CRP representation, the categorical distribution would persist in your model.  And Perry's comments are correct, that (in particular for a large number of categories, e.g. large values of H or HH in your code) the categorical sampler (which is applied to the categorical distribution) would become arbitrarily inefficient, in that it evaluates the posterior density for every category value (H or HH times), then samples directly from that posterior distribution.  And that you could hopefully reduce this inefficiency by writing a customized sampling strategy (a custom-written MCMC sampler), to update your categorical distributions, in a more efficient (less wasteful) manner. -->
 <!-- ## Temporary emigration -->
 <!-- Multistate treatment as in @schaub2004te. See example in @bancila2018te. -->
 <!-- Transition matrix: -->
@@ -609,6 +946,7 @@ z_{t}=A \\ z_{t}=U \\ z_{t}=D
 
 </div>
 </div>
+</div>
   <div class="chapter-nav">
 <div class="prev"><a href="covariateschapter.html"><span class="header-section-number">6</span> Dealing with covariates</a></div>
 <div class="next"><a href="tradeoffs.html"><span class="header-section-number">8</span> Quantifying life history traits</a></div>
@@ -616,9 +954,27 @@ z_{t}=A \\ z_{t}=U \\ z_{t}=D
     <nav id="toc" data-toggle="toc" aria-label="On this page"><h2>On this page</h2>
       <ul class="nav navbar-nav">
 <li><a class="nav-link" href="#lackoffit"><span class="header-section-number">7</span> Addressing model lack of fit</a></li>
-<li><a class="nav-link" href="#individual-heterogeneity"><span class="header-section-number">7.1</span> Individual heterogeneity</a></li>
-<li><a class="nav-link" href="#memorymodel"><span class="header-section-number">7.2</span> Memory model</a></li>
-<li><a class="nav-link" href="#trapdep"><span class="header-section-number">7.3</span> Trap dep</a></li>
+<li><a class="nav-link" href="#introduction-9"><span class="header-section-number">7.1</span> Introduction</a></li>
+<li>
+<a class="nav-link" href="#trapdep"><span class="header-section-number">7.2</span> Accounting for trap-dependence</a><ul class="nav navbar-nav">
+<li><a class="nav-link" href="#motivation-3"><span class="header-section-number">7.2.1</span> Motivation</a></li>
+<li><a class="nav-link" href="#model-and-nimble-implementation-3"><span class="header-section-number">7.2.2</span> Model and NIMBLE implementation</a></li>
+<li><a class="nav-link" href="#results-3"><span class="header-section-number">7.2.3</span> Results</a></li>
+</ul>
+</li>
+<li>
+<a class="nav-link" href="#memorymodel"><span class="header-section-number">7.3</span> Allowing your Markov models to remember</a><ul class="nav navbar-nav">
+<li><a class="nav-link" href="#motivation-4"><span class="header-section-number">7.3.1</span> Motivation</a></li>
+<li><a class="nav-link" href="#model-and-nimble-implementation-4"><span class="header-section-number">7.3.2</span> Model and NIMBLE implementation</a></li>
+<li><a class="nav-link" href="#results-4"><span class="header-section-number">7.3.3</span> Results</a></li>
+</ul>
+</li>
+<li>
+<a class="nav-link" href="#accomodating-individual-heterogeneity"><span class="header-section-number">7.4</span> Accomodating individual heterogeneity</a><ul class="nav navbar-nav">
+<li><a class="nav-link" href="#motivation-5"><span class="header-section-number">7.4.1</span> Motivation</a></li>
+<li><a class="nav-link" href="#model-and-nimble-implementation-5"><span class="header-section-number">7.4.2</span> Model and NIMBLE implementation</a></li>
+</ul>
+</li>
 </ul>
 
       <div class="book-extra">
@@ -636,7 +992,7 @@ z_{t}=A \\ z_{t}=U \\ z_{t}=D
 <footer class="bg-primary text-light mt-5"><div class="container"><div class="row">
 
   <div class="col-12 col-md-6 mt-3">
-    <p>"<strong>Bayesian analysis of capture-recapture data with hidden Markov models</strong>: Theory and case studies in R and NIMBLE" was written by Olivier Gimenez. It was last built on 2025-08-11.</p>
+    <p>"<strong>Bayesian analysis of capture-recapture data with hidden Markov models</strong>: Theory and case studies in R and NIMBLE" was written by Olivier Gimenez. It was last built on 2025-08-12.</p>
   </div>
 
   <div class="col-12 col-md-6 mt-3">
