@@ -90,11 +90,12 @@ hmm <- nimbleCode({
   omega[3,2] <- 0           # Pr(dead t -> dead t+1)
   
   delta[1] <- 1          # Pr(alive t = 1) = 1
-  delta[2] <- 0          # Pr(dead t = 1) = 0
+  delta[2] <- 1          # Pr(alive t = 1) = 1
+  delta[3] <- 0          # Pr(dead t = 1) = 0
   
   # likelihood
   for (i in 1:N){
-    z[i,1] ~ dcat(delta[1:2])
+    z[i,1] ~ dcat(delta[1:3])
     for (j in 2:K){
       z[i,j] ~ dcat(gamma[z[i,j-1], 1:3, i, j - 1])
       y[i,j] ~ dcat(omega[z[i,j], 1:2])
@@ -268,7 +269,6 @@ p_dur <- ggplot(duration_sum, aes(x = week, y = mean, color = sex, fill = sex, g
   theme_bw() +
   theme(legend.position = "top")
 p_dur
-
 
 
 # a linear date effect on arrival probability associated with a sex effect, 

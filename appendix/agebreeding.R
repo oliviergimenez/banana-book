@@ -1,9 +1,9 @@
 # OBS
 # data from 2004 to 2016
-# 0 = not seen
-# 1 = seen alone
-# 2 = seen with a young of the year
-# 3 = seen with a calf (1 to 3 years old)
+# 1 = not seen
+# 2 = seen alone
+# 3 = seen with a young of the year
+# 4 = seen with a calf (1 to 3 years old)
 
 # # STATES (6)
 # NB Nonbreeding adult female
@@ -13,7 +13,7 @@
 # Bc2 Breeding adult female with a 2‐year‐old calf
 # D Dead female
 # 
-# # INTERPEDIATE STATES
+# # INTERMEDIATE STATES
 # Byoy‐D Breeding adult female that had lost her young‐of‐the‐year
 # Bc1‐D Breeding adult female that had lost her 1‐year‐ old calf
 # Bc2‐D Breeding adult female that had lost her 2‐year‐ old calf

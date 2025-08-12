@@ -1,16 +1,130 @@
 # Quantifying life history traits {#tradeoffs}
 
-WORK IN PROGRESS
+## Introduction
 
 See <https://www.oxfordbibliographies.com/display/document/obo-9780199830060/obo-9780199830060-0016.xml> and <https://en.wikipedia.org/wiki/Life_history_theory> for a definition. I think that all case studies below fall in the LH category. I might consider moving the disease ecology case study in the main Sites and states chapter. See however  <https://onlinelibrary.wiley.com/doi/epdf/10.1111/ele.13681> for a link between disease ecology and life history theory. 
 
-## Age mortalities
+## Assessing age- and cause--specific mortality
+
+### Motivation
 
 Combine dead recoveries with live recaptures. Paper by @koons2014. Roe deer data. Cite recent paper by Michael on the combination.
 
 See also nice app by @fernandez-chacon_causes_2016,  @peron_evidence_2016 and @marzo2011. Extension to semi-markov in @choquet_semi-markov_2011.
 
-Results
+### Model and NIMBLE implementation
+
+<!-- # OBS -->
+<!-- # 0, not seen;  -->
+<!-- # 1, captured for the first time or recaptured;  -->
+<!-- # 2, killed by human activities and reported.  -->
+
+<!-- # STATES -->
+<!-- # A, alive;  -->
+<!-- # H, individual just died from human causes;  -->
+<!-- # NH, individual just died from a natural (non-human) cause;  -->
+<!-- # D, individual already dead. -->
+
+$$\begin{matrix}
+& \\
+\mathbf{\delta} =
+\left ( \vphantom{ \begin{matrix} 12 \end{matrix} } \right .
+\end{matrix}
+\hspace{-1.2em}
+\begin{matrix}
+z_t=A & z_t=H & z_t=NH & z_t=D \\ \hdashline
+1 & 0 & 0 & 0\\
+\end{matrix}
+\hspace{-0.2em}
+\begin{matrix}
+& \\
+\left . \vphantom{ \begin{matrix} 12 \end{matrix} } \right )
+\begin{matrix}
+\end{matrix}
+\end{matrix}$$
+
+We proceed with the transition matrix: 
+$$\begin{matrix}
+& \\
+\mathbf{\Gamma} =
+\left ( \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \\ 12 \end{matrix} } \right .
+\end{matrix}
+\hspace{-1.2em}
+\begin{matrix}
+z_t=A & z_t=H & z_t=NH & z_t=D \\ \hdashline
+1 - \mu_H - \mu_{NH}  & \mu_H & \mu_{NH} & 0\\
+0 & 0 & &  1\\
+0 & 0 & &  1\\
+0 & 0 & &  1
+\end{matrix}
+\hspace{-0.2em}
+\begin{matrix}
+& \\
+\left . \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \\ 12 \end{matrix} } \right )
+\begin{matrix}
+z_{t-1}=A \\ z_{t-1}=H \\ z_{t-1}=NH \\ z_{t-1}=D
+\end{matrix}
+\end{matrix}$$
+
+Following the paper, adult survival is blabla:
+```{r eval = FALSE}
+# Transition matrix
+  for(i in 1:N){
+    for(t in 1:(K-1)) {
+      
+      # Age effects
+      etaH[i,t] <- (alpha_H_01 * age_lt1[i,t] + alpha_H_ge1 * age_ge1[i,t])
+      
+      etaNH[i,t] <- (alpha_NH_01 * age_lt1[i,t] +
+                       alpha_NH_12 * age_1to2[i,t] +
+                       (beta0_NH + beta1_NH * age_std_mu2[i,t]) * age_ge2[i,t])
+      
+      # Denominator 
+      den[i,t] <- 1 + exp(etaH[i,t]) + exp(etaNH[i,t])  # Default denominator = 1
+      
+      # Transitions from A
+      gamma_it[i,t,1,1] <- 1 / den[i,t]  # Default: stay alive
+      gamma_it[i,t,1,2] <- exp(etaH[i,t]) / den[i,t]   # Default: 0
+      gamma_it[i,t,1,3] <- exp(etaNH[i,t]) / den[i,t]  # Default: 0
+      gamma_it[i,t,1,4] <- 0  # Always 0
+      
+      # From H, NH, D (always go to D)
+      gamma_it[i,t,2,1] <- 0; gamma_it[i,t,2,2] <- 0; gamma_it[i,t,2,3] <- 0; gamma_it[i,t,2,4] <- 1
+      gamma_it[i,t,3,1] <- 0; gamma_it[i,t,3,2] <- 0; gamma_it[i,t,3,3] <- 0; gamma_it[i,t,3,4] <- 1
+      gamma_it[i,t,4,1] <- 0; gamma_it[i,t,4,2] <- 0; gamma_it[i,t,4,3] <- 0; gamma_it[i,t,4,4] <- 1
+```
+
+In the code above, age is passed in the data and created as follows:
+```{r eval = FALSE}
+...
+```
+
+Last step is the observation matrix:
+$$\begin{matrix}
+& \\
+\mathbf{\Omega} =
+\left ( \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \\ 12 \end{matrix} } \right .
+\end{matrix}
+\hspace{-1.2em}
+\begin{matrix}
+y_t=1 & y_t=2 & y_t=3\\ \hdashline
+1 - p & p & 0 \\
+1 - \lambda & 0 & \lambda\\
+1 & 0 & 0\\
+1 & 0 & 0
+\end{matrix}
+\hspace{-0.2em}
+\begin{matrix}
+& \\
+\left . \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \\ 12 \end{matrix} } \right )
+\begin{matrix}
+z_{t}=A \\ z_{t}=H \\ z_{t}=NH \\ z_{t}=D
+\end{matrix}
+\end{matrix}$$
+
+
+### Results and interpretation
+
 
 ```{r echo = FALSE}
 library(MCMCvis)
@@ -113,12 +227,317 @@ ggplot(df_results, aes(age, median)) +
 <!-- The best model indicated senescence in natural mortality from age 2 onwards (generalized logit link beta = 2·239, 95% CI: 0·942–3·535). The best model also retained a constant human-related mortality probability from age 1 onwards but a higher mortality in the first year of life after birth (human-related mortality probability 0–1 = 0·132, 95% CI: 0·053–0·294; human-related mortality probability 1+ = 0·057, 95% CI: 0·027–0·115).  -->
 
 
+## Quantifying age-specific breeding
 
-## Age breeding
+### Motivation
 
-dolphins
+### Model and NIMBLE implementation
 
-Results
+<!-- # OBS -->
+<!-- # data from 2004 to 2016 -->
+<!-- # 0 = not seen -->
+<!-- # 1 = seen alone -->
+<!-- # 2 = seen with a young of the year -->
+<!-- # 3 = seen with a calf (1 to 3 years old) -->
+
+<!-- # # STATES (6) -->
+<!-- # NB Nonbreeding adult female -->
+<!-- # Byoy Breeding adult female with a young‐of‐the‐year -->
+<!-- # Bc1 Breeding adult female with a 1‐year‐old calf  -->
+<!-- # Bc3 Breeding adult female with a 3‐year‐old calf -->
+<!-- # Bc2 Breeding adult female with a 2‐year‐old calf -->
+<!-- # D Dead female -->
+<!-- #  -->
+<!-- # # INTERMEDIATE STATES -->
+<!-- # Byoy‐D Breeding adult female that had lost her young‐of‐the‐year -->
+<!-- # Bc1‐D Breeding adult female that had lost her 1‐year‐ old calf -->
+<!-- # Bc2‐D Breeding adult female that had lost her 2‐year‐ old calf -->
+<!-- # Bc3‐leave Breeding adult female that raised her calf to the age of 3 -->
+
+$$
+\begin{matrix}
+& \\
+\boldsymbol{\delta} =
+\left ( \vphantom{ \begin{matrix} 1 \end{matrix} } \right .
+\end{matrix}
+\hspace{-1.2em}
+\begin{matrix}
+\text{NB} & \text{Byoy} & \text{Bc1} & \text{Bc2} & \text{Bc3} & \text{D} \\ \hdashline
+\pi_1 & \pi_2 & \pi_3 & \pi_4 & \pi_5 & 0
+\end{matrix}
+\hspace{-0.2em}
+\begin{matrix}
+& \\
+\left . \vphantom{ \begin{matrix} 1 \end{matrix} } \right )
+\end{matrix}
+$$
+
+
+
+$$
+\begin{matrix}
+& \\
+\mathbf{\Phi_A} =
+\left ( \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \\ 12 \\ 12 \\ 12 \end{matrix} } \right .
+\end{matrix}
+\hspace{-1.2em}
+\begin{matrix}
+\text{NB} & \text{Byoy} & \text{Bc1} & \text{Bc2} & \text{Bc3} & \text{D} \\ \hdashline
+\phi_A & 0      & 0      & 0      & 0      & 1 - \phi_A \\
+0      & \phi_A & 0      & 0      & 0      & 1 - \phi_A \\
+0      & 0      & \phi_A & 0      & 0      & 1 - \phi_A \\
+0      & 0      & 0      & \phi_A & 0      & 1 - \phi_A \\
+0      & 0      & 0      & 0      & \phi_A & 1 - \phi_A \\
+0      & 0      & 0      & 0      & 0      & 1
+\end{matrix}
+\hspace{-0.2em}
+\begin{matrix}
+& \\
+\left . \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \\ 12 \\ 12 \\ 12 \end{matrix} } \right )
+\begin{matrix}
+\text{NB} \\
+\text{Byoy} \\
+\text{Bc1} \\
+\text{Bc2} \\
+\text{Bc3} \\
+\text{D}
+\end{matrix}
+\end{matrix}
+$$
+
+$$
+\begin{matrix}
+& \\
+\mathbf{\Phi_Y} =
+\left ( \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \\ 12 \\ 12 \\ 12 \end{matrix} } \right .
+\end{matrix}
+\hspace{-1.2em}
+\begin{matrix}
+\text{NB} & \text{Byoy} & \text{Byoy-D} & \text{Bc1} & \text{Bc1-D} & \text{Bc2} & \text{Bc2-D} & \text{Bc3-leave} & \text{D} \\ \hdashline
+1 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 \\
+0 & \phi_{Y,1} & 1 - \phi_{Y,1} & 0 & 0 & 0 & 0 & 0 & 0 \\
+0 & 0 & 0 & \phi_{Y,1} & 1 - \phi_{Y,1} & 0 & 0 & 0 & 0 \\
+0 & 0 & 0 & 0 & 0 & \phi_{Y,2} & 1 - \phi_{Y,2} & 0 & 0 \\
+0 & 0 & 0 & 0 & 0 & 0 & 0 & 1 & 0 \\
+0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 1
+\end{matrix}
+\hspace{-0.2em}
+\begin{matrix}
+& \\
+\left . \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \\ 12 \\ 12 \\ 12 \end{matrix} } \right )
+\begin{matrix}
+\text{NB} \\
+\text{Byoy} \\
+\text{Bc1} \\
+\text{Bc2} \\
+\text{Bc3} \\
+\text{D}
+\end{matrix}
+\end{matrix}
+$$
+
+
+$$
+\begin{matrix}
+& \\
+\mathbf{AGING} =
+\left ( \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \\ 12 \\ 12 \\ 12 \\ 12 \\ 12 \\ 12 \end{matrix} } \right .
+\end{matrix}
+\hspace{-1.2em}
+\begin{matrix}
+\text{NB} & \text{Byoy} & \text{Byoy-D} & \text{Bc1} & \text{Bc1-D} & \text{Bc2} & \text{Bc2-D} & \text{Bc3-leave} & \text{D} \\ \hdashline
+1 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 \\
+0 & 1 & 0 & 0 & 0 & 0 & 0 & 0 & 0 \\
+0 & 0 & 1 & 0 & 0 & 0 & 0 & 0 & 0 \\
+0 & 0 & 0 & 0 & 1 & 0 & 0 & 0 & 0 \\
+0 & 0 & 0 & 0 & 1 & 0 & 0 & 0 & 0 \\
+0 & 0 & 0 & 0 & 0 & 0 & 1 & 0 & 0 \\
+0 & 0 & 0 & 0 & 0 & 0 & 1 & 0 & 0 \\
+0 & 0 & 0 & 0 & 0 & 0 & 0 & 1 & 0 \\
+0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 1
+\end{matrix}
+\hspace{-0.2em}
+\begin{matrix}
+& \\
+\left . \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \\ 12 \\ 12 \\ 12 \\ 12 \\ 12 \\ 12 \end{matrix} } \right )
+\begin{matrix}
+\text{NB} \\
+\text{Byoy} \\
+\text{Byoy-D} \\
+\text{Bc1} \\
+\text{Bc1-D} \\
+\text{Bc2} \\
+\text{Bc2-D} \\
+\text{Bc3-leave} \\
+\text{D}
+\end{matrix}
+\end{matrix}
+$$
+
+
+$$
+\begin{matrix}
+& \\
+\mathbf{BREED} =
+\left ( \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \\ 12 \\ 12 \\ 12 \\ 12 \\ 12 \\ 12 \end{matrix} } \right .
+\end{matrix}
+\hspace{-1.2em}
+\begin{matrix}
+\text{NB} & \text{Byoy} & \text{Bc1} & \text{Bc2} & \text{Bc3} & \text{D} \\ \hdashline
+1 - \beta_1 & \beta_1 & 0 & 0 & 0 & 0 \\
+0 & 0 & 1 & 0 & 0 & 0 \\
+0 & 0 & 0 & 1 & 0 & 0 \\
+0 & 0 & 0 & 0 & 1 & 0 \\
+1 - \beta_1 & \beta_1 & 0 & 0 & 0 & 0 \\
+1 - \beta_1 & \beta_1 & 0 & 0 & 0 & 0 \\
+1 - \beta_2 & \beta_2 & 0 & 0 & 0 & 0 \\
+1 - \beta_2 & \beta_2 & 0 & 0 & 0 & 0 \\
+0 & 0 & 0 & 0 & 0 & 1
+\end{matrix}
+\hspace{-0.2em}
+\begin{matrix}
+& \\
+\left . \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \\ 12 \\ 12 \\ 12 \\ 12 \\ 12 \\ 12 \end{matrix} } \right )
+\begin{matrix}
+\text{NB} \\
+\text{Byoy} \\
+\text{Bc1} \\
+\text{Bc2} \\
+\text{Byoy-D} \\
+\text{Bc1-D} \\
+\text{Bc2-D} \\
+\text{Bc3-leave} \\
+\text{D}
+\end{matrix}
+\end{matrix}
+$$
+
+
+$$
+\begin{matrix}
+& \\
+\mathbf{DETECTION} =
+\left ( \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \\ 12 \\ 12 \\ 12 \end{matrix} } \right .
+\end{matrix}
+\hspace{-1.2em}
+\begin{matrix}
+\text{NB} & \text{Byoy} & \text{Bc1} & \text{Bc2} & \text{Bc3} & \text{D} \\ \hdashline
+1 - p_1 & p_1 & 0 & 0 & 0 & 0 \\
+1 - p_2 & 0 & p_2 & 0 & 0 & 0 \\
+1 - p_2 & 0 & 0 & p_2 & 0 & 0 \\
+1 - p_1 & 0 & 0 & 0 & p_1 & 0 \\
+1 - p_1 & 0 & 0 & 0 & p_1 & 0 \\
+1 & 0 & 0 & 0 & 0 & 0
+\end{matrix}
+\hspace{-0.2em}
+\begin{matrix}
+& \\
+\left . \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \\ 12 \\ 12 \\ 12 \end{matrix} } \right )
+\begin{matrix}
+\text{NB} \\
+\text{Byoy} \\
+\text{Bc1} \\
+\text{Bc2} \\
+\text{Bc3} \\
+\text{D}
+\end{matrix}
+\end{matrix}
+$$
+
+
+$$
+\begin{matrix}
+& \\
+\mathbf{OBS} =
+\left ( \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \\ 12 \\ 12 \\ 12 \end{matrix} } \right .
+\end{matrix}
+\hspace{-1.2em}
+\begin{matrix}
+1 & 2 & 3 & 4 \\ \hdashline
+1 & 0 & 0 & 0 \\
+0 & 1 & 0 & 0 \\
+0 & 1 - q_1 & q_1 & 0 \\
+0 & 1 - q_2 & 0 & q_2 \\
+0 & 1 - q_2 & 0 & q_2 \\
+0 & 1 - q_2 & 0 & q_2
+\end{matrix}
+\hspace{-0.2em}
+\begin{matrix}
+& \\
+\left . \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \\ 12 \\ 12 \\ 12 \end{matrix} } \right )
+\begin{matrix}
+\text{NB} \\
+\text{Byoy} \\
+\text{Bc1} \\
+\text{Bc2} \\
+\text{Bc3} \\
+\text{D}
+\end{matrix}
+\end{matrix}
+$$
+
+
+
+```{r, engine = 'tikz', echo = FALSE}
+\usetikzlibrary{arrows.meta, fit, positioning, automata}
+\begin{tikzpicture}[
+  >=Latex, node distance=24mm,
+  state/.style = {circle, draw, minimum size=8mm, font=\small, align=center}
+]
+% Nodes
+\node[state] (NB)   {NB};
+\node[state, right=of NB] (Byoy) {Byoy};
+\node[state, right=of Byoy] (Bc1)  {Bc1};
+\node[state, right=of Bc1] (Bc2)  {Bc2};
+\node[state, right=of Bc2] (Bc3)  {Bc3};
+\node[state, below=12mm of Bc2] (D) {D};
+
+% Adult survival (loops)
+\draw[->] (NB)   edge[loop above] node[above] {$\phi_A$} ();
+\draw[->] (Byoy) edge[loop above] node[above] {$\phi_A$} ();
+\draw[->] (Bc1)  edge[loop above] node[above] {$\phi_A$} ();
+\draw[->] (Bc2)  edge[loop above] node[above] {$\phi_A$} ();
+\draw[->] (Bc3)  edge[loop above] node[above] {$\phi_A$} ();
+
+% Death (to D) with labels under the arrows, slightly bent & shortened
+\draw[->, shorten >=1.5pt, shorten <=2pt]
+  (NB)   to[out=-80, in=180] node[pos=0.55, sloped, below] {$1-\phi_A$} (D);
+\draw[->, shorten >=1.5pt, shorten <=2pt]
+  (Byoy) to[out=-70, in=160] node[pos=0.55, sloped, below] {$1-\phi_A$} (D);
+
+% --- tweaked placements ---
+\draw[->, shorten >=1.5pt, shorten <=2pt]
+  (Bc1)  to[out=-55, in=145] node[pos=0.35, sloped, below] {$1-\phi_A$} (D); % label earlier to avoid crossing
+\draw[->, shorten >=1.5pt, shorten <=4pt]
+  (Bc2) to[out=-30, in=110]
+  node[pos=0.30, sloped, below] {$1-\phi_A$} (D); % --------------------------------
+
+\draw[->, shorten >=1.5pt, shorten <=2pt]
+  (Bc3)  to[out=-60, in=60 ] node[pos=0.55, sloped, below] {$1-\phi_A$} (D);
+
+% D absorbing
+\draw[->] (D) edge[loop below] node[below] {$1$} ();
+
+% Breeding switch
+\draw[->] (NB) -- node[pos=0.5, above] {$\beta_1$} (Byoy);
+
+% YOY survival
+\draw[->] (Byoy) -- node[pos=0.5, above] {$\phi_{Y1}$} (Bc1);
+
+% Aging with labels below the arrows
+\draw[->] (Bc1) -- node[pos=0.5, below] {$1$} (Bc2);
+\draw[->] (Bc2) -- node[pos=0.5, below] {$1$} (Bc3);
+
+% Emancipation Bc3 -> NB (arc above to avoid crossing)
+\draw[->] (Bc3) to[out=120, in=60, looseness=1.0]
+  node[pos=0.5, above] {$1$} (NB);
+\end{tikzpicture}
+```
+
+
+
+### Results and interpretation
+
 
 ```{r echo = FALSE}
 library(MCMCvis)
@@ -134,7 +553,9 @@ Female survival probability was estimated at 0.97 (95% CI 0.96– 0.98) and did 
 
 Breeding probability varied depending on the breeding state: nonbreeding females and females that had just lost their YOY or 1‐year‐old calf had a low probability of giving birth (0.33, 95% CI 0.26–0.42), whereas females that had lost their 2‐year‐old calf or raised it until the age of 3 had a greater probability of giving birth the next year (0.71, 95% CI 0.45–0.88).
 
-## Stopover duration
+## Estimating stopover duration
+
+### Motivation 
 
 @guerin_advances_2017 for a comparison of method, would be great to reproduce all analyses. 
 
@@ -148,7 +569,78 @@ This nicely reframes stopover behavior as a stage-specific timing trait — akin
 * Allocating resources: Extended stopovers might be linked to resource accumulation (e.g., fat gain) before migration, similar to capital breeding strategies.
 * Trade-offs and constraints: The length of stopovers could reflect a trade-off between rapid migration vs. energy recovery and safety.
 
-Results
+### Model and NIMBLE implementation
+
+<!-- # Three STATES  -->
+<!-- # + not yet arrived in the pond (1) -->
+<!-- # + arrived in the pond (2) -->
+<!-- # + departed from the pond (3)] -->
+<!-- #  -->
+<!-- # Two OBS -->
+<!-- # + not captured (1) -->
+<!-- # + captured (2)]  -->
+
+$$
+\begin{matrix}
+& \\
+\boldsymbol{\delta} =
+\left ( \vphantom{ \begin{matrix} 1 \end{matrix} } \right .
+\end{matrix}
+\hspace{-1.2em}
+\begin{matrix}
+\text{NYA} & \text{ARR} & \text{DEP} \\ \hdashline
+1 & 0 & 0
+\end{matrix}
+\hspace{-0.2em}
+\begin{matrix}
+& \\
+\left . \vphantom{ \begin{matrix} 1 \end{matrix} } \right )
+\end{matrix}
+$$
+
+$$
+\begin{matrix}
+& \\
+\boldsymbol{\Gamma}_{g,j} =
+\left ( \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \end{matrix} } \right .
+\end{matrix}
+\hspace{-1.2em}
+\begin{matrix}
+\text{NYA} & \text{ARR} & \text{DEP} \\ \hdashline
+1 - r_{g,j} & r_{g,j} & 0 \\
+0 & s_{g,j} & 1 - s_{g,j} \\
+0 & 0 & 1
+\end{matrix}
+\hspace{-0.2em}
+\begin{matrix}
+& \\
+\left . \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \end{matrix} } \right )
+\begin{matrix}
+\text{NYA} \\
+\text{ARR} \\
+\text{DEP}
+\end{matrix}
+\end{matrix}
+$$
+
+
+```{r, engine = 'tikz', echo = FALSE}
+\usetikzlibrary{arrows.meta, fit, positioning, automata}
+\begin{tikzpicture}[>=Latex, node distance=28mm, state/.style={circle,draw,minimum size=8mm}]
+\node[state] (NYA) {NYA};
+\node[state, right=of NYA] (ARR) {ARR};
+\node[state, right=of ARR] (DEP) {DEP};
+
+\draw[->] (NYA) edge[bend left] node[above] {$r_{g,j}$} (ARR);
+\draw[->] (NYA) edge[loop above] node {$1 - r_{g,j}$} ();
+\draw[->] (ARR) edge[bend left] node[above] {$1 - s_{g,j}$} (DEP);
+\draw[->] (ARR) edge[loop above] node {$s_{g,j}$} ();
+\draw[->] (DEP) edge[loop above] node {$1$} ();
+\end{tikzpicture}
+```
+
+
+### Results and interpretation
 
 ```{r echo = FALSE}
 library(MCMCvis)
