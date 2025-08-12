@@ -257,17 +257,17 @@ z_{t}=A \\ z_{t}=U \\ z_{t}=D
 <h3>
 <span class="header-section-number">7.3.1</span> Motivation<a class="anchor" aria-label="anchor" href="#motivation-4"><i class="fas fa-link"></i></a>
 </h3>
-<p>How to make your models remember?</p>
-<p>So far, the dynamics of the states are first-order Makovian. The site where you will be depends only on the site where you are, and not on the sites you were previously. How to relax this assumption, and go second-order Markovian?</p>
-<p>Memory models were initially proposed by <span class="citation">Hestbeck, Nichols, and Malecki (<a href="references.html#ref-hestbeck1991estimates">1991</a>)</span> and <span class="citation">Brownie et al. (<a href="references.html#ref-BrownieEtAl1993">1993</a>)</span>, then formulated as HMMs in <span class="citation">Rouan, Choquet, and Pradel (<a href="references.html#ref-rouan2009memory">2009</a>)</span>. See also <span class="citation">D. J. Cole et al. (<a href="references.html#ref-cole2014">2014</a>)</span>.</p>
+<p>How do we make our models remember? So far, the dynamics of our states have been first-order Markov: the state an animal moves to next depends only on the state (site) it occupies now. But if we think of states as sites, transitions are dispersal or migration, and many species show site fidelity or directional return that reflects where they were two steps back.</p>
+<p>To relax the first-order assumption, we move to a second-order Markov description, and what happens at <span class="math inline">\(t+1\)</span> depends on the site at <span class="math inline">\(t\)</span> and at <span class="math inline">\(t−1\)</span>. This idea, often called a memory model, was introduced in multisite capture–recapture by <span class="citation">Hestbeck, Nichols, and Malecki (<a href="references.html#ref-hestbeck1991estimates">1991</a>)</span> and <span class="citation">Brownie et al. (<a href="references.html#ref-BrownieEtAl1993">1993</a>)</span>, then formulated cleanly within the HMM framework by <span class="citation">Rouan, Choquet, and Pradel (<a href="references.html#ref-rouan2009memory">2009</a>)</span> and <span class="citation">Pradel (<a href="references.html#ref-pradel_multievent_2005">2005</a>)</span>.</p>
+<p>To illustrate the memory model, we will use the geese data introduced in Chapter <a href="dispersal.html#dispersal">5</a>. As we saw in Section <a href="dispersal.html#gofas">5.3.3</a>, there is a strong positive association between the site where an animal was last seen and the site where it will next be seen. This suggests that a first-order model is too simple and that transitions at <span class="math inline">\(t+1\)</span> should not only depend on <span class="math inline">\(t\)</span> but also <span class="math inline">\(t-1\)</span>.</p>
+<p>HMMs make this extension relativement straightforward: we redefine the latent states as pairs of sites (e.g., AA, AB, BA, BB plus dead), which encodes the second-order dependency while keeping the coding and model structure familiar. Let’s get to it.</p>
 </div>
 <div id="model-and-nimble-implementation-4" class="section level3" number="7.3.2">
 <h3>
 <span class="header-section-number">7.3.2</span> Model and NIMBLE implementation<a class="anchor" aria-label="anchor" href="#model-and-nimble-implementation-4"><i class="fas fa-link"></i></a>
 </h3>
-<p>Remember HMM model for dispersal between 2 sites</p>
-<p>Transition matrix</p>
-<p><span class="math display">\[\begin{matrix}
+<p>As a reminder, the two main ingredients for a HMM capturing dispersal between 2 sites are a transition matrix:
+<span class="math display">\[\begin{matrix}
 &amp; \\
 \mathbf{\Gamma} =
 \left ( \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \end{matrix} } \right .
@@ -287,8 +287,8 @@ z_t=A &amp; z_t=B &amp; z_t=D \\ \hdashline
 z_{t-1}=A \\ z_{t-1}=B \\ z_{t-1}=D
 \end{matrix}
 \end{matrix}\]</span></p>
-<p>Observation matrix</p>
-<p><span class="math display">\[\begin{matrix}
+<p>and an observation matrix:
+<span class="math display">\[\begin{matrix}
 &amp; \\
 \mathbf{\Omega} =
 \left ( \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \end{matrix} } \right .
@@ -308,22 +308,34 @@ y_t=1 &amp; y_t=2 &amp; y_t=3 \\ \hdashline
 z_{t}=A \\ z_{t}=B \\ z_{t}=D
 \end{matrix}
 \end{matrix}\]</span></p>
-<p>HMM formulation of the memory model</p>
-<p>To keep track of the sites previously visited, the trick is to consider states as being pairs of sites occupied</p>
+<p>From here, how to come up with a HMM formulation of the memory model? We need to keep track of the sites previously visited, and to do so, the trick is to consider states as being pairs of sites occupied:</p>
 <ul>
-<li><p>States</p></li>
-<li><p>AA is for alive in site A at <span class="math inline">\(t\)</span> and alive in site A at <span class="math inline">\(t-1\)</span></p></li>
-<li><p>AB is for alive in site A at <span class="math inline">\(t\)</span> and alive in site B at <span class="math inline">\(t-1\)</span></p></li>
-<li><p>BA is for alive in site B at <span class="math inline">\(t\)</span> and alive in site A at <span class="math inline">\(t-1\)</span></p></li>
-<li><p>BB is for alive in site B at <span class="math inline">\(t\)</span> and alive in site B at <span class="math inline">\(t-1\)</span></p></li>
-<li><p>D is for dead</p></li>
-<li><p>Observations</p></li>
-<li><p>1 not captured</p></li>
-<li><p>2 captured at site A</p></li>
-<li><p>3 captured at site B</p></li>
+<li>States
+<ul>
+<li>AA is for alive in site A at <span class="math inline">\(t\)</span> and alive in site A at <span class="math inline">\(t-1\)</span><br>
+</li>
+<li>AB is for alive in site A at <span class="math inline">\(t\)</span> and alive in site B at <span class="math inline">\(t-1\)</span><br>
+</li>
+<li>BA is for alive in site B at <span class="math inline">\(t\)</span> and alive in site A at <span class="math inline">\(t-1\)</span><br>
+</li>
+<li>BB is for alive in site B at <span class="math inline">\(t\)</span> and alive in site B at <span class="math inline">\(t-1\)</span><br>
+</li>
+<li>D is for dead</li>
 </ul>
-<p>Vector of initial state probabilities</p>
-<p><span class="math display">\[\begin{matrix}
+</li>
+<li>Observations
+<ul>
+<li>1 not captured<br>
+</li>
+<li>2 captured at site A<br>
+</li>
+<li>3 captured at site B</li>
+</ul>
+</li>
+</ul>
+<p>Now we turn to writing our model.</p>
+<p>We start with the vector of initial states. Individuals enter the study with probabilities:
+<span class="math display">\[\begin{matrix}
 &amp; \\
 \mathbf{\delta} =
 \left ( \vphantom{ \begin{matrix} 12 \end{matrix} } \right .
@@ -340,9 +352,9 @@ z_t=AA &amp; z_t=AB &amp; z_t=BA &amp; z_t=BB &amp;z_t=D \\ \hdashline
 \begin{matrix}
 \end{matrix}
 \end{matrix}\]</span></p>
-<p>where <span class="math inline">\(\pi^{BB} = 1 - (\pi^{AA} + \pi^{AB} + \pi^{BA})\)</span>, and <span class="math inline">\(\pi^{ij}\)</span> at site <span class="math inline">\(j\)</span> when first captured at <span class="math inline">\(t\)</span> and site <span class="math inline">\(i\)</span> at <span class="math inline">\(t - 1\)</span>.</p>
-<p>Transition matrix</p>
-<p><span class="math display">\[\begin{matrix}
+<p>where <span class="math inline">\(\pi^{ij}\)</span> is the probability of being alive at site <span class="math inline">\(j\)</span> when first captured and site <span class="math inline">\(i\)</span> before, and <span class="math inline">\(\pi^{BB} = 1 - (\pi^{AA} + \pi^{AB} + \pi^{BA})\)</span>.</p>
+<p>We proceed with the transition matrix that contains the survival and movement probabilities:
+<span class="math display">\[\begin{matrix}
 &amp; \\
 \mathbf{\Gamma} =
 \left ( \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \\ 12 \\ 12\end{matrix} } \right .
@@ -364,10 +376,10 @@ z_t=AA &amp; z_t=AB &amp; z_t=BA &amp; z_t=BB &amp; z_t=D \\ \hdashline
 z_{t-1}=AA \\ z_{t-1}=AB \\ z_{t-1}=BA \\ z_{t-1}=BB \\ z_{t-1}=D
 \end{matrix}
 \end{matrix}\]</span></p>
-<p><span class="math inline">\(\phi^{ijk}\)</span> is probability to be in site <span class="math inline">\(k\)</span> at time <span class="math inline">\(t + 1\)</span> for an individual
-present in site <span class="math inline">\(j\)</span> at <span class="math inline">\(t\)</span> and in site <span class="math inline">\(i\)</span> at <span class="math inline">\(t - 1\)</span></p>
-<p>Transition matrix, alternate parameterization</p>
-<p><span class="math display">\[\begin{matrix}
+<p>where <span class="math inline">\(\phi^{ijk}\)</span> is the probability to be in site <span class="math inline">\(k\)</span> at time <span class="math inline">\(t + 1\)</span> for an individual
+present in site <span class="math inline">\(j\)</span> at <span class="math inline">\(t\)</span> and in site <span class="math inline">\(i\)</span> at <span class="math inline">\(t - 1\)</span>.</p>
+<p>An alternate parameterization for <span class="math inline">\(\mathbf{\Gamma}\)</span> is:
+<span class="math display">\[\begin{matrix}
 &amp; \\
 \mathbf{\Gamma} =
 \left ( \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \\ 12 \\ 12\end{matrix} } \right .
@@ -389,9 +401,9 @@ z_t=AA &amp; z_t=AB &amp; z_t=BA &amp; z_t=BB &amp; z_t=D \\ \hdashline
 z_{t-1}=AA \\ z_{t-1}=AB \\ z_{t-1}=BA \\ z_{t-1}=BB \\ z_{t-1}=D
 \end{matrix}
 \end{matrix}\]</span></p>
-<p><span class="math inline">\(\phi\)</span> is the probability of surviving from one occasion to the next. <span class="math inline">\(\psi_{ijj}\)</span> is the probability an animal stays at the same site <span class="math inline">\(j\)</span> given that it was at site <span class="math inline">\(i\)</span> on the previous occasion.</p>
-<p>Observation matrix</p>
-<p><span class="math display">\[\begin{matrix}
+<p>in which <span class="math inline">\(\phi\)</span> is the probability of surviving from one occasion to the next, and <span class="math inline">\(\psi_{ijj}\)</span> is the probability an animal stays at the same site <span class="math inline">\(j\)</span> given that it was at site <span class="math inline">\(i\)</span> on the previous occasion.</p>
+<p>Last step is the observation matrix, which we write as follows:
+<span class="math display">\[\begin{matrix}
 &amp; \\
 \mathbf{\Omega} =
 \left ( \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \\ 12 \\ 12\end{matrix} } \right .
@@ -413,12 +425,111 @@ y_t=1 &amp; y_t=2 &amp; y_t=3 \\ \hdashline
 z_t=AA \\ z_t=AB \\ z_t=BA \\ z_t=BB \\ z_t=D
 \end{matrix}
 \end{matrix}\]</span></p>
-<p>Implementation w/ nimbleEcology, much easier as we do not have to initialize the latent states <span class="math inline">\(z\)</span>.</p>
+<p>To implement this model in NIMBLE, we’re going to use <code>nimbleEcology</code>, which makes our life much easier as we do not have to initialize the latent states <span class="math inline">\(z\)</span> – remember the likelihood is marginalized, see Sections <a href="hmmcapturerecapture.html#marginalization">3.8</a> and <a href="hmmcapturerecapture.html#nimbleecologyintro">3.8.3.2</a>. Specifically, we use the function <code><a href="https://rdrr.io/pkg/nimbleEcology/man/dHMM.html">dHMM()</a></code> that implements the distribution of a HMM with constant parameters. We also use a Dirichlet prior to ensure that the initial state probabilities and the survival-movement probabilities sum up to 1 and lie between 0 and 1, see Section <a href="dispersal.html#dirichletprior">5.4.1</a>. The code is as follows:</p>
+<div class="sourceCode" id="cb339"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">multisite.marginalized</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimbleCode.html">nimbleCode</a></span><span class="op">(</span><span class="op">{</span></span>
+<span>  </span>
+<span>  <span class="co"># -------------------------------------------------</span></span>
+<span>  <span class="co"># Parameters:</span></span>
+<span>  <span class="co"># phi111: survival-mov probability from state 11 to state 11</span></span>
+<span>  <span class="co"># phi112: survival-mov probability from state 11 to state 12</span></span>
+<span>  <span class="co"># phi121: survival-mov probability from state 12 to state 21</span></span>
+<span>  <span class="co"># phi122: survival-mov probability from state 12 to state 22</span></span>
+<span>  <span class="co"># phi211: survival-mov probability from state 21 to state 11</span></span>
+<span>  <span class="co"># phi212: survival-mov probability from state 21 to state 12</span></span>
+<span>  <span class="co"># phi221: survival-mov probability from state 22 to state 21</span></span>
+<span>  <span class="co"># phi222: survival-mov probability from state 22 to state 22</span></span>
+<span>  <span class="co"># det1: detection probability site 1</span></span>
+<span>  <span class="co"># det2: detection probability site 2</span></span>
+<span>  <span class="co"># pi11: init stat prob 11</span></span>
+<span>  <span class="co"># pi12: init stat prob 12</span></span>
+<span>  <span class="co"># pi21: init stat prob 21</span></span>
+<span>  <span class="co"># pi22: init stat prob 22</span></span>
+<span>  <span class="co"># -------------------------------------------------</span></span>
+<span>  <span class="co"># States (S):</span></span>
+<span>  <span class="co"># 1 alive 11</span></span>
+<span>  <span class="co"># 2 alive 12</span></span>
+<span>  <span class="co"># 3 alive 21</span></span>
+<span>  <span class="co"># 4 alive 22</span></span>
+<span>  <span class="co"># 5 dead</span></span>
+<span>  <span class="co"># Observations (O):  </span></span>
+<span>  <span class="co"># 1 not seen</span></span>
+<span>  <span class="co"># 2 seen at site 1 </span></span>
+<span>  <span class="co"># 3 seen at site 2</span></span>
+<span>  <span class="co"># -------------------------------------------------</span></span>
+<span>  </span>
+<span>  <span class="co"># priors</span></span>
+<span>  <span class="va">det1</span> <span class="op">~</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html">dunif</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1</span><span class="op">)</span></span>
+<span>  <span class="va">det2</span> <span class="op">~</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html">dunif</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1</span><span class="op">)</span></span>
+<span>  <span class="va">phi11</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">3</span><span class="op">]</span> <span class="op">~</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/Dirichlet.html">ddirch</a></span><span class="op">(</span><span class="va">alpha</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">3</span><span class="op">]</span><span class="op">)</span> <span class="co"># phi111, phi112, 1-sum</span></span>
+<span>  <span class="va">phi12</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">3</span><span class="op">]</span> <span class="op">~</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/Dirichlet.html">ddirch</a></span><span class="op">(</span><span class="va">alpha</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">3</span><span class="op">]</span><span class="op">)</span> <span class="co"># phi121, phi122, 1-sum</span></span>
+<span>  <span class="va">phi21</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">3</span><span class="op">]</span> <span class="op">~</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/Dirichlet.html">ddirch</a></span><span class="op">(</span><span class="va">alpha</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">3</span><span class="op">]</span><span class="op">)</span> <span class="co"># phi211, phi212, 1-sum</span></span>
+<span>  <span class="va">phi22</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">3</span><span class="op">]</span> <span class="op">~</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/Dirichlet.html">ddirch</a></span><span class="op">(</span><span class="va">alpha</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">3</span><span class="op">]</span><span class="op">)</span> <span class="co"># phi221, phi222, 1-sum</span></span>
+<span>  </span>
+<span>  <span class="co"># probabilities of state z(t+1) given z(t)</span></span>
+<span>  <span class="va">gamma</span><span class="op">[</span><span class="fl">1</span>,<span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="va">phi11</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span></span>
+<span>  <span class="va">gamma</span><span class="op">[</span><span class="fl">1</span>,<span class="fl">2</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="va">phi11</span><span class="op">[</span><span class="fl">2</span><span class="op">]</span></span>
+<span>  <span class="va">gamma</span><span class="op">[</span><span class="fl">1</span>,<span class="fl">3</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0</span></span>
+<span>  <span class="va">gamma</span><span class="op">[</span><span class="fl">1</span>,<span class="fl">4</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0</span></span>
+<span>  <span class="va">gamma</span><span class="op">[</span><span class="fl">1</span>,<span class="fl">5</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="va">phi11</span><span class="op">[</span><span class="fl">3</span><span class="op">]</span></span>
+<span>  <span class="va">gamma</span><span class="op">[</span><span class="fl">2</span>,<span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0</span></span>
+<span>  <span class="va">gamma</span><span class="op">[</span><span class="fl">2</span>,<span class="fl">2</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0</span></span>
+<span>  <span class="va">gamma</span><span class="op">[</span><span class="fl">2</span>,<span class="fl">3</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="va">phi12</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span></span>
+<span>  <span class="va">gamma</span><span class="op">[</span><span class="fl">2</span>,<span class="fl">4</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="va">phi12</span><span class="op">[</span><span class="fl">2</span><span class="op">]</span></span>
+<span>  <span class="va">gamma</span><span class="op">[</span><span class="fl">2</span>,<span class="fl">5</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="va">phi12</span><span class="op">[</span><span class="fl">3</span><span class="op">]</span></span>
+<span>  <span class="va">gamma</span><span class="op">[</span><span class="fl">3</span>,<span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="va">phi21</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span></span>
+<span>  <span class="va">gamma</span><span class="op">[</span><span class="fl">3</span>,<span class="fl">2</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="va">phi21</span><span class="op">[</span><span class="fl">2</span><span class="op">]</span></span>
+<span>  <span class="va">gamma</span><span class="op">[</span><span class="fl">3</span>,<span class="fl">3</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0</span></span>
+<span>  <span class="va">gamma</span><span class="op">[</span><span class="fl">3</span>,<span class="fl">4</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0</span></span>
+<span>  <span class="va">gamma</span><span class="op">[</span><span class="fl">3</span>,<span class="fl">5</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="va">phi21</span><span class="op">[</span><span class="fl">3</span><span class="op">]</span></span>
+<span>  <span class="va">gamma</span><span class="op">[</span><span class="fl">4</span>,<span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0</span></span>
+<span>  <span class="va">gamma</span><span class="op">[</span><span class="fl">4</span>,<span class="fl">2</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0</span></span>
+<span>  <span class="va">gamma</span><span class="op">[</span><span class="fl">4</span>,<span class="fl">3</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="va">phi22</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span></span>
+<span>  <span class="va">gamma</span><span class="op">[</span><span class="fl">4</span>,<span class="fl">4</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="va">phi22</span><span class="op">[</span><span class="fl">2</span><span class="op">]</span></span>
+<span>  <span class="va">gamma</span><span class="op">[</span><span class="fl">4</span>,<span class="fl">5</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="va">phi22</span><span class="op">[</span><span class="fl">3</span><span class="op">]</span></span>
+<span>  <span class="va">gamma</span><span class="op">[</span><span class="fl">5</span>,<span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0</span></span>
+<span>  <span class="va">gamma</span><span class="op">[</span><span class="fl">5</span>,<span class="fl">2</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0</span></span>
+<span>  <span class="va">gamma</span><span class="op">[</span><span class="fl">5</span>,<span class="fl">3</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0</span></span>
+<span>  <span class="va">gamma</span><span class="op">[</span><span class="fl">5</span>,<span class="fl">4</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0</span></span>
+<span>  <span class="va">gamma</span><span class="op">[</span><span class="fl">5</span>,<span class="fl">5</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span></span>
+<span>  </span>
+<span>  <span class="co"># probabilities of y(t) given z(t)</span></span>
+<span>  <span class="va">omega</span><span class="op">[</span><span class="fl">1</span>,<span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span> <span class="op">-</span> <span class="va">det1</span></span>
+<span>  <span class="va">omega</span><span class="op">[</span><span class="fl">1</span>,<span class="fl">2</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="va">det1</span></span>
+<span>  <span class="va">omega</span><span class="op">[</span><span class="fl">1</span>,<span class="fl">3</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0</span></span>
+<span>  <span class="va">omega</span><span class="op">[</span><span class="fl">2</span>,<span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span> <span class="op">-</span> <span class="va">det2</span></span>
+<span>  <span class="va">omega</span><span class="op">[</span><span class="fl">2</span>,<span class="fl">2</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0</span></span>
+<span>  <span class="va">omega</span><span class="op">[</span><span class="fl">2</span>,<span class="fl">3</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="va">det2</span></span>
+<span>  <span class="va">omega</span><span class="op">[</span><span class="fl">3</span>,<span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span> <span class="op">-</span> <span class="va">det1</span></span>
+<span>  <span class="va">omega</span><span class="op">[</span><span class="fl">3</span>,<span class="fl">2</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="va">det1</span></span>
+<span>  <span class="va">omega</span><span class="op">[</span><span class="fl">3</span>,<span class="fl">3</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0</span></span>
+<span>  <span class="va">omega</span><span class="op">[</span><span class="fl">4</span>,<span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span> <span class="op">-</span> <span class="va">det2</span></span>
+<span>  <span class="va">omega</span><span class="op">[</span><span class="fl">4</span>,<span class="fl">2</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0</span></span>
+<span>  <span class="va">omega</span><span class="op">[</span><span class="fl">4</span>,<span class="fl">3</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="va">det2</span></span>
+<span>  <span class="va">omega</span><span class="op">[</span><span class="fl">5</span>,<span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span></span>
+<span>  <span class="va">omega</span><span class="op">[</span><span class="fl">5</span>,<span class="fl">2</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0</span></span>
+<span>  <span class="va">omega</span><span class="op">[</span><span class="fl">5</span>,<span class="fl">3</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0</span></span>
+<span>  </span>
+<span>  <span class="co"># initial state probs</span></span>
+<span>  <span class="kw">for</span><span class="op">(</span><span class="va">i</span> <span class="kw">in</span> <span class="fl">1</span><span class="op">:</span><span class="va">N</span><span class="op">)</span> <span class="op">{</span></span>
+<span>    <span class="va">init</span><span class="op">[</span><span class="va">i</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">5</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="va">gamma</span><span class="op">[</span> <span class="va">y</span><span class="op">[</span><span class="va">i</span>, <span class="va">first</span><span class="op">[</span><span class="va">i</span><span class="op">]</span> <span class="op">]</span> <span class="op">-</span> <span class="fl">1</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">5</span> <span class="op">]</span> <span class="co"># first state propagation</span></span>
+<span>  <span class="op">}</span></span>
+<span>  </span>
+<span>  <span class="co"># likelihood </span></span>
+<span>  <span class="kw">for</span> <span class="op">(</span><span class="va">i</span> <span class="kw">in</span> <span class="fl">1</span><span class="op">:</span><span class="va">N</span><span class="op">)</span><span class="op">{</span></span>
+<span>    <span class="va">y</span><span class="op">[</span><span class="va">i</span>,<span class="op">(</span><span class="va">first</span><span class="op">[</span><span class="va">i</span><span class="op">]</span><span class="op">+</span><span class="fl">1</span><span class="op">)</span><span class="op">:</span><span class="va">K</span><span class="op">]</span> <span class="op">~</span> <span class="fu"><a href="https://rdrr.io/pkg/nimbleEcology/man/dHMM.html">dHMM</a></span><span class="op">(</span>init <span class="op">=</span> <span class="va">init</span><span class="op">[</span><span class="va">i</span>,<span class="fl">1</span><span class="op">:</span><span class="fl">5</span><span class="op">]</span>,           <span class="co"># count data from first[i] + 1</span></span>
+<span>                               probObs <span class="op">=</span> <span class="va">omega</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">5</span>,<span class="fl">1</span><span class="op">:</span><span class="fl">3</span><span class="op">]</span>,     <span class="co"># observation matrix</span></span>
+<span>                               probTrans <span class="op">=</span> <span class="va">gamma</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">5</span>,<span class="fl">1</span><span class="op">:</span><span class="fl">5</span><span class="op">]</span>,   <span class="co"># transition matrix</span></span>
+<span>                               len <span class="op">=</span> <span class="va">K</span> <span class="op">-</span> <span class="va">first</span><span class="op">[</span><span class="va">i</span><span class="op">]</span>,           <span class="co"># nb of occasions</span></span>
+<span>                               checkRowSums <span class="op">=</span> <span class="fl">0</span><span class="op">)</span>             <span class="co"># do not check whether elements in a row sum tp 1</span></span>
+<span>  <span class="op">}</span></span>
+<span><span class="op">}</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div id="results-4" class="section level3" number="7.3.3">
 <h3>
 <span class="header-section-number">7.3.3</span> Results<a class="anchor" aria-label="anchor" href="#results-4"><i class="fas fa-link"></i></a>
 </h3>
+<p>The raw results are:</p>
 <pre><code>##          mean   sd 2.5%  50% 97.5% Rhat n.eff
 ## det1     0.45 0.01 0.43 0.45  0.47 1.01   296
 ## det2     0.41 0.01 0.39 0.41  0.42 1.05   244
@@ -434,6 +545,75 @@ z_t=AA \\ z_t=AB \\ z_t=BA \\ z_t=BB \\ z_t=D
 ## phi22[1] 0.06 0.00 0.05 0.06  0.07 1.00   676
 ## phi22[2] 0.63 0.01 0.61 0.63  0.64 1.01  1140
 ## phi22[3] 0.31 0.01 0.30 0.31  0.33 1.00   965</code></pre>
+<p>which we can compare to the results obtained by <span class="citation">Pradel (<a href="references.html#ref-pradel_multievent_2005">2005</a>)</span> in his Table 1:</p>
+<div class="inline-table"><table class="table table-sm">
+<caption>
+<span id="tab:unnamed-chunk-385">Table 7.1: </span>Second-order (memory) estimates of transition probabilities. The first column gives the Transition made in <span class="math inline">\(t\)</span> to <span class="math inline">\(t+1\)</span> where M is for mid–Atlantic and C for Chesapeake. The second column gives the Condition that is whether the location at <span class="math inline">\(t+1\)</span> is Equal or Not equal to the location at <span class="math inline">\(t-1\)</span>. The Pradel (2005) time-averaged estimates are given in the third column. Our NIMBLE estimates (mean and 95% credible interval) are given in the fourth column.</caption>
+<colgroup>
+<col width="16%">
+<col width="25%">
+<col width="32%">
+<col width="26%">
+</colgroup>
+<thead><tr class="header">
+<th align="left">Transition</th>
+<th align="left">Condition</th>
+<th align="center">Pradel (avg 1985–88)</th>
+<th align="center">Ours</th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td align="left">MM</td>
+<td align="left">Equal to t-1</td>
+<td align="center">0.57</td>
+<td align="center">0.50 (0.49–0.52)</td>
+</tr>
+<tr class="even">
+<td align="left">MM</td>
+<td align="left">Not equal to t-1</td>
+<td align="center">0.33</td>
+<td align="center">0.36 (0.31–0.42)</td>
+</tr>
+<tr class="odd">
+<td align="left">MC</td>
+<td align="left">Equal to t-1</td>
+<td align="center">0.27</td>
+<td align="center">0.33 (0.27–0.38)</td>
+</tr>
+<tr class="even">
+<td align="left">MC</td>
+<td align="left">Not equal to t-1</td>
+<td align="center">0.09</td>
+<td align="center">0.16 (0.15–0.17)</td>
+</tr>
+<tr class="odd">
+<td align="left">CM</td>
+<td align="left">Equal to t-1</td>
+<td align="center">0.21</td>
+<td align="center">0.10 (0.09–0.11)</td>
+</tr>
+<tr class="even">
+<td align="left">CM</td>
+<td align="left">Not equal to t-1</td>
+<td align="center">0.05</td>
+<td align="center">0.06 (0.05–0.07)</td>
+</tr>
+<tr class="odd">
+<td align="left">CC</td>
+<td align="left">Equal to t-1</td>
+<td align="center">0.63</td>
+<td align="center">0.63 (0.61–0.64)</td>
+</tr>
+<tr class="even">
+<td align="left">CC</td>
+<td align="left">Not equal to t-1</td>
+<td align="center">0.48</td>
+<td align="center">0.57 (0.55–0.59)</td>
+</tr>
+</tbody>
+</table></div>
+<p>In both analyses, memory is real: for each transition, the probability is higher when the destination at <span class="math inline">\(t+1\)</span> matches where the bird was at <span class="math inline">\(t−1\)</span> (‘Equal to <span class="math inline">\(t-1\)</span>’ rows) than when it doesn’t (‘Not equal to <span class="math inline">\(t-1\)</span>’ rows). That’s site fidelity or directional return. Our fit mirrors Pradel (2005) especially well for staying in Chesapeake (CC, equal: 0.63 in both) and still shows a clear memory signal for staying in mid-Atlantic (MM, 0.50 vs 0.57 when equal). Moves also carry memory: M→C is more likely when the bird was in C two steps back (0.33 vs 0.16), and C→M shows a weaker but similar pattern (0.10 vs 0.06).</p>
+<p>Where we differ is in the directional balance. Relative to Pradel’s averages, our model leans more toward Chesapeake: we estimate higher M→C probabilities (both equal and not equal; e.g., 0.33 vs 0.27 and 0.16 vs 0.09) and lower C→M (equal) (0.10 vs 0.21). We also find a higher chance of staying in C (CC, not equal: 0.57 vs 0.48). Several of these differences are well outside our 95% credible intervals (e.g., CM equal 0.09–0.11 vs 0.21, MC not-equal 0.15–0.17 vs 0.09). The big picture remains the same, though: movements are second–order and that memory is asymmetric, being strongest for persistence in Chesapeake and for moves toward it.</p>
 </div>
 </div>
 <div id="accomodating-individual-heterogeneity" class="section level2" number="7.4">
@@ -513,7 +693,7 @@ z_{t-1}=A1 \\ z_{t-1}=A2 \\ z_{t-1}=D
 \end{matrix}
 \end{matrix}\]</span></p>
 <p>where <span class="math inline">\(\phi\)</span> is the survival probability. In NIMBLE, we write:</p>
-<div class="sourceCode" id="cb340"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb341"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Transition matrix</span></span>
 <span><span class="va">gamma</span><span class="op">[</span><span class="fl">1</span>,<span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="va">phi</span>      <span class="co"># A1(t)-&gt;A1(t+1)</span></span>
 <span><span class="va">gamma</span><span class="op">[</span><span class="fl">1</span>,<span class="fl">2</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0</span>        <span class="co"># A1(t)-&gt;A2(t+1)</span></span>
@@ -568,7 +748,7 @@ z_{t}=A1 \\ z_{t}=A2 \\ z_{t}=D
 \end{matrix}
 \end{matrix}\]</span></p>
 <p>where <span class="math inline">\(p^1\)</span> is detection for individuals in A1, and <span class="math inline">\(p^2\)</span> that of individuals in A2. In NIMBLE, this translates into:</p>
-<div class="sourceCode" id="cb341"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb342"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Observation matrix</span></span>
 <span><span class="va">omega</span><span class="op">[</span><span class="fl">1</span>,<span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span> <span class="op">-</span> <span class="va">p1</span>   <span class="co"># A1(t)-&gt;0(t)</span></span>
 <span><span class="va">omega</span><span class="op">[</span><span class="fl">1</span>,<span class="fl">2</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="va">p1</span>       <span class="co"># A1(t)-&gt;1(t)</span></span>
@@ -578,7 +758,7 @@ z_{t}=A1 \\ z_{t}=A2 \\ z_{t}=D
 <span><span class="va">omega</span><span class="op">[</span><span class="fl">3</span>,<span class="fl">2</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0</span>         <span class="co"># D(t)-&gt;1(t)</span></span></code></pre></div>
 <p>At first detection, the observation ‘not detected’ is impossible by construction (we condition on the first detection). We therefore use an initial observation matrix <span class="math inline">\(\mathbf{\Omega}_{\text{init}}\)</span> with <span class="math inline">\(p_1 = p_2\)</span> set to 1 (not shown).</p>
 <p>Instead of real data, we simulate data, which is useful to identify problems in our analysis as we will illustrate below. We simulate a finite–mixture scenario where individuals differ in detection but share the same survival. Each animal is assigned to one of two latent classes: a small, highly detectable group (class A1; proportion <span class="math inline">\(\pi = 0.2\)</span>, <span class="math inline">\(p_1=0.8\)</span>) and a larger, less detectable group (class A2; proportion <span class="math inline">\(1-\pi = 0.8\)</span>, <span class="math inline">\(p_2=0.3\)</span>). Everyone starts captured at the first occasion (this mimics the CJS conditioning on first capture), then the latent alive state <span class="math inline">\(z_{i,t}\)</span> evolves with constant survival <span class="math inline">\(\phi = 0.7\)</span>. If an individual is alive at time <span class="math inline">\(t\)</span>, it’s observed with its own detection probability <span class="math inline">\(p_i\)</span> (either <span class="math inline">\(p_1\)</span> or <span class="math inline">\(p_2\)</span> depending on class). The result is a matrix of 0/1 encounter histories <span class="math inline">\(y\)</span> with built-in individual heterogeneity in detection, plus bookkeeping objects: <code>which_mixture</code> (true class), <code>detection</code> (each animal’s <span class="math inline">\(p_i\)</span>), and <code>z</code> (true alive states). We simulate the fate of 400 animals over 10 years.</p>
-<div class="sourceCode" id="cb342"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb343"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Simulate encounter histories with individual heterogeneity (finite mixture)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/Random.html">set.seed</a></span><span class="op">(</span><span class="fl">1234</span><span class="op">)</span>           <span class="co"># for reproducibility</span></span>
@@ -626,7 +806,7 @@ z_{t}=A1 \\ z_{t}=A2 \\ z_{t}=D
 <span><span class="va">y</span> <span class="op">&lt;-</span> <span class="va">x</span></span>
 <span><span class="va">y</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/NA.html">is.na</a></span><span class="op">(</span><span class="va">y</span><span class="op">)</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0</span></span></code></pre></div>
 <p>The simulated data look like:</p>
-<div class="sourceCode" id="cb343"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb344"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/head.html">head</a></span><span class="op">(</span><span class="va">y</span><span class="op">)</span></span>
 <span><span class="co">##      [,1] [,2] [,3] [,4] [,5] [,6] [,7] [,8] [,9] [,10]</span></span>
 <span><span class="co">## [1,]    1    0    0    0    0    0    0    0    0     0</span></span>
@@ -644,7 +824,7 @@ z_{t}=A1 \\ z_{t}=A2 \\ z_{t}=D
 <p>These estimates diverge markedly from the values used to simulate the data:</p>
 <div class="inline-table"><table class="table table-sm">
 <caption>
-<span id="tab:unnamed-chunk-389">Table 7.1: </span>Comparison of posterior estimates from NIMBLE with the data-generating values for a finite–mixture HMM.</caption>
+<span id="tab:unnamed-chunk-391">Table 7.2: </span>Comparison of posterior estimates from NIMBLE with the data-generating values for a finite–mixture HMM.</caption>
 <thead><tr class="header">
 <th align="left">Parameter</th>
 <th align="center">True value</th>
@@ -682,7 +862,7 @@ z_{t}=A1 \\ z_{t}=A2 \\ z_{t}=D
 <li><p>Custom block sampler: Design a custom MCMC sampler that updates the entire latent history of an individual (<code>z[i, 1:K]</code>) at once. This allows for class-switching in a consistent way, though it’s more advanced and computationally heavier.</p></li>
 </ul>
 <p>Here I will adopt the first solution and use some material we saw in Section <a href="hmmcapturerecapture.html#marginalization">3.8</a>. In NIMBLE, we start by writing our own functions for the HMM likelihood, using the backward algorithm:</p>
-<div class="sourceCode" id="cb345"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb346"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Goal: integrate out latent states z using a custom density (forward algorithm),</span></span>
 <span><span class="co"># and speed things up by pooling identical encounter histories with a weight "size".</span></span>
 <span></span>
@@ -769,7 +949,7 @@ z_{t}=A1 \\ z_{t}=A2 \\ z_{t}=D
 <span><span class="fu"><a href="https://rdrr.io/r/base/assign.html">assign</a></span><span class="op">(</span><span class="st">'dwolfHMM'</span>, <span class="va">dwolfHMM</span>, <span class="va">.GlobalEnv</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/assign.html">assign</a></span><span class="op">(</span><span class="st">'rwolfHMM'</span>, <span class="va">rwolfHMM</span>, <span class="va">.GlobalEnv</span><span class="op">)</span></span></code></pre></div>
 <p>Now the NIMBLE code for the model, at last:</p>
-<div class="sourceCode" id="cb346"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb347"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Model code</span></span>
 <span><span class="va">hmm.phipmix</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimbleCode.html">nimbleCode</a></span><span class="op">(</span><span class="op">{</span></span>
 <span>  </span>
@@ -865,7 +1045,7 @@ z_{t}=A1 \\ z_{t}=A2 \\ z_{t}=D
 <p>The results look fine now:</p>
 <div class="inline-table"><table class="table table-sm">
 <caption>
-<span id="tab:unnamed-chunk-392">Table 7.2: </span>Posterior estimates vs. data-generating values for a finite–mixture HMM, when a marginalized likelihood is used.</caption>
+<span id="tab:unnamed-chunk-394">Table 7.3: </span>Posterior estimates vs. data-generating values for a finite–mixture HMM, when a marginalized likelihood is used.</caption>
 <thead><tr class="header">
 <th align="left">Parameter</th>
 <th align="center">True value</th>
