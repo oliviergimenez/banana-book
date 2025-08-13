@@ -788,29 +788,28 @@ where, conditional on being in a breeding state, there is a probability <span cl
 <h3>
 <span class="header-section-number">8.4.1</span> Motivation<a class="anchor" aria-label="anchor" href="#motivation-8"><i class="fas fa-link"></i></a>
 </h3>
-<p><span class="citation">Guérin et al. (<a href="references.html#ref-guerin_advances_2017">2017</a>)</span> for a comparison of method, would be great to reproduce all analyses.</p>
-<p>Can stopover duration be framed as a life‐history trait. Usual LH traits focus primarily on reproductive timing, allocation, survival, and growth. The framework is flexible enough that one could argue it qualifies — especially when considering it as a key timing and phase length in a migratory life cycle.</p>
-<p>From Schaub and Jenni: “Migrating animals often divide their journey into alternating phases of migration bouts and stopping over. For investigating many questions of migration ecology it is crucial (1) to estimate the duration of stopover phases, and (2) to test whether animals of different groups differ in their stopover behavior.”</p>
-<p>This nicely reframes stopover behavior as a stage-specific timing trait — akin to stages like maturation or reproductive events, but in a migratory context. It influences overall survival, energy budgets, and perhaps reproductive success under certain ecological conditions.</p>
-<ul>
-<li>Stage timing matters: Just as age-at-first-reproduction matters, the length of each migratory phase could have fitness implications via exposure to predation, energetic costs, or reproductive timing.</li>
-<li>Allocating resources: Extended stopovers might be linked to resource accumulation (e.g., fat gain) before migration, similar to capital breeding strategies.</li>
-<li>Trade-offs and constraints: The length of stopovers could reflect a trade-off between rapid migration vs. energy recovery and safety.</li>
-</ul>
+<p>Stopover is not just a logistical pause; it’s a stage-specific timing trait in a migratory life cycle. Like age at first reproduction or length of a breeding attempt, the duration of stopover shapes exposure to predators, energy balance, and downstream reproductive timing. Two core questions in migration ecology are: (1) how long individuals stop over, and (2) whether groups differ in their stopover behaviour. Treating stopover as a life-history trait puts those questions center stage.</p>
+<p>The catch is that arrivals and departures are hidden and detection is imperfect. If we only look at when individuals are seen, we bias both the entry curve and the distribution of stay lengths. As reviewed in <span class="citation">Guérin et al. (<a href="references.html#ref-guerin_advances_2017">2017</a>)</span>, a HMM fixes this by keeping states hidden and observations separate: for example, we may use three latent states: not yet arrived, arrived (present), departed; and let two transition probabilities drive dynamics: recruitment (from not yet arrived to arrived) and staying (from arrived to arrived). Detection operates only in state arrived. This so-called time-effect parameterization assumes staying depends on calendar date, not time-since-arrival, which is often the right first step.</p>
+<p>With this setup we can estimate daily entry and staying probabilities, derive expected stopover duration for an arrival date, and test for group differences in behaviour. In short, framing stopover within a HMM makes the biology explicit and the inference calibrated.</p>
 </div>
 <div id="model-and-nimble-implementation-8" class="section level3" number="8.4.2">
 <h3>
 <span class="header-section-number">8.4.2</span> Model and NIMBLE implementation<a class="anchor" aria-label="anchor" href="#model-and-nimble-implementation-8"><i class="fas fa-link"></i></a>
 </h3>
-<!-- # Three STATES  -->
-<!-- # + not yet arrived in the pond (1) -->
-<!-- # + arrived in the pond (2) -->
-<!-- # + departed from the pond (3)] -->
-<!-- #  -->
-<!-- # Two OBS -->
-<!-- # + not captured (1) -->
-<!-- # + captured (2)]  -->
-<p><span class="math display">\[
+<p>We illustrate the model with marbled newts (<em>Triturus marmoratus</em>) monitored in 2013 at a permanent pond near Vigneux-de-Bretagne (Loire-Atlantique, western France). Intensive capture–recapture yielded 713 PIT-tagged newts (412 males, 301 females). For analysis, captures within the same week were pooled to create 12 equally spaced occasions (11 weekly samples plus a leading ‘empty’ occasion), so all individuals start in the ‘not yet arrived’ state.</p>
+<p>To build up our model, we first define the states and observations:</p>
+<ul>
+<li><p>States<br>
+- not yet arrived in the pond (NYA)<br>
+- arrived in the pond (ARR)<br>
+- departed from the pond (DEP)</p></li>
+<li><p>Observations<br>
+- not captured (1)<br>
+- captured (2)]</p></li>
+</ul>
+<p>Now we turn to writing our model.</p>
+<p>We start with the vector of initial states. At the start of the study, everyone is in <span class="math inline">\(NYA\)</span>, so the initial state vector is:
+<span class="math display">\[
 \begin{matrix}
 &amp; \\
 \boldsymbol{\delta} =
@@ -827,17 +826,17 @@ where, conditional on being in a breeding state, there is a probability <span cl
 \left . \vphantom{ \begin{matrix} 1 \end{matrix} } \right )
 \end{matrix}
 \]</span></p>
-<p><span class="math display">\[
-\begin{matrix}
+<p>We proceed with the transition matrix, which is governed by two processes: recruitment <span class="math inline">\(r\)</span> is the probability that an individual in <span class="math inline">\(NYA\)</span> enters the pond and staying <span class="math inline">\(s\)</span> is the probability that an individual in <span class="math inline">\(ARR\)</span> remains in the pond. State <span class="math inline">\(DEP\)</span> is absorbing. We have:
+<span class="math display">\[\begin{matrix}
 &amp; \\
-\boldsymbol{\Gamma}_{g,j} =
+\mathbf{\Gamma} =
 \left ( \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \end{matrix} } \right .
 \end{matrix}
 \hspace{-1.2em}
 \begin{matrix}
-\text{NYA} &amp; \text{ARR} &amp; \text{DEP} \\ \hdashline
-1 - r_{g,j} &amp; r_{g,j} &amp; 0 \\
-0 &amp; s_{g,j} &amp; 1 - s_{g,j} \\
+z_t=NYA &amp; z_t=ARR &amp; z_t=DEP \\ \hdashline
+1 - r &amp; r &amp; 0 \\
+0 &amp; s &amp; 1 - s \\
 0 &amp; 0 &amp; 1
 \end{matrix}
 \hspace{-0.2em}
@@ -845,23 +844,95 @@ where, conditional on being in a breeding state, there is a probability <span cl
 &amp; \\
 \left . \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \end{matrix} } \right )
 \begin{matrix}
-\text{NYA} \\
-\text{ARR} \\
-\text{DEP}
+z_{t-1}=NYA \\ z_{t-1}=ARR \\ z_{t-1}=DEP
 \end{matrix}
+\end{matrix}\]</span></p>
+<p>We make both parameters <span class="math inline">\(r\)</span> and <span class="math inline">\(s\)</span> sex and time-dependent, which we code in NIMBLE:</p>
+<div class="sourceCode" id="cb354"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="kw">for</span> <span class="op">(</span><span class="va">j</span> <span class="kw">in</span> <span class="fl">1</span><span class="op">:</span><span class="op">(</span><span class="va">K</span><span class="op">-</span><span class="fl">1</span><span class="op">)</span><span class="op">)</span><span class="op">{</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/pkg/gtools/man/logit.html">logit</a></span><span class="op">(</span><span class="va">r</span><span class="op">[</span><span class="fl">1</span>,<span class="va">j</span><span class="op">]</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="va">beta</span><span class="op">[</span><span class="fl">1</span>,<span class="fl">1</span><span class="op">]</span> <span class="op">+</span> <span class="va">beta</span><span class="op">[</span><span class="fl">1</span>,<span class="fl">2</span><span class="op">]</span> <span class="op">*</span> <span class="op">(</span><span class="va">j</span><span class="op">-</span><span class="fl">4.5</span><span class="op">)</span><span class="op">/</span><span class="fl">2.45</span> <span class="co"># prior probability of arriving in the pond / 1 = female</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/pkg/gtools/man/logit.html">logit</a></span><span class="op">(</span><span class="va">r</span><span class="op">[</span><span class="fl">2</span>,<span class="va">j</span><span class="op">]</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="va">beta</span><span class="op">[</span><span class="fl">2</span>,<span class="fl">1</span><span class="op">]</span> <span class="op">+</span> <span class="va">beta</span><span class="op">[</span><span class="fl">2</span>,<span class="fl">2</span><span class="op">]</span> <span class="op">*</span> <span class="op">(</span><span class="va">j</span><span class="op">-</span><span class="fl">4.5</span><span class="op">)</span><span class="op">/</span><span class="fl">2.45</span> <span class="co"># prior probability of arriving in the pond / 2 = male</span></span>
+<span>  <span class="va">s</span><span class="op">[</span><span class="fl">1</span>,<span class="va">j</span><span class="op">]</span> <span class="op">~</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html">dunif</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1</span><span class="op">)</span> <span class="co"># prior retention probability (staying) / 1 = female</span></span>
+<span>  <span class="va">s</span><span class="op">[</span><span class="fl">2</span>,<span class="va">j</span><span class="op">]</span> <span class="op">~</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html">dunif</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1</span><span class="op">)</span> <span class="co"># prior retention probability (staying) / 2 = male</span></span>
+<span><span class="op">}</span></span>
+<span><span class="kw">for</span> <span class="op">(</span><span class="va">i</span> <span class="kw">in</span> <span class="fl">1</span><span class="op">:</span><span class="va">N</span><span class="op">)</span><span class="op">{</span></span>
+<span>  <span class="kw">for</span> <span class="op">(</span><span class="va">j</span> <span class="kw">in</span> <span class="fl">1</span><span class="op">:</span><span class="op">(</span><span class="va">K</span><span class="op">-</span><span class="fl">1</span><span class="op">)</span><span class="op">)</span><span class="op">{</span></span>
+<span>    <span class="va">gamma</span><span class="op">[</span><span class="fl">1</span>,<span class="fl">1</span>,<span class="va">i</span>,<span class="va">j</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span> <span class="op">-</span> <span class="va">r</span><span class="op">[</span><span class="va">sex</span><span class="op">[</span><span class="va">i</span><span class="op">]</span>,<span class="va">j</span><span class="op">]</span> </span>
+<span>    <span class="va">gamma</span><span class="op">[</span><span class="fl">1</span>,<span class="fl">2</span>,<span class="va">i</span>,<span class="va">j</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="va">r</span><span class="op">[</span><span class="va">sex</span><span class="op">[</span><span class="va">i</span><span class="op">]</span>,<span class="va">j</span><span class="op">]</span> </span>
+<span>    <span class="va">gamma</span><span class="op">[</span><span class="fl">1</span>,<span class="fl">3</span>,<span class="va">i</span>,<span class="va">j</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0</span> </span>
+<span>    <span class="va">gamma</span><span class="op">[</span><span class="fl">2</span>,<span class="fl">1</span>,<span class="va">i</span>,<span class="va">j</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0</span></span>
+<span>    <span class="va">gamma</span><span class="op">[</span><span class="fl">2</span>,<span class="fl">2</span>,<span class="va">i</span>,<span class="va">j</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="va">s</span><span class="op">[</span><span class="va">sex</span><span class="op">[</span><span class="va">i</span><span class="op">]</span>,<span class="va">j</span><span class="op">]</span></span>
+<span>    <span class="va">gamma</span><span class="op">[</span><span class="fl">2</span>,<span class="fl">3</span>,<span class="va">i</span>,<span class="va">j</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span> <span class="op">-</span> <span class="va">s</span><span class="op">[</span><span class="va">sex</span><span class="op">[</span><span class="va">i</span><span class="op">]</span>,<span class="va">j</span><span class="op">]</span></span>
+<span>    <span class="va">gamma</span><span class="op">[</span><span class="fl">3</span>,<span class="fl">1</span>,<span class="va">i</span>,<span class="va">j</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0</span> </span>
+<span>    <span class="va">gamma</span><span class="op">[</span><span class="fl">3</span>,<span class="fl">2</span>,<span class="va">i</span>,<span class="va">j</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0</span> </span>
+<span>    <span class="va">gamma</span><span class="op">[</span><span class="fl">3</span>,<span class="fl">3</span>,<span class="va">i</span>,<span class="va">j</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span></span>
+<span>  <span class="op">}</span></span>
+<span><span class="op">}</span></span></code></pre></div>
+<div class="inline-figure">Graphically, this corresponds to:
+<img src="banana-book_files/figure-html/diagram-stopover-1.png" width="672">
+</div>
+<p>Last step is the observation matrix:
+<span class="math display">\[\begin{matrix}
+&amp; \\
+\mathbf{\Omega} =
+\left ( \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \end{matrix} } \right .
 \end{matrix}
+\hspace{-1.2em}
+\begin{matrix}
+y_t=1 &amp; y_t=2 \\ \hdashline
+1 &amp; 0 \\
+1-p &amp; p \\
+1 &amp; 0
+\end{matrix}
+\hspace{-0.2em}
+\begin{matrix}
+&amp; \\
+\left . \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \end{matrix} } \right )
+\begin{matrix}
+z_{t}=NYA \\ z_{t}=ARR \\ z_{t}=DEP
+\end{matrix}
+\end{matrix}\]</span></p>
+<p>where only individuals in state <span class="math inline">\(ARR\)</span> are observable with probability <span class="math inline">\(p\)</span>.</p>
+<p>The likelihood and priors are handled as usual.</p>
+<p>Using MCMC draws from the posterior distribution of the staying <span class="math inline">\(s\)</span>, we can calculate the expected stopover duration <span class="math inline">\(\mathbb{E}[D]\)</span> which is the number of occasions present after arrival. With constant <span class="math inline">\(s\)</span>, this is given by:
+<span class="math display">\[
+\mathbb{E}[D] \;=\; \frac{1}{\,1 - s\,}.
 \]</span></p>
-<div class="inline-figure"><img src="banana-book_files/figure-html/diagram-stopover-1.png" width="672"></div>
+<p>Why is that? Because the length of stay (counting the arrival occasion) is geometric. After arriving, you are present this week with probability 1 (that’s 1 week). You are still present next week with probability <span class="math inline">\(s\)</span>. You are still present the week after with probability <span class="math inline">\(s^2\)</span>. And so on. So the expected number of occasions present is the sum of those probabilities:</p>
+<p><span class="math display">\[
+\mathbb{E}[D] \;=\; 1+s+s^2+\cdots \;=\; \frac{1}{\,1 - s\,}.
+\]</span></p>
+<p>When <span class="math inline">\(s\)</span> varies with date, the ‘length of stay’ after arrival is no longer geometric with a single parameter, it’s a non-homogeneous geometric process with week-specific stay probabilities <span class="math inline">\(s_t\)</span>. If an individual arrives on date <span class="math inline">\(\tau\)</span>, the chance it is still present <span class="math inline">\(k\)</span> occasions later is the product of the stay probabilities along that run:</p>
+<p><span class="math display">\[
+Pr(D &gt; k \mid \text{arrive at } \tau) \;=\; \prod_{j=0}^{k-1} s_{\tau + j}.
+\]</span></p>
+<p>Therefore, the expected number of occasions present (counting the arrival occasion) is the sum of those tail probabilities:
+<span class="math display">\[
+\mathbb{E}[D \mid \text{arrive at } \tau]
+\;=\;
+\sum_{k=0}^{\infty} \prod_{j=0}^{k-1} s_{\tau + j}.
+\]</span></p>
+<p>with the empty product for <span class="math inline">\(k=0\)</span> equal to 1, or in other words the sum of the probabilities of ‘surviving’ each additional week in <span class="math inline">\(ARR\)</span> under the calendar-date effects.</p>
 </div>
 <div id="results-and-interpretation-8" class="section level3" number="8.4.3">
 <h3>
 <span class="header-section-number">8.4.3</span> Results and interpretation<a class="anchor" aria-label="anchor" href="#results-and-interpretation-8"><i class="fas fa-link"></i></a>
 </h3>
-<p>Cumulative survival</p>
-<div class="inline-figure"><img src="banana-book_files/figure-html/unnamed-chunk-407-1.png" width="672"></div>
-<p>Stopover duration</p>
-<div class="inline-figure"><img src="banana-book_files/figure-html/unnamed-chunk-408-1.png" width="672"></div>
-<p>You can extend to time since marking (Pradel 2009) or even semi-Markov. See <span class="citation">Guérin et al. (<a href="references.html#ref-guerin_advances_2017">2017</a>)</span> for more.</p>
+<p>Our NIMBLE estimates match pretty closely those obtained by <span class="citation">Guérin et al. (<a href="references.html#ref-guerin_advances_2017">2017</a>)</span>, check out their Figure 2.</p>
+<p>Early in the season, females arrive first: during the first three capture occasions their arrival probability exceeds that of males. By occasion 7, essentially all individuals have entered the pond (Figure <a href="tradeoffs.html#fig:fig-arrival-prob">8.2</a>).</p>
+<div class="figure" style="text-align: center">
+<span style="display:block;" id="fig:fig-arrival-prob"></span>
+<img src="banana-book_files/figure-html/fig-arrival-prob-1.png" alt="Arrival probability by sex and week. Means and 95\% credible intervals (shaded areas) are provided." width="85%"><p class="caption">
+Figure 8.2: Arrival probability by sex and week. Means and 95% credible intervals (shaded areas) are provided.
+</p>
+</div>
+<p>Females show longer stopovers than males for most of the season; near the end, the pattern reverses. Individuals arriving early in the breeding season stay longer than those arriving later (Figure <a href="tradeoffs.html#fig:fig-stopover-duration">8.3</a>).</p>
+<div class="figure" style="text-align: center">
+<span style="display:block;" id="fig:fig-stopover-duration"></span>
+<img src="banana-book_files/figure-html/fig-stopover-duration-1.png" alt="Expected stopover duration by sex and arrival week. Means and 95\% credible intervals (shaded areas) are provided." width="85%"><p class="caption">
+Figure 8.3: Expected stopover duration by sex and arrival week. Means and 95% credible intervals (shaded areas) are provided.
+</p>
+</div>
 <!-- ## Recruitment -->
 <!-- @pradel1997 -->
 <!-- The purpose of the exercise is to estimate the accession to reproduction. The greater flamingo (Phoenicopterus ruber roseus) is a long-lived colonial waterbird that shows delayed maturity. No breeding attempt by a bird <3 yr old has ever been observed. The data used here come from a long term study in the Etang du Fangassier, part of the large complex of commercial salt pans of Salin de Giraud in the Camargue (southern France). They have been collected by the biological station of Tour du Valat and previously analyzed by Pradel et al. (1997). The data concern 7822 individuals ringed as young from 1977 to 1988 and resighted as breeders between 1983 and 1994. Of these, 1680 have been resighted breeding at least once. The observations as Pre-Breeder (chicks only) are coded 1. The observations as Breeder are coded 2. The capture histories are given in file FLAMINGO.TXT -->

@@ -836,19 +836,17 @@ Adult female survival is high. Calf survival ranks YOY ≥ 1-year > 2-year. Bree
 
 ### Motivation 
 
-@guerin_advances_2017 for a comparison of method, would be great to reproduce all analyses. 
+Stopover is not just a logistical pause; it's a stage-specific timing trait in a migratory life cycle. Like age at first reproduction or length of a breeding attempt, the duration of stopover shapes exposure to predators, energy balance, and downstream reproductive timing. Two core questions in migration ecology are: (1) how long individuals stop over, and (2) whether groups differ in their stopover behaviour. Treating stopover as a life-history trait puts those questions center stage.
 
-Can stopover duration be framed as a life‐history trait. Usual LH traits focus primarily on reproductive timing, allocation, survival, and growth. The framework is flexible enough that one could argue it qualifies — especially when considering it as a key timing and phase length in a migratory life cycle.
+The catch is that arrivals and departures are hidden and detection is imperfect. If we only look at when individuals are seen, we bias both the entry curve and the distribution of stay lengths. As reviewed in @guerin_advances_2017, a HMM fixes this by keeping states hidden and observations separate: for example, we may use three latent states: not yet arrived, arrived (present), departed; and let two transition probabilities drive dynamics: recruitment (from not yet arrived to arrived) and staying (from arrived to arrived). Detection operates only in state arrived. This so-called time-effect parameterization assumes staying depends on calendar date, not time-since-arrival, which is often the right first step.
 
-From Schaub and Jenni: "Migrating animals often divide their journey into alternating phases of migration bouts and stopping over. For investigating many questions of migration ecology it is crucial (1) to estimate the duration of stopover phases, and (2) to test whether animals of different groups differ in their stopover behavior."
-
-This nicely reframes stopover behavior as a stage-specific timing trait — akin to stages like maturation or reproductive events, but in a migratory context. It influences overall survival, energy budgets, and perhaps reproductive success under certain ecological conditions. 
-
-* Stage timing matters: Just as age-at-first-reproduction matters, the length of each migratory phase could have fitness implications via exposure to predation, energetic costs, or reproductive timing.
-* Allocating resources: Extended stopovers might be linked to resource accumulation (e.g., fat gain) before migration, similar to capital breeding strategies.
-* Trade-offs and constraints: The length of stopovers could reflect a trade-off between rapid migration vs. energy recovery and safety.
+With this setup we can estimate daily entry and staying probabilities, derive expected stopover duration for an arrival date, and test for group differences in behaviour. In short, framing stopover within a HMM makes the biology explicit and the inference calibrated.
 
 ### Model and NIMBLE implementation
+
+We illustrate the model with marbled newts (*Triturus marmoratus*) monitored in 2013 at a permanent pond near Vigneux-de-Bretagne (Loire-Atlantique, western France). Intensive capture–recapture yielded 713 PIT-tagged newts (412 males, 301 females). For analysis, captures within the same week were pooled to create 12 equally spaced occasions (11 weekly samples plus a leading 'empty' occasion), so all individuals start in the 'not yet arrived' state.
+
+To build up our model, we first define the states and observations:
 
 - States   
       - not yet arrived in the pond (NYA)   
@@ -858,7 +856,10 @@ This nicely reframes stopover behavior as a stage-specific timing trait — akin
 - Observations   
       - not captured (1)   
       - captured (2)]   
+      
+Now we turn to writing our model. 
 
+We start with the vector of initial states. At the start of the study, everyone is in $NYA$, so the initial state vector is: 
 $$
 \begin{matrix}
 & \\
@@ -877,17 +878,17 @@ $$
 \end{matrix}
 $$
 
-$$
-\begin{matrix}
+We proceed with the transition matrix, which is governed by two processes: recruitment $r$ is the probability that an individual in $NYA$ enters the pond and staying $s$ is the probability that an individual in $ARR$ remains in the pond. State $DEP$ is absorbing. We have: 
+$$\begin{matrix}
 & \\
-\boldsymbol{\Gamma}_{g,j} =
+\mathbf{\Gamma} =
 \left ( \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \end{matrix} } \right .
 \end{matrix}
 \hspace{-1.2em}
 \begin{matrix}
-\text{NYA} & \text{ARR} & \text{DEP} \\ \hdashline
-1 - r_{g,j} & r_{g,j} & 0 \\
-0 & s_{g,j} & 1 - s_{g,j} \\
+z_t=NYA & z_t=ARR & z_t=DEP \\ \hdashline
+1 - r & r & 0 \\
+0 & s & 1 - s \\
 0 & 0 & 1
 \end{matrix}
 \hspace{-0.2em}
@@ -895,14 +896,34 @@ $$
 & \\
 \left . \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \end{matrix} } \right )
 \begin{matrix}
-\text{NYA} \\
-\text{ARR} \\
-\text{DEP}
+z_{t-1}=NYA \\ z_{t-1}=ARR \\ z_{t-1}=DEP
 \end{matrix}
-\end{matrix}
-$$
+\end{matrix}$$
 
+We make both parameters $r$ and $s$ sex and time-dependent, which we code in NIMBLE:
+```{r eval = FALSE}
+for (j in 1:(K-1)){
+  logit(r[1,j]) <- beta[1,1] + beta[1,2] * (j-4.5)/2.45 # prior probability of arriving in the pond / 1 = female
+  logit(r[2,j]) <- beta[2,1] + beta[2,2] * (j-4.5)/2.45 # prior probability of arriving in the pond / 2 = male
+  s[1,j] ~ dunif(0, 1) # prior retention probability (staying) / 1 = female
+  s[2,j] ~ dunif(0, 1) # prior retention probability (staying) / 2 = male
+}
+for (i in 1:N){
+  for (j in 1:(K-1)){
+    gamma[1,1,i,j] <- 1 - r[sex[i],j] 
+    gamma[1,2,i,j] <- r[sex[i],j] 
+    gamma[1,3,i,j] <- 0 
+    gamma[2,1,i,j] <- 0
+    gamma[2,2,i,j] <- s[sex[i],j]
+    gamma[2,3,i,j] <- 1 - s[sex[i],j]
+    gamma[3,1,i,j] <- 0 
+    gamma[3,2,i,j] <- 0 
+    gamma[3,3,i,j] <- 1
+  }
+}
+```
 
+Graphically, this corresponds to:
 ```{r diagram-stopover, engine = 'tikz', echo = FALSE}
 \usetikzlibrary{arrows.meta, fit, positioning, automata}
 \begin{tikzpicture}[>=Latex, node distance=28mm, state/.style={circle,draw,minimum size=8mm}]
@@ -918,6 +939,57 @@ $$
 \end{tikzpicture}
 ```
 
+Last step is the observation matrix:
+$$\begin{matrix}
+& \\
+\mathbf{\Omega} =
+\left ( \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \end{matrix} } \right .
+\end{matrix}
+\hspace{-1.2em}
+\begin{matrix}
+y_t=1 & y_t=2 \\ \hdashline
+1 & 0 \\
+1-p & p \\
+1 & 0
+\end{matrix}
+\hspace{-0.2em}
+\begin{matrix}
+& \\
+\left . \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \end{matrix} } \right )
+\begin{matrix}
+z_{t}=NYA \\ z_{t}=ARR \\ z_{t}=DEP
+\end{matrix}
+\end{matrix}$$
+
+where only individuals in state $ARR$ are observable with probability $p$.
+
+The likelihood and priors are handled as usual. 
+
+Using MCMC draws from the posterior distribution of the staying $s$, we can calculate the expected stopover duration $\mathbb{E}[D]$ which is the number of occasions present after arrival. With constant $s$, this is given by:
+\[
+\mathbb{E}[D] \;=\; \frac{1}{\,1 - s\,}.
+\]
+
+Why is that? Because the length of stay (counting the arrival occasion) is geometric. After arriving, you are present this week with probability 1 (that's 1 week). You are still present next week with probability $s$. You are still present the week after with probability $s^2$. And so on. So the expected number of occasions present is the sum of those probabilities: 
+
+\[
+\mathbb{E}[D] \;=\; 1+s+s^2+\cdots \;=\; \frac{1}{\,1 - s\,}.
+\]
+
+When $s$ varies with date, the 'length of stay' after arrival is no longer geometric with a single parameter, it's a non-homogeneous geometric process with week-specific stay probabilities $s_t$. If an individual arrives on date $\tau$, the chance it is still present $k$ occasions later is the product of the stay probabilities along that run:
+
+\[
+Pr(D > k \mid \text{arrive at } \tau) \;=\; \prod_{j=0}^{k-1} s_{\tau + j}.
+\]
+
+Therefore, the expected number of occasions present (counting the arrival occasion) is the sum of those tail probabilities:
+\[
+\mathbb{E}[D \mid \text{arrive at } \tau]
+\;=\;
+\sum_{k=0}^{\infty} \prod_{j=0}^{k-1} s_{\tau + j}.
+\]
+
+with the empty product for $k=0$ equal to 1, or in other words the sum of the probabilities of 'surviving' each additional week in $ARR$ under the calendar-date effects.
 
 ### Results and interpretation
 
@@ -925,6 +997,8 @@ $$
 library(MCMCvis)
 load(here::here("dat","stopover.RData"))
 ```
+
+Our NIMBLE estimates match pretty closely those obtained by @guerin_advances_2017, check out their Figure 2.  
 
 ```{r echo = FALSE}
 samps <- rbind(out[[1]], out[[2]])
@@ -952,11 +1026,9 @@ r_long <- tidy_block(df, "r")
 s_long <- tidy_block(df, "s")
 ```
 
+Early in the season, females arrive first: during the first three capture occasions their arrival probability exceeds that of males. By occasion 7, essentially all individuals have entered the pond (Figure \@ref(fig:fig-arrival-prob)).
 
-Cumulative survival
-
-```{r echo = FALSE}
-# -------- r: arrival probability, both sexes on one figure --------
+```{r fig-arrival-prob, echo = FALSE, fig.align='center', out.width='85%', fig.cap="Arrival probability by sex and week. Means and 95\\% credible intervals (shaded areas) are provided."}
 r_sum <- r_long %>%
   group_by(sex, week) %>%
   summarise(
@@ -970,20 +1042,16 @@ r_sum <- r_long %>%
 p_r <- ggplot(r_sum, aes(x = week, y = mean, color = sex, fill = sex, group = sex)) +
   geom_ribbon(aes(ymin = l95, ymax = u95), alpha = 0.20, linewidth = 0) +
   geom_line(size = 1) +
-  labs(x = "Week", y = "Arrival probability (posterior mean & 95% CI)",
-       title = "Arrival probability r by sex") +
+  labs(x = "Week", y = "Estimated arrival probability",
+       title = "") +
   theme_bw() +
   theme(legend.position = "top")
 p_r
 ```
 
+Females show longer stopovers than males for most of the season; near the end, the pattern reverses. Individuals arriving early in the breeding season stay longer than those arriving later (Figure \@ref(fig:fig-stopover-duration)).
 
-Stopover duration
-
-```{r echo = FALSE}
-# ---- s -> expected stopover duration from each arrival week ----
-# duration[w] = 1 + sum_{k=1..K-w} prod_{u=w..w+k-1} s[u]
-# (stops at K-1 so staying past last week doesn't add observable time)
+```{r fig-stopover-duration, echo = FALSE, fig.align='center', out.width='85%', fig.cap="Expected stopover duration by sex and arrival week. Means and 95\\% credible intervals (shaded areas) are provided."}
 compute_duration_curve <- function(s_vec){
   s_vec <- pmin(s_vec, 0.999999)        # guard against s=1 exactly
   K <- length(s_vec)
@@ -1023,14 +1091,12 @@ duration_sum <- duration_draws %>%
 p_dur <- ggplot(duration_sum, aes(x = week, y = mean, color = sex, fill = sex, group = sex)) +
   geom_ribbon(aes(ymin = l95, ymax = u95), alpha = 0.20, linewidth = 0) +
   geom_line(size = 1) +
-  labs(x = "Week", y = "Stopover duration (weeks)",
-       title = "Expected stopover duration from arrival week (posterior mean & 95% CI)") +
+  labs(x = "Week", y = "Estimated stopover duration (weeks)",
+       title = "") +
   theme_bw() +
   theme(legend.position = "top")
 p_dur
 ```
-
-You can extend to time since marking (Pradel 2009) or even semi-Markov. See @guerin_advances_2017 for more. 
 
 <!-- ## Recruitment -->
 
