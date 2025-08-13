@@ -2,29 +2,44 @@
 
 ## Introduction
 
-See <https://www.oxfordbibliographies.com/display/document/obo-9780199830060/obo-9780199830060-0016.xml> and <https://en.wikipedia.org/wiki/Life_history_theory> for a definition. I think that all case studies below fall in the LH category. I might consider moving the disease ecology case study in the main Sites and states chapter. See however  <https://onlinelibrary.wiley.com/doi/epdf/10.1111/ele.13681> for a link between disease ecology and life history theory. 
+Capture--recapture models allow the estimation of key demographic parameters such as survival, recruitment, and dispersal. These parameters are central to life history theory, which seeks to explain how organisms allocate limited resources across survival, growth, and reproduction over their lifetime. Life-history traits, such as age at first breeding, breeding frequency, or lifespan, reflect trade--offs shaped by natural selection and environmental constraints.
 
-## Assessing age- and cause--specific mortality
+Capture--recapture data are particularly suited to quantifying such traits in the wild, providing direct estimates that can be compared to theoretical predictions. As introduced in Section \@ref(states), states and transitions between them -- whether disease, developmental, or breeding states -- can be incorporated naturally into the HMM framework.
+
+In this chapter, we focus on three examples: cause-- and age--specific mortalities, age--specific breeding probabilities, and stopover duration. Together, they illustrate how capture–recapture HMMs can shed light on life-history strategies.
+
+## Assessing age-- and cause--specific mortality
 
 ### Motivation
 
-Combine dead recoveries with live recaptures. Paper by @koons2014. Roe deer data. Cite recent paper by Michael on the combination.
+Cause‐ and age-specific mortalities are key life-history traits, shaping population dynamics and informing management or conservation strategies. Yet in the wild, direct assignment of causes of death is challenging as field observations are often incomplete, and carcass recovery is biased towards certain causes or habitats. If we ignore this uncertainty, estimates of mortality rates by cause or age class can be biased, and our understanding of population processes compromised.
 
-See also nice app by @fernandez-chacon_causes_2016,  @peron_evidence_2016 and @marzo2011. Extension to semi-markov in @choquet_semi-markov_2011.
+The fix is to treat cause of death as a latent state. Following @koons2014, we model survival and transitions to cause--specific death states jointly within a HMM capture–recapture framework, by combining data on recaptures of live and recoveries of dead animals. Individuals can either survive to the next occasion or die from one of several competing causes, with probabilities that may depend on age. This formulation naturally accommodates uncertainty in cause assignment, for example, when only a fraction of recovered dead individuals can be confidently attributed to a specific cause.
+
+Here, we use the case study on roe deer (*Capreolus capreolus*) in @koons2014. The authors show that failing to account for uncertain cause assignment underestimated mortality from hunting and overestimated natural mortality, particularly in younger age classes. By explicitly modelling causes as states, we obtain unbiased, age‐specific estimates of cause‐specific mortality and can directly compare them to life‐history theory predictions.
+
+Here, we adopt that logic in NIMBLE: define cause‐specific death states, let survival and cause‐specific mortality depend on age, and keep the rest of the HMM machinery unchanged.
 
 ### Model and NIMBLE implementation
 
-<!-- # OBS -->
-<!-- # 0, not seen;  -->
-<!-- # 1, captured for the first time or recaptured;  -->
-<!-- # 2, killed by human activities and reported.  -->
+For our example, we will use data on roe deer from population in the enclosed forest of the Territoire d'Etude et d'Expérimentation of Trois Fontaines, in eastern France. Each year since 1985, newborn fawns were captured, sexed, marked and released after handling. Here, we focus on the 556 known-age females, of which 217 were recaptured at least once and 41 were deadly injured during handling, victim of car collisions, or recovered and reported by hunters (human-related mortalities). 
 
-<!-- # STATES -->
-<!-- # A, alive;  -->
-<!-- # H, individual just died from human causes;  -->
-<!-- # NH, individual just died from a natural (non-human) cause;  -->
-<!-- # D, individual already dead. -->
+To build up our model and explicitely account for this lack of fit, we first define the states and observations:
 
+- Observations   
+      - 1, not seen   
+      - 2, captured for the first time or recaptured   
+      - 3, killed by human activities and reported   
+
+- States  
+      - A, alive   
+      - H, individual just died from human causes   
+      - NH, individual just died from a natural (non-human) cause   
+      - D, individual already dead   
+
+Now we turn to writing our model. 
+
+We start with the vector of initial states. Individuals enter alive the study with probability 1: 
 $$\begin{matrix}
 & \\
 \mathbf{\delta} =
@@ -66,7 +81,9 @@ z_{t-1}=A \\ z_{t-1}=H \\ z_{t-1}=NH \\ z_{t-1}=D
 \end{matrix}
 \end{matrix}$$
 
-Following the paper, adult survival is blabla:
+where the transition probability from $A$ at $t$ to $H$ at $t + 1$ is the human-related mortality probability $\mu_H$ and the transition probability from $A$ at $t$ to $NH$ at $t + 1$ is the natural mortality probability $\mu_{NH}$. Because an individual could not return to state $A$ once dead, we fix these transitions to 0. 
+
+Following the paper, adult survival is age-specific: $\mu_H$ is different for individuals in their first year of life after birth ([0,1[) vs. age 1 onwards, while $\mu_{NH}$ has two different parameters for ages [0,1[ and [1,2[ then a linear trend with age from age 2 onward. We also use a multinomial logit link function to ensure that mortality probabilities are estimated between 0 and 1 and sum up to 1, see Section \@ref(multinomiallogit). In NIMBLE, we code:
 ```{r eval = FALSE}
 # Transition matrix
   for(i in 1:N){
@@ -75,28 +92,53 @@ Following the paper, adult survival is blabla:
       # Age effects
       etaH[i,t] <- (alpha_H_01 * age_lt1[i,t] + alpha_H_ge1 * age_ge1[i,t])
       
-      etaNH[i,t] <- (alpha_NH_01 * age_lt1[i,t] +
-                       alpha_NH_12 * age_1to2[i,t] +
-                       (beta0_NH + beta1_NH * age_std_mu2[i,t]) * age_ge2[i,t])
-      
-      # Denominator 
-      den[i,t] <- 1 + exp(etaH[i,t]) + exp(etaNH[i,t])  # Default denominator = 1
+      etaNH[i,t] <- (alpha_NH_01 * age_lt1[i,t] +                               # if age is [0,1[
+                       alpha_NH_12 * age_1to2[i,t] +                            # if age is [1,2[
+                       (beta0_NH + beta1_NH * age_std_mu2[i,t]) * age_ge2[i,t]) # linear trend if age >= 2
       
       # Transitions from A
-      gamma_it[i,t,1,1] <- 1 / den[i,t]  # Default: stay alive
-      gamma_it[i,t,1,2] <- exp(etaH[i,t]) / den[i,t]   # Default: 0
-      gamma_it[i,t,1,3] <- exp(etaNH[i,t]) / den[i,t]  # Default: 0
-      gamma_it[i,t,1,4] <- 0  # Always 0
+      den[i,t] <- 1 + exp(etaH[i,t]) + exp(etaNH[i,t])  # denominator
+      gamma[i,t,1,1] <- 1 / den[i,t]  # stay alive
+      gamma[i,t,1,2] <- exp(etaH[i,t]) / den[i,t]   # muH
+      gamma[i,t,1,3] <- exp(etaNH[i,t]) / den[i,t]  # muNH
+      gamma[i,t,1,4] <- 0  # Always 0
       
       # From H, NH, D (always go to D)
-      gamma_it[i,t,2,1] <- 0; gamma_it[i,t,2,2] <- 0; gamma_it[i,t,2,3] <- 0; gamma_it[i,t,2,4] <- 1
-      gamma_it[i,t,3,1] <- 0; gamma_it[i,t,3,2] <- 0; gamma_it[i,t,3,3] <- 0; gamma_it[i,t,3,4] <- 1
-      gamma_it[i,t,4,1] <- 0; gamma_it[i,t,4,2] <- 0; gamma_it[i,t,4,3] <- 0; gamma_it[i,t,4,4] <- 1
+      gamma[i,t,2,1] <- 0; gamma[i,t,2,2] <- 0; gamma[i,t,2,3] <- 0; gamma[i,t,2,4] <- 1
+      gamma[i,t,3,1] <- 0; gamma[i,t,3,2] <- 0; gamma[i,t,3,3] <- 0; gamma[i,t,3,4] <- 1
+      gamma[i,t,4,1] <- 0; gamma[i,t,4,2] <- 0; gamma[i,t,4,3] <- 0; gamma[i,t,4,4] <- 1
 ```
 
 In the code above, age is passed in the data and created as follows:
 ```{r eval = FALSE}
-...
+# Build an N x K age matrix
+age <- matrix(0, nrow = nrow(obs_matrix), ncol = K)
+for (i in 1:nrow(obs_matrix)) {
+  for (t in first[i]:K) {
+    age[i, t] <- t - first[i]   # age 0 at first capture
+  }
+}
+# Define age [0,1[ and age >=1
+for (i in 1:nrow(obs_matrix)) {
+  for (t in first[i]:K) {
+    age_val <- age[i, t]
+    if (age_val == 0) { # age < 1
+      age_lt1[i, t] <- 1
+      age_ge1[i, t] <- 0
+    } else {            # age >= 1
+      age_lt1[i, t] <- 0  
+      age_ge1[i, t] <- 1
+    }
+  }
+}
+# Define age >1 and age [1,2[
+for (i in 1:nrow(obs_matrix)) {
+  for (t in first[i]:K) {
+    age_val <- age[i, t]
+    age_ge2[i, t] <- as.integer(age_val > 1)   # age > 1 or 2 onwards
+    age_1to2[i, t] <- as.integer(age_val == 1) # age in [1,2[
+  }
+}
 ```
 
 Last step is the observation matrix:
@@ -122,17 +164,24 @@ z_{t}=A \\ z_{t}=H \\ z_{t}=NH \\ z_{t}=D
 \end{matrix}
 \end{matrix}$$
 
+where a live individual can be detected with probability $p$, or not with probability $1−p$. We include time-dependence and age on $p$, with a different parameter for 1 year-old individuals vs. individuals older than 1 year of age. In NIMBLE, we write:
+```{r eval = FALSE}
+pA[i,t] <- p_ageLE1[t] * age_lt1[i,t] + p_ageGT1[t] * age_ge1[i,t]
+```
+
+An individual that just died from human causes can be recovered and reported with probability $\lambda$, or not with probability $1-\lambda$. Because tag recovery protocols were constant over the course of the study, the authors considered that parameter to be constant over time and across age classes.
 
 ### Results and interpretation
-
 
 ```{r echo = FALSE}
 library(MCMCvis)
 load(here::here("dat","agemortalities.RData"))
-MCMCsummary(out, round = 2)
+#MCMCsummary(out, round = 2)
 ```
 
-```{r echo = FALSE}
+The results are given in Figure \@ref(fig:fig-mortality-age). We see senescence in natural mortality from age 2 onwards, as well as well as a slighly a higher human-related mortality in the first year of life after birth. These patterns are similar to those obtained by @koons2014, check out their Figure 4. 
+
+```{r fig-mortality-age, fig.cap="Age‐specific mortality probabilities for human‐related (solid line) and natural (dashed line) causes in female roe deer at Trois‐Fontaines, France, from 1985 to 2013. Shaded polygons represent 95\\% credible intervals.", echo=FALSE}
 # ----- Posterior curves vs age -----
 library(tidyverse)
 
@@ -215,44 +264,47 @@ for (k in seq_along(ages_plot)) {
 
 
 ggplot(df_results, aes(age, median)) +
-#  geom_ribbon(aes(ymin = l95, ymax = u95, fill = metric), alpha = 0.2) +
+  geom_ribbon(aes(ymin = l95, ymax = u95, fill = metric), alpha = 0.2) +
   geom_line(aes(linetype = metric)) +
-  scale_y_continuous(limits = c(0,1), name = "Probability") +
+  scale_y_continuous(limits = c(0,1), name = "Estimated mortality probability") +
   scale_x_continuous(breaks = pretty(ages_plot)) +
   labs(x = "Age (years)", linetype = NULL, fill = NULL,
-       title = "Roe deer: age-specific and cause-specific mortalities") +
+       title = "") +
   theme_bw()
 ```
-
-<!-- The best model indicated senescence in natural mortality from age 2 onwards (generalized logit link beta = 2·239, 95% CI: 0·942–3·535). The best model also retained a constant human-related mortality probability from age 1 onwards but a higher mortality in the first year of life after birth (human-related mortality probability 0–1 = 0·132, 95% CI: 0·053–0·294; human-related mortality probability 1+ = 0·057, 95% CI: 0·027–0·115).  -->
 
 
 ## Quantifying age-specific breeding
 
 ### Motivation
 
+Breeding is not a simple yes/no coin flip. Who breeds this year depends on what happened last year. In long-lived mammals, adult survival is high and fairly stable, but breeding probability can differ according to recent reproductive history and with how reliably we detect mothers and their offspring. If we blur these pieces and treat breeding status as perfectly known we risk biasing both survival and breeding estimates.
+
+@couet2019 give a clear template with female bottlenose dolphins. They show that calf detectability differs by age and a female's breeding probability depends on the outcome of her previous calf. Rather than pretend states are observed without error, they use a HMM to keep true breeding state hidden, model misclassification/detection explicitly, and tie breeding this year to last year's outcome. That way, uncertainty about calf presence and age feeds correctly into demographic estimates.
+
+Here, we follow that logic: we define hidden female states (nonbreeder vs. breeder with calf age classes), let detection vary by calf age, and make breeding probability state-dependent on the previous year's result. The payoff is a set of adult and calf survival estimates and age-specific breeding probabilities that reflect both imperfect observation and real biological carry-over.
+
 ### Model and NIMBLE implementation
 
-<!-- # OBS -->
-<!-- # data from 2004 to 2016 -->
-<!-- # 0 = not seen -->
-<!-- # 1 = seen alone -->
-<!-- # 2 = seen with a young of the year -->
-<!-- # 3 = seen with a calf (1 to 3 years old) -->
+For our example, we'll work with data from a population of bottlenose dolphins (*Tursiops truncatus*) inhabiting the French waters of the Normano-Breton Gulf in the English Channel. We have 106 encounter histories between 2004 and 2016, made of photographs taken from a boat between July and November, which corresponds to the birth peak and the best weather conditions for monitoring. To build up our model, we first define the states and observations:
 
-<!-- # # STATES (6) -->
-<!-- # NB Nonbreeding adult female -->
-<!-- # Byoy Breeding adult female with a young‐of‐the‐year -->
-<!-- # Bc1 Breeding adult female with a 1‐year‐old calf  -->
-<!-- # Bc3 Breeding adult female with a 3‐year‐old calf -->
-<!-- # Bc2 Breeding adult female with a 2‐year‐old calf -->
-<!-- # D Dead female -->
-<!-- #  -->
-<!-- # # INTERMEDIATE STATES -->
-<!-- # Byoy‐D Breeding adult female that had lost her young‐of‐the‐year -->
-<!-- # Bc1‐D Breeding adult female that had lost her 1‐year‐ old calf -->
-<!-- # Bc2‐D Breeding adult female that had lost her 2‐year‐ old calf -->
-<!-- # Bc3‐leave Breeding adult female that raised her calf to the age of 3 -->
+- States   
+        - NB Nonbreeding adult female   
+        - Byoy Breeding adult female with a young‐of‐the‐year
+        - Bc1 Breeding adult female with a 1‐year‐old calf
+        - Bc3 Breeding adult female with a 3‐year‐old calf
+        - Bc2 Breeding adult female with a 2‐year‐old calf
+        - D Dead female
+
+- Observations   
+        - 0 = not seen   
+        - 1 = seen alone   
+        - 2 = seen with a young of the year   
+        - 3 = seen with a calf (1 to 3 years old)   
+
+Now we turn to writing our model. 
+
+We start with the vector of initial states: 
 
 $$
 \begin{matrix}
@@ -271,213 +323,9 @@ $$
 \left . \vphantom{ \begin{matrix} 1 \end{matrix} } \right )
 \end{matrix}
 $$
+where $\displaystyle \pi_5 = 1 - \sum_{j=1}^4\pi_j$.
 
-
-
-$$
-\begin{matrix}
-& \\
-\mathbf{\Phi_A} =
-\left ( \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \\ 12 \\ 12 \\ 12 \end{matrix} } \right .
-\end{matrix}
-\hspace{-1.2em}
-\begin{matrix}
-\text{NB} & \text{Byoy} & \text{Bc1} & \text{Bc2} & \text{Bc3} & \text{D} \\ \hdashline
-\phi_A & 0      & 0      & 0      & 0      & 1 - \phi_A \\
-0      & \phi_A & 0      & 0      & 0      & 1 - \phi_A \\
-0      & 0      & \phi_A & 0      & 0      & 1 - \phi_A \\
-0      & 0      & 0      & \phi_A & 0      & 1 - \phi_A \\
-0      & 0      & 0      & 0      & \phi_A & 1 - \phi_A \\
-0      & 0      & 0      & 0      & 0      & 1
-\end{matrix}
-\hspace{-0.2em}
-\begin{matrix}
-& \\
-\left . \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \\ 12 \\ 12 \\ 12 \end{matrix} } \right )
-\begin{matrix}
-\text{NB} \\
-\text{Byoy} \\
-\text{Bc1} \\
-\text{Bc2} \\
-\text{Bc3} \\
-\text{D}
-\end{matrix}
-\end{matrix}
-$$
-
-$$
-\begin{matrix}
-& \\
-\mathbf{\Phi_Y} =
-\left ( \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \\ 12 \\ 12 \\ 12 \end{matrix} } \right .
-\end{matrix}
-\hspace{-1.2em}
-\begin{matrix}
-\text{NB} & \text{Byoy} & \text{Byoy-D} & \text{Bc1} & \text{Bc1-D} & \text{Bc2} & \text{Bc2-D} & \text{Bc3-leave} & \text{D} \\ \hdashline
-1 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 \\
-0 & \phi_{Y,1} & 1 - \phi_{Y,1} & 0 & 0 & 0 & 0 & 0 & 0 \\
-0 & 0 & 0 & \phi_{Y,1} & 1 - \phi_{Y,1} & 0 & 0 & 0 & 0 \\
-0 & 0 & 0 & 0 & 0 & \phi_{Y,2} & 1 - \phi_{Y,2} & 0 & 0 \\
-0 & 0 & 0 & 0 & 0 & 0 & 0 & 1 & 0 \\
-0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 1
-\end{matrix}
-\hspace{-0.2em}
-\begin{matrix}
-& \\
-\left . \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \\ 12 \\ 12 \\ 12 \end{matrix} } \right )
-\begin{matrix}
-\text{NB} \\
-\text{Byoy} \\
-\text{Bc1} \\
-\text{Bc2} \\
-\text{Bc3} \\
-\text{D}
-\end{matrix}
-\end{matrix}
-$$
-
-
-$$
-\begin{matrix}
-& \\
-\mathbf{AGING} =
-\left ( \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \\ 12 \\ 12 \\ 12 \\ 12 \\ 12 \\ 12 \end{matrix} } \right .
-\end{matrix}
-\hspace{-1.2em}
-\begin{matrix}
-\text{NB} & \text{Byoy} & \text{Byoy-D} & \text{Bc1} & \text{Bc1-D} & \text{Bc2} & \text{Bc2-D} & \text{Bc3-leave} & \text{D} \\ \hdashline
-1 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 \\
-0 & 1 & 0 & 0 & 0 & 0 & 0 & 0 & 0 \\
-0 & 0 & 1 & 0 & 0 & 0 & 0 & 0 & 0 \\
-0 & 0 & 0 & 0 & 1 & 0 & 0 & 0 & 0 \\
-0 & 0 & 0 & 0 & 1 & 0 & 0 & 0 & 0 \\
-0 & 0 & 0 & 0 & 0 & 0 & 1 & 0 & 0 \\
-0 & 0 & 0 & 0 & 0 & 0 & 1 & 0 & 0 \\
-0 & 0 & 0 & 0 & 0 & 0 & 0 & 1 & 0 \\
-0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 1
-\end{matrix}
-\hspace{-0.2em}
-\begin{matrix}
-& \\
-\left . \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \\ 12 \\ 12 \\ 12 \\ 12 \\ 12 \\ 12 \end{matrix} } \right )
-\begin{matrix}
-\text{NB} \\
-\text{Byoy} \\
-\text{Byoy-D} \\
-\text{Bc1} \\
-\text{Bc1-D} \\
-\text{Bc2} \\
-\text{Bc2-D} \\
-\text{Bc3-leave} \\
-\text{D}
-\end{matrix}
-\end{matrix}
-$$
-
-
-$$
-\begin{matrix}
-& \\
-\mathbf{BREED} =
-\left ( \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \\ 12 \\ 12 \\ 12 \\ 12 \\ 12 \\ 12 \end{matrix} } \right .
-\end{matrix}
-\hspace{-1.2em}
-\begin{matrix}
-\text{NB} & \text{Byoy} & \text{Bc1} & \text{Bc2} & \text{Bc3} & \text{D} \\ \hdashline
-1 - \beta_1 & \beta_1 & 0 & 0 & 0 & 0 \\
-0 & 0 & 1 & 0 & 0 & 0 \\
-0 & 0 & 0 & 1 & 0 & 0 \\
-0 & 0 & 0 & 0 & 1 & 0 \\
-1 - \beta_1 & \beta_1 & 0 & 0 & 0 & 0 \\
-1 - \beta_1 & \beta_1 & 0 & 0 & 0 & 0 \\
-1 - \beta_2 & \beta_2 & 0 & 0 & 0 & 0 \\
-1 - \beta_2 & \beta_2 & 0 & 0 & 0 & 0 \\
-0 & 0 & 0 & 0 & 0 & 1
-\end{matrix}
-\hspace{-0.2em}
-\begin{matrix}
-& \\
-\left . \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \\ 12 \\ 12 \\ 12 \\ 12 \\ 12 \\ 12 \end{matrix} } \right )
-\begin{matrix}
-\text{NB} \\
-\text{Byoy} \\
-\text{Bc1} \\
-\text{Bc2} \\
-\text{Byoy-D} \\
-\text{Bc1-D} \\
-\text{Bc2-D} \\
-\text{Bc3-leave} \\
-\text{D}
-\end{matrix}
-\end{matrix}
-$$
-
-
-$$
-\begin{matrix}
-& \\
-\mathbf{DETECTION} =
-\left ( \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \\ 12 \\ 12 \\ 12 \end{matrix} } \right .
-\end{matrix}
-\hspace{-1.2em}
-\begin{matrix}
-\text{NB} & \text{Byoy} & \text{Bc1} & \text{Bc2} & \text{Bc3} & \text{D} \\ \hdashline
-1 - p_1 & p_1 & 0 & 0 & 0 & 0 \\
-1 - p_2 & 0 & p_2 & 0 & 0 & 0 \\
-1 - p_2 & 0 & 0 & p_2 & 0 & 0 \\
-1 - p_1 & 0 & 0 & 0 & p_1 & 0 \\
-1 - p_1 & 0 & 0 & 0 & p_1 & 0 \\
-1 & 0 & 0 & 0 & 0 & 0
-\end{matrix}
-\hspace{-0.2em}
-\begin{matrix}
-& \\
-\left . \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \\ 12 \\ 12 \\ 12 \end{matrix} } \right )
-\begin{matrix}
-\text{NB} \\
-\text{Byoy} \\
-\text{Bc1} \\
-\text{Bc2} \\
-\text{Bc3} \\
-\text{D}
-\end{matrix}
-\end{matrix}
-$$
-
-
-$$
-\begin{matrix}
-& \\
-\mathbf{OBS} =
-\left ( \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \\ 12 \\ 12 \\ 12 \end{matrix} } \right .
-\end{matrix}
-\hspace{-1.2em}
-\begin{matrix}
-1 & 2 & 3 & 4 \\ \hdashline
-1 & 0 & 0 & 0 \\
-0 & 1 & 0 & 0 \\
-0 & 1 - q_1 & q_1 & 0 \\
-0 & 1 - q_2 & 0 & q_2 \\
-0 & 1 - q_2 & 0 & q_2 \\
-0 & 1 - q_2 & 0 & q_2
-\end{matrix}
-\hspace{-0.2em}
-\begin{matrix}
-& \\
-\left . \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \\ 12 \\ 12 \\ 12 \end{matrix} } \right )
-\begin{matrix}
-\text{NB} \\
-\text{Byoy} \\
-\text{Bc1} \\
-\text{Bc2} \\
-\text{Bc3} \\
-\text{D}
-\end{matrix}
-\end{matrix}
-$$
-
-
-
+To write the transition matrix, we can make a diagram of the life cycle:
 ```{r, engine = 'tikz', echo = FALSE}
 \usetikzlibrary{arrows.meta, fit, positioning, automata}
 \begin{tikzpicture}[
@@ -534,24 +382,455 @@ $$
 \end{tikzpicture}
 ```
 
+which can be translated in this matrix:
+$$
+\begin{matrix}
+& \\
+\mathbf{\Gamma} =
+\left ( \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \\ 12 \\ 12 \\ 12 \end{matrix} } \right .
+\end{matrix}
+\hspace{-1.2em}
+\begin{matrix}
+z_t=NB & z_t = Byoy & z_t = Bc1 & z_t = Bc2 & z_t = Bc3 & z_t = D \\ \hdashline
+\phi_A (1 - \beta_1) & \phi_A \beta_1 & 0 & 0 & 0 & 1 - \phi_A \\
+0 & 0 & \phi_A \phi_Y & \phi_A (1-\phi_Y) & 0 & 1-\phi_A \\
+\phi_A (1 - \beta_1) & \phi_A \beta_1 & 0 & 0 & 0 & 1-\phi_A \\
+\phi_A (1 - \beta_2) & \phi_A \beta_2 & 0 & 0 & 0 & 1-\phi_A \\
+\phi_A (1 - \beta_2) & \phi_A \beta_2 & 0 & 0 & 0 & 1-\phi_A \\
+0 & 0 & 0 & 0 & 0 & 1
+\end{matrix}
+\hspace{-0.2em}
+\begin{matrix}
+& \\
+\left . \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \\ 12 \\ 12 \\ 12 \end{matrix} } \right )
+\begin{matrix}
+z_{t-1} = NB \\
+z_{t-1} = Byoy \\
+z_{t-1} = Bc1 \\
+z_{t-1} = Bc2 \\
+z_{t-1} = Bc3 \\
+z_{t-1} = D
+\end{matrix}
+\end{matrix}
+$$
 
+As noted by @couet2019, this transition matrix can be split split into four steps: (1) female survival $\mathbf{\Phi_A}$, (2) young survival $\mathbf{\Phi_Y}$, (3) young aging $\mathbf{AGING}$, and (4) breeding $\mathbf{BREED}$, each step being conditional on the previous ones. To do so, we introduce some intermediate states: 
+
+- Intermediate states   
+       - Byoy‐D Breeding adult female that had lost her young‐of‐the‐year   
+       - Bc1‐D Breeding adult female that had lost her 1‐year‐ old calf   
+       - Bc2‐D Breeding adult female that had lost her 2‐year‐ old calf   
+       - Bc3‐leave Breeding adult female that raised her calf to the age of 3   
+
+The four corresponding matrices are given below, starting with the female survival matrix: 
+$$
+\begin{matrix}
+& \\
+\mathbf{\Phi_A} =
+\left ( \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \\ 12 \\ 12 \\ 12 \end{matrix} } \right .
+\end{matrix}
+\hspace{-1.2em}
+\begin{matrix}
+\text{NB} & \text{Byoy} & \text{Bc1} & \text{Bc2} & \text{Bc3} & \text{D} \\ \hdashline
+\phi_A & 0      & 0      & 0      & 0      & 1 - \phi_A \\
+0      & \phi_A & 0      & 0      & 0      & 1 - \phi_A \\
+0      & 0      & \phi_A & 0      & 0      & 1 - \phi_A \\
+0      & 0      & 0      & \phi_A & 0      & 1 - \phi_A \\
+0      & 0      & 0      & 0      & \phi_A & 1 - \phi_A \\
+0      & 0      & 0      & 0      & 0      & 1
+\end{matrix}
+\hspace{-0.2em}
+\begin{matrix}
+& \\
+\left . \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \\ 12 \\ 12 \\ 12 \end{matrix} } \right )
+\begin{matrix}
+\text{NB} \\
+\text{Byoy} \\
+\text{Bc1} \\
+\text{Bc2} \\
+\text{Bc3} \\
+\text{D}
+\end{matrix}
+\end{matrix}
+$$
+
+An adult female survives from $t$ to $t+1$ with probability $\phi_A$ or dies with $1−\phi_A$. We go on with the young survival matrix:
+$$
+\begin{matrix}
+& \\
+\mathbf{\Phi_Y} =
+\left ( \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \\ 12 \\ 12 \\ 12 \end{matrix} } \right .
+\end{matrix}
+\hspace{-1.2em}
+\begin{matrix}
+\text{NB} & \text{Byoy} & \text{Byoy-D} & \text{Bc1} & \text{Bc1-D} & \text{Bc2} & \text{Bc2-D} & \text{Bc3-leave} & \text{D} \\ \hdashline
+1 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 \\
+0 & \phi_{Y,1} & 1 - \phi_{Y,1} & 0 & 0 & 0 & 0 & 0 & 0 \\
+0 & 0 & 0 & \phi_{Y,1} & 1 - \phi_{Y,1} & 0 & 0 & 0 & 0 \\
+0 & 0 & 0 & 0 & 0 & \phi_{Y,2} & 1 - \phi_{Y,2} & 0 & 0 \\
+0 & 0 & 0 & 0 & 0 & 0 & 0 & 1 & 0 \\
+0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 1
+\end{matrix}
+\hspace{-0.2em}
+\begin{matrix}
+& \\
+\left . \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \\ 12 \\ 12 \\ 12 \end{matrix} } \right )
+\begin{matrix}
+\text{NB} \\
+\text{Byoy} \\
+\text{Bc1} \\
+\text{Bc2} \\
+\text{Bc3} \\
+\text{D}
+\end{matrix}
+\end{matrix}
+$$
+
+
+Offspring survive with probability $\phi_Y$ or die with $1-\phi_Y$. If the calf survives, the female remains in the same breeding state. If it dies, she moves to an intermediate “dead-offspring” state ($BYOY-D$, $Bc1-D$, or $Bc2-D$) so that later steps can condition on that loss. For 3-year-old calves, mortality cannot be distinguished from emancipation (leaving the mother), so we add an intermediate $Bc3-leave$ state and fix survival to 1 there (this parameter is otherwise unidentifiable). We go on with the young aging matrix:
+$$
+\begin{matrix}
+& \\
+\mathbf{AGING} =
+\left ( \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \\ 12 \\ 12 \\ 12 \\ 12 \\ 12 \\ 12 \end{matrix} } \right .
+\end{matrix}
+\hspace{-1.2em}
+\begin{matrix}
+\text{NB} & \text{Byoy} & \text{Byoy-D} & \text{Bc1} & \text{Bc1-D} & \text{Bc2} & \text{Bc2-D} & \text{Bc3-leave} & \text{D} \\ \hdashline
+1 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 \\
+0 & 1 & 0 & 0 & 0 & 0 & 0 & 0 & 0 \\
+0 & 0 & 1 & 0 & 0 & 0 & 0 & 0 & 0 \\
+0 & 0 & 0 & 0 & 1 & 0 & 0 & 0 & 0 \\
+0 & 0 & 0 & 0 & 1 & 0 & 0 & 0 & 0 \\
+0 & 0 & 0 & 0 & 0 & 0 & 1 & 0 & 0 \\
+0 & 0 & 0 & 0 & 0 & 0 & 1 & 0 & 0 \\
+0 & 0 & 0 & 0 & 0 & 0 & 0 & 1 & 0 \\
+0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 1
+\end{matrix}
+\hspace{-0.2em}
+\begin{matrix}
+& \\
+\left . \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \\ 12 \\ 12 \\ 12 \\ 12 \\ 12 \\ 12 \end{matrix} } \right )
+\begin{matrix}
+\text{NB} \\
+\text{Byoy} \\
+\text{Byoy-D} \\
+\text{Bc1} \\
+\text{Bc1-D} \\
+\text{Bc2} \\
+\text{Bc2-D} \\
+\text{Bc3-leave} \\
+\text{D}
+\end{matrix}
+\end{matrix}
+$$
+The progression of calf age classes between $t$ and $t+1$ is deterministic, all relevant age-advancing transitions are set to 1, and there are no parameters estimated in this matrix. Last, here is the breeding matrix: 
+$$
+\begin{matrix}
+& \\
+\mathbf{BREED} =
+\left ( \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \\ 12 \\ 12 \\ 12 \\ 12 \\ 12 \\ 12 \end{matrix} } \right .
+\end{matrix}
+\hspace{-1.2em}
+\begin{matrix}
+\text{NB} & \text{Byoy} & \text{Bc1} & \text{Bc2} & \text{Bc3} & \text{D} \\ \hdashline
+1 - \beta_1 & \beta_1 & 0 & 0 & 0 & 0 \\
+0 & 0 & 1 & 0 & 0 & 0 \\
+0 & 0 & 0 & 1 & 0 & 0 \\
+0 & 0 & 0 & 0 & 1 & 0 \\
+1 - \beta_1 & \beta_1 & 0 & 0 & 0 & 0 \\
+1 - \beta_1 & \beta_1 & 0 & 0 & 0 & 0 \\
+1 - \beta_2 & \beta_2 & 0 & 0 & 0 & 0 \\
+1 - \beta_2 & \beta_2 & 0 & 0 & 0 & 0 \\
+0 & 0 & 0 & 0 & 0 & 1
+\end{matrix}
+\hspace{-0.2em}
+\begin{matrix}
+& \\
+\left . \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \\ 12 \\ 12 \\ 12 \\ 12 \\ 12 \\ 12 \end{matrix} } \right )
+\begin{matrix}
+\text{NB} \\
+\text{Byoy} \\
+\text{Bc1} \\
+\text{Bc2} \\
+\text{Byoy-D} \\
+\text{Bc1-D} \\
+\text{Bc2-D} \\
+\text{Bc3-leave} \\
+\text{D}
+\end{matrix}
+\end{matrix}
+$$
+
+Breeding at $t+1$ occurs with probability $\beta$ (otherwise $1−\beta$). Breeding can depend on the female's state, including whether she was a nonbreeder at $t$ or had lost her calf between $t$ and $t+1$ (the $−D$ intermediate states created in the young-survival step).
+
+Overall, the transition matrix is the product of all four matrices. In NIMBLE, we could code directly the full matrix, but I take this opportunity to illustrate how to code the splitting in several ecological processes:
+```{r eval = FALSE}
+# Transition matrix
+
+# PHIA is 6x6
+for (i in 1:5) {
+  PHIA[i, i] <- adultsurvival
+  PHIA[i, 6] <- 1 - adultsurvival
+}
+PHIA[6, 6] <- 1
+
+# PHIY is 6x9
+# Row 1: NB stays NB
+PHIY[1, 1] <- 1
+# Row 2: Byoy
+PHIY[2, 2] <- youngsurvival[1]        # YOY survives → becomes Bc1
+PHIY[2, 3] <- 1 - youngsurvival[1]    # YOY dies     → becomes Byoy-D
+# Row 3: Bc1
+PHIY[3, 4] <- youngsurvival[1]        # 1-year-old survives → Bc2
+PHIY[3, 5] <- 1 - youngsurvival[1]    # dies → Bc1-D
+# Row 4: Bc2
+PHIY[4, 6] <- youngsurvival[2]        # 2-year-old survives → Bc3-L (emancipation)
+PHIY[4, 7] <- 1 - youngsurvival[2]    # dies → Bc2-D
+# Row 5: Bc3 always emancipates
+PHIY[5, 8] <- 1
+# Row 6: dead female stays dead
+PHIY[6, 9] <- 1
+
+# AGING is 9x9
+AGING[1, 1] <- 1   # NB → NB
+AGING[2, 2] <- 1   # Byoy → Bc1
+AGING[3, 5] <- 1   # Byoy-D → Byoy-D
+AGING[4, 3] <- 1   # Bc1 → Bc2
+AGING[5, 6] <- 1   # Bc1-D → Bc1-D
+AGING[6, 4] <- 1   # Bc2 → Bc3
+AGING[7, 7] <- 1   # Bc2-D → Bc2-D
+AGING[8, 8] <- 1   # Bc3-L → Bc3-L
+AGING[9, 9] <- 1   # D → D
+
+# BREED is 9x6
+# Row 1: NB → Byoy or NB
+BREED[1, 2] <- beta[1]
+BREED[1, 1] <- 1 - beta[1]
+# Row 2: Bc1 → Bc1
+BREED[2, 3] <- 1
+# Row 3: Bc2 → Bc2
+BREED[3, 4] <- 1
+# Row 4: Bc3 → Bc3
+BREED[4, 5] <- 1
+# Row 5: Byoy-D → Byoy or NB
+BREED[5, 2] <- beta[1]
+BREED[5, 1] <- 1 - beta[1]
+# Row 6: Bc1-D → Byoy or NB
+BREED[6, 2] <- beta[1]
+BREED[6, 1] <- 1 - beta[1]
+# Row 7: Bc2-D → Byoy or NB
+BREED[7, 2] <- beta[2]
+BREED[7, 1] <- 1 - beta[2]
+# Row 8: Bc3-L → Byoy or NB
+BREED[8, 2] <- beta[2]
+BREED[8, 1] <- 1 - beta[2]
+# Row 9: D → D
+BREED[9, 6] <- 1
+
+gamma[1:6,1:6] <- PHIA[1:6,1:6] %*% PHIY[1:6,1:9] %*% AGING[1:9,1:9] %*% BREED[1:9,1:6]
+```
+
+Last step is the observation matrix that we can also split in two steps. First, the detection step: 
+$$
+\begin{matrix}
+& \\
+\mathbf{DETECTION} =
+\left ( \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \\ 12 \\ 12 \\ 12 \end{matrix} } \right .
+\end{matrix}
+\hspace{-1.2em}
+\begin{matrix}
+\text{NB} & \text{Byoy} & \text{Bc1} & \text{Bc2} & \text{Bc3} & \text{D} \\ \hdashline
+1 - p_1 & p_1 & 0 & 0 & 0 & 0 \\
+1 - p_2 & 0 & p_2 & 0 & 0 & 0 \\
+1 - p_2 & 0 & 0 & p_2 & 0 & 0 \\
+1 - p_1 & 0 & 0 & 0 & p_1 & 0 \\
+1 - p_1 & 0 & 0 & 0 & p_1 & 0 \\
+1 & 0 & 0 & 0 & 0 & 0
+\end{matrix}
+\hspace{-0.2em}
+\begin{matrix}
+& \\
+\left . \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \\ 12 \\ 12 \\ 12 \end{matrix} } \right )
+\begin{matrix}
+\text{NB} \\
+\text{Byoy} \\
+\text{Bc1} \\
+\text{Bc2} \\
+\text{Bc3} \\
+\text{D}
+\end{matrix}
+\end{matrix}
+$$
+
+which contains the probability $p$ of detecting the female given her latent state at $t$. Then the observation matrix: 
+$$
+\begin{matrix}
+& \\
+\mathbf{OBS} =
+\left ( \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \\ 12 \\ 12 \\ 12 \end{matrix} } \right .
+\end{matrix}
+\hspace{-1.2em}
+\begin{matrix}
+1 & 2 & 3 & 4 \\ \hdashline
+1 & 0 & 0 & 0 \\
+0 & 1 & 0 & 0 \\
+0 & 1 - q_1 & q_1 & 0 \\
+0 & 1 - q_2 & 0 & q_2 \\
+0 & 1 - q_2 & 0 & q_2 \\
+0 & 1 - q_2 & 0 & q_2
+\end{matrix}
+\hspace{-0.2em}
+\begin{matrix}
+& \\
+\left . \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \\ 12 \\ 12 \\ 12 \end{matrix} } \right )
+\begin{matrix}
+\text{NB} \\
+\text{Byoy} \\
+\text{Bc1} \\
+\text{Bc2} \\
+\text{Bc3} \\
+\text{D}
+\end{matrix}
+\end{matrix}
+$$
+where, conditional on being in a breeding state, there is a probability $q$ that a calf is seen vs. not seen. Calf age is not identifiable from photographs, so observations are seen or not seen, but $q$ may still vary by calf age (e.g., YOY vs. older). This is coded in NIMBLE as follows:
+```{r eval = FALSE}
+# Observation matrix
+
+# Detection probabilities
+DETECTION[1, 1] <- 1 - p[1]     # NB not detected
+DETECTION[1, 2] <- p[1]         # NB detected
+DETECTION[2, 1] <- 1 - p[2]
+DETECTION[2, 3] <- p[2]        # Byoy detected
+DETECTION[3, 1] <- 1 - p[2]
+DETECTION[3, 4] <- p[2]         # Bc1 detected
+DETECTION[4, 1] <- 1 - p[1]
+DETECTION[4, 5] <- p[1]         # Bc2 detected
+DETECTION[5, 1] <- 1 - p[1]
+DETECTION[5, 6] <- p[1]         # Bc3 detected
+DETECTION[6, 1] <- 1           # Dead never detected
+
+# OBS is 6x4
+# Not detected → not sighted
+OBS[1, 1] <- 1
+# Detected NB → alone
+OBS[2, 2] <- 1
+# Detected Byoy → YOY visible or not
+OBS[3, 2] <- 1 - q[1]    # alone
+OBS[3, 3] <- q[1]        # with YOY
+# Detected Bc1 → calf visible or not
+OBS[4, 2] <- 1 - q[2]
+OBS[4, 4] <- q[2]
+# Detected Bc2
+OBS[5, 2] <- 1 - q[2]
+OBS[5, 4] <- q[2]
+# Detected Bc3
+OBS[6, 2] <- 1 - q[2]
+OBS[6, 4] <- q[2]
+
+omega[1:6,1:4] <- DETECTION[1:6,1:6] %*% OBS[1:6,1:4]
+```
 
 ### Results and interpretation
 
-
+The raw results are:
 ```{r echo = FALSE}
 library(MCMCvis)
 load(here::here("dat","agebreeding.RData"))
 MCMCsummary(out, round = 2)
 ```
 
-The probability of missing an offspring when a female is actually breeding was high and was greater for YOY than for calves. The probability of observing a YOY was estimated at 0.58 (95% CI 0.46–0.68) and of observing a calf at 0.79 (95% CI 0.59–0.90). 
+which we can gather in a table to compare them to the estimates obtained by @couet2019: 
+```{r results='asis', echo=FALSE, message=FALSE}
+library(knitr)
 
-The detection probabilities of offspring were clearly below 1 and varied strongly over time (between 0.32 and 0.94). The detection probability also differed depending on the state of the female (Figure 3): females with a YOY or a 1‐year‐old calf had a greater detection probability than nonbreeding females or those with an older calf. 
+# ---- 1) Rough, by-eye digitization from Couet et al. (2019) Fig. 3 ----
+# Black line: nonbreeding females OR breeding with 2–3 y calf
+rho_nb_older <- c(0.40, 0.50, 0.52, 0.32, 0.55, 0.64, 0.46, 0.49, 0.45, 0.49, 0.44, 0.42)
 
-Female survival probability was estimated at 0.97 (95% CI 0.96– 0.98) and did not differ between states. Young‐of‐the‐year and 1‐ year‐old calf survival was estimated at 0.66 (95% CI 0.51–0.79), while 2‐year‐old calf survival was estimated at 0.45 (95% CI 0.30–0.62). 
+# Gray line: breeding females with YOY or 1-year calf
+rho_yoy_1yr <- c(0.55, 0.60, 0.62, 0.45, 0.60, 0.72, 0.65, 0.58, 0.65, 0.68, 0.58, 0.62)
 
-Breeding probability varied depending on the breeding state: nonbreeding females and females that had just lost their YOY or 1‐year‐old calf had a low probability of giving birth (0.33, 95% CI 0.26–0.42), whereas females that had lost their 2‐year‐old calf or raised it until the age of 3 had a greater probability of giving birth the next year (0.71, 95% CI 0.45–0.88).
+rho_nb_older_avg <- mean(rho_nb_older)   # ≈ 0.47
+rho_yoy_1yr_avg  <- mean(rho_yoy_1yr)    # ≈ 0.61
+
+# ---- 2) Your posterior summaries (as you reported) ----
+fmt <- function(m,l,u) sprintf("%.2f (%.2f–%.2f)", m,l,u)
+ours <- list(
+  adultsurvival        = list(mean=0.96, l=0.94, u=0.98),
+  # calf observation (delta) by calf age (YOY vs older)
+  q_yoy                = list(mean=0.59, l=0.49, u=0.69),
+  q_older              = list(mean=0.80, l=0.70, u=0.89),
+  youngsurv_yoy        = list(mean=0.63, l=0.55, u=0.73),
+  youngsurv_1yr        = list(mean=0.69, l=0.53, u=0.83),
+  # adult female detection (rho) by breeding state class
+  p_nb_older           = list(mean=0.63, l=0.58, u=0.69),  # your p[1]
+  p_yoy_1yr            = list(mean=0.79, l=0.72, u=0.86),  # your p[2]
+  # initial state mix (pi_1:pi_5)
+  pi1                  = list(mean=0.49, l=0.37, u=0.60),  # NB
+  pi2                  = list(mean=0.26, l=0.17, u=0.37),  # Byoy
+  pi3                  = list(mean=0.08, l=0.03, u=0.16),  # Bc1
+  pi4                  = list(mean=0.14, l=0.07, u=0.23),  # Bc2
+  pi5                  = list(mean=0.03, l=0.00, u=0.10)   # Bc3
+)
+
+# ---- 3) Paper side: use time-averaged rho from Fig. 3; delta & survivals from text ----
+paper <- list(
+  adultsurvival        = "0.97 (0.96–0.98)",
+  q_yoy                = "0.58 (0.46–0.68)",  # calf seen (YOY)
+  q_older              = "0.79 (0.59–0.90)",  # calf seen (1–3 y)
+  youngsurv_yoy        = "0.66 (0.50–0.78)",
+  youngsurv_1yr        = "0.45 (0.29–0.61)",
+  # adult female detection (averages from Fig. 3)
+  p_nb_older           = sprintf("≈%.2f", rho_nb_older_avg),
+  p_yoy_1yr            = sprintf("≈%.2f", rho_yoy_1yr_avg),
+  # initial mix not reported explicitly
+  pi1                  = "NR",
+  pi2                  = "NR",
+  pi3                  = "NR",
+  pi4                  = "NR",
+  pi5                  = "NR"
+)
+
+labels <- c(
+  adultsurvival        = "Adult female survival",
+  q_yoy                = "Calf observation, YOY (δ)",
+  q_older              = "Calf observation, 1–3 y (δ)",
+  youngsurv_yoy        = "Calf survival (YOY)",
+  youngsurv_1yr        = "Calf survival (1-year-old)",
+  p_nb_older           = "Female detection ρ: NB or calf 2–3 y",
+  p_yoy_1yr            = "Female detection ρ: YOY or 1-year calf",
+  pi1                  = "Initial state π₁ (NB)",
+  pi2                  = "Initial state π₂ (Byoy)",
+  pi3                  = "Initial state π₃ (Bc1)",
+  pi4                  = "Initial state π₄ (Bc2)",
+  pi5                  = "Initial state π₅ (Bc3)"
+)
+
+order_keys <- names(labels)
+
+tab <- data.frame(
+  Quantity = unname(labels[order_keys]),
+  `Our NIMBLE (mean, 95% CrI)` =
+    sapply(ours[order_keys], function(x) fmt(x$mean, x$l, x$u)),
+  `Couet et al. 2019` =
+    unname(unlist(paper[order_keys])),
+  check.names = FALSE
+)
+
+kable(
+  tab,
+  align = c("l","c","c"),
+  caption = "Comparison of our NIMBLE estimates with Couet et al. (2019). ‘NR’ denotes quantities not reported in the paper. Adult female detection (ρ) on the paper side is a rough time-average read by eye from Figure 3 (2005–2016)."
+)
+```
+
+Our NIMBLE estimates track the published values closely. Calf survival shows some discrepancies, but credible and confidence intervals overlap, so I would not worry too much. Note also that our model differs slightly: we held adult female detection constant in time, whereas the paper models it as time‐dependent.
+
+Offspring are often missed even when a female is breeding, especially YOY, which are harder to see than older calves. Offspring detection is well below 1. Adult detection also depends on the female's state: females with a YOY or 1-year calf are more detectable than nonbreeders or those with older calves.
+
+Adult female survival is high. Calf survival ranks YOY ≥ 1-year > 2-year. Breeding probability depends on recent history: it's lower after nonbreeding or losing a YOY/1-year calf, and higher after losing a 2-year calf or successfully raising a calf to age 3.
 
 ## Estimating stopover duration
 
@@ -571,14 +850,14 @@ This nicely reframes stopover behavior as a stage-specific timing trait — akin
 
 ### Model and NIMBLE implementation
 
-<!-- # Three STATES  -->
-<!-- # + not yet arrived in the pond (1) -->
-<!-- # + arrived in the pond (2) -->
-<!-- # + departed from the pond (3)] -->
-<!-- #  -->
-<!-- # Two OBS -->
-<!-- # + not captured (1) -->
-<!-- # + captured (2)]  -->
+- States   
+      - not yet arrived in the pond (NYA)   
+      - arrived in the pond (ARR)   
+      - departed from the pond (DEP)   
+
+- Observations   
+      - not captured (1)   
+      - captured (2)]   
 
 $$
 \begin{matrix}
