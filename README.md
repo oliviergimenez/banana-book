@@ -15,6 +15,11 @@ People who sent feedback:
 -   Chloé Nater \@ChloeRN
 -   Joseph Hightower \@jhncsu
 -   Maud Quéroué \@MaudQueroue
+-   Marc Kéry \@MarcKery
+-   Joseph Hightower
+-   Matthew Weldy
+-   Daniel Turek \@danielturek
+-   Perry de Valpine \@perrydv
 
 People who shared data/code:
 
