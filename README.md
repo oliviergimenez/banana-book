@@ -2,41 +2,40 @@ This is a textbook on the analysis of capture-recapture data with hidden Markov 
 
 People who sent feedback:
 
+-   Fitsum Abadi \@FitsumAG
 -   Sarah Bauduin \@SarahBauduin
+-   Perry de Valpine \@perrydv
+-   Rémi Fraysse
+-   Joseph Hightower \@jhncsu
+-   Cyrus Kavwele \@cyruskavwele
+-   Rachel McCrea
+-   Cyril Milleret \@Milleret_Cyril
+-   Byron Morgan
+-   Chloé Nater \@ChloeRN
+-   Matthieu Paquet
+-   Maud Quéroué \@MaudQueroue
+-   Etienne Rivot
 -   Patricia Rodrigues \@PatriRodrigs
 -   Benedick Schmidt \@Schmidt_Beni
--   Mahdieh Tourani \@TouraniMa
--   Cyrus Kavwele \@cyruskavwele
--   Rémi Fraysse
--   Fitsum Abadi \@FitsumAG
--   Cyril Milleret \@Milleret_Cyril
--   Matthieu Paquet
 -   Matthew Silk \@mattjsilk
--   Chloé Nater \@ChloeRN
--   Joseph Hightower \@jhncsu
--   Maud Quéroué \@MaudQueroue
--   Marc Kéry \@MarcKery
--   Joseph Hightower
--   Matthew Weldy
--   Byron Morgan
--   Rachel McCrea
--   Etienne Rivot
+-   Mahdieh Tourani \@TouraniMa
 -   Daniel Turek \@danielturek
--   Perry de Valpine \@perrydv
+-   Matthew Weldy
 
 People who shared data/code:
 
--   Gilbert Marzolin
--   Evan Cooch and Paul Conn
--   Richard Scofield
--   Jay Hestbeck
--   Christophe Duchamp
--   Vincenzo Gervasi
--   Marlène Gamelon
 -   Rémi Choquet
--   Roger Pradel
--   Meritxell Genovart
--   Ana Sanz-Aguilar
+-   Evan Cooch
+-   Paul Conn
 -   Pauline Couet
+-   Christophe Duchamp
+-   Marlène Gamelon
+-   Meritxell Genovart
+-   Vincenzo Gervasi
 -   Sandra Guérin
+-   Jay Hestbeck
+-   Gilbert Marzolin
+-   Roger Pradel
+-   Ana Sanz-Aguilar
+-   Richard Scofield
 
