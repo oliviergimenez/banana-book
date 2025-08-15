@@ -16,11 +16,19 @@ People who sent feedback:
 -   Joseph Hightower \@jhncsu
 -   Maud Quéroué \@MaudQueroue
 
-People who shared data:
+People who shared data/code:
 
 -   Gilbert Marzolin
 -   Evan Cooch and Paul Conn
 -   Richard Scofield
 -   Jay Hestbeck
 -   Christophe Duchamp
+-   Vincenzo Gervasi
+-   Marlène Gamelon
+-   Rémi Choquet
+-   Roger Pradel
+-   Meritxell Genovart
+-   Ana Sanz-Aguilar
+-   Pauline Couet
+-   Sandra Guérin
 
