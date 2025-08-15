@@ -18,6 +18,9 @@ People who sent feedback:
 -   Marc Kéry \@MarcKery
 -   Joseph Hightower
 -   Matthew Weldy
+-   Byron Morgan
+-   Rachel McCrea
+-   Etienne Rivot
 -   Daniel Turek \@danielturek
 -   Perry de Valpine \@perrydv
 
