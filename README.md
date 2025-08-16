@@ -1,5 +1,7 @@
 This is a textbook on the analysis of capture-recapture data with hidden Markov models (HMM) implemented in the Bayesian framework with R and NIMBLE.
 
+The code and data to reproduce the analyses are available in the [Appendix/](https://github.com/oliviergimenez/banana-book/tree/master/appendix), feel free to get in touch if you find bugs or typos. 
+
 People who sent feedback:
 
 -   Fitsum Abadi \@FitsumAG
