@@ -384,43 +384,9 @@
 <span>  <span class="op">}</span> <span class="co"># i</span></span>
 <span><span class="op">}</span><span class="op">)</span></span></code></pre></div>
 <p>Note that in this example, <span class="math inline">\(\delta\)</span> is used as a placeholder for more complex models we will build in chapters to come. Here, you could simply write <code>z[i,1] &lt;- 1</code>.</p>
-<p>Now we’re ready to resume our NIMBLE workflow. First we read in data. Because we have loops and indices that do not change, we use constants as explained in Section <a href="intronimble.html#start-nimble">2.3</a>:</p>
+<p>Note also that we could replace <code><a href="https://rdrr.io/pkg/nimble/man/Categorical.html">dcat()</a></code> by <code>dbern()</code> everywhere in the code because we have binary events alive/dead. Would it make any difference? Although <code><a href="https://rdrr.io/pkg/nimble/man/Categorical.html">dcat()</a></code> uses less efficient samplers than <code>dbern()</code>, <code><a href="https://rdrr.io/pkg/nimble/man/Categorical.html">dcat()</a></code> is convenient for model building to accommodate more than two outcomes, a feature that will become handy in the next chapters.</p>
+<p>Now we’re ready to resume our NIMBLE workflow. First we read in data. The code I used to simulate the <span class="math inline">\(z\)</span> with survival <span class="math inline">\(\phi = 0.8\)</span> is as follows:</p>
 <div class="sourceCode" id="cb117"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">my.constants</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>N <span class="op">=</span> <span class="fl">57</span>, T <span class="op">=</span> <span class="fl">5</span><span class="op">)</span></span>
-<span><span class="va">my.data</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>z <span class="op">=</span> <span class="va">z</span><span class="op">)</span></span></code></pre></div>
-<p>We also specify initial values for survival with a function:</p>
-<div class="sourceCode" id="cb118"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">initial.values</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>phi <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html">runif</a></span><span class="op">(</span><span class="fl">1</span>,<span class="fl">0</span>,<span class="fl">1</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="fu">initial.values</span><span class="op">(</span><span class="op">)</span></span>
-<span><span class="co">## $phi</span></span>
-<span><span class="co">## [1] 0.1265</span></span></code></pre></div>
-<p>There is a single parameter to monitor:</p>
-<div class="sourceCode" id="cb119"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">parameters.to.save</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"phi"</span><span class="op">)</span></span>
-<span><span class="va">parameters.to.save</span></span>
-<span><span class="co">## [1] "phi"</span></span></code></pre></div>
-<p>We run 2 chains with 5000 iterations including 1000 iterations as burnin:</p>
-<div class="sourceCode" id="cb120"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">n.iter</span> <span class="op">&lt;-</span> <span class="fl">5000</span></span>
-<span><span class="va">n.burnin</span> <span class="op">&lt;-</span> <span class="fl">1000</span></span>
-<span><span class="va">n.chains</span> <span class="op">&lt;-</span> <span class="fl">2</span></span></code></pre></div>
-<p>Let’s run NIMBLE:</p>
-<div class="sourceCode" id="cb121"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">mcmc.output</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimbleMCMC.html">nimbleMCMC</a></span><span class="op">(</span>code <span class="op">=</span> <span class="va">markov.survival</span>,</span>
-<span>                          constants <span class="op">=</span> <span class="va">my.constants</span>,</span>
-<span>                          data <span class="op">=</span> <span class="va">my.data</span>,</span>
-<span>                          inits <span class="op">=</span> <span class="va">initial.values</span>,</span>
-<span>                          monitors <span class="op">=</span> <span class="va">parameters.to.save</span>,</span>
-<span>                          niter <span class="op">=</span> <span class="va">n.iter</span>,</span>
-<span>                          nburnin <span class="op">=</span> <span class="va">n.burnin</span>,</span>
-<span>                          nchains <span class="op">=</span> <span class="va">n.chains</span><span class="op">)</span></span></code></pre></div>
-<p>Let’s calculate the usual posterior numerical summaries for survival:</p>
-<div class="sourceCode" id="cb122"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/pkg/MCMCvis/man/MCMCsummary.html">MCMCsummary</a></span><span class="op">(</span><span class="va">mcmc.output</span>, round <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span>
-<span><span class="co">##     mean   sd 2.5%  50% 97.5% Rhat n.eff</span></span>
-<span><span class="co">## phi 0.79 0.03 0.73 0.79  0.85    1  1755</span></span></code></pre></div>
-<p>Posterior mean and median are close to <span class="math inline">\(0.8\)</span>. This is fortunate since the data was simulated with (actual) survival <span class="math inline">\(\phi = 0.8\)</span>. The code I used was:</p>
-<div class="sourceCode" id="cb123"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># 1 = alive, 2 = dead</span></span>
 <span><span class="va">nind</span> <span class="op">&lt;-</span> <span class="fl">57</span></span>
 <span><span class="va">nocc</span> <span class="op">&lt;-</span> <span class="fl">5</span></span>
@@ -447,7 +413,42 @@
 <span><span class="co">## [4,]    1    1    1    1    2</span></span>
 <span><span class="co">## [5,]    1    1    1    1    1</span></span>
 <span><span class="co">## [6,]    1    1    2    2    2</span></span></code></pre></div>
-<p>We could replace <code><a href="https://rdrr.io/pkg/nimble/man/Categorical.html">dcat()</a></code> by <code>dbern()</code> everywhere in the code because we have binary events alive/dead. Would it make any difference? Although <code><a href="https://rdrr.io/pkg/nimble/man/Categorical.html">dcat()</a></code> uses less efficient samplers than <code>dbern()</code>, <code><a href="https://rdrr.io/pkg/nimble/man/Categorical.html">dcat()</a></code> is convenient for model building to accomodate more than two outcomes, a feature that will become handy in the next chapters.</p>
+<p>Note the resemblance with the model NIMBLE code above. Because we have loops and indices that do not change, we use constants as explained in Section <a href="intronimble.html#start-nimble">2.3</a>:</p>
+<div class="sourceCode" id="cb118"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">my.data</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>z <span class="op">=</span> <span class="va">z</span><span class="op">)</span></span>
+<span><span class="va">my.constants</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>N <span class="op">=</span> <span class="fl">57</span>, T <span class="op">=</span> <span class="fl">5</span><span class="op">)</span></span></code></pre></div>
+<p>We also specify initial values for survival with a function:</p>
+<div class="sourceCode" id="cb119"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">initial.values</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>phi <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html">runif</a></span><span class="op">(</span><span class="fl">1</span>,<span class="fl">0</span>,<span class="fl">1</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu">initial.values</span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="co">## $phi</span></span>
+<span><span class="co">## [1] 0.6503</span></span></code></pre></div>
+<p>There is a single parameter to monitor:</p>
+<div class="sourceCode" id="cb120"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">parameters.to.save</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"phi"</span><span class="op">)</span></span>
+<span><span class="va">parameters.to.save</span></span>
+<span><span class="co">## [1] "phi"</span></span></code></pre></div>
+<p>We run 2 chains with 5000 iterations including 1000 iterations as burnin:</p>
+<div class="sourceCode" id="cb121"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">n.iter</span> <span class="op">&lt;-</span> <span class="fl">5000</span></span>
+<span><span class="va">n.burnin</span> <span class="op">&lt;-</span> <span class="fl">1000</span></span>
+<span><span class="va">n.chains</span> <span class="op">&lt;-</span> <span class="fl">2</span></span></code></pre></div>
+<p>Let’s run NIMBLE:</p>
+<div class="sourceCode" id="cb122"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">mcmc.output</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimbleMCMC.html">nimbleMCMC</a></span><span class="op">(</span>code <span class="op">=</span> <span class="va">markov.survival</span>,</span>
+<span>                          constants <span class="op">=</span> <span class="va">my.constants</span>,</span>
+<span>                          data <span class="op">=</span> <span class="va">my.data</span>,</span>
+<span>                          inits <span class="op">=</span> <span class="va">initial.values</span>,</span>
+<span>                          monitors <span class="op">=</span> <span class="va">parameters.to.save</span>,</span>
+<span>                          niter <span class="op">=</span> <span class="va">n.iter</span>,</span>
+<span>                          nburnin <span class="op">=</span> <span class="va">n.burnin</span>,</span>
+<span>                          nchains <span class="op">=</span> <span class="va">n.chains</span><span class="op">)</span></span></code></pre></div>
+<p>Let’s calculate the usual posterior numerical summaries for survival:</p>
+<div class="sourceCode" id="cb123"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/pkg/MCMCvis/man/MCMCsummary.html">MCMCsummary</a></span><span class="op">(</span><span class="va">mcmc.output</span>, round <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span>
+<span><span class="co">##     mean   sd 2.5%  50% 97.5% Rhat n.eff</span></span>
+<span><span class="co">## phi 0.79 0.03 0.73 0.79  0.85    1  1751</span></span></code></pre></div>
+<p>Posterior mean and median are close to <span class="math inline">\(0.8\)</span>. This is fortunate since the data was simulated with (actual) survival <span class="math inline">\(\phi = 0.8\)</span>.</p>
 </div>
 <div id="hidden-markov-models" class="section level2" number="3.6">
 <h2>
@@ -537,14 +538,13 @@
 \end{matrix}
 \hspace{-1.2em}
 \begin{matrix}
-    y_t=1 &amp; y_t=2 \\
-    \mbox{(non-detected)} &amp; \mbox{(detected)} \\ \hdashline
+    y_t=1 \mbox{ (non-detected)} &amp; y_t=2 \mbox{ (detected)} \\ \hdashline
 1 - p &amp; p\\
 1 &amp; 0\\
 \end{matrix}
 \hspace{-0.2em}
 \begin{matrix}
-&amp; \\
+&amp; &amp; \\
 \left . \vphantom{ \begin{matrix} 12 \\ 12 \end{matrix} } \right )
     \begin{matrix}
     z_{t}=1 \; \mbox{(alive)}\\ z_{t}=2 \; \mbox{(dead)}
@@ -700,50 +700,8 @@
 <span><span class="co">## </span></span>
 <span><span class="co">## $T</span></span>
 <span><span class="co">## [1] 5</span></span></code></pre></div>
-<p>The data are made of 0’s for non-detections and 1’s for detections. To use the categorical distribution, we need to code 1’s and 2’s. We simply add 1 to get the correct format, that is <span class="math inline">\(y = 1\)</span> for non-detection and <span class="math inline">\(y = 2\)</span> for detection:</p>
+<p>The data are made of 0’s for non-detections and 1’s for detections. To simulate the <span class="math inline">\(y\)</span>, here is the code I used:</p>
 <div class="sourceCode" id="cb132"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">my.data</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>y <span class="op">=</span> <span class="va">y</span> <span class="op">+</span> <span class="fl">1</span><span class="op">)</span></span></code></pre></div>
-<!-- **Using 1 and 2 would make my life easier... The 0/1 coding is a convention; Using the 1/2 coding would make clear that non-detections are actual data (while the use of 0s for non-detections is sometimes confusing). Also, it might help to replace states 1 and 2 by A and D for dead and alive. Even if not mathematically convenient, I guess it would help the understanding. Do it, do it. We want non-detection first, so always 1's.** -->
-<p>Now let’s write a function for the initial values:</p>
-<div class="sourceCode" id="cb133"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">zinits</span> <span class="op">&lt;-</span> <span class="va">y</span> <span class="op">+</span> <span class="fl">1</span> <span class="co"># non-detection -&gt; alive</span></span>
-<span><span class="va">zinits</span><span class="op">[</span><span class="va">zinits</span> <span class="op">==</span> <span class="fl">2</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span> <span class="co"># dead -&gt; alive</span></span>
-<span><span class="va">initial.values</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>phi <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html">runif</a></span><span class="op">(</span><span class="fl">1</span>,<span class="fl">0</span>,<span class="fl">1</span><span class="op">)</span>,</span>
-<span>                                  p <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html">runif</a></span><span class="op">(</span><span class="fl">1</span>,<span class="fl">0</span>,<span class="fl">1</span><span class="op">)</span>,</span>
-<span>                                  z <span class="op">=</span> <span class="va">zinits</span><span class="op">)</span></span></code></pre></div>
-<p>As initial values for the latent states, we assumed that whenever an individual was non-detected, it was alive, with with <code>zinits &lt;- y + 1</code>, and we make sure dead individuals are alive with <code>zinits[zinits == 2] &lt;- 1</code>.</p>
-<p>We specify the parameters we’d like to monitor:</p>
-<div class="sourceCode" id="cb134"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">parameters.to.save</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"phi"</span>, <span class="st">"p"</span><span class="op">)</span></span>
-<span><span class="va">parameters.to.save</span></span>
-<span><span class="co">## [1] "phi" "p"</span></span></code></pre></div>
-<p>We provide MCMC details:</p>
-<div class="sourceCode" id="cb135"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">n.iter</span> <span class="op">&lt;-</span> <span class="fl">5000</span></span>
-<span><span class="va">n.burnin</span> <span class="op">&lt;-</span> <span class="fl">1000</span></span>
-<span><span class="va">n.chains</span> <span class="op">&lt;-</span> <span class="fl">2</span></span></code></pre></div>
-<p>At last, we’re ready to run NIMBLE:</p>
-<div class="sourceCode" id="cb136"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">start_time</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Sys.time.html">Sys.time</a></span><span class="op">(</span><span class="op">)</span></span>
-<span><span class="va">mcmc.output</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimbleMCMC.html">nimbleMCMC</a></span><span class="op">(</span>code <span class="op">=</span> <span class="va">hmm.survival</span>,</span>
-<span>                          constants <span class="op">=</span> <span class="va">my.constants</span>,</span>
-<span>                          data <span class="op">=</span> <span class="va">my.data</span>,</span>
-<span>                          inits <span class="op">=</span> <span class="va">initial.values</span>,</span>
-<span>                          monitors <span class="op">=</span> <span class="va">parameters.to.save</span>,</span>
-<span>                          niter <span class="op">=</span> <span class="va">n.iter</span>,</span>
-<span>                          nburnin <span class="op">=</span> <span class="va">n.burnin</span>,</span>
-<span>                          nchains <span class="op">=</span> <span class="va">n.chains</span><span class="op">)</span></span>
-<span><span class="va">end_time</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Sys.time.html">Sys.time</a></span><span class="op">(</span><span class="op">)</span></span>
-<span><span class="va">end_time</span> <span class="op">-</span> <span class="va">start_time</span></span></code></pre></div>
-<pre><code>## Time difference of 24.04 secs</code></pre>
-<p>We can have a look to numerical summaries:</p>
-<div class="sourceCode" id="cb138"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/pkg/MCMCvis/man/MCMCsummary.html">MCMCsummary</a></span><span class="op">(</span><span class="va">mcmc.output</span>, round <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span>
-<span><span class="co">##     mean   sd 2.5%  50% 97.5% Rhat n.eff</span></span>
-<span><span class="co">## p   0.61 0.06 0.50 0.61  0.72    1   740</span></span>
-<span><span class="co">## phi 0.75 0.04 0.67 0.75  0.83    1   805</span></span></code></pre></div>
-<p>The estimates for survival and detection are close to true survival <span class="math inline">\(\phi = 0.8\)</span> and detection <span class="math inline">\(p = 0.6\)</span> with which we simulated the data. The code I used is:</p>
-<div class="sourceCode" id="cb139"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/Random.html">set.seed</a></span><span class="op">(</span><span class="fl">2022</span><span class="op">)</span> <span class="co"># for reproducibility</span></span>
 <span><span class="va">nocc</span> <span class="op">&lt;-</span> <span class="fl">5</span> <span class="co"># nb of winters or sampling occasions</span></span>
 <span><span class="va">nind</span> <span class="op">&lt;-</span> <span class="fl">57</span> <span class="co"># nb of animals</span></span>
@@ -778,6 +736,49 @@
 <span><span class="op">}</span></span>
 <span><span class="va">y</span></span>
 <span><span class="va">y</span> <span class="op">&lt;-</span> <span class="va">y</span> <span class="op">-</span> <span class="fl">1</span> <span class="co"># non-detection = 0, detection = 1</span></span></code></pre></div>
+<p>To use the categorical distribution, we need to code 1’s and 2’s. We simply add 1 to get the correct format, that is <span class="math inline">\(y = 1\)</span> for non-detection and <span class="math inline">\(y = 2\)</span> for detection:</p>
+<div class="sourceCode" id="cb133"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">my.data</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>y <span class="op">=</span> <span class="va">y</span> <span class="op">+</span> <span class="fl">1</span><span class="op">)</span></span></code></pre></div>
+<!-- **Using 1 and 2 would make my life easier... The 0/1 coding is a convention; Using the 1/2 coding would make clear that non-detections are actual data (while the use of 0s for non-detections is sometimes confusing). Also, it might help to replace states 1 and 2 by A and D for dead and alive. Even if not mathematically convenient, I guess it would help the understanding. Do it, do it. We want non-detection first, so always 1's.** -->
+<p>Now let’s write a function for the initial values:</p>
+<div class="sourceCode" id="cb134"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">zinits</span> <span class="op">&lt;-</span> <span class="va">y</span> <span class="op">+</span> <span class="fl">1</span> <span class="co"># non-detection -&gt; alive</span></span>
+<span><span class="va">zinits</span><span class="op">[</span><span class="va">zinits</span> <span class="op">==</span> <span class="fl">2</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span> <span class="co"># dead -&gt; alive</span></span>
+<span><span class="va">initial.values</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>phi <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html">runif</a></span><span class="op">(</span><span class="fl">1</span>,<span class="fl">0</span>,<span class="fl">1</span><span class="op">)</span>,</span>
+<span>                                  p <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html">runif</a></span><span class="op">(</span><span class="fl">1</span>,<span class="fl">0</span>,<span class="fl">1</span><span class="op">)</span>,</span>
+<span>                                  z <span class="op">=</span> <span class="va">zinits</span><span class="op">)</span></span></code></pre></div>
+<p>As initial values for the latent states, we assumed that whenever an individual was non-detected, it was alive, with with <code>zinits &lt;- y + 1</code>, and we make sure dead individuals are alive with <code>zinits[zinits == 2] &lt;- 1</code>.</p>
+<p>We specify the parameters we’d like to monitor:</p>
+<div class="sourceCode" id="cb135"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">parameters.to.save</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"phi"</span>, <span class="st">"p"</span><span class="op">)</span></span>
+<span><span class="va">parameters.to.save</span></span>
+<span><span class="co">## [1] "phi" "p"</span></span></code></pre></div>
+<p>We provide MCMC details:</p>
+<div class="sourceCode" id="cb136"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">n.iter</span> <span class="op">&lt;-</span> <span class="fl">5000</span></span>
+<span><span class="va">n.burnin</span> <span class="op">&lt;-</span> <span class="fl">1000</span></span>
+<span><span class="va">n.chains</span> <span class="op">&lt;-</span> <span class="fl">2</span></span></code></pre></div>
+<p>At last, we’re ready to run NIMBLE:</p>
+<div class="sourceCode" id="cb137"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">start_time</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Sys.time.html">Sys.time</a></span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="va">mcmc.output</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimbleMCMC.html">nimbleMCMC</a></span><span class="op">(</span>code <span class="op">=</span> <span class="va">hmm.survival</span>,</span>
+<span>                          constants <span class="op">=</span> <span class="va">my.constants</span>,</span>
+<span>                          data <span class="op">=</span> <span class="va">my.data</span>,</span>
+<span>                          inits <span class="op">=</span> <span class="va">initial.values</span>,</span>
+<span>                          monitors <span class="op">=</span> <span class="va">parameters.to.save</span>,</span>
+<span>                          niter <span class="op">=</span> <span class="va">n.iter</span>,</span>
+<span>                          nburnin <span class="op">=</span> <span class="va">n.burnin</span>,</span>
+<span>                          nchains <span class="op">=</span> <span class="va">n.chains</span><span class="op">)</span></span>
+<span><span class="va">end_time</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Sys.time.html">Sys.time</a></span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="va">end_time</span> <span class="op">-</span> <span class="va">start_time</span></span></code></pre></div>
+<pre><code>## Time difference of 22.71 secs</code></pre>
+<p>We can have a look to numerical summaries:</p>
+<div class="sourceCode" id="cb139"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/pkg/MCMCvis/man/MCMCsummary.html">MCMCsummary</a></span><span class="op">(</span><span class="va">mcmc.output</span>, round <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span>
+<span><span class="co">##     mean   sd 2.5%  50% 97.5% Rhat n.eff</span></span>
+<span><span class="co">## p   0.61 0.06 0.50 0.61  0.72    1   740</span></span>
+<span><span class="co">## phi 0.75 0.04 0.67 0.75  0.83    1   805</span></span></code></pre></div>
+<p>The estimates for survival and detection are close to true survival <span class="math inline">\(\phi = 0.8\)</span> and detection <span class="math inline">\(p = 0.6\)</span> with which we simulated the data.</p>
 </div>
 <div id="marginalization" class="section level2" number="3.8">
 <h2>
@@ -1021,7 +1022,7 @@
 <span><span class="co">## |-------------------------------------------------------|</span></span>
 <span><span class="va">end_time</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Sys.time.html">Sys.time</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="va">end_time</span> <span class="op">-</span> <span class="va">start_time</span></span>
-<span><span class="co">## Time difference of 21.38 secs</span></span></code></pre></div>
+<span><span class="co">## Time difference of 20.1 secs</span></span></code></pre></div>
 <p>The numerical summaries are similar to those we obtained with the complete likelihood, and effective samples sizes are larger denoting better mixing:</p>
 <div class="sourceCode" id="cb145"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/pkg/MCMCvis/man/MCMCsummary.html">MCMCsummary</a></span><span class="op">(</span><span class="va">mcmc.output</span>, round <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span>
@@ -1101,7 +1102,7 @@
 <span><span class="co">## |-------------------------------------------------------|</span></span>
 <span><span class="va">end_time</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Sys.time.html">Sys.time</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="va">end_time</span> <span class="op">-</span> <span class="va">start_time</span></span>
-<span><span class="co">## Time difference of 24.29 secs</span></span></code></pre></div>
+<span><span class="co">## Time difference of 22.81 secs</span></span></code></pre></div>
 <p>Now we display the numerical summaries of the posterior distributions:</p>
 <div class="sourceCode" id="cb150"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/pkg/MCMCvis/man/MCMCsummary.html">MCMCsummary</a></span><span class="op">(</span><span class="va">mcmc.output</span>, round <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span>
@@ -1239,12 +1240,12 @@
 <span><span class="co">## |-------------------------------------------------------|</span></span>
 <span><span class="va">end_time</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Sys.time.html">Sys.time</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="va">end_time</span> <span class="op">-</span> <span class="va">start_time</span></span>
-<span><span class="co">## Time difference of 22.02 secs</span></span>
+<span><span class="co">## Time difference of 19.8 secs</span></span>
 <span><span class="fu"><a href="https://rdrr.io/pkg/MCMCvis/man/MCMCsummary.html">MCMCsummary</a></span><span class="op">(</span><span class="va">mcmc.output</span>, round <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span>
 <span><span class="co">##     mean   sd 2.5%  50% 97.5% Rhat n.eff</span></span>
 <span><span class="co">## p   0.61 0.06 0.49 0.61  0.72    1  1455</span></span>
 <span><span class="co">## phi 0.76 0.04 0.67 0.76  0.84    1  1524</span></span></code></pre></div>
-<p>The results are the same as those obtained previously. The gain in computation times will be bigger for more complex models as we will see in the next chapters.</p>
+<p>The results are the same as those obtained previously. The gain in computation times will be bigger for more complex models.</p>
 <p>The pooled likelihood is not yet implemented in <code>nimbleEcology</code>, but you can hack the code for the function <code>dHMMo</code> <a href="https://github.com/nimble-dev/nimbleEcology/blob/master/R/dHMM.R" class="uri">https://github.com/nimble-dev/nimbleEcology/blob/master/R/dHMM.R</a> to implement it yourself by adding a <code>size</code> argument.</p>
 <!-- ```{r} -->
 <!-- library(nimble) -->
@@ -1755,7 +1756,7 @@ Figure 3.3: Comparison of the actual sequences of states to the sequences of sta
 <footer class="bg-primary text-light mt-5"><div class="container"><div class="row">
 
   <div class="col-12 col-md-6 mt-3">
-    <p>"<strong>Bayesian analysis of capture-recapture data with hidden Markov models</strong>: Theory and case studies in R and NIMBLE" was written by Olivier Gimenez. It was last built on 2025-08-14.</p>
+    <p>"<strong>Bayesian analysis of capture-recapture data with hidden Markov models</strong>: Theory and case studies in R and NIMBLE" was written by Olivier Gimenez. It was last built on 2025-08-16.</p>
   </div>
 
   <div class="col-12 col-md-6 mt-3">

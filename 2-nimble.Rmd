@@ -6,7 +6,7 @@ In this second chapter, you will get familiar with NIMBLE, an R package that imp
 
 ## What is NIMBLE?
 
-NIMBLE stands for **N**umerical **I**nference for statistical **M**odels using **B**ayesian and **L**ikelihood **E**stimation. Briefly speaking, NIMBLE is an R package that implements for you MCMC algorithms to generate samples from the posterior distribution of model parameters. Freed from the burden of coding your own MCMC algorithms, you only have to specify a likelihood and priors to apply the Bayes theorem. To do so, NIMBLE makes this easy by using a syntax very similar to the R syntax, which should make your life easier. It is also a direct extension of the BUGS language is also used by other programs like WinBUGS, OpenBUGS, and JAGS. 
+NIMBLE stands for **N**umerical **I**nference for statistical **M**odels using **B**ayesian and **L**ikelihood **E**stimation (Figure \@ref(fig:nimblelogo)). Briefly speaking, NIMBLE is an R package that implements for you MCMC algorithms to generate samples from the posterior distribution of model parameters. Freed from the burden of coding your own MCMC algorithms, you only have to specify a likelihood and priors to apply the Bayes theorem. To do so, NIMBLE makes this easy by using a syntax very similar to the R syntax, which should make your life easier. It is also a direct extension of the BUGS language is also used by other programs like WinBUGS, OpenBUGS, and JAGS. 
 
 So why use NIMBLE you may ask? The short answer is that NIMBLE is capable of so much more than just running MCMC algorithms! First, you will work from within R, but in the background NIMBLE will translate your code in C++ for (in general) faster computation. Second, NIMBLE extends the BUGS language for writing new functions and distributions of your own, or borrow those written by others. Third, NIMBLE gives you full control of the MCMC samplers, and you may pick other algorithms than the defaults. Fourth, NIMBLE comes with a library of numerical methods other than MCMC algorithms, including sequential Monte Carlo (for particle filtering), Monte Carlo Expectation Maximization (for maximum likelihood), Hamiltonian Monte Carlo (like in program Stan), and Laplace approximation (like in program TMB). Last but not least, the development team is friendly and helpful, and based on users' feedbacks, NIMBLE folks work constantly at improving the package capabilities. The NIMBLE users google group is an open and inclusive space where everyone can receive help from the community: <https://groups.google.com/g/nimble-users>.
 
@@ -61,7 +61,7 @@ A few comments:
 
 + It does not matter in what order you write each line of code, NIMBLE uses what is called a declarative language for building models. In brief, you write code that tells NIMBLE what you want to achieve, and not how to get there. In contrast, an imperative language requires that you write what you want your program to do step by step.
 
-+ You can think of models in NIMBLE as graphs as in Figure \@ref(fig:dag-survival). A graph is made of relations (or edges) that can be of two types. A stochastic relation is signaled by a `~` sign and defines a random variable in the model, such as `survived` or `theta`. A deterministic relation is signaled by a `<-` sign, like `lifespan`. Relations define nodes on the left - the children - in terms of other nodes on the right - the parents, and relations are directed arrows from parents to children. Such graphs are called directed acyclic graph or DAG.
++ You can think of models in NIMBLE as graphs as in Figure \@ref(fig:dag-survival). A graph is made of relations (or edges) that can be of two types. A stochastic relation is signaled by a `~` sign and defines a random variable in the model, such as `survived` or `theta`. A deterministic relation is signaled by a `<-` sign, like `lifespan`. Relations define nodes on the left - the children - in terms of other nodes on the right - the parents - and relations are directed arrows from parents to children. Such graphs are called directed acyclic graph or DAG.
 ```{r dag-survival, echo = FALSE, fig.cap = "Graph of the animal survival model. Survived is a stochastic node defined by its parents `released` and `theta`, while `lifespan` is a deterministic node the value of which is defined exactly by the value of its parent `theta`."}
 mc <- nimbleModel(model, data = list(released = 57, survived = 19))
 #mc$getVarNames()
@@ -190,7 +190,7 @@ mcmc.output <- nimbleMCMC(code = model,
                           nchains = n.chains)
 ```
 
-NIMBLE goes through several steps that we will explain in Section \@ref(under-the-hood). Function `nimbleMCMC()` takes other arguments that you might find useful. For example, one is `setSeed`. Just like with sampling initial values above, setting the seed within the MCMC call allows you to run the **same** chains (again), thus making your analyses reproducible and problems easier to debug (see Section \@ref(tipreproducibility)). You can also get a summary of the outputs by specifying `summary = TRUE`. Conversely, if you would rather just get the MCMC samples back (in `coda mcmc` format) you can set `samplesAsCodaMCMC = TRUE`. Finally, you can suppress the progress bar if you find it too depressing when running long simulations with `progressBar = FALSE`. Check `?nimbleMCMC` for more details. 
+NIMBLE goes through several steps that we will explain in Section \@ref(under-the-hood). Function `nimbleMCMC()` takes other arguments that you might find useful. For example, one is `setSeed`. Just like with sampling initial values above, setting the seed within the MCMC call allows you to run the same chains (again), thus making your analyses reproducible and problems easier to debug (see Section \@ref(tipreproducibility)). You can also get a summary of the outputs by specifying `summary = TRUE`. Conversely, if you would rather just get the MCMC samples back (in `coda mcmc` format) you can set `samplesAsCodaMCMC = TRUE`. Finally, you can suppress the progress bar if you find it too depressing when running long simulations with `progressBar = FALSE`. Check `?nimbleMCMC` for more details. 
 
 Now let's inspect what we have in `mcmc.output`: 
 ```{r}
@@ -931,7 +931,7 @@ Before closing this chapter on NIMBLE, I thought it'd be useful to have a sectio
 
 ### Precision vs standard deviation
 
-In other sotware like JAGS, the normal distribution is parameterized with mean `mu` and a parameter called precision, often denoted `tau`, the inverse of the variance you are used to. Say we use a normal prior on some parameter `epsilon` with `epsilon ~ dnorm(mu, tau)`. We'd like this prior to be vague, therefore `tau` should be small, say 0.01 so that the variance of the normal distribution is large, 1/0.01 = 100 here. This subtlety is the source of problems (and frustration) when you forget that the second parameter is precision and use `epsilon ~ dnorm(mu, 100)`, because then the variance is actually 1/100 = 0.01 and the prior is very informative, and peaked on `mu`. In NIMBLE you can use this parameterisation as well as the more natural parameterisation `epsilon ~ dnorm(mu, sd = 100)` which avoids confusion. 
+In other software like JAGS, the normal distribution is parameterized with mean `mu` and a parameter called precision, often denoted `tau`, the inverse of the variance you are used to. Say we use a normal prior on some parameter `epsilon` with `epsilon ~ dnorm(mu, tau)`. We'd like this prior to be vague, therefore `tau` should be small, say 0.01 so that the variance of the normal distribution is large, 1/0.01 = 100 here. This subtlety is the source of problems (and frustration) when you forget that the second parameter is precision and use `epsilon ~ dnorm(mu, 100)`, because then the variance is actually 1/100 = 0.01 and the prior is very informative, and peaked on `mu`. In NIMBLE you can use this parameterisation as well as the more natural parameterisation `epsilon ~ dnorm(mu, sd = 100)` which avoids confusion. 
 
 ### Indexing
 
@@ -1024,7 +1024,7 @@ Note that to make your workflow reproducible, you need to set the seed not only 
 
 ### Parallelization
 
-To speed up your analyses, you can run MCMC chains in parallel. This is what the package `jagsUI`^[https://github.com/kenkellner/jagsUI] accomplishes for JAGS users. Here, we use the `parallel` package for parallel computation:
+To speed up your analyses, you can run MCMC chains in parallel. This is what the package `jagsUI` accomplishes for JAGS users. Here, we use the `parallel` package for parallel computation:
 ```{r}
 library(parallel)
 ```

@@ -380,10 +380,35 @@ markov.survival <- nimbleCode({
 
 Note that in this example, $\delta$ is used as a placeholder for more complex models we will build in chapters to come. Here, you could simply write `z[i,1] <- 1`.
 
-Now we're ready to resume our NIMBLE workflow. First we read in data. Because we have loops and indices that do not change, we use constants as explained in Section \@ref(start-nimble):
+Note also that we could replace `dcat()` by `dbern()` everywhere in the code because we have binary events alive/dead. Would it make any difference? Although `dcat()` uses less efficient samplers than `dbern()`, `dcat()` is convenient for model building to accommodate more than two outcomes, a feature that will become handy in the next chapters. 
+
+Now we're ready to resume our NIMBLE workflow. First we read in data. The code I used to simulate the $z$ with survival $\phi = 0.8$ is as follows: 
+```{r echo = TRUE, eval = TRUE}
+# 1 = alive, 2 = dead
+nind <- 57
+nocc <- 5
+phi <- 0.8 # survival probability
+delta <- c(1,0) # (Pr(alive at t = 1), Pr(dead at t = 1))
+Gamma <- matrix(NA, 2, 2) # transition matrix
+Gamma[1,1] <- phi      # Pr(alive t -> alive t+1)
+Gamma[1,2] <- 1 - phi  # Pr(alive t -> dead t+1)
+Gamma[2,1] <- 0        # Pr(dead t -> alive t+1)
+Gamma[2,2] <- 1        # Pr(dead t -> dead t+1)
+z <- matrix(NA, nrow = nind, ncol = nocc)
+set.seed(2022)
+for (i in 1:nind){
+  z[i,1] <- rcat(n = 1, prob = delta) # 1 for sure
+  for (t in 2:nocc){
+    z[i,t] <- rcat(n = 1, prob = Gamma[z[i,t-1],1:2]) 
+  }
+}
+head(z) 
+```
+
+Note the resemblance with the model NIMBLE code above. Because we have loops and indices that do not change, we use constants as explained in Section \@ref(start-nimble):
 ```{r}
-my.constants <- list(N = 57, T = 5)
 my.data <- list(z = z)
+my.constants <- list(N = 57, T = 5)
 ```
 
 We also specify initial values for survival with a function:
@@ -434,30 +459,7 @@ Let's calculate the usual posterior numerical summaries for survival:
 MCMCsummary(mcmc.output, round = 2)
 ```
 
-Posterior mean and median are close to $0.8$. This is fortunate since the data was simulated with (actual) survival $\phi = 0.8$. The code I used was:
-```{r echo = TRUE, eval = TRUE}
-# 1 = alive, 2 = dead
-nind <- 57
-nocc <- 5
-phi <- 0.8 # survival probability
-delta <- c(1,0) # (Pr(alive at t = 1), Pr(dead at t = 1))
-Gamma <- matrix(NA, 2, 2) # transition matrix
-Gamma[1,1] <- phi      # Pr(alive t -> alive t+1)
-Gamma[1,2] <- 1 - phi  # Pr(alive t -> dead t+1)
-Gamma[2,1] <- 0        # Pr(dead t -> alive t+1)
-Gamma[2,2] <- 1        # Pr(dead t -> dead t+1)
-z <- matrix(NA, nrow = nind, ncol = nocc)
-set.seed(2022)
-for (i in 1:nind){
-  z[i,1] <- rcat(n = 1, prob = delta) # 1 for sure
-  for (t in 2:nocc){
-    z[i,t] <- rcat(n = 1, prob = Gamma[z[i,t-1],1:2]) 
-  }
-}
-head(z) 
-```
-
-We could replace `dcat()` by `dbern()` everywhere in the code because we have binary events alive/dead. Would it make any difference? Although `dcat()` uses less efficient samplers than `dbern()`, `dcat()` is convenient for model building to accomodate more than two outcomes, a feature that will become handy in the next chapters. 
+Posterior mean and median are close to $0.8$. This is fortunate since the data was simulated with (actual) survival $\phi = 0.8$. 
 
 ## Hidden Markov models
 
@@ -557,20 +559,18 @@ $$\begin{matrix}
 \end{matrix}
 \hspace{-1.2em}
 \begin{matrix}
-    y_t=1 & y_t=2 \\
-    \mbox{(non-detected)} & \mbox{(detected)} \\ \hdashline
+    y_t=1 \mbox{ (non-detected)} & y_t=2 \mbox{ (detected)} \\ \hdashline
 1 - p & p\\
 1 & 0\\
 \end{matrix}
 \hspace{-0.2em}
 \begin{matrix}
-& \\
+& & \\
 \left . \vphantom{ \begin{matrix} 12 \\ 12 \end{matrix} } \right )
     \begin{matrix}
     z_{t}=1 \; \mbox{(alive)}\\ z_{t}=2 \; \mbox{(dead)}
     \end{matrix}
 \end{matrix}$$
-
 
 ### Hidden Markov model
 
@@ -827,7 +827,45 @@ my.constants <- list(N = nrow(y), T = 5)
 my.constants
 ```
 
-The data are made of 0's for non-detections and 1's for detections. To use the categorical distribution, we need to code 1's and 2's. We simply add 1 to get the correct format, that is $y = 1$ for non-detection and $y = 2$ for detection: 
+The data are made of 0's for non-detections and 1's for detections. To simulate the $y$, here is the code I used: 
+```{r eval = FALSE}
+set.seed(2022) # for reproducibility
+nocc <- 5 # nb of winters or sampling occasions
+nind <- 57 # nb of animals
+p <- 0.6 # detection prob
+phi <- 0.8 # survival prob
+# Vector of initial states probabilities
+delta <- c(1,0) # all individuals are alive in first winter
+# Transition matrix
+Gamma <- matrix(NA, 2, 2)
+Gamma[1,1] <- phi      # Pr(alive t -> alive t+1)
+Gamma[1,2] <- 1 - phi  # Pr(alive t -> dead t+1)
+Gamma[2,1] <- 0        # Pr(dead t -> alive t+1)
+Gamma[2,2] <- 1        # Pr(dead t -> dead t+1)
+# Observation matrix 
+Omega <- matrix(NA, 2, 2)
+Omega[1,1] <- 1 - p      # Pr(alive t -> non-detected t)
+Omega[1,2] <- p          # Pr(alive t -> detected t)
+Omega[2,1] <- 1          # Pr(dead t -> non-detected t)
+Omega[2,2] <- 0          # Pr(dead t -> detected t)
+# Matrix of states
+z <- matrix(NA, nrow = nind, ncol = nocc)
+y <- z
+y[,1] <- 2 # all individuals are detected in first winter, as we condition on first detection
+for (i in 1:nind){
+  z[i,1] <- rcat(n = 1, prob = delta) # 1 for sure
+  for (t in 2:nocc){
+    # state at t given state at t-1
+    z[i,t] <- rcat(n = 1, prob = Gamma[z[i,t-1],1:2]) 
+    # observation at t given state at t
+    y[i,t] <- rcat(n = 1, prob = Omega[z[i,t],1:2]) 
+  }
+}
+y
+y <- y - 1 # non-detection = 0, detection = 1
+```
+
+To use the categorical distribution, we need to code 1's and 2's. We simply add 1 to get the correct format, that is $y = 1$ for non-detection and $y = 2$ for detection: 
 ```{r}
 my.data <- list(y = y + 1)
 ```
@@ -893,44 +931,7 @@ We can have a look to numerical summaries:
 MCMCsummary(mcmc.output, round = 2)
 ```
 
-The estimates for survival and detection are close to true survival $\phi = 0.8$ and detection $p = 0.6$ with which we simulated the data. The code I used is: 
-
-```{r eval = FALSE}
-set.seed(2022) # for reproducibility
-nocc <- 5 # nb of winters or sampling occasions
-nind <- 57 # nb of animals
-p <- 0.6 # detection prob
-phi <- 0.8 # survival prob
-# Vector of initial states probabilities
-delta <- c(1,0) # all individuals are alive in first winter
-# Transition matrix
-Gamma <- matrix(NA, 2, 2)
-Gamma[1,1] <- phi      # Pr(alive t -> alive t+1)
-Gamma[1,2] <- 1 - phi  # Pr(alive t -> dead t+1)
-Gamma[2,1] <- 0        # Pr(dead t -> alive t+1)
-Gamma[2,2] <- 1        # Pr(dead t -> dead t+1)
-# Observation matrix 
-Omega <- matrix(NA, 2, 2)
-Omega[1,1] <- 1 - p      # Pr(alive t -> non-detected t)
-Omega[1,2] <- p          # Pr(alive t -> detected t)
-Omega[2,1] <- 1          # Pr(dead t -> non-detected t)
-Omega[2,2] <- 0          # Pr(dead t -> detected t)
-# Matrix of states
-z <- matrix(NA, nrow = nind, ncol = nocc)
-y <- z
-y[,1] <- 2 # all individuals are detected in first winter, as we condition on first detection
-for (i in 1:nind){
-  z[i,1] <- rcat(n = 1, prob = delta) # 1 for sure
-  for (t in 2:nocc){
-    # state at t given state at t-1
-    z[i,t] <- rcat(n = 1, prob = Gamma[z[i,t-1],1:2]) 
-    # observation at t given state at t
-    y[i,t] <- rcat(n = 1, prob = Omega[z[i,t],1:2]) 
-  }
-}
-y
-y <- y - 1 # non-detection = 0, detection = 1
-```
+The estimates for survival and detection are close to true survival $\phi = 0.8$ and detection $p = 0.6$ with which we simulated the data.
 
 ## Marginalization {#marginalization}
 
@@ -1474,7 +1475,7 @@ end_time - start_time
 MCMCsummary(mcmc.output, round = 2)
 ```
 
-The results are the same as those obtained previously. The gain in computation times will be bigger for more complex models as we will see in the next chapters. 
+The results are the same as those obtained previously. The gain in computation times will be bigger for more complex models. 
 
 The pooled likelihood is not yet implemented in `nimbleEcology`, but you can hack the code for the function `dHMMo` <https://github.com/nimble-dev/nimbleEcology/blob/master/R/dHMM.R> to implement it yourself by adding a `size` argument. 
 

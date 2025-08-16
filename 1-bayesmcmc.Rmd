@@ -49,13 +49,13 @@ The Bayesian approach is based upon the idea that you, as an experimenter, begin
 $${\color{red}{\Pr(\theta \mid \text{data})}} = \frac{\color{blue}{\Pr(\text{data} \mid \theta)} \times \color{green}{\Pr(\theta)}}{\color{orange}{\Pr(\text{data})}}.$$
 Let's spend some time going through each quantity in this formula. 
 
-On the left-hand side is the $\color{red}{\text{posterior distribution}}$. It represents what you know after having seen the data. This is the basis for inference and clearly what you're after, a distribution, possibly multivariate if you have more than one parameter. 
+On the left-hand side is $\color{red}{\Pr(\theta \mid \text{data})}$ the $\color{red}{\text{posterior distribution}}$. It represents what you know after having seen the data. This is the basis for inference and clearly what you're after, a distribution, possibly multivariate if you have more than one parameter. 
 
-On the right-hand side, there is the $\color{blue}{\text{likelihood}}$. This quantity is the same as in the MLE approach. Yes, the Bayesian and frequentist approaches have the same likelihood at their core, which mostly explains why results often do not differ much. The likelihood captures the information you have in your data, given a model parameterized with $\theta$. 
+On the right-hand side, there is $\color{blue}{\Pr(\text{data} \mid \theta)}$ the $\color{blue}{\text{likelihood}}$. This quantity is the same as in the MLE approach. Yes, the Bayesian and frequentist approaches have the same likelihood at their core, which mostly explains why results often do not differ much. The likelihood captures the information you have in your data, given a model parameterized with $\theta$. 
 
-Then we have the $\color{green}{\text{prior distribution}}$. This quantity represents what you know before seeing the data. This is the source of much discussion about the Bayesian approach. It may be vague if you don't know anything about $\theta$. Usually however, you never start from scratch, and you'd like your prior to reflect the information you have (see Section \@ref(elicitprior) for how to accomplish that).
+Then we have $\color{green}{\Pr(\theta)}$ the $\color{green}{\text{prior distribution}}$. This quantity represents what you know before seeing the data. This is the source of much discussion about the Bayesian approach. It may be vague if you don't know anything about $\theta$. Usually however, you never start from scratch, and you'd like your prior to reflect the information you have (see Section \@ref(elicitprior) for how to accomplish that).
 
-Last, we have $\color{orange}{\Pr(\text{data})}$ which is sometimes called the average likelihood because it is obtained by integrating the likelihood with respect to the prior $\color{orange}{\Pr(\text{data}) = \int{L(\text{data} \mid \theta)\Pr(\theta) d\theta}}$ so that the posterior is standardized, that is it integrates to one for the posterior to be a distribution. The average likelihood is an integral with dimension the number of parameters $\theta$ you need to estimate. This quantity is difficult, if not impossible, to calculate in general. This is one of the reasons why the Bayesian method wasn't used until recently, and why we need algorithms to estimate posterior distributions as I illustrate in the next section.
+Last, we have $\color{orange}{\Pr(\text{data})}$ which is sometimes called the average likelihood because it is obtained by integrating the likelihood with respect to the prior $\color{orange}{\Pr(\text{data}) = \int{\Pr(\text{data} \mid \theta)\Pr(\theta) d\theta}}$ so that the posterior is standardized, that is it integrates to one for the posterior to be a distribution. The average likelihood is an integral with dimension the number of parameters $\theta$ you need to estimate. This quantity is difficult, if not impossible, to calculate in general. This is one of the reasons why the Bayesian method wasn't used until recently, and why we need algorithms to estimate posterior distributions as I illustrate in the next section.
 
 ## Approximating posteriors via numerical integration {#numerical-approx}
 
@@ -106,7 +106,7 @@ Now we apply Bayes' theorem. We write a `R` function that computes the product o
 numerator <- function(theta) dbinom(y, n, theta) * dunif(theta, 0, 1)
 ```
 
-We write another function that calculates the denominator, the average likelihood: $\Pr(\text{data}) = \int{L(\theta \mid \text{data}) \Pr(\theta) d\theta}$
+We write another function that calculates the denominator, the average likelihood: $\Pr(\text{data}) = \int{\Pr(\text{data} \mid \theta) \Pr(\theta) d\theta}$
 ```{r}
 denominator <- integrate(numerator,0,1)$value
 ```
@@ -548,8 +548,6 @@ We see from the trace plot below that we need at least 100 iterations to achieve
 
 Inspecting the trace plot for a single run of the Markov chain is useful. However, we usually run the Markov chain several times, starting from different over-dispersed points, to check that all runs achieve the same stationary distribution. This approach is formalised by using the Brooks-Gelman-Rubin (BGR) statistic $\hat{R}$ which measures the ratio of the total variability combining multiple chains (between-chain plus within-chain) to the within-chain variability. The BGR statistic asks whether there is a chain effect, and is very much alike the $F$ test in an analysis of variance. Values below 1.1 indicate likely convergence.
 
-**Should be below 1.01, see Vehtari et al. 2021.**
-
 ```{r, echo = FALSE, cache = TRUE}
 simul.bgr <- function(steps, inits){
   
@@ -649,7 +647,7 @@ library(patchwork)
 
 In the left and right panels, autocorrelation is strong, decreases slowly with increasing lag and mixing is bad. In the center panel, autocorrelation is weak, decreases rapidly with increasing lag and mixing is good.
 
-Autocorrelation is not necessarily a big issue. Strongly correlated observations just require large sample sizes and therefore longer simulations. But how many iterations exactly? The effective sample size (`n.eff`) measures chain length while taking into account chain autocorrelation. You should check the `n.eff` of every parameter of interest, and of any interesting parameter combinations. In general, we need $\text{n.eff} \geq 1000$ independent steps to get reasonable Monte Carlo estimates of model parameters. In the animal survival example, `n.eff` can be calculated with the R `coda::effectiveSize()` function:
+Autocorrelation is not necessarily a big issue. Strongly correlated observations just require large sample sizes and therefore longer simulations. But how many iterations exactly? The effective sample size (`n.eff`) measures chain length while taking into account chain autocorrelation. You should check the `n.eff` of every parameter of interest, and of any interesting parameter combinations. In general, we need $\text{n.eff} \geq 400$ independent steps to get reasonable Monte Carlo estimates of model parameters. In the animal survival example, `n.eff` can be calculated with the R `coda::effectiveSize()` function:
 ```{r neff, echo = TRUE}
 neff1 <- coda::effectiveSize(d$accepted_traj[d$proposal_sd=="Proposal SD = 0.1"])
 neff2 <- coda::effectiveSize(d$accepted_traj[d$proposal_sd=="Proposal SD = 1"])
@@ -661,8 +659,6 @@ df
 
 As expected, `n.eff` is less than the number of MCMC iterations because of autocorrelation. Only when the standard deviation of the proposal distribution is 1 is the mixing good and we get a satisfying effective sample size. 
 
-**Should be greater than 400. Vehtari, Aki, Andrew Gelman, Daniel Simpson, Bob Carpenter, and Paul-Christian Bürkner (June 2021). “Rank-Normalization, Folding, and Localization: An Improved Rˆ for Assessing Convergence of MCMC (with Discussion)”. In: Bayesian Analysis 16.2, pp. 667–718.issn: 1936-0975, 1931-6690.doi:10.1214/20-BA1221.**
-
 ### What if you have issues of convergence?
   
 When diagnosing MCMC convergence, you will (very) often run into troubles. In this section you will find some helpful tips I hope. 
@@ -671,7 +667,7 @@ When mixing is bad and effective sample size is small, you may just need to incr
 
 If convergence issues persist, often there is a problem with your model (also known as the folk theorem of statistical computing as stated by Andrew Gelman in 2008, see https://statmodeling.stat.columbia.edu/2008/05/13/the_folk_theore/). A bug in the code? A typo somewhere? A mistake in your maths? As often when coding is involved, the issue can be identified by removing complexities, and start with a simpler model until you find what the problem is. 
 
-A general advice is to see your model as a data generating tool in the first place, simulate data from it using some realistic values for the parameters, and try to recover these parameter values by fitting the model to the simulated data. Simulating from a model will help you understanding how it works, what it does not do, and the data you need to get reasonable parameter estimates. 
+A general advice is to see your model as a data generating tool in the first place, simulate data from it using some realistic values for the parameters, and try to recover these parameter values by fitting the model to the simulated data. Simulating from a model will help you understanding how it works, what it does not do, and the data you need to get reasonable parameter estimates (e.g. Chapter \@ref(hmmcapturerecapture) and Section \@ref(indhet)). 
 
 <!-- We will see other strategies to improve convergence in the next chapters. Cross reference relevant chapters. Option 1. Change your sampler. Option 2. Reparameterize (standardize covariates, plus non-centering: $\alpha \sim N(0,\sigma)$ becomes $\alpha = z \sigma$ with $z \sim N(0,1)$). -->
 
@@ -689,9 +685,9 @@ A general advice is to see your model as a data generating tool in the first pla
 
 ## Suggested reading 
 
-+ @mccarthy2007 is an excellent introduction to Bayesian statistics for ecologists. 
++ @mccarthy2007 and @kery_bayesian_2011 are excellent introductions to Bayesian statistics for ecologists. The forthcoming second edition of the latter will also include NIMBLE code. See also @keryAppliedStatisticalModelling2024.
 
-+ For deeper insights, I recommend @gelmanhill2006 which analyse data using the frequentist and Bayesian approaches side-by-side. The book by @mcelreathbook is also an excellent read. The presentation of the Metropolis algorithm in Section \@ref(metropolis-algorithm) was inspired by @alberthu2019. If you'd like to know more about Monte Carlo methods, the book @robert2004montecarlo is a must (see also its R counterpart @robert2004montecarloinr). 
++ For deeper insights, I recommend @gelmanhill2006 which analyse data using the frequentist and Bayesian approaches side-by-side. The book by @mcelreathbook is also an excellent read. The presentation of the Metropolis algorithm in Section \@ref(metropolis-algorithm) was inspired by @alberthu2019. If you'd like to know more about Monte Carlo methods, the book @robert2004montecarlo is a must (see also its R counterpart @robert2004montecarloinr). See also @vehtariRankNormalizationFoldingLocalization2021 for a discussion on $\hat{R}$ and the effective sample size.
 
 + I also recommend @gelman2020workflow in which the authors offer a workflow for Bayesian analyses. They discuss model building, model comparison, model checking, model validation, model understanding and troubleshooting of computational problems.
 
