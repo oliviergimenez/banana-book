@@ -36,6 +36,7 @@ People who shared data/code:
 -   Vincenzo Gervasi
 -   Sandra Guérin
 -   Jay Hestbeck
+-   Jean-Dominique Lebreton
 -   Gilbert Marzolin
 -   Roger Pradel
 -   Ana Sanz-Aguilar
