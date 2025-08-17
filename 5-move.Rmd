@@ -334,7 +334,7 @@ load(here::here("dat","geese_2sites.RData"))
 MCMCplot(mcmc.multisite)
 ```
 
-Remember mid--Atlantic is site 1, and Chesapeake site 2. Detection in mid--Atlantic (around 0.5) is higher than in Cheasapeake (around 0.4) although it comes with more uncertainty (wider credible interval). Survival in both sites are similar estimated at around 0.6--0.7. Note that by going multisite, we could make these parameters site-specific and differences might reflect habitat quality for example. Now the novelty lies in our capability to estimate movements from site 1 to site 2 and from site 2 to site 1 from a winter to the next. The annual probability of remaining in the same site for two successive winters, used as a measure of site fidelity, was lower in the mid--Atlantic (around 0.7) than in the Chesapeake (0.9). The estimated probability of moving to the Chesapeake from the mid--Atlantic was three times as high as the probability of moving in the opposite direction.
+Remember mid--Atlantic is site 1, and Chesapeake site 2. Detection in mid--Atlantic (around 0.5) is higher than in Cheasapeake (around 0.4) although it comes with more uncertainty (wider credible interval). Survival in both sites are estimated at around 0.6--0.7. Note that by going multisite, we could make these parameters site-specific and differences might reflect habitat quality for example. Now the novelty lies in our capability to estimate movements from site 1 to site 2 and from site 2 to site 1 from a winter to the next. The annual probability of remaining in the same site for two successive winters, used as a measure of site fidelity, was lower in the mid--Atlantic ($1-\psi_{12}$ around 0.8) than in the Chesapeake ($1-\psi_{21}$ around 0.9). The estimated probability of moving to the Chesapeake from the mid--Atlantic was four times as high as the probability of moving in the opposite direction.
 
 We may also have a look to numerical summaries, which confirm our ecological interpretation of the model parameter estimates:
 ```{r echo = FALSE}
@@ -344,7 +344,7 @@ load(here::here("dat","geese_2sites.RData"))
 MCMCsummary(mcmc.multisite, round = 2)
 ```
 
-You could add time-dependence to the demographic parameters, e.g. survival and movements, and assess the effect of winter harshness with some temporal covariates. Individual covariates could also be considered.  
+You could add time-dependence to the demographic parameters, e.g. survival and movements, and assess the effect of winter harshness with some temporal covariates; Individual covariates could also be considered. See Section \@ref(covariates). 
 
 Before we move to the next section, I will illustrate the use of `nimbleEcology` to fit the AS to the geese data with 2 sites (see Section \@ref(nimblemarginalization)). Using the function `dHMM()` which implements HMM with time-independent observation and transition matrices, we have:
 
@@ -411,7 +411,7 @@ multisite.marginalized <- nimbleCode({
   
   # probabilities of y(t) given z(t)
   omega[1,1] <- 1 - p1     # Pr(alive 1 t -> non-detected t)
-  omega[1,2] <- p1        # Pr(alive 1 t -> detected 1 t)
+  omega[1,2] <- p1         # Pr(alive 1 t -> detected 1 t)
   omega[1,3] <- 0          # Pr(alive 1 t -> detected 2 t)
   omega[2,1] <- 1 - p2     # Pr(alive 2 t -> non-detected t)
   omega[2,2] <- 0          # Pr(alive 2 t -> detected 1 t)
@@ -423,10 +423,10 @@ multisite.marginalized <- nimbleCode({
   # likelihood 
   # initial state probs
   for(i in 1:N) {
-    init[i, 1:3] <- gamma[ y[i, first[i] ] - 1, 1:3 ] # first state propagation
+    init[i, 1:3] <- gamma[ y[i, first[i] ] - 1, 1:3 ]        # first state propagation
   }
   for (i in 1:N){
-    y[i,(first[i]+1):K] ~ dHMM(init = init[i,1:3],  # count data from first[i] + 1
+    y[i,(first[i]+1):K] ~ dHMM(init = init[i,1:3],           # count data from first[i] + 1
                                probObs = omega[1:3,1:3],     # observation matrix
                                probTrans = gamma[1:3,1:3],   # transition matrix
                                len = K - first[i],           # nb of occasions
@@ -475,7 +475,7 @@ There are slight differences in these parameters estimates compared to those we 
 
 ### Goodness of fit {#gofas}
 
-Like for the CJS model, we need to ensure that the AS model provides a good fit to the data. To do so, both posterior predictive checks and classical procedures can be used. I illustrate the use of posterior predictive checks in Section \@ref(ppchecks). With regard to classical tests, the goodness-of-fit testing procedures we covered in Section \@ref(gof) for the CJS model have been extended to the AS model. These procedure are also available in the package `R2ucare`. While the transience and trap-dependence tests can be used on each site, it is worth mentionning a test that is specific to the AS model with several sites. The "where before where after" (WBWA) tests for memory, in other words it's a test for the Markovian property of the HMM in the particular context of capture-recapture. WBWA quantifies whether there is a relationship between where an animal has last been seen and where it will next be seen again. If a relationship exists, positive or negative, this suggests memory in the movements, and the probability for an animal of moving to a site at $t$, given it is present in a site at $t-1$ should be made dependent of where it was at $t-2$. This is called a second-order Markov process. 
+Like for the CJS model, we need to ensure that the AS model provides a good fit to the data. With regard to classical tests, the goodness-of-fit testing procedures we covered in Section \@ref(gof) for the CJS model have been extended to the AS model. These procedure are also available in the package `R2ucare`. While the transience and trap-dependence tests can be used on each site, it is worth mentionning a test that is specific to the AS model with several sites. The "where before where after" (WBWA) tests for memory, in other words it's a test for the Markovian property of the HMM in the particular context of capture-recapture. WBWA quantifies whether there is a relationship between where an animal has last been seen and where it will next be seen again. If a relationship exists, positive or negative, this suggests memory in the movements, and the probability for an animal of moving to a site at $t$, given it is present in a site at $t-1$ should be made dependent of where it was at $t-2$. This is called a second-order Markov process. 
 
 Going back to the geese data, the WBWA test is implemented as follows on the whole dataset:
 ```{r eval = TRUE}
@@ -629,9 +629,9 @@ load(here::here("dat","geese_3sites_dirichlet.RData"))
 MCMCsummary(mcmc.multisite, round = 2)
 ```
 
-Survival probabilities are similar among sites, but the detection probability in Carolinas seems much lower than in the two other wintering sites. The estimated probability of moving to the Chesapeake from the Carolinas is 2 times as high as the probability of moving in the opposite direction.
+Survival probabilities are similar among sites, although lower in the mid-Atlantic (`phi[1]`). The detection probability in Carolinas (`p3`) seems much lower than in the two other wintering sites. The estimated probability of moving to the Chesapeake from the Carolinas (`psi3[2]`) is 2 times as high as the probability of moving in the opposite direction (`psi2[3]`).
 
-In theory, you could include covariates as in \@ref(covariates) through the $\alpha$ parameters and the use a log link function (to ensure $\alpha > 0$), e.g. $\log(\alpha) = \beta_1 + \beta_2 x$. However, NIMBLE does not allow that. Fortunately, there is another way to specify the Dirichlet distribution through a ratio of gamma distributions that allows to incorporate covariates.  
+In theory, you could include covariates as in Section \@ref(covariates) through the $\alpha$ parameters and the use a log link function (to ensure $\alpha > 0$), e.g. $\log(\alpha) = \beta_1 + \beta_2 x$. However, NIMBLE does not allow that. Fortunately, there is another way to specify the Dirichlet distribution through a ratio of gamma distributions that allows to incorporate covariates.  
 
 The gamma distribution is continuous. It has two parameters $\alpha$ and $\theta$ that control its shape and scale (Figure \@ref(fig:gammadistribution)). Another parameterization considers its shape and rate which is the inverse of the scale. 
 
@@ -746,7 +746,7 @@ load(here::here("dat","geese_3sites_logit.RData"))
 MCMCsummary(mcmc.multisite, round = 2)
 ```
 
-Both the Dirichlet prior and the multinomial logit link give the same results, and there is not much difference in terms of runtime or quality of convergence, so you should use the option you feel the most comfortable with. 
+Both the Dirichlet prior and the multinomial logit link give similar results, and there is not much difference in terms of runtime or quality of convergence, so you should use the option you feel the most comfortable with. 
 
 ## Sites may be states {#states}
 
@@ -994,7 +994,7 @@ df %>%
 
 ```
 
-There is no overlap whatsoever, so the two transition probabilities are clearly different. Interestingly, breeder individuals do much better than non-breeder individuals. This failure at detecting a trade-off is probably due to individual heterogeneity that should be accounted for. We will do just that in a case study in Section \@ref(casestudytradeoff).
+There is no overlap whatsoever, so the two transition probabilities are clearly different. Interestingly, breeder individuals do much better than non-breeder individuals. This failure at detecting a trade-off is probably due to individual heterogeneity that should be accounted for. You could add an individual random effect as in Section \@ref(randomeffects) or consider 2 classes of individuals as we will do in a case study at Section \@ref(indhet).
 
 <!-- See M. Paquet suggestion: Pouvoir utiliser le modèle à la fois pour simuler des données, puis ensuite pour les ajuster au modèle (le tout sans avoir à réécrire le modèle!). Exemple: nodesToSim <- model$getDependencies(c("parameter_name1","parameter_name2"), self = F, downstream = T), # compile Cmodel <- compileNimble(model), #simulate Cmodel$simulate(nodesToSim) -->
   
@@ -1122,7 +1122,7 @@ plotdet <- det %>%
 plotpsiBA
 ```
 
-The issue of local minima is a difficult problem. How to get out of this problematic situation? In the frequentist approach, the trick is to fit your model several times with different initial values each time, hoping that you'll get to fall in the green area somehow as in Figure \@ref(fig:inits). In the Bayesian approach, the key to handle distributions with multiple modes is to sample the posteriors efficiently. Assuming the chains we run in NIMBLE spend more time in the region of the parameter space corresponding to the global minimum, then we recommend using the median or the mode to summarize the posterior distribution. In the simulated example, we get a median of 0.79 for $\psi^{21}$, not too bad given that the data were simulated with a value of 0.85 for that parameter:
+The issue of local minima is a difficult problem. How to get out of this problematic situation? In the frequentist approach, the trick is to fit your model several times with different initial values each time, hoping that you'll get to fall in the green area somehow as in Figure \@ref(fig:inits). In the Bayesian approach, the key to handle distributions with multiple modes is to sample the posteriors efficiently. Assuming the chains we run in NIMBLE spend more time in the region of the parameter space corresponding to the global minimum, then I recommend using the median or the mode to summarize the posterior distribution. In the simulated example, we get a median of 0.79 for $\psi^{21}$, not too bad given that the data were simulated with a value of 0.85 for that parameter:
 
 ```{r echo = FALSE}
 load(here::here("dat","localminima.RData"))
@@ -1131,15 +1131,15 @@ load(here::here("dat","localminima.RData"))
 MCMCsummary(mcmc.multisite, round = 2)
 ```
 
-As a general advice, we recommend to always inspect the trace plots to find out whether you have posterior distributions with multiple modes which would suggest local minima.
+As a general advice, I recommend to always inspect the trace plots to find out whether you have posterior distributions with multiple modes which would suggest local minima.
 
 ## Uncertainty {#multievent}
 
-In the AS model, we assume that we can without a doubt assign a site or a state to an animal whenever it is detected. But this is not always the case. For example, when the breeding status in mammals or birds is ascertained based on the presence of offspring or eggs, we are uncertain of whether a female is breeding or not when the offspring or eggs are not seen. Another example is when the epidemiological status in mammals or birds is ascertained based on some tests run on some animals when captured, we are uncertain whether these animals are healthy or sick when detected from distance without possibility to manipulate them for testing. In this section we will cover the extension of the AS model to uncertain states through two examples, one on breeding states and the other on disease states. We will cover other examples in the part on Case studies, in particular in Chapters \@ref(tradeoffs) and \@ref(lackoffit).
+In the AS model, we assume that we can without a doubt assign a site or a state to an animal whenever it is detected. But this is not always the case. For example, when the breeding status in mammals or birds is ascertained based on the presence of offspring or eggs, we are uncertain of whether a female is breeding or not when the offspring or eggs are not seen. Another example is when the epidemiological status in mammals or birds is ascertained based on some tests run on some animals when captured, we are uncertain whether these animals are healthy or sick when detected from distance without possibility to manipulate them for testing. In this section we will cover the extension of the AS model to uncertain states -- known as multievent models after @pradel_multievent_2005 -- through two examples, one on breeding states and the other on disease states. We will cover other examples in the part on Case studies.
 
 ### Breeding states {#breedingmultievent}
 
-We will revisit the titis example \@ref(states) and try to assess life-history trade-offs while accounting for uncertainty in breeding status. We still have 3 states, which are alive and breeding, alive and non-breeding and dead. With regard to observations, a bird may be not encountered. It may also be encountered, but in contrast with our previous analysis of the titis data, we don't know its state for sure. It may be found and ascertained (or classified) as breeder. It may be found and ascertained as non-breeder. It may be found be we are unable to determine whether it's breeding or non-breeding. 
+We will revisit the titis example \@ref(states) and try to assess life-history trade-offs while accounting for uncertainty in breeding status. We still have 3 states, which are alive and breeding, alive and non-breeding and dead. With regard to observations, a bird may be not encountered. It may also be encountered, but in contrast with our previous analysis of the titis data, we don't know its state for sure. It may be found and ascertained (or classified) as breeder. It may be found and ascertained as non-breeder. It may be found but we are unable to determine whether it's breeding or non-breeding. 
 
 <!-- Ingredients -->
 
@@ -1614,7 +1614,7 @@ Healthy individuals are correctly assigned ($\beta^H$ is almost 1), while infect
 
 + Covariates can be considered, and appropriate priors or link functions need to be used when there are more than 2 sites or 2 alive states. 
 
-+ Model comparison can be achieved with the WAIC and the goodness of fit of the AS model to capture-recapture data can be assessed with classical procedures or posterior predictive checks.
++ Model comparison can be achieved with the WAIC and the goodness of fit of the AS model to capture-recapture data can be assessed with classical procedures.
 
 + Importantly, the HMM framework allows to account for uncertainty when assigning states to individuals. 
 
