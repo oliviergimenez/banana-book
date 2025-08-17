@@ -6,15 +6,15 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <title>Chapter 7 Addressing model lack of fit | Bayesian analysis of capture-recapture data with hidden Markov models</title>
 <meta name="author" content="Olivier Gimenez">
-<meta name="description" content="7.1 Introduction Capture–recapture models rely on assumptions that must hold for inference to be reliable. In Section 4.7, we saw what can go wrong and how to diagnose those issues. In this...">
+<meta name="description" content="7.1 Introduction Capture-recapture models rely on assumptions that must hold for inference to be reliable. In Section 4.7, we saw what can go wrong and how to diagnose those issues. In this...">
 <meta name="generator" content="bookdown 0.43 with bs4_book()">
 <meta property="og:title" content="Chapter 7 Addressing model lack of fit | Bayesian analysis of capture-recapture data with hidden Markov models">
 <meta property="og:type" content="book">
 <meta property="og:url" content="https://oliviergimenez.github.io/banana-book/lackoffit.html">
-<meta property="og:description" content="7.1 Introduction Capture–recapture models rely on assumptions that must hold for inference to be reliable. In Section 4.7, we saw what can go wrong and how to diagnose those issues. In this...">
+<meta property="og:description" content="7.1 Introduction Capture-recapture models rely on assumptions that must hold for inference to be reliable. In Section 4.7, we saw what can go wrong and how to diagnose those issues. In this...">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="Chapter 7 Addressing model lack of fit | Bayesian analysis of capture-recapture data with hidden Markov models">
-<meta name="twitter:description" content="7.1 Introduction Capture–recapture models rely on assumptions that must hold for inference to be reliable. In Section 4.7, we saw what can go wrong and how to diagnose those issues. In this...">
+<meta name="twitter:description" content="7.1 Introduction Capture-recapture models rely on assumptions that must hold for inference to be reliable. In Section 4.7, we saw what can go wrong and how to diagnose those issues. In this...">
 <!-- JS --><script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.6/clipboard.min.js" integrity="sha256-inc5kl9MA1hkeYUt+EC3BhlIgyp/2jDIyBLS6k3UxPI=" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/fuse.js/6.4.6/fuse.js" integrity="sha512-zv6Ywkjyktsohkbp9bb45V6tEMoWhzFzXis+LrMehmJZZSys19Yxf1dopHx7WzIKxr5tK2dVcYmaCk2uqdjF4A==" crossorigin="anonymous"></script><script src="https://kit.fontawesome.com/6ecbd6c532.js" crossorigin="anonymous"></script><script src="libs/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <link href="libs/bootstrap-4.6.0/bootstrap.min.css" rel="stylesheet">
 <script src="libs/bootstrap-4.6.0/bootstrap.bundle.min.js"></script><script src="libs/bs3compat-0.9.0/transition.js"></script><script src="libs/bs3compat-0.9.0/tabs.js"></script><script src="libs/bs3compat-0.9.0/bs3compat.js"></script><link href="libs/bs4_book-1.0.0/bs4_book.css" rel="stylesheet">
@@ -101,7 +101,7 @@
 <h2>
 <span class="header-section-number">7.1</span> Introduction<a class="anchor" aria-label="anchor" href="#introduction-9"><i class="fas fa-link"></i></a>
 </h2>
-<p>Capture–recapture models rely on assumptions that must hold for inference to be reliable. In Section <a href="survival.html#gof">4.7</a>, we saw what can go wrong and how to diagnose those issues. In this chapter, we turn to remedies and show how to fix them by building models that explicitly accommodate lack of fit. We focus on three themes: trap-dependence (detection today affects detection tomorrow), memory in the state process (the Markov assumption is too short – transitions depend on more than the current state), and individual heterogeneity (persistent differences among animals).</p>
+<p>Capture-recapture models rely on assumptions that must hold for inference to be reliable. In Section <a href="survival.html#gof">4.7</a>, we saw what can go wrong and how to diagnose those issues. In this chapter, we turn to remedies and show how to fix them by building models that explicitly accommodate lack of fit. We focus on three topics: trap-dependence (detection today affects detection tomorrow), memory in the state process (the Markov assumption is too short – transitions depend on more than the current state), and individual heterogeneity (persistent differences among animals).</p>
 </div>
 <div id="trapdep" class="section level2" number="7.2">
 <h2>
@@ -111,26 +111,25 @@
 <h3>
 <span class="header-section-number">7.2.1</span> Motivation<a class="anchor" aria-label="anchor" href="#motivation-3"><i class="fas fa-link"></i></a>
 </h3>
-<p>Capture–recapture inference can go sideways when detection depends on past capture. If animals become trap‐shy (avoid traps) or trap‐happy (seek them) after being caught, the independence assumption breaks, and survival or detection can be biased if we ignore it. Tests for this trap‐dependence exist, see Section <a href="survival.html#gof">4.7</a>, and surveys show it’s common across taxa – roughly 70% of reviewed studies reported evidence for it <span class="citation">Pradel and Sanz-Aguilar (<a href="references.html#ref-pradeltrapdep2012">2012</a>)</span>.</p>
-<p>The fix is to encode the behavioural response. Following <span class="citation">Pradel and Sanz-Aguilar (<a href="references.html#ref-pradeltrapdep2012">2012</a>)</span>, we treat trap‐awareness as a (possibly temporary) state: right after a capture, individuals move to a “trap‐aware” state with its own detection probability, so that detection at time <span class="math inline">\(t+1\)</span> can differ for animals caught vs. not caught at <span class="math inline">\(t\)</span>. This HMM formulation avoids awkward data splitting, plays nicely with age or covariates, and is equivalent to the classic approach when both are fitted to the same data. Importantly, in the authors’ example, ignoring trap‐dependence underestimated survival, illustrating why modelling trap-dependence matters.</p>
-<p>Here, we adopt that logic in NIMBLE: define a trap‐aware state, let detection depend on it, and keep the rest of the HMM machinery unchanged.</p>
+<p>Capture-recapture inference can go sideways when detection depends on past capture. If animals become trap‐shy (avoid traps) or trap‐happy (seek them) after being caught, the independence assumption breaks, and survival or detection can be biased if we ignore it. Tests for this trap‐dependence exist, see Section <a href="survival.html#gof">4.7</a>, and surveys show it’s common across taxa – roughly 70% of reviewed studies reported evidence for it <span class="citation">(<a href="references.html#ref-pradeltrapdep2012">Pradel and Sanz-Aguilar 2012</a>)</span>.</p>
+<p>The fix is to encode the behavioural response. Following <span class="citation">Pradel and Sanz-Aguilar (<a href="references.html#ref-pradeltrapdep2012">2012</a>)</span>, we treat trap‐awareness as a (possibly temporary) state: right after a capture, individuals move to a ‘trap‐aware’ state with its own detection probability, so that detection at time <span class="math inline">\(t+1\)</span> can differ for animals caught vs. not caught at <span class="math inline">\(t\)</span>. This HMM formulation avoids awkward data splitting, and plays nicely with age or covariates. Importantly, in the authors’ example, ignoring trap‐dependence underestimated survival, illustrating why modelling trap-dependence matters.</p>
+<p>Here, I adopt that logic in NIMBLE: define a trap‐aware state, let detection depend on it, and keep the rest of the HMM machinery unchanged.</p>
 </div>
 <div id="model-and-nimble-implementation-3" class="section level3" number="7.2.2">
 <h3>
 <span class="header-section-number">7.2.2</span> Model and NIMBLE implementation<a class="anchor" aria-label="anchor" href="#model-and-nimble-implementation-3"><i class="fas fa-link"></i></a>
 </h3>
-<p>For our example, we’ll work with data from 519 encounter histories of Cory’s shearwaters (<em>Calonectris diomedea</em>) marked as adults between 2001 and 2008 at Pantaleu Islet (Balearic Archipelago, Spain). If you perform goodness-of-fit tests on this dataset, as in Section <a href="survival.html#gof">4.7</a>, you will end up with a significant trap-dependence effect (as well as a transience effect). To build up our model and explicitly account for this lack of fit, we first define the states and observations:</p>
+<p>For our example, we’ll work with data from 519 encounter histories of Cory’s shearwaters (<em>Calonectris diomedea</em>) marked as adults between 2001 and 2008 at Pantaleu Islet (Balearic Archipelago, Spain). These data were kindly provided by Ana Sanz-Aguilar. If you perform goodness-of-fit tests on this dataset, as in Section <a href="survival.html#gof">4.7</a>, you will end up with a significant trap-dependence effect (as well as a transience effect). To build up our model and explicitly account for this lack of fit, we first define the states and observations:</p>
 <ul>
 <li><p>States<br>
-- A ‘trap aware’ is the original state of an individual when it is first released after marking<br>
-- U ‘trap unaware’ which follows any occasion where it is not captured<br>
-- D is for dead</p></li>
+- A for ‘trap-aware’, the original state of an individual when it is first released<br>
+- U for ‘trap-unaware’, which follows any occasion where it is not captured<br>
+- D for dead</p></li>
 <li><p>Observations<br>
 - not detected (1)<br>
 - detected (2)</p></li>
 </ul>
-<p>Now we turn to writing our model.</p>
-<p>We start with the vector of initial states. Individuals enter as trap-aware with probability 1:
+<p>Now we turn to writing our model. We start with the vector of initial states. Individuals enter as trap-aware with probability 1:
 <span class="math display">\[\begin{matrix}
 &amp; \\
 \mathbf{\delta} =
@@ -169,7 +168,7 @@ z_t=A &amp; z_t=U &amp; z_t=D \\ \hdashline
 z_{t-1}=A \\ z_{t-1}=U \\ z_{t-1}=D
 \end{matrix}
 \end{matrix}\]</span></p>
-<p>You might have noticed something ususual in that <span class="math inline">\(\mathbf{\Gamma}\)</span> contains both the survival and detection probabilities. Why is that? We track three hidden states from the end of session <span class="math inline">\(t\)</span> to <span class="math inline">\(t+1\)</span>: <span class="math inline">\(A =\)</span> trap-aware (the bird was just caught at <span class="math inline">\(t\)</span>), <span class="math inline">\(U =\)</span> trap-unaware (not caught at <span class="math inline">\(t\)</span>), and <span class="math inline">\(D =\)</span> dead. Between sessions, everyone either survives with probability <span class="math inline">\(\phi\)</span> or dies with <span class="math inline">\(1 - \phi\)</span> (which moves them to <span class="math inline">\(D\)</span>, an absorbing state). If alive at <span class="math inline">\(t+1\)</span>, the awareness flag for the next session is set by whether the bird gets caught at <span class="math inline">\(t+1\)</span>: those caught will be <span class="math inline">\(A\)</span> next time, those not caught will be <span class="math inline">\(U\)</span>. Because capture probabilities can differ by current awareness, we allow <span class="math inline">\(p'\)</span> for birds that were <span class="math inline">\(A\)</span> at <span class="math inline">\(t\)</span> and <span class="math inline">\(p\)</span> for birds that were <span class="math inline">\(U\)</span> at <span class="math inline">\(t\)</span>. If <span class="math inline">\(p'&gt;p\)</span> you have trap-happy behaviour (recently caught birds are easier to catch next time); if <span class="math inline">\(p'&lt;p\)</span>, it’s trap-shy. This ‘survive → update awareness via capture’ factorization is what the transition matrix formalizes.</p>
+<p>You might have noticed something ususual in that <span class="math inline">\(\mathbf{\Gamma}\)</span> contains both the survival and detection probabilities. Why is that? We track three hidden states from the end of session <span class="math inline">\(t\)</span> to <span class="math inline">\(t+1\)</span>: <span class="math inline">\(A =\)</span> trap-aware (the bird was just caught at <span class="math inline">\(t\)</span>), <span class="math inline">\(U =\)</span> trap-unaware (not caught at <span class="math inline">\(t\)</span>), and <span class="math inline">\(D =\)</span> dead. Between sessions, everyone either survives with probability <span class="math inline">\(\phi\)</span> or dies with <span class="math inline">\(1 - \phi\)</span> (which moves them to <span class="math inline">\(D\)</span>, an absorbing state). If alive at <span class="math inline">\(t+1\)</span>, the awareness flag for the next session is set by whether the bird gets caught at <span class="math inline">\(t+1\)</span>: those caught will be <span class="math inline">\(A\)</span> next time, those not caught will be <span class="math inline">\(U\)</span>. Because capture probabilities can differ by current awareness, we allow <span class="math inline">\(p'\)</span> for birds that were <span class="math inline">\(A\)</span> at <span class="math inline">\(t\)</span> and <span class="math inline">\(p\)</span> for birds that were <span class="math inline">\(U\)</span> at <span class="math inline">\(t\)</span>. If <span class="math inline">\(p'&gt;p\)</span> you have trap-happy behaviour (recently caught birds are easier to catch next time); if <span class="math inline">\(p'&lt;p\)</span>, it’s trap-shy. This ‘survive -&gt; update awareness via capture’ factorization is what the transition matrix formalizes.</p>
 <p>Following the paper, adult survival is age-specific to account for a transient effect, see Section <a href="survival.html#gof">4.7</a>:</p>
 <div class="sourceCode" id="cb334"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Transition matrix</span></span>
@@ -240,7 +239,7 @@ z_{t}=A \\ z_{t}=U \\ z_{t}=D
 ## phi1   0.76 0.02 0.71 0.76  0.80 1.00   395
 ## phi2   0.87 0.02 0.84 0.87  0.91 1.01   173
 ## pprime 0.79 0.02 0.75 0.79  0.82 1.00   183</code></pre>
-<p>Our estimates are very (very) similar to those obtained by <span class="citation">Pradel and Sanz-Aguilar (<a href="references.html#ref-pradeltrapdep2012">2012</a>)</span>, check out their Table 1. Interestingly, when we fit the same model by ignoring trap-dependence, we get the following results:</p>
+<p>The two detection probabilities, depending on whether a bird was previously caught or not, differ clearly, providing evidence of trap-happiness. Our survival estimates are very similar to those obtained by <span class="citation">Pradel and Sanz-Aguilar (<a href="references.html#ref-pradeltrapdep2012">2012</a>)</span> who found <span class="math inline">\(\phi_1 = 0.77\; (0.70, 0.82)\)</span> and <span class="math inline">\(\phi_2 = 0.87\; (0.82,0.90)\)</span> (check out their Table 1). Interestingly, when we fit the same model by ignoring trap-dependence, we get the following results:</p>
 <pre><code>##      mean   sd 2.5%  50% 97.5% Rhat n.eff
 ## p    0.78 0.02 0.75 0.78  0.81 1.00   489
 ## phi1 0.74 0.02 0.70 0.74  0.79 1.00   615
@@ -257,10 +256,9 @@ z_{t}=A \\ z_{t}=U \\ z_{t}=D
 <h3>
 <span class="header-section-number">7.3.1</span> Motivation<a class="anchor" aria-label="anchor" href="#motivation-4"><i class="fas fa-link"></i></a>
 </h3>
-<p>How do we make our models remember? So far, the dynamics of our states have been first-order Markov: the state an animal moves to next depends only on the state (site) it occupies now. But if we think of states as sites, transitions are dispersal or migration, and many species show site fidelity or directional return that reflects where they were two steps back.</p>
-<p>To relax the first-order assumption, we move to a second-order Markov description, and what happens at <span class="math inline">\(t+1\)</span> depends on the site at <span class="math inline">\(t\)</span> and at <span class="math inline">\(t−1\)</span>. This idea, often called a memory model, was introduced in multisite capture–recapture by <span class="citation">Hestbeck, Nichols, and Malecki (<a href="references.html#ref-hestbeck1991estimates">1991</a>)</span> and <span class="citation">Brownie et al. (<a href="references.html#ref-BrownieEtAl1993">1993</a>)</span>, then formulated cleanly within the HMM framework by <span class="citation">Rouan, Choquet, and Pradel (<a href="references.html#ref-rouan2009memory">2009</a>)</span> and <span class="citation">Pradel (<a href="references.html#ref-pradel_multievent_2005">2005</a>)</span>.</p>
+<p>How do we make our models remember? So far, the dynamics of our states have been first-order Markov: the state an animal moves to next depends only on the state it occupies now. But if we think of states as sites, transitions are dispersal or migration, and many species show site fidelity or directional return that reflects where they were several steps back.</p>
+<p>To relax the first-order assumption, we move to a second-order Markov description, and what happens at <span class="math inline">\(t+1\)</span> depends on the site at <span class="math inline">\(t\)</span> and at <span class="math inline">\(t−1\)</span>. This idea, often called a memory model, was introduced in multisite capture-recapture by <span class="citation">Hestbeck, Nichols, and Malecki (<a href="references.html#ref-hestbeck1991estimates">1991</a>)</span> and <span class="citation">Brownie et al. (<a href="references.html#ref-BrownieEtAl1993">1993</a>)</span>, then formulated cleanly within the HMM framework by <span class="citation">Pradel (<a href="references.html#ref-pradel_multievent_2005">2005</a>)</span> and <span class="citation">Rouan, Choquet, and Pradel (<a href="references.html#ref-rouan2009memory">2009</a>)</span>.</p>
 <p>To illustrate the memory model, we will use the geese data introduced in Chapter <a href="dispersal.html#dispersal">5</a>. As we saw in Section <a href="dispersal.html#gofas">5.3.3</a>, there is a strong positive association between the site where an animal was last seen and the site where it will next be seen. This suggests that a first-order model is too simple and that transitions at <span class="math inline">\(t+1\)</span> should not only depend on <span class="math inline">\(t\)</span> but also <span class="math inline">\(t-1\)</span>.</p>
-<p>HMMs make this extension relativement straightforward: we redefine the latent states as pairs of sites (e.g., AA, AB, BA, BB plus dead), which encodes the second-order dependency while keeping the coding and model structure familiar. Let’s get to it.</p>
 </div>
 <div id="model-and-nimble-implementation-4" class="section level3" number="7.3.2">
 <h3>
@@ -333,8 +331,7 @@ z_{t}=A \\ z_{t}=B \\ z_{t}=D
 </ul>
 </li>
 </ul>
-<p>Now we turn to writing our model.</p>
-<p>We start with the vector of initial states. Individuals enter the study with probabilities:
+<p>Now we turn to writing our model. We start with the vector of initial states. Individuals enter the study with probabilities:
 <span class="math display">\[\begin{matrix}
 &amp; \\
 \mathbf{\delta} =
@@ -545,10 +542,10 @@ z_t=AA \\ z_t=AB \\ z_t=BA \\ z_t=BB \\ z_t=D
 ## phi22[1] 0.06 0.00 0.05 0.06  0.07 1.00   676
 ## phi22[2] 0.63 0.01 0.61 0.63  0.64 1.01  1140
 ## phi22[3] 0.31 0.01 0.30 0.31  0.33 1.00   965</code></pre>
-<p>which we can compare to the results obtained by <span class="citation">Pradel (<a href="references.html#ref-pradel_multievent_2005">2005</a>)</span> in his Table 1:</p>
+<p>which we can reaarange as in Table <a href="lackoffit.html#tab:memoryres">7.1</a> to the results obtained by <span class="citation">Pradel (<a href="references.html#ref-pradel_multievent_2005">2005</a>)</span> in his Table 1:</p>
 <div class="inline-table"><table class="table table-sm">
 <caption>
-<span id="tab:unnamed-chunk-385">Table 7.1: </span>Second-order (memory) estimates of transition probabilities. The first column gives the Transition made in <span class="math inline">\(t\)</span> to <span class="math inline">\(t+1\)</span> where M is for mid–Atlantic and C for Chesapeake. The second column gives the Condition that is whether the location at <span class="math inline">\(t+1\)</span> is Equal or Not equal to the location at <span class="math inline">\(t-1\)</span>. The Pradel (2005) time-averaged estimates are given in the third column. Our NIMBLE estimates (mean and 95% credible interval) are given in the fourth column.</caption>
+<span id="tab:memoryres">Table 7.1: </span>Second-order (memory) estimates of transition probabilities. The first column gives the Transition made in <span class="math inline">\(t\)</span> to <span class="math inline">\(t+1\)</span> where M is for mid–Atlantic and C for Chesapeake. The second column gives the Condition that is whether the location at <span class="math inline">\(t+1\)</span> is Equal or Not equal to the location at <span class="math inline">\(t-1\)</span>. The Pradel (2005) time-averaged estimates are given in the third column. Our NIMBLE estimates (mean and 95% credible interval) are given in the fourth column.</caption>
 <colgroup>
 <col width="16%">
 <col width="25%">
@@ -559,7 +556,7 @@ z_t=AA \\ z_t=AB \\ z_t=BA \\ z_t=BB \\ z_t=D
 <th align="left">Transition</th>
 <th align="left">Condition</th>
 <th align="center">Pradel (avg 1985–88)</th>
-<th align="center">Ours</th>
+<th align="center">NIMBLE</th>
 </tr></thead>
 <tbody>
 <tr class="odd">
@@ -612,8 +609,8 @@ z_t=AA \\ z_t=AB \\ z_t=BA \\ z_t=BB \\ z_t=D
 </tr>
 </tbody>
 </table></div>
-<p>In both analyses, memory is real: for each transition, the probability is higher when the destination at <span class="math inline">\(t+1\)</span> matches where the bird was at <span class="math inline">\(t−1\)</span> (‘Equal to <span class="math inline">\(t-1\)</span>’ rows) than when it doesn’t (‘Not equal to <span class="math inline">\(t-1\)</span>’ rows). That’s site fidelity or directional return. Our fit mirrors Pradel (2005) especially well for staying in Chesapeake (CC, equal: 0.63 in both) and still shows a clear memory signal for staying in mid-Atlantic (MM, 0.50 vs 0.57 when equal). Moves also carry memory: M→C is more likely when the bird was in C two steps back (0.33 vs 0.16), and C→M shows a weaker but similar pattern (0.10 vs 0.06).</p>
-<p>Where we differ is in the directional balance. Relative to Pradel’s averages, our model leans more toward Chesapeake: we estimate higher M→C probabilities (both equal and not equal; e.g., 0.33 vs 0.27 and 0.16 vs 0.09) and lower C→M (equal) (0.10 vs 0.21). We also find a higher chance of staying in C (CC, not equal: 0.57 vs 0.48). Several of these differences are well outside our 95% credible intervals (e.g., CM equal 0.09–0.11 vs 0.21, MC not-equal 0.15–0.17 vs 0.09). The big picture remains the same, though: movements are second–order and that memory is asymmetric, being strongest for persistence in Chesapeake and for moves toward it.</p>
+<p>In both analyses, memory is real: for each transition, the probability is higher when the destination at <span class="math inline">\(t+1\)</span> matches where the bird was at <span class="math inline">\(t−1\)</span> (‘Equal to <span class="math inline">\(t-1\)</span>’ rows) than when it doesn’t (‘Not equal to <span class="math inline">\(t-1\)</span>’ rows). That’s site fidelity or directional return. Our fit mirrors Pradel’s fit especially well for staying in Chesapeake (CC, equal: 0.63 in both) and still shows a clear memory signal for staying in mid-Atlantic (MM, 0.50 vs 0.57 when equal). Moves also carry memory: MC is more likely when the bird was in C two steps back (0.33 vs 0.16), and CM shows a weaker but similar pattern (0.10 vs 0.06).</p>
+<p>Where we differ is in the directional balance. Relative to Pradel’s averages, our model leans more toward Chesapeake: we estimate higher MC probabilities (both equal and not equal; e.g., 0.33 vs 0.27 and 0.16 vs 0.09) and lower CM (equal) (0.10 vs 0.21). We also find a higher chance of staying in C (CC, not equal: 0.57 vs 0.48). Several of these differences are well outside our 95% credible intervals (e.g., CM equal 0.09-0.11 vs 0.21, MC not equal 0.15-0.17 vs 0.09). These discrepancies are likely explained by the difference in model structures: ours assumes constant parameters, whereas Pradel’s allows them to vary over time. The big picture remains the same, though: movements are second–order and that memory is asymmetric, being strongest for persistence in Chesapeake and for moves toward it.</p>
 </div>
 </div>
 <div id="indhet" class="section level2" number="7.4">
@@ -625,8 +622,8 @@ z_t=AA \\ z_t=AB \\ z_t=BA \\ z_t=BB \\ z_t=D
 <span class="header-section-number">7.4.1</span> Motivation<a class="anchor" aria-label="anchor" href="#motivation-5"><i class="fas fa-link"></i></a>
 </h3>
 <p>I’ve worked with large carnivores for almost two decades, and they’re what pulled me into HMMs – especially gray wolves. Wolves are social, live in hierarchical packs, and that structure shows up in demography. It also shows up in how we detect them: dominant individuals use trails and roads more often, and that’s pretty much where we search for scats for DNA-based identification. The result is individual heterogeneity in detection, with some wolves being more detectable (via DNA) than others.</p>
-<p>Shirley Pledger in a series of papers developed so–called mixture models in which individuals are assigned in two or more classes with class-specific survival/detection probabilities. If we ignore that variation, estimates can be biased and lack-of-fit tests light up. In <span class="citation">Cubaynes et al. (<a href="references.html#ref-cubaynes_importance_2010">2010</a>)</span>, we used an HMM formulation to capture heterogeneity in detection linked to social status (see also <span class="citation">Pradel (<a href="references.html#ref-pradel2009">2009</a>)</span>).</p>
-<p>In what follows, I’ll show how to build and fit these finite–mixture HMM using simulated data so we control the truth. This gives a practical template for dealing with heterogeneity whenever behavior or status makes some individuals easier (or more difficult) to find than others.</p>
+<p>Shirley Pledger in a series of papers developed so–called mixture models in which individuals are assigned in two or more classes with class-specific survival/detection probabilities. If we ignore that variation, estimates can be biased and lack-of-fit tests light up. In <span class="citation">Cubaynes et al. (<a href="references.html#ref-cubaynes_importance_2010">2010</a>)</span>, we used an HMM formulation to capture heterogeneity in detection linked to social status <span class="citation">(see also <a href="references.html#ref-pradel2009">Pradel 2009</a>)</span>.</p>
+<p>In what follows, I’ll show how to build and fit these finite–mixture HMMs using simulated data so we control the truth. This gives a practical template for dealing with heterogeneity whenever behavior or status makes some individuals easier (or more difficult) to find than others.</p>
 <!-- ```{r pixwolf, echo=FALSE, fig.cap="Dominance in wolves.", fig.align='center'} -->
 <!-- knitr::include_graphics("images/wolfdominance.jpg") -->
 <!-- ``` -->
@@ -651,8 +648,7 @@ z_t=AA \\ z_t=AB \\ z_t=BA \\ z_t=BB \\ z_t=D
 </ul>
 </li>
 </ul>
-<p>Now we turn to writing our model.</p>
-<p>We start with the vector of initial states. Individuals enter as a mixture of A1/A2 with probabilities <span class="math inline">\(\pi\)</span> and <span class="math inline">\(1-\pi\)</span>:
+<p>Now we turn to writing our model. We start with the vector of initial states. Individuals enter as a mixture of A1/A2:
 <span class="math display">\[\begin{matrix}
 &amp; \\
 \mathbf{\delta} =
@@ -725,7 +721,7 @@ z_{t-1}=A1 \\ z_{t-1}=A2 \\ z_{t-1}=D
 z_{t-1}=A1 \\ z_{t-1}=A2 \\ z_{t-1}=D
 \end{matrix}
 \end{matrix}\]</span></p>
-<p>where <span class="math inline">\(\psi^{12}\)</span> is the probability for an individual to change class of heterogeneity, from A1 to A2, and <span class="math inline">\(\psi^{21}\)</span> is the probability for an individual to change class of heterogeneity, from A2 to A1.</p>
+<p>where the <span class="math inline">\(psi\)</span>’s are the probabilities for an individual to change class of heterogeneity, with <span class="math inline">\(\psi^{12}\)</span> from A1 to A2, and <span class="math inline">\(\psi^{21}\)</span> from A2 to A1.</p>
 <p>Last step is the observation matrix, which we write as follows:
 <span class="math display">\[\begin{matrix}
 &amp; \\
@@ -757,7 +753,7 @@ z_{t}=A1 \\ z_{t}=A2 \\ z_{t}=D
 <span><span class="va">omega</span><span class="op">[</span><span class="fl">3</span>,<span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span>         <span class="co"># D(t)-&gt;0(t)</span></span>
 <span><span class="va">omega</span><span class="op">[</span><span class="fl">3</span>,<span class="fl">2</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0</span>         <span class="co"># D(t)-&gt;1(t)</span></span></code></pre></div>
 <p>At first detection, the observation ‘not detected’ is impossible by construction (we condition on the first detection). We therefore use an initial observation matrix <span class="math inline">\(\mathbf{\Omega}_{\text{init}}\)</span> with <span class="math inline">\(p_1 = p_2\)</span> set to 1 (not shown).</p>
-<p>Instead of real data, we simulate data, which is useful to identify problems in our analysis as we will illustrate below. We simulate a finite–mixture scenario where individuals differ in detection but share the same survival. Each animal is assigned to one of two latent classes: a small, highly detectable group (class A1; proportion <span class="math inline">\(\pi = 0.2\)</span>, <span class="math inline">\(p_1=0.8\)</span>) and a larger, less detectable group (class A2; proportion <span class="math inline">\(1-\pi = 0.8\)</span>, <span class="math inline">\(p_2=0.3\)</span>). Everyone starts captured at the first occasion (this mimics the CJS conditioning on first capture), then the latent alive state <span class="math inline">\(z_{i,t}\)</span> evolves with constant survival <span class="math inline">\(\phi = 0.7\)</span>. If an individual is alive at time <span class="math inline">\(t\)</span>, it’s observed with its own detection probability <span class="math inline">\(p_i\)</span> (either <span class="math inline">\(p_1\)</span> or <span class="math inline">\(p_2\)</span> depending on class). The result is a matrix of 0/1 encounter histories <span class="math inline">\(y\)</span> with built-in individual heterogeneity in detection, plus bookkeeping objects: <code>which_mixture</code> (true class), <code>detection</code> (each animal’s <span class="math inline">\(p_i\)</span>), and <code>z</code> (true alive states). We simulate the fate of 400 animals over 10 years.</p>
+<p>Instead of real data, we will use simulated data, which is useful to identify problems in our analysis as we will illustrate below. We simulate a finite–mixture scenario where individuals differ in detection but share the same survival. Each animal is assigned to one of two latent classes: a small, highly detectable group (class A1; proportion <span class="math inline">\(\pi = 0.2\)</span>, <span class="math inline">\(p_1=0.8\)</span>) and a larger, less detectable group (class A2; proportion <span class="math inline">\(1-\pi = 0.8\)</span>, <span class="math inline">\(p_2=0.3\)</span>). Everyone starts captured at the first occasion (this mimics the CJS conditioning on first capture), then the latent alive state <span class="math inline">\(z_{i,t}\)</span> evolves with constant survival <span class="math inline">\(\phi = 0.7\)</span>. If an individual <span class="math inline">\(i\)</span> is alive at time <span class="math inline">\(t\)</span>, it’s observed with its own detection probability <span class="math inline">\(p_i\)</span> (either <span class="math inline">\(p_1\)</span> or <span class="math inline">\(p_2\)</span> depending on class). The result is a matrix of 0/1 encounter histories <span class="math inline">\(y\)</span> with built-in individual heterogeneity in detection, plus bookkeeping objects: <code>which_mixture</code> (true class), <code>detection</code> (each animal’s <span class="math inline">\(p_i\)</span>), and <code>z</code> (true alive states). We simulate the fate of 400 animals over 10 years.</p>
 <div class="sourceCode" id="cb343"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Simulate encounter histories with individual heterogeneity (finite mixture)</span></span>
 <span></span>
@@ -821,10 +817,10 @@ z_{t}=A1 \\ z_{t}=A2 \\ z_{t}=D
 ## pi  0.70 0.03 0.63 0.70  0.76 1.01   722
 ## pp1 0.45 0.02 0.40 0.45  0.49 1.00   492
 ## pp2 0.49 0.03 0.43 0.48  0.55 1.01   632</code></pre>
-<p>These estimates diverge markedly from the values used to simulate the data:</p>
+<p>These estimates diverge markedly from the values used to simulate the data, see Table <a href="lackoffit.html#tab:simpar">7.2</a>:</p>
 <div class="inline-table"><table class="table table-sm">
 <caption>
-<span id="tab:unnamed-chunk-391">Table 7.2: </span>Comparison of posterior estimates from NIMBLE with the data-generating values for a finite–mixture HMM.</caption>
+<span id="tab:simpar">Table 7.2: </span>Comparison of posterior estimates from NIMBLE with the data-generating values for a finite–mixture HMM.</caption>
 <thead><tr class="header">
 <th align="left">Parameter</th>
 <th align="center">True value</th>
@@ -853,7 +849,48 @@ z_{t}=A1 \\ z_{t}=A2 \\ z_{t}=D
 </tr>
 </tbody>
 </table></div>
-<p>Why is that? The HMM formulation we used for capturing heterogeneity creates a limitation: individuals are not allowed to switch between classes over time (e.g., from A1 to A2), because the transition matrix does not permit it. In other words, any individual seen &gt; 1 time (it’s detected after the first observation occasion) can <em>never</em> change class assignments away from their initial value class assignment. Why this formulation fails? The problem is subtle but fundamental: in a HMM, transitions between states are governed by a Markov process. If the transition matrix says an individual in A1 today must stay in A1 (or die), then the individual is permanently locked in that class. As a result, once an individual is assigned to a class through its initial latent state (e.g., A1), it can never change class during sampling. Even worse, any individual seen on multiple occasions (say, years 1 and 4) must stay alive during those years, the latent state cannot ‘jump’ between classes without violating the transition constraints, therefore, the initial class assignment is fixed forever, and the MCMC sampler cannot explore the alternative class, no matter how much data supports it.</p>
+<p>Why is that? The first issue is that the classes were permuted. In our model, nothing tells NIMBLE that the highly detectable individuals must belong to class A1 and the less detectable ones to class A2. The labeling of the classes is arbitrary. The interpretation only comes afterwards, by inspecting the parameter estimates. Now if we re-calculate <span class="math inline">\(\pi\)</span> as the proportion of individuals in A1 as follows:</p>
+<div class="sourceCode" id="cb346"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">samples</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/cbind.html">rbind</a></span><span class="op">(</span><span class="va">mcmc.phipmix</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span>, <span class="va">mcmc.phipmix</span><span class="op">[[</span><span class="fl">2</span><span class="op">]</span><span class="op">]</span><span class="op">)</span></span>
+<span><span class="va">pi</span> <span class="op">&lt;-</span> <span class="fl">1</span> <span class="op">-</span> <span class="va">samples</span><span class="op">[</span>,<span class="st">'pi'</span><span class="op">]</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/mean.html">mean</a></span><span class="op">(</span><span class="va">pi</span><span class="op">)</span></span>
+<span><span class="co">## [1] 0.305</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/stats/quantile.html">quantile</a></span><span class="op">(</span><span class="va">pi</span>, probs <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="fl">2.5</span>, <span class="fl">97.5</span><span class="op">)</span><span class="op">/</span><span class="fl">100</span><span class="op">)</span></span>
+<span><span class="co">##   2.5%  97.5% </span></span>
+<span><span class="co">## 0.2418 0.3715</span></span></code></pre></div>
+<p>we can get a sorted new Table <a href="lackoffit.html#tab:simpar2">7.3</a>:</p>
+<div class="inline-table"><table class="table table-sm">
+<caption>
+<span id="tab:simpar2">Table 7.3: </span>Comparison of posterior estimates from NIMBLE with the data-generating values for a finite–mixture HMM.</caption>
+<thead><tr class="header">
+<th align="left">Parameter</th>
+<th align="center">True value</th>
+<th align="center">Posterior mean (95% credible interval)</th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td align="left">phi</td>
+<td align="center">0.7</td>
+<td align="center">0.70 (0.67–0.73)</td>
+</tr>
+<tr class="even">
+<td align="left">pi</td>
+<td align="center">0.2</td>
+<td align="center">0.30 (0.24–0.37)</td>
+</tr>
+<tr class="odd">
+<td align="left">pp1</td>
+<td align="center">0.8</td>
+<td align="center">0.49 (0.43–0.55)</td>
+</tr>
+<tr class="even">
+<td align="left">pp2</td>
+<td align="center">0.3</td>
+<td align="center">0.45 (0.40–0.49)</td>
+</tr>
+</tbody>
+</table></div>
+<p>Still, the detection estimates are off. There’s a deeper issue here. The HMM formulation we used for capturing heterogeneity creates a limitation: individuals are not allowed to switch between classes over time (e.g., from A1 to A2), because the transition matrix does not permit it. In other words, any individual seen &gt; 1 time (it’s detected after the first observation occasion) can <em>never</em> change class assignments away from their initial value class assignment. Why this formulation fails? The problem is subtle but fundamental: in a HMM, transitions between states are governed by a Markov process. If the transition matrix says an individual in A1 must stay in A1 (or die), then the individual is permanently locked in that class. As a result, once an individual is assigned to a class through its initial latent state (e.g., A1), it can never change class during sampling. Even worse, any individual seen on multiple occasions (say, years 1 and 4) must stay alive during those years, the latent state cannot ‘jump’ between classes without violating the transition constraints, therefore, the initial class assignment is fixed forever, and the MCMC sampler cannot explore the alternative class, no matter how much data supports it.</p>
 <p>I must confess, I got stuck in that trap, and it was only because I used simulations that I could identify the problem. I then asked the NIMBLE team for help, and Daniel Turek came up with the explanation – thanks, Daniel!</p>
 <p>Fortunately, there are several solutions to this problem:</p>
 <ul>
@@ -862,9 +899,9 @@ z_{t}=A1 \\ z_{t}=A2 \\ z_{t}=D
 <li><p>Custom block sampler: Design a custom MCMC sampler that updates the entire latent history of an individual (<code>z[i, 1:K]</code>) at once. This allows for class-switching in a consistent way, though it’s more advanced and computationally heavier.</p></li>
 </ul>
 <p>Here I will adopt the first solution and use some material we saw in Section <a href="hmmcapturerecapture.html#marginalization">3.8</a>. In NIMBLE, we start by writing our own functions for the HMM likelihood, using the backward algorithm:</p>
-<div class="sourceCode" id="cb346"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb347"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Goal: integrate out latent states z using a custom density (forward algorithm),</span></span>
-<span><span class="co"># and speed things up by pooling identical encounter histories with a weight "size".</span></span>
+<span><span class="co"># and speed things up by pooling identical encounter histories with a pooled likelihood.</span></span>
 <span></span>
 <span><span class="co"># Get rid of individuals for which first==K</span></span>
 <span><span class="va">mask</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/which.html">which</a></span><span class="op">(</span><span class="va">first</span><span class="op">!=</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html">ncol</a></span><span class="op">(</span><span class="va">y</span><span class="op">)</span><span class="op">)</span> <span class="co"># individuals that are not first encountered at last occasion</span></span>
@@ -885,7 +922,7 @@ z_{t}=A1 \\ z_{t}=A2 \\ z_{t}=D
 <span><span class="va">y</span> <span class="op">&lt;-</span> <span class="va">y_weighted</span><span class="op">[</span>,<span class="op">-</span><span class="fl">1</span><span class="op">]</span>   <span class="co"># pooled data: one row per unique history</span></span>
 <span></span>
 <span><span class="co"># Assemble data and constants</span></span>
-<span><span class="co"># +1 because the custom distribution expects categories 1..2 (not 0/1)</span></span>
+<span><span class="co"># +1 because the custom distribution expects categories 1/2 (not 0/1)</span></span>
 <span><span class="va">my.data</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>y <span class="op">=</span> <span class="va">y</span> <span class="op">+</span> <span class="fl">1</span><span class="op">)</span></span>
 <span><span class="va">my.constants</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>N <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html">nrow</a></span><span class="op">(</span><span class="va">y</span><span class="op">)</span>, </span>
 <span>                     K <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html">ncol</a></span><span class="op">(</span><span class="va">y</span><span class="op">)</span>, </span>
@@ -949,21 +986,21 @@ z_{t}=A1 \\ z_{t}=A2 \\ z_{t}=D
 <span><span class="fu"><a href="https://rdrr.io/r/base/assign.html">assign</a></span><span class="op">(</span><span class="st">'dwolfHMM'</span>, <span class="va">dwolfHMM</span>, <span class="va">.GlobalEnv</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/assign.html">assign</a></span><span class="op">(</span><span class="st">'rwolfHMM'</span>, <span class="va">rwolfHMM</span>, <span class="va">.GlobalEnv</span><span class="op">)</span></span></code></pre></div>
 <p>Now the NIMBLE code for the model, at last:</p>
-<div class="sourceCode" id="cb347"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb348"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Model code</span></span>
 <span><span class="va">hmm.phipmix</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimbleCode.html">nimbleCode</a></span><span class="op">(</span><span class="op">{</span></span>
 <span>  </span>
 <span>  <span class="co"># -------------------------------------------------</span></span>
 <span>  <span class="co"># Parameters:</span></span>
-<span>  <span class="co"># pi: initial state probability C1   (mixture weight for class 1)</span></span>
+<span>  <span class="co"># pi: initial state probability A1   (mixture weight for class 1)</span></span>
 <span>  <span class="co"># phi: survival probability          (shared across classes)</span></span>
-<span>  <span class="co"># pp1: recapture probability C1      (detection for class 1)</span></span>
-<span>  <span class="co"># pp2: recapture probability C2      (detection for class 2)</span></span>
+<span>  <span class="co"># pp1: recapture probability A1      (detection for class 1)</span></span>
+<span>  <span class="co"># pp2: recapture probability A2      (detection for class 2)</span></span>
 <span>  <span class="co"># -------------------------------------------------</span></span>
 <span>  <span class="co"># States (S):</span></span>
 <span>  <span class="co"># 1 alive (A1)  -&gt; class 1</span></span>
 <span>  <span class="co"># 2 alive (A2)  -&gt; class 2</span></span>
-<span>  <span class="co"># 5 dead (D)</span></span>
+<span>  <span class="co"># 3 dead (D)</span></span>
 <span>  <span class="co"># Observations (O):</span></span>
 <span>  <span class="co"># 1 neither seen nor recovered (0)</span></span>
 <span>  <span class="co"># 2 seen alive (1)</span></span>
@@ -1047,10 +1084,10 @@ z_{t}=A1 \\ z_{t}=A2 \\ z_{t}=D
 <h3>
 <span class="header-section-number">7.4.3</span> Results and interpretation<a class="anchor" aria-label="anchor" href="#results-and-interpretation-5"><i class="fas fa-link"></i></a>
 </h3>
-<p>The results look fine now:</p>
+<p>The results in Table <a href="lackoffit.html#tab:okidh">7.4</a> look fine now:</p>
 <div class="inline-table"><table class="table table-sm">
 <caption>
-<span id="tab:unnamed-chunk-394">Table 7.3: </span>Posterior estimates vs. data-generating values for a finite–mixture HMM, when a marginalized likelihood is used.</caption>
+<span id="tab:okidh">Table 7.4: </span>Posterior estimates vs. data-generating values for a finite–mixture HMM, when a marginalized likelihood is used.</caption>
 <thead><tr class="header">
 <th align="left">Parameter</th>
 <th align="center">True value</th>
@@ -1064,23 +1101,23 @@ z_{t}=A1 \\ z_{t}=A2 \\ z_{t}=D
 </tr>
 <tr class="even">
 <td align="left">pi</td>
-<td align="center">0.8</td>
-<td align="center">0.72 (0.54–0.87)</td>
+<td align="center">0.2</td>
+<td align="center">0.28 (0.10–0.46)</td>
 </tr>
 <tr class="odd">
 <td align="left">pp1</td>
-<td align="center">0.3</td>
-<td align="center">0.27 (0.18–0.35)</td>
+<td align="center">0.8</td>
+<td align="center">0.79 (0.65–0.92)</td>
 </tr>
 <tr class="even">
 <td align="left">pp2</td>
-<td align="center">0.8</td>
-<td align="center">0.79 (0.65–0.92)</td>
+<td align="center">0.3</td>
+<td align="center">0.27 (0.18–0.35)</td>
 </tr>
 </tbody>
 </table></div>
 <p>In summary, when modeling unobservable individual heterogeneity (e.g., detection classes) in an HMM, avoid encoding class identity as a dynamic state. Instead, treat it as a fixed latent variable, or marginalize it out. Otherwise, the model is unable to explore the full posterior and will yield biased or unreliable estimates.</p>
-<p>A question that remains is the number of classes we should use. In other words, why 2 classes and not 3 or 4? One option is to fit models with more classes and select among them (see <span class="citation">Cubaynes et al. (<a href="references.html#ref-cubaynes2012">2012</a>)</span>). Alternatively, you can take a non-parametric route and let the data decide how many classes are needed; this is relatively easy in NIMBLE (see <span class="citation">Turek, Wehrhahn, and Gimenez (<a href="references.html#ref-turek_bayesian_2021">2021</a>)</span>).</p>
+<p>A question that remains is the number of classes we should use. In other words, why 2 classes and not 3 or 4? One option is to fit models with more classes and select among them <span class="citation">(e.g., <a href="references.html#ref-cubaynes2012">Cubaynes et al. 2012</a>)</span>. Alternatively, you can take a non-parametric route and let the data decide how many classes are needed; this is relatively easy in NIMBLE <span class="citation">(see <a href="references.html#ref-turek_bayesian_2021">Turek, Wehrhahn, and Gimenez 2021</a>)</span>.</p>
 <p>For broader context on individual heterogeneity, see <span class="citation">Gimenez, Cam, and Gaillard (<a href="references.html#ref-gimenez2018ih">2018</a>)</span>. Finally, remember that these hidden classes were introduced by Pledger and colleagues primarily to correct bias in survival or abundance when heterogeneity is ignored; interpreting the classes biologically after fitting should be done with caution.</p>
 <!-- I'm not an expert on the BNP facilities offered in NIMBLE, but I think I can comment: the stick-breaking representation (as you're using), and the CRP distribution, are modelling the same Dirichlet process.  They differ in the MCMC sampling algorithms which are applied to each, automatically, by NIMBLE's MCMC.  Translating your code between these two (mathematically identical) representations is a relatively small and straight-forward exercise.  The relative performance of the different sampling algorithms, as applied to each representation, could differ, would depend on the model and the data, and is generally difficult to predict. -->
 <!-- Changing between the stick-breaking representation and the CRP representation, the categorical distribution would persist in your model.  And Perry's comments are correct, that (in particular for a large number of categories, e.g. large values of H or HH in your code) the categorical sampler (which is applied to the categorical distribution) would become arbitrarily inefficient, in that it evaluates the posterior density for every category value (H or HH times), then samples directly from that posterior distribution.  And that you could hopefully reduce this inefficiency by writing a customized sampling strategy (a custom-written MCMC sampler), to update your categorical distributions, in a more efficient (less wasteful) manner. -->

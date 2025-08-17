@@ -6,15 +6,15 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <title>Chapter 6 Dealing with covariates | Bayesian analysis of capture-recapture data with hidden Markov models</title>
 <meta name="author" content="Olivier Gimenez">
-<meta name="description" content="6.1 Introduction Capture–recapture models often aim not just to estimate demographic parameters, but also to understand what drives their variation as we have seen in Chapter 4. In this chapter,...">
+<meta name="description" content="6.1 Introduction Capture-recapture models often aim not just to estimate demographic parameters, but also to understand what drives their variation as we have seen in Chapter 4. Here, we will...">
 <meta name="generator" content="bookdown 0.43 with bs4_book()">
 <meta property="og:title" content="Chapter 6 Dealing with covariates | Bayesian analysis of capture-recapture data with hidden Markov models">
 <meta property="og:type" content="book">
 <meta property="og:url" content="https://oliviergimenez.github.io/banana-book/covariateschapter.html">
-<meta property="og:description" content="6.1 Introduction Capture–recapture models often aim not just to estimate demographic parameters, but also to understand what drives their variation as we have seen in Chapter 4. In this chapter,...">
+<meta property="og:description" content="6.1 Introduction Capture-recapture models often aim not just to estimate demographic parameters, but also to understand what drives their variation as we have seen in Chapter 4. Here, we will...">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="Chapter 6 Dealing with covariates | Bayesian analysis of capture-recapture data with hidden Markov models">
-<meta name="twitter:description" content="6.1 Introduction Capture–recapture models often aim not just to estimate demographic parameters, but also to understand what drives their variation as we have seen in Chapter 4. In this chapter,...">
+<meta name="twitter:description" content="6.1 Introduction Capture-recapture models often aim not just to estimate demographic parameters, but also to understand what drives their variation as we have seen in Chapter 4. Here, we will...">
 <!-- JS --><script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.6/clipboard.min.js" integrity="sha256-inc5kl9MA1hkeYUt+EC3BhlIgyp/2jDIyBLS6k3UxPI=" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/fuse.js/6.4.6/fuse.js" integrity="sha512-zv6Ywkjyktsohkbp9bb45V6tEMoWhzFzXis+LrMehmJZZSys19Yxf1dopHx7WzIKxr5tK2dVcYmaCk2uqdjF4A==" crossorigin="anonymous"></script><script src="https://kit.fontawesome.com/6ecbd6c532.js" crossorigin="anonymous"></script><script src="libs/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <link href="libs/bootstrap-4.6.0/bootstrap.min.css" rel="stylesheet">
 <script src="libs/bootstrap-4.6.0/bootstrap.bundle.min.js"></script><script src="libs/bs3compat-0.9.0/transition.js"></script><script src="libs/bs3compat-0.9.0/tabs.js"></script><script src="libs/bs3compat-0.9.0/bs3compat.js"></script><link href="libs/bs4_book-1.0.0/bs4_book.css" rel="stylesheet">
@@ -101,7 +101,7 @@
 <h2>
 <span class="header-section-number">6.1</span> Introduction<a class="anchor" aria-label="anchor" href="#introduction-8"><i class="fas fa-link"></i></a>
 </h2>
-<p>Capture–recapture models often aim not just to estimate demographic parameters, but also to understand what drives their variation as we have seen in Chapter <a href="survival.html#survival">4</a>. In this chapter, we explore how to incorporate covariates – whether measured at the individual or temporal scale. We cover selecting covariates from a potentially large set, using an extension of standard MCMC algorithms known as reversible jump MCMC (RJMCMC), and handling uncertainty in key covariates, namely age or sex, when these are not perfectly known for all individuals.</p>
+<p>Capture-recapture models often aim not just to estimate demographic parameters, but also to understand what drives their variation as we have seen in Chapter <a href="survival.html#survival">4</a>. Here, we will cover the selection of covariates from a potentially large set, using an extension of standard MCMC algorithms known as reversible jump MCMC (RJMCMC), and how to handle with uncertainty in key covariates, namely age or sex, when these are not perfectly known for all individuals.</p>
 </div>
 <div id="covariate-selection-with-reversible-jump-mcmc" class="section level2" number="6.2">
 <h2>
@@ -111,9 +111,9 @@
 <h3>
 <span class="header-section-number">6.2.1</span> Motivation<a class="anchor" aria-label="anchor" href="#motivation"><i class="fas fa-link"></i></a>
 </h3>
-<p>In Section <a href="survival.html#waic">4.6</a>, we used WAIC to figure our which model, among several candidates, was best supported by the data. Each model there represented a different ecological hypothesis. Now when you are in a situation where you have several individual or temporal covariates that might explain variation in some demographic parameters, say survival as in Section <a href="survival.html#covariates">4.8</a>, things can quickly become a bit more tedious.</p>
-<p>Let’s look at a real-world example: The white stork (<em>Ciconia ciconia</em>) population in Baden-Württemberg, Germany. From the 1960s to the 1990s, all Western European stork populations were in decline. One leading hypothesis was that these declines were driven by reduced food availability, itself caused by severe droughts in the storks’ wintering grounds in the Sahel region (e.g. <span class="citation">Kanyamibwa et al. (<a href="references.html#ref-kanya90">1990</a>)</span>, <span class="citation">Grosbois et al. (<a href="references.html#ref-grosbois_assessing_2008">2008</a>)</span>).</p>
-<p>To explore this idea, we’ll use rainfall measurements from 10 meteorological stations chosen to represent the storks’ wintering area: Diourbel, Gao, Kayes, Kita, Maradi, Mopti, Ouahigouya, Ségou, Tahoua, and Tombouctou. The data we have are the cumulative rainfall amounts (in mm) over June, July, August, and September – roughly the rainy season in the Sahel.</p>
+<p>In Section <a href="survival.html#waic">4.6</a>, we used WAIC to figure our which model, among several candidates, was best supported by the data. Each model there represented a different ecological hypothesis. Now when you are in a situation where you have several individual or temporal covariates that might explain variation in some demographic parameters, say survival as in Section <a href="survival.html#covariates">4.8</a>, things can quickly become a bit more tedious.
+Let’s look at a real-world example with the white stork (<em>Ciconia ciconia</em>) population in Baden-Württemberg, Germany. From the 1960s to the 1990s, all Western European stork populations were in decline. One leading hypothesis was that these declines were driven by reduced food availability, itself caused by severe droughts in the storks’ wintering grounds in the Sahel region <span class="citation">Grosbois et al. (<a href="references.html#ref-grosbois_assessing_2008">2008</a>)</span>.</p>
+<p>To explore this idea, we’ll use rainfall measurements from 10 meteorological stations chosen to represent the storks’ wintering area: Diourbel, Gao, Kayes, Kita, Maradi, Mopti, Ouahigouya, Ségou, Tahoua, and Tombouctou. The data we have are the cumulative rainfall amounts (in mm) over June, July, August, and September – roughly the rainy season in the Sahel:</p>
 <pre><code>##      Diourbel  Gao Kayes  Kita Maradi Mopti Ouahigouya
 ## [1,]     6770 1900  7130 11350   6970  6580       6220
 ## [2,]     6420 2690  6180 13690   5880  6470       6260
@@ -129,15 +129,15 @@
 ## [5,]  5920   3120       2340
 ## [6,]  6461   3891       2020</code></pre>
 <p>Our question is: Which combination of these stations best explains variation in survival? If we tried to answer this by testing every possible model, we would have to consider every subset of the 10 stations and compare 1024 models (2^10 combinations). That’s far too many for a WAIC-based approach to be practical.</p>
-<p>Instead of comparing all possible models one by one, we can use Reversible Jump MCMC (RJMCMC). RJMCMC is an extension of standard Bayesian inference that treats the model itself as an extra (discrete) parameter. In this framework, the posterior distribution spans both the parameter space (e.g. regression coefficients) and the model space (e.g. which covariates are included).</p>
-<p>To work out the (marginal) posterior probability of each model, we integrate over the parameters using MCMC. Standard MCMC algorithms cannot handle this model-switching scenario, but RJMCMC is designed precisely for it and can explore parameters and models together within a single Markov chain. In other words, RJMCMC can ‘jump’ between models, turning covariates on or off. RJMCMC is like a hiker exploring different trails (models), stopping along each one to take measurements (parameters) before deciding whether to switch to another. From this, we can estimate the posterior probability that each covariate influences survival, as well as model-averaged regression coefficients and survival estimates that account for both parameter and model uncertainty.</p>
-<p>We won’t dive into the mathematical details here but don’t worry, you can still follow the analysis without them. Check out Chapter 7 of <span class="citation">King et al. (<a href="references.html#ref-king_bayesian_2009">2009</a>)</span> (see also <span class="citation">Gimenez et al. (<a href="references.html#ref-gimenez2009winbugs">2009</a>)</span>) if you’re interested in.</p>
+<p>Instead of comparing all possible models one by one, we can use Reversible Jump MCMC (RJMCMC). RJMCMC is an extension of standard Bayesian inference in which the model itself is treated as an additional, discrete parameter. In this framework, the posterior distribution spans both the parameter space (e.g. regression coefficients) and the model space (e.g. which covariates are included). In simple terms, allows the algorithm to jump between models, switching covariates on or off as it goes. You can think of it as a hiker exploring different trails (models), stopping along each trail to take measurements (parameters) before deciding whether to move onto another path.</p>
+<p>Using RJMCMC, we can estimate the posterior probability that each covariate influences survival, and obtain model-averaged regression coefficients and survival estimates that incorporate both parameter and model uncertainty.</p>
+<p>We won’t dive into the mathematical details here but don’t worry, you can still follow the analysis without them. Check out Chapter 7 of <span class="citation">King et al. (<a href="references.html#ref-king_bayesian_2009">2009</a>; see also <a href="references.html#ref-gimenez2009winbugs">Gimenez et al. 2009</a>)</span> if you’re interested in.</p>
 </div>
 <div id="model-and-nimble-implementation" class="section level3" number="6.2.2">
 <h3>
 <span class="header-section-number">6.2.2</span> Model and NIMBLE implementation<a class="anchor" aria-label="anchor" href="#model-and-nimble-implementation"><i class="fas fa-link"></i></a>
 </h3>
-<p>For our example, we’ll work with data from 321 encounter histories of white storks ringed as chicks between 1956 and 1970. We’ll fit a Cormack–Jolly–Seber (CJS) model with time-dependent survival and constant detection probability, as described in Section <a href="survival.html#cjsderivatives">4.5</a>. We model the survival probability <code>phi</code> as a linear function of our covariates stored in <code>x</code>. To handle model selection inside the RJMCMC, we use a clever trick: for each covariate, we introduce an indicator variable <code>ksi</code> that can take the value 1 (covariate is included in the model) or 0 (covariate is excluded). We then combine the regression coefficients <code>beta</code> with these indicators into a single vector <code>betaksi</code>. This means that if <code>ksi[j] = 0</code>, the effect of covariate <code>j</code> is zero, effectively removing it from the model. Here’s how it works in the NIMBLE code:</p>
+<p>For our example, we’ll work with data from 321 encounter histories of white storks ringed as chicks between 1956 and 1970. These data were kindly provided by Jean-Dominique Lebreton. We’ll fit a Cormack–Jolly–Seber (CJS) model with time-dependent survival and constant detection probability, as described in Section <a href="survival.html#cjsderivatives">4.5</a>. We model the survival probability <code>phi</code> as a linear function of our covariates stored in <code>x</code>. To handle model selection inside the RJMCMC, we use a trick: for each covariate, we introduce an indicator variable <code>ksi</code> that can take the value 1 (covariate is included in the model) or 0 (covariate is excluded). We then combine the regression coefficients <code>beta</code> with these indicators into a single vector <code>betaksi</code>. This means that if <code>ksi[j] = 0</code>, the effect of covariate <code>j</code> is zero, effectively removing it from the model. Here’s how it works in the NIMBLE code:</p>
 <div class="sourceCode" id="cb318"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw">for</span> <span class="op">(</span><span class="va">t</span> <span class="kw">in</span> <span class="fl">1</span><span class="op">:</span><span class="op">(</span><span class="cn">T</span><span class="op">-</span><span class="fl">1</span><span class="op">)</span><span class="op">)</span><span class="op">{</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/pkg/gtools/man/logit.html">logit</a></span><span class="op">(</span><span class="va">phi</span><span class="op">[</span><span class="va">t</span><span class="op">]</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="va">intercept</span> <span class="op">+</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimble-math.html">inprod</a></span><span class="op">(</span><span class="va">betaksi</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">10</span><span class="op">]</span>, <span class="va">x</span><span class="op">[</span><span class="va">t</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">10</span><span class="op">]</span><span class="op">)</span></span>
@@ -150,9 +150,9 @@
 <div class="sourceCode" id="cb319"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw">for</span> <span class="op">(</span><span class="va">j</span> <span class="kw">in</span> <span class="fl">1</span><span class="op">:</span><span class="fl">10</span><span class="op">)</span><span class="op">{</span></span>
 <span>  <span class="va">betaksi</span><span class="op">[</span><span class="va">j</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="va">beta</span><span class="op">[</span><span class="va">j</span><span class="op">]</span> <span class="op">*</span> <span class="va">ksi</span><span class="op">[</span><span class="va">j</span><span class="op">]</span></span>
-<span>  <span class="va">ksi</span><span class="op">[</span><span class="va">j</span><span class="op">]</span> <span class="op">~</span> <span class="fu">dbern</span><span class="op">(</span><span class="va">psi</span><span class="op">)</span> <span class="co">## indicator variable associated with betaj</span></span>
+<span>  <span class="va">ksi</span><span class="op">[</span><span class="va">j</span><span class="op">]</span> <span class="op">~</span> <span class="fu">dbern</span><span class="op">(</span><span class="va">psi</span><span class="op">)</span> <span class="co"># indicator variable associated with betaj</span></span>
 <span><span class="op">}</span></span>
-<span><span class="va">psi</span> <span class="op">~</span> <span class="fu"><a href="https://rdrr.io/r/stats/Beta.html">dbeta</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">1</span><span class="op">)</span> <span class="co">## hyperprior on inclusion probability</span></span>
+<span><span class="va">psi</span> <span class="op">~</span> <span class="fu"><a href="https://rdrr.io/r/stats/Beta.html">dbeta</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">1</span><span class="op">)</span> <span class="co"># prior on inclusion probability</span></span>
 <span><span class="kw">for</span> <span class="op">(</span><span class="va">j</span> <span class="kw">in</span> <span class="fl">1</span><span class="op">:</span><span class="fl">10</span><span class="op">)</span><span class="op">{</span></span>
 <span>  <span class="va">beta</span><span class="op">[</span><span class="va">j</span><span class="op">]</span> <span class="op">~</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html">dnorm</a></span><span class="op">(</span><span class="fl">0</span>, sd <span class="op">=</span> <span class="fl">1.5</span><span class="op">)</span> <span class="co"># prior slopes</span></span>
 <span><span class="op">}</span></span>
@@ -194,8 +194,7 @@
 <h3>
 <span class="header-section-number">6.2.3</span> Results and interpretation<a class="anchor" aria-label="anchor" href="#results-and-interpretation"><i class="fas fa-link"></i></a>
 </h3>
-<p>The RJMCMC run gives us the posterior probabilities of different models where each model corresponds to a specific combination of covariates. In our white stork example, the results clearly show that the model including only the rainfall at the Kita station (covariate #4) is best supported by the data.</p>
-<p>To get these results, we first combine the MCMC samples from our two chains:</p>
+<p>The RJMCMC run gives us the posterior probabilities of different models where each model corresponds to a specific combination of covariates. To get these probabilities, we first combine the MCMC samples from our two chains:</p>
 <div class="sourceCode" id="cb322"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Gather two chains</span></span>
 <span><span class="va">out</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/cbind.html">rbind</a></span><span class="op">(</span><span class="va">samples</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span>, <span class="va">samples</span><span class="op">[[</span><span class="fl">2</span><span class="op">]</span><span class="op">]</span><span class="op">)</span></span></code></pre></div>
@@ -214,7 +213,7 @@
 <span><span class="co">## 0.02575 0.01720 0.01560 0.96120 0.04430 0.05350 0.02025 </span></span>
 <span><span class="co">##  ksi[8]  ksi[9] ksi[10] </span></span>
 <span><span class="co">## 0.03360 0.02630 0.02965</span></span></code></pre></div>
-<p>The posterior inclusion probabilities tell us how likely each covariate is to appear in the ‘true’ model given the data and priors. Here, <code>ksi[4]</code> – the Kita station – stands out, with an inclusion probability around 0.96.</p>
+<p>The posterior inclusion probabilities tell us how likely each covariate is to appear in the ‘true’ model given the data and priors. Here, <code>ksi[4]</code> stands out, with an inclusion probability around 0.96. This corresponds to the the Kita station.</p>
 <p>We can also identify the most probable models visited by the RJMCMC. Each MCMC draw corresponds to a model, which we encode as a binary string (e.g., “0101001001”):</p>
 <div class="sourceCode" id="cb324"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Encode each model draw as a string of 0s and 1s</span></span>
@@ -266,7 +265,7 @@
 <span><span class="co">## beta[8]   0.005  0.000 0.048 0.028</span></span>
 <span><span class="co">## beta[9]   0.002  0.000 0.000 0.021</span></span>
 <span><span class="co">## beta[10] -0.003 -0.020 0.000 0.003</span></span></code></pre></div>
-<p>A large <code>P_gt0</code> (e.g., &gt; 0.95) suggests strong evidence that the covariate increases survival (on the logit scale), while values near 0.5 mean the direction is uncertain.</p>
+<p>A large <code>P_gt0</code> (e.g., &gt; 0.95) suggests strong evidence that the covariate increases survival (on the logit scale).</p>
 <p>Now let’s get model-averaged survival estimates over time. For each MCMC draw, we build the linear predictor with all covariates using <code>beta * ksi</code>, add the intercept, then inverse-logit to get survival <code>phi</code>:</p>
 <div class="sourceCode" id="cb326"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">invlogit</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">x</span><span class="op">)</span> <span class="fl">1</span> <span class="op">/</span> <span class="op">(</span><span class="fl">1</span> <span class="op">+</span> <span class="fu"><a href="https://rdrr.io/r/base/Log.html">exp</a></span><span class="op">(</span><span class="op">-</span><span class="va">x</span><span class="op">)</span><span class="op">)</span></span>
@@ -296,11 +295,11 @@
 <span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_point.html">geom_point</a></span><span class="op">(</span><span class="op">)</span> <span class="op">+</span></span>
 <span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html">labs</a></span><span class="op">(</span></span>
 <span>    x <span class="op">=</span> <span class="st">"Years (interval start)"</span>,</span>
-<span>    y <span class="op">=</span> <span class="st">"Survival probability"</span>,</span>
+<span>    y <span class="op">=</span> <span class="st">"Estimated survival probability"</span>,</span>
 <span>    title <span class="op">=</span> <span class="st">"Model-averaged survival with 95% credible intervals"</span></span>
 <span>  <span class="op">)</span></span></code></pre></div>
 <div class="inline-figure"><img src="banana-book_files/figure-html/unnamed-chunk-367-1.png" width="672"></div>
-<p>Shaded ribbons show 95% credible intervals; the solid line is the posterior mean of survival, model-averaged over covariate inclusion.</p>
+<p>Shaded ribbons show 95% credible intervals; the solid line is the posterior mean of survival, which decreases over time, model-averaged over covariate inclusion.</p>
 </div>
 </div>
 <div id="ageuncertainty" class="section level2" number="6.3">
@@ -311,8 +310,8 @@
 <h3>
 <span class="header-section-number">6.3.1</span> Motivation<a class="anchor" aria-label="anchor" href="#motivation-1"><i class="fas fa-link"></i></a>
 </h3>
-<p>Survival and other demographic parameters often differ between young and older animals, so if we blur age classes we can end up telling the wrong story about population dynamics. In Section <a href="survival.html#agecov">4.8.5</a>, we incorporated age as a covariate in capture-recapture models, assuming it was perfectly known. With non-invasive genetics (Figure <a href="survival.html#fig:marking">4.1</a>), though, age is not observed: a DNA profile can identify who was there, but not how old they were. If we ignore that uncertainty, survival estimates can be biased. As we saw in Section <a href="dispersal.html#multievent">5.7</a>, HMM capture–recapture models can handle this kind of problem by treating age as a hidden state and separating it from what we actually observe in the field.</p>
-<p>A neat example comes from Apennine brown bears in <span class="citation">Gervasi et al. (<a href="references.html#ref-Gervasi2017">2017</a>)</span> (see also <span class="citation">Gowan et al. (<a href="references.html#ref-gowan2021uncertainty">2021</a>)</span>). Because you cannot age a bear from its DNA, the authors paired genetics with field information to classify detections into two broad age classes, cubs (&lt;1 year) and adults (≥1 year). To do so, they used two criteria. First, classify a newly detected bear as a cub in that year if it was sampled at least once on the same date and site as a known adult female and they shared ≥1 allele at every locus (mother–offspring consistent). That’s the lenient criterion (P1). Second, apply a stricter criterion (P2): make the same mother–offspring call, but require two or more such co-sampling occasions with the same female, again on the same date and site each time.</p>
+<p>Survival and other demographic parameters often differ between young and older animals, so if we blur age classes we can end up telling the wrong story about population dynamics. In Section <a href="survival.html#agecov">4.8.5</a>, we incorporated age as a covariate in capture-recapture models, assuming it was perfectly known. With non-invasive genetics (Figure <a href="survival.html#fig:marking">4.1</a>), though, age is not observed: a DNA profile can identify who was there, but not how old they were. If we ignore that uncertainty, survival estimates can be biased. Inspired by what we saw in Section <a href="dispersal.html#multievent">5.7</a>, we will see here how HMM capture-recapture models can handle this kind of problem by treating age as a hidden state and separating it from what we actually observe in the field.</p>
+<p>A neat example comes from Apennine brown bears in <span class="citation">Gervasi et al. (<a href="references.html#ref-Gervasi2017">2017</a>; see also <a href="references.html#ref-gowan2021uncertainty">Gowan et al. 2021</a>)</span>. Because you cannot age a bear from its DNA, the authors paired genetics with field information to classify detections into two broad age classes, cubs (&lt;1 year) and adults (≥1 year). To do so, they used two criteria. First, classify a newly detected bear as a cub in that year if it was sampled at least once on the same date and site as a known adult female and they shared ≥1 allele at every locus (mother-offspring consistent). That’s the lenient criterion (P1). Second, apply a stricter criterion (P2): make the same mother–offspring call, but require two or more such co-sampling occasions with the same female, again on the same date and site each time.</p>
 <p>Why two criteria? Because there’s a trade-off. P1 is better at catching real cubs (more sensitive) but risks misclassifying some adults as cubs; P2 is more conservative about calling ‘cub’, so it reduces false cubs but misses some true ones.</p>
 <p>Instead of pretending these criteria are perfect, the authors model the misclassification explicitly: age is hidden, ‘cub/adult by P1/P2’ is what we observe, and their model estimates both classification accuracy and age-specific survival at the same time. That way, uncertainty is propagated into the demographic estimates rather than swept under the rug.</p>
 <p>Here, I show how to encode that logic in an HMM with NIMBLE: define the hidden age states, write the transition (survival) and detection components, and add a classification step that links hidden age to the observed P1/P2 outcomes. We’ll also see how a small subset of known-age individuals (e.g., live-trapped or aged beforehand) anchors the classification step. The payoff is a set of age-specific survival estimates that are robust to imperfect age assignment, which is exactly what we need for sound ecological inference and management.</p>
@@ -321,16 +320,16 @@
 <h3>
 <span class="header-section-number">6.3.2</span> Model and NIMBLE implementation<a class="anchor" aria-label="anchor" href="#model-and-nimble-implementation-1"><i class="fas fa-link"></i></a>
 </h3>
-<p>To estimate bear survival, we have at our disposal a 12-year time series of non-invasive genetic sampling data, collected between 2003 and 2014. To build up our model, we first define the states and observations:</p>
+<p>To estimate bear survival, we have at our disposal a 12-year time series of non-invasive genetic sampling data, collected between 2003 and 2014. These data were kindly provided by Vincenzo Gervasi. To build up our model, we first define the states and observations:</p>
 <ul>
-<li>states
+<li>States
 <ul>
 <li>alive as cub (C)</li>
 <li>alive as adult (A)</li>
-<li>dead (D)</li>
+<li>dead (D)/</li>
 </ul>
 </li>
-<li>observations
+<li>Observations
 <ul>
 <li>not detected (1)</li>
 <li>detected and classified as cub by both criteria (2)</li>
@@ -340,8 +339,8 @@
 </li>
 </ul>
 <p>Now we turn to writing our model.</p>
-<p>We start with the vector of initial states. Unknown-age individuals enter as a mixture of cub/adult with probabilities <span class="math inline">\(\pi\)</span> and <span class="math inline">\(1-\pi\)</span>:</p>
-<p><span class="math display">\[\begin{matrix}
+<p>We start with the vector of initial states. Unknown-age individuals enter as a mixture of cubs and adults:
+<span class="math display">\[\begin{matrix}
 &amp; \\
 \mathbf{\delta} =
   \left ( \vphantom{ \begin{matrix} 12 \end{matrix} } \right .
@@ -358,12 +357,12 @@
 \begin{matrix}
 \end{matrix}
 \end{matrix}\]</span></p>
-<p>where <span class="math inline">\(\pi\)</span> is the probability of being alive as a cub, and <span class="math inline">\(1 - \pi\)</span> is the probability of being alive as an adult. For bears known-age at first detection, we fix the initial state accordingly. In NIMBLE we implement this with an individual-specific <span class="math inline">\(\delta_i\)</span> using <code>equals()</code> to pin known ages:</p>
+<p>where <span class="math inline">\(\pi\)</span> is the probability of being alive as a cub, and <span class="math inline">\(1 - \pi\)</span> is the probability of being alive as an adult. For bears with known age at first detection, we fix the initial state accordingly. In NIMBLE we implement this with an individual-specific <span class="math inline">\(\delta_i\)</span> using <code>equals()</code> to pin known ages:</p>
 <div class="sourceCode" id="cb327"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Initial state</span></span>
-<span><span class="co"># age[i] == 0 → unknown → use probabilistic delta: pi, 1 - pi</span></span>
-<span><span class="co"># age[i] == 1 → known cub → force delta to [1, 0, 0]</span></span>
-<span><span class="co"># age[i] == 2 → known adult → force delta to [0, 1, 0]</span></span>
+<span><span class="co"># age[i] == 0: unknown -&gt; use delta: pi, 1 - pi</span></span>
+<span><span class="co"># age[i] == 1: known cub -&gt; force delta to [1, 0, 0]</span></span>
+<span><span class="co"># age[i] == 2: known adult -&gt; force delta to [0, 1, 0]</span></span>
 <span><span class="kw">for</span> <span class="op">(</span><span class="va">i</span> <span class="kw">in</span> <span class="fl">1</span><span class="op">:</span><span class="va">N</span><span class="op">)</span><span class="op">{</span></span>
 <span>  <span class="va">delta</span><span class="op">[</span><span class="fl">1</span>, <span class="va">i</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fu">equals</span><span class="op">(</span><span class="va">age</span><span class="op">[</span><span class="va">i</span><span class="op">]</span>, <span class="fl">0</span><span class="op">)</span> <span class="op">*</span> <span class="va">pi</span> <span class="op">+</span> <span class="fu">equals</span><span class="op">(</span><span class="va">age</span><span class="op">[</span><span class="va">i</span><span class="op">]</span>, <span class="fl">1</span><span class="op">)</span>  <span class="co"># Pr(C)</span></span>
 <span>  <span class="va">delta</span><span class="op">[</span><span class="fl">2</span>, <span class="va">i</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fu">equals</span><span class="op">(</span><span class="va">age</span><span class="op">[</span><span class="va">i</span><span class="op">]</span>, <span class="fl">0</span><span class="op">)</span> <span class="op">*</span> <span class="op">(</span><span class="fl">1</span> <span class="op">-</span> <span class="va">pi</span><span class="op">)</span> <span class="op">+</span> <span class="fu">equals</span><span class="op">(</span><span class="va">age</span><span class="op">[</span><span class="va">i</span><span class="op">]</span>, <span class="fl">2</span><span class="op">)</span>  <span class="co"># Pr(A)</span></span>
@@ -407,7 +406,7 @@ z_{t-1}=C \\ z_{t-1}=A \\ z_{t-1}=D
 <p>Last step is about the observations, which arise in two steps: detection then classification. For the detection matrix, we need to introduce intermediate observations, say <span class="math inline">\(y'\)</span> for not detected (1), detected as cub (2) and detected as adult (2):
 <span class="math display">\[\begin{matrix}
 &amp; \\
-\mathbf{\Gamma_1} =
+\mathbf{\Omega_1} =
   \left ( \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \end{matrix} } \right .
           \end{matrix}
           \hspace{-1.2em}
@@ -446,7 +445,7 @@ z_{t}=C \\ z_{t}=A \\ z_{t}=D
     y'_{t}=1 \\ y'_{t}=2 \\ y'_{t}=3
     \end{matrix}
 \end{matrix}\]</span></p>
-<p>where <span class="math inline">\(\beta_{C,CC}\)</span> is the probability that, being a cub, and individual is classified with both criteria, <span class="math inline">\(\beta_{C,CA}\)</span> is the probability that, being a cub, an individual is classified as cub with P1 and as adult with P2, <span class="math inline">\(\beta_{A,CC}\)</span> is the probability that, being an adult, an individual is classified as cub with both criteria, <span class="math inline">\(\beta_{A,CA}\)</span> is the probability that, being an adult, an individual is classified as cub with P1 and as adult with P2.</p>
+<p>where <span class="math inline">\(\beta_{C,CC}\)</span> is the probability that, being a cub, and individual is classified as cub with both criteria, <span class="math inline">\(\beta_{C,CA}\)</span> is the probability that, being a cub, an individual is classified as cub with P1 and as adult with P2, <span class="math inline">\(\beta_{A,CC}\)</span> is the probability that, being an adult, an individual is classified as cub with both criteria, <span class="math inline">\(\beta_{A,CA}\)</span> is the probability that, being an adult, an individual is classified as cub with P1 and as adult with P2.</p>
 <p>The observation matrix is the product of the two detection and classification matrices <span class="math inline">\(\mathbf{\Omega_1} \mathbf{\Omega_2}\)</span>:
 <span class="math display">\[\begin{matrix}
 &amp; \\
@@ -468,7 +467,7 @@ z_{t}=C \\ z_{t}=A \\ z_{t}=D
     z_{t}=1 \\ z_{t}=2 \\ z_{t}=3
     \end{matrix}
 \end{matrix}\]</span></p>
-<p>In code, we write <span class="math inline">\(\mathbf{\Omega_1} \mathbf{\Omega_2}\)</span> directly (faster than doing the matrix multiplication at each iteration). For simplicity we use a single detection probability <span class="math inline">\(p\)</span> for both ages, but you can let <span class="math inline">\(p\)</span> vary by age/sex/year or sampling method, as in the paper:</p>
+<p>In code, we write <span class="math inline">\(\mathbf{\Omega_1} \mathbf{\Omega_2}\)</span> directly, as this is faster than doing the matrix multiplication at each MCMC iteration. For simplicity we use a single detection probability <span class="math inline">\(p\)</span> for both ages, but you can let <span class="math inline">\(p\)</span> vary by age/sex/year or sampling method, as in the paper:</p>
 <div class="sourceCode" id="cb329"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Observation matrix</span></span>
 <span><span class="va">omega</span><span class="op">[</span><span class="fl">1</span>,<span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span> <span class="op">-</span> <span class="va">p</span></span>
@@ -503,72 +502,72 @@ z_{t}=C \\ z_{t}=A \\ z_{t}=D
 ## phiA[2] 0.82 0.06 0.69 0.82  0.92 1.00  3643
 ## phiC    0.53 0.13 0.28 0.53  0.78 1.00  3563
 ## pi      0.27 0.09 0.12 0.26  0.49 1.02  1416</code></pre>
-<p>which we can arrange in a table to compare them with the results obtained by <span class="citation">Gervasi et al. (<a href="references.html#ref-Gervasi2017">2017</a>)</span>:</p>
+<p>which we can arrange as in Table <a href="covariateschapter.html#tab:ageuncertaintycompare">6.1</a> to compare them with the results obtained by <span class="citation">Gervasi et al. (<a href="references.html#ref-Gervasi2017">2017</a>)</span>:</p>
 <div class="inline-table"><table class="table table-sm">
 <caption>
-<span id="tab:unnamed-chunk-372">Table 6.1: </span>Comparison of parameter estimates for the same HMM to account for age uncertainty: our NIMBLE fit vs. Gervasi et al. (2017, Table 3). Intervals are 95% credible intervals for NIMBLE and confidence intervals for Gervasi et al.. Detection in Gervasi et al. varies by design/year; we report their overall average.</caption>
+<span id="tab:ageuncertaintycompare">Table 6.1: </span>Comparison of parameter estimates for the same HMM to account for age uncertainty: our NIMBLE fit vs. Gervasi et al. (2017, Table 3). Intervals are 95% credible intervals for NIMBLE and confidence intervals for Gervasi et al.. Detection in Gervasi et al. varies by design/year; I report their overall average.</caption>
 <colgroup>
-<col width="45%">
-<col width="24%">
-<col width="30%">
+<col width="50%">
+<col width="21%">
+<col width="27%">
 </colgroup>
 <thead><tr class="header">
-<th align="left">Quantity</th>
-<th align="center">Our (NIMBLE)</th>
+<th align="center">Parameter</th>
+<th align="center">NIMBLE</th>
 <th align="center">Gervasi et al. (2017)</th>
 </tr></thead>
 <tbody>
 <tr class="odd">
-<td align="left">
+<td align="center">
 <span class="math inline">\(\phi_C\)</span> (cub survival)</td>
 <td align="center">0.53 (0.28–0.78)</td>
 <td align="center">0.51 (0.22–0.79)</td>
 </tr>
 <tr class="even">
-<td align="left">
+<td align="center">
 <span class="math inline">\(\phi_{A,f}\)</span> (adult female)</td>
 <td align="center">0.88 (0.80–0.94)</td>
 <td align="center">0.92 (0.87–0.95)</td>
 </tr>
 <tr class="odd">
-<td align="left">
+<td align="center">
 <span class="math inline">\(\phi_{A,m}\)</span> (adult male)</td>
 <td align="center">0.82 (0.69–0.92)</td>
 <td align="center">0.85 (0.76–0.91)</td>
 </tr>
 <tr class="even">
-<td align="left">
+<td align="center">
 <span class="math inline">\(p\)</span> (detection)</td>
 <td align="center">0.71 (0.63–0.79)</td>
 <td align="center">≈0.71 (0.62–0.79)</td>
 </tr>
 <tr class="odd">
-<td align="left">
+<td align="center">
 <span class="math inline">\(\pi\)</span> (cub at first detection)</td>
 <td align="center">0.27 (0.12–0.49)</td>
 <td align="center">0.062 (0.007–0.396)</td>
 </tr>
 <tr class="even">
-<td align="left">
-<span class="math inline">\(C_{c,cc}\)</span> (cub by both)</td>
+<td align="center">
+<span class="math inline">\(C_{c,cc}\)</span> (cub by both | cub)</td>
 <td align="center">0.30 (0.13–0.50)</td>
 <td align="center">0.40 (0.15–0.72)</td>
 </tr>
 <tr class="odd">
-<td align="left">
-<span class="math inline">\(C_{c,ca}\)</span> (cub by P1 only)</td>
+<td align="center">
+<span class="math inline">\(C_{c,ca}\)</span> (cub by P1 only | cub)</td>
 <td align="center">0.57 (0.33–0.79)</td>
 <td align="center">0.60 (0.28–0.85)</td>
 </tr>
 <tr class="even">
-<td align="left">
-<span class="math inline">\(C_{a,cc}\)</span> (adult→cub by both)</td>
+<td align="center">
+<span class="math inline">\(C_{a,cc}\)</span> (cub by both | adult)</td>
 <td align="center">0.02 (0.00–0.05)</td>
 <td align="center">0.067 (0.024–0.174)</td>
 </tr>
 <tr class="odd">
-<td align="left">
-<span class="math inline">\(C_{a,ca}\)</span> (adult→cub by P1 only)</td>
+<td align="center">
+<span class="math inline">\(C_{a,ca}\)</span> (cub by P1 only | adult)</td>
 <td align="center">0.05 (0.02–0.08)</td>
 <td align="center">0.191 (0.110–0.309)</td>
 </tr>
@@ -589,26 +588,26 @@ z_{t}=C \\ z_{t}=A \\ z_{t}=D
 <h3>
 <span class="header-section-number">6.4.1</span> Motivation<a class="anchor" aria-label="anchor" href="#motivation-2"><i class="fas fa-link"></i></a>
 </h3>
-<p>Many species show sex differences in demographic parameters, so mislabeling sex or discarding uncertain cases can bias the very patterns we want to estimate. In monomorphic birds for example, field sexing relies on behaviour (e.g., copulation posture, courtship displays, relative body size), and those clues vary in reliability; in the Audouin’s gull (<em>Larus audouinii</em>) study that motivates this section, ~80% of individuals were never sexed in the field, making “known-sex only” analyses both wasteful and biased toward higher survival.</p>
-<p><span class="citation">Pradel et al. (<a href="references.html#ref-pradel2008sex">2008</a>)</span> (see also <span class="citation">Genovart, Pradel, and Oro (<a href="references.html#ref-genovart_exploiting_2012">2012</a>)</span>) turned this problem into a HMM inference task: treat sex as a hidden state (male/female/dead) and model the sex-assignment process itself. The model developed by Pradel, Genovart and colleagues separates (i) the probability of attempting a sex judgment (with a time trend, because sexing effort increased) from (ii) criterion-specific accuracy for four behavioural clues (copulation, courtship feeding, begging for food, body size).</p>
+<p>Many species show sex differences in demographic parameters, so mislabeling sex or discarding uncertain cases can bias the very patterns we want to estimate. In monomorphic birds for example, field sexing relies on behaviour (e.g., copulation posture, courtship displays, relative body size), and those clues vary in reliability; in the Audouin’s gull (<em>Larus audouinii</em>) study that motivates this section, almost 80% of individuals were never sexed in the field, making ‘known-sex only’ analyses both wasteful and biased toward higher survival.</p>
+<p><span class="citation">Pradel et al. (<a href="references.html#ref-pradel2008sex">2008</a>; see also <a href="references.html#ref-genovart_exploiting_2012">Genovart, Pradel, and Oro 2012</a>)</span> turned this problem into a HMM inference task: treat sex as a hidden state (male/female/dead) and model the sex-assignment process itself. The model developed by Pradel, Genovart and colleagues separates (i) the probability of attempting a sex judgment (with a time trend, because sexing effort increased) from (ii) criterion-specific accuracy for four behavioural clues (copulation, courtship feeding, begging for food, body size).</p>
 <!-- Two practical findings drive their design: (1) even the least reliable clue (body size) adds information and improves precision when its error rate is estimated, and (2) a small anchor set of genetically sexed birds (24 individuals) is enough to break the model’s inherent dual-solution/label-switching symmetry and stabilize sex ratio and sex-specific survival estimates (Table 5). -->
-<p>In brief, the message is: when field classifications are uncertain, exploit them rather than filter them out—use HMM to couple biological states to imperfect observations and propagate classification uncertainty into survival.</p>
+<p>In brief, the message is: when field classifications are uncertain, exploit them rather than filter them out, and use HMM to couple biological states to imperfect observations and propagate classification uncertainty into survival.</p>
 <p>That philosophy mirrors the age-uncertainty Section <a href="covariateschapter.html#ageuncertainty">6.3</a> we just completed: there, age was hidden and P1/P2 provided noisy age labels; here, sex is hidden and multiple behavioural criteria provide noisy sex labels.</p>
 </div>
 <div id="model-and-nimble-implementation-2" class="section level3" number="6.4.2">
 <h3>
 <span class="header-section-number">6.4.2</span> Model and NIMBLE implementation<a class="anchor" aria-label="anchor" href="#model-and-nimble-implementation-2"><i class="fas fa-link"></i></a>
 </h3>
-<p>To estimate Audouin’s gull survival, we have at our disposal a dataset with 4093 marked birds from a colony at the Ebro Delta (Spain), collected over 10 years. To build up our model, we first define the states and observations:</p>
+<p>To estimate Audouin’s gull survival, we have at our disposal a dataset with 4093 marked birds from a colony at the Ebro Delta (Spain), collected over 10 years. These data were kindly provided by Meritxell Genovart and Roger Pradel. To build up our model, we first define the states and observations:</p>
 <ul>
-<li>states
+<li>States
 <ul>
 <li>alive as male (M)</li>
 <li>alive as female (F)</li>
 <li>dead (D)</li>
 </ul>
 </li>
-<li>observations
+<li>Observations
 <ul>
 <li>not seen (1)</li>
 <li>judged from copulation to be male (2)</li>
@@ -619,12 +618,12 @@ z_{t}=C \\ z_{t}=A \\ z_{t}=D
 <li>judged from begging food to be female (7)</li>
 <li>judged from coutship feeding to be female (8)</li>
 <li>judged from body size to be female (9)</li>
-<li>not judged (10).</li>
+<li>not judged (10)</li>
 </ul>
 </li>
 </ul>
 <p>Now we turn to writing our model.</p>
-<p>We start with the vector of initial states. Unknown-sex individuals enter as a mixture of male/female with probabilities <span class="math inline">\(\pi\)</span> and <span class="math inline">\(1-\pi\)</span>:
+<p>We start with the vector of initial states. Unknown-sex individuals enter as a mixture of males and females with probabilities <span class="math inline">\(\pi\)</span> and <span class="math inline">\(1-\pi\)</span>:
 <span class="math display">\[\begin{matrix}
 &amp; \\
 \mathbf{\delta} =
@@ -681,7 +680,7 @@ z_{t-1}=M \\ z_{t-1}=F \\ z_{t-1}=D
 <p>Last step is the observation matrix, which we write as follows (its transposed for convenience):
 <span class="math display">\[\begin{matrix}
 &amp; \\
-\mathbf{\Gamma'} =
+\mathbf{\Omega'} =
   \left ( \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \\ 12 \\ 12 \\ 12 \\ 12 \\ 12 \\ 12 \\ 12 \end{matrix} } \right .
           \end{matrix}
           \hspace{-1.2em}
@@ -707,7 +706,7 @@ y_{t}=1 \\ y_{t}=2 \\ y_{t}=3 \\ y_{t}=4 \\ y_{t}=5 \\ y_{t}=6 \\ y_{t}=7 \\ y_{
 \end{matrix}
 \end{matrix}\]</span></p>
 <p>This matrix is a bit more complex than what we have encountered before, and needs some explanations. When an individual is encountered (with probability <span class="math inline">\(p\)</span>), there is some chance that it will be sexed (<span class="math inline">\(e\)</span>) based on its general appearance (body size: probability <span class="math inline">\(m_4\)</span>) or its behaviour (probability <span class="math inline">\(1 - m_4\)</span>). When behaviour is used, there are three different criteria (copulation, begging for food and courtship feeding), which occur with probabilities <span class="math inline">\(m_1\)</span>, <span class="math inline">\(m_2\)</span>, and <span class="math inline">\(m_3\)</span>, respectively. Finally, each criterion has its own reliability (probabilities <span class="math inline">\(x_1\)</span>, <span class="math inline">\(x_2\)</span>, <span class="math inline">\(x_3\)</span>, <span class="math inline">\(x_4\)</span>, where <span class="math inline">\(x_4\)</span> is the reliability of the body-size criterion).</p>
-<p>I admit that this matrix representation can be difficult to grasp at once. It can be easier to split the observation matrix in several steps, like encountering, sexing, body size sexing, sex determination and correctness, then to sketch a decision treeMaybe a binary tree like in Figure 2 in <span class="citation">Genovart, Pradel, and Oro (<a href="references.html#ref-genovart_exploiting_2012">2012</a>)</span> (see also appendix S1 in <span class="citation">Genovart, Pradel, and Oro (<a href="references.html#ref-genovart_exploiting_2012">2012</a>)</span>).</p>
+<p>I admit that this matrix representation can be difficult to grasp at once. It can be easier to split the observation matrix in several steps, like encountering, sexing, body size sexing, sex determination and correctness, then to sketch a decision tree as in Figure 2 of <span class="citation">Genovart, Pradel, and Oro (<a href="references.html#ref-genovart_exploiting_2012">2012</a>)</span> (see also appendix S1 in that same paper).</p>
 <p>In code, this gives:</p>
 <div class="sourceCode" id="cb332"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">omega</span><span class="op">[</span><span class="fl">1</span>,<span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span> <span class="op">-</span> <span class="va">p</span>                                  </span>
@@ -808,104 +807,91 @@ y_{t}=1 \\ y_{t}=2 \\ y_{t}=3 \\ y_{t}=4 \\ y_{t}=5 \\ y_{t}=6 \\ y_{t}=7 \\ y_{
 ## x[2] 0.55 0.02 0.50 0.55  0.60 1.01   725
 ## x[3] 0.54 0.05 0.44 0.55  0.65 1.00   927
 ## x[4] 0.58 0.04 0.50 0.58  0.67 1.00   753</code></pre>
-<p>which we can arrange in a table to compare them with the results obtained by <span class="citation">Pradel et al. (<a href="references.html#ref-pradel2008sex">2008</a>)</span>:</p>
+<p>which we can arrange in as in Table <a href="covariateschapter.html#tab:sexuncertainty">6.2</a> to compare them with the results obtained by <span class="citation">Pradel et al. (<a href="references.html#ref-pradel2008sex">2008</a>)</span>:</p>
 <div class="inline-table"><table class="table table-sm">
 <caption>
-<span id="tab:unnamed-chunk-376">Table 6.2: </span>Comparison with Pradel et al. (2007) Table 5, Model B (no genetically sexed anchors). Our error rates are 1 − x[i]. Pradel’s m4 is time-varying; the estimates provided by the main author for m4(t) were for t=1..10: 0.001, 0.002, 0.004, 0.007, 0.014, 0.026, 0.047, 0.084, 0.146, 0.242.</caption>
+<span id="tab:sexuncertainty">Table 6.2: </span>Comparison of parameter estimates for the same HMM to account for sex uncertainty: our NIMBLE fit vs. Pradel et al. (2008, Table 5, model B no genetically sexed anchors). Intervals are 95% credible intervals for NIMBLE and confidence intervals for Pradel et al.. Our error rates are 1 − x[i]. Pradel’s m’s were provided by the main author of the paper himself. Note that m4 is time-varying; the estimates were for t=1,…,10: 0.001, 0.002, 0.004, 0.007, 0.014, 0.026, 0.047, 0.084, 0.146, 0.242.</caption>
 <colgroup>
-<col width="5%">
-<col width="30%">
-<col width="20%">
-<col width="43%">
+<col width="36%">
+<col width="24%">
+<col width="38%">
 </colgroup>
 <thead><tr class="header">
-<th align="left"></th>
-<th align="left">Quantity</th>
-<th align="center">Our (NIMBLE)</th>
-<th align="center">Pradel et al. (2007) Table 5, Model B</th>
+<th align="left">Parameter</th>
+<th align="center">NIMBLE</th>
+<th align="center">Pradel et al. (2008)</th>
 </tr></thead>
 <tbody>
 <tr class="odd">
-<td align="left">pi</td>
 <td align="left">
 <span class="math inline">\(\mu\)</span> (proportion male)</td>
 <td align="center">0.52 (0.50–0.55)</td>
-<td align="center">0.5325 (SE 0.0286)</td>
+<td align="center">0.53 (SE 0.03)</td>
 </tr>
 <tr class="even">
-<td align="left">phiF</td>
 <td align="left">
 <span class="math inline">\(\phi_F\)</span> (female survival)</td>
 <td align="center">0.90 (0.89–0.91)</td>
-<td align="center">0.9122 (SE 0.0142)</td>
+<td align="center">0.91 (SE 0.01)</td>
 </tr>
 <tr class="odd">
-<td align="left">phiM</td>
 <td align="left">
 <span class="math inline">\(\phi_M\)</span> (male survival)</td>
 <td align="center">0.89 (0.88–0.90)</td>
-<td align="center">0.8597 (SE 0.0141)</td>
+<td align="center">0.86 (SE 0.01)</td>
 </tr>
 <tr class="even">
-<td align="left">m[1]</td>
 <td align="left">
 <span class="math inline">\(m_1\)</span> (Copulation)</td>
 <td align="center">0.29 (0.26–0.32)</td>
-<td align="center">0.2904 (const.)</td>
+<td align="center">0.29</td>
 </tr>
 <tr class="odd">
-<td align="left">m[2]</td>
 <td align="left">
 <span class="math inline">\(m_2\)</span> (Begging)</td>
 <td align="center">0.60 (0.56–0.63)</td>
-<td align="center">0.5973 (const.)</td>
+<td align="center">0.60</td>
 </tr>
 <tr class="even">
-<td align="left">m[3]</td>
 <td align="left">
 <span class="math inline">\(m_3\)</span> (Courtship feeding)</td>
 <td align="center">0.11 (0.09–0.14)</td>
-<td align="center">0.1123 (const.)</td>
+<td align="center">0.11</td>
 </tr>
 <tr class="odd">
-<td align="left">m[4]</td>
 <td align="left">
 <span class="math inline">\(m_4\)</span> (Body size)</td>
 <td align="center">0.17 (0.14–0.19)</td>
 <td align="center">time-varying (see caption)</td>
 </tr>
 <tr class="even">
-<td align="left">x[1]</td>
 <td align="left">Error (Copulation)</td>
 <td align="center">0.48 (0.42–0.55)</td>
-<td align="center">0.0577 (SE 0.0407)</td>
+<td align="center">0.06 (SE 0.04)</td>
 </tr>
 <tr class="odd">
-<td align="left">x[2]</td>
 <td align="left">Error (Begging)</td>
 <td align="center">0.45 (0.40–0.50)</td>
-<td align="center">0.0561 (SE 0.0308)</td>
+<td align="center">0.06 (SE 0.03)</td>
 </tr>
 <tr class="even">
-<td align="left">x[3]</td>
 <td align="left">Error (Courtship feeding)</td>
 <td align="center">0.46 (0.35–0.56)</td>
-<td align="center">0.0000 (SE 0.1553)</td>
+<td align="center">0.00 (SE 0.16)</td>
 </tr>
 <tr class="odd">
-<td align="left">x[4]</td>
 <td align="left">Error (Body size)</td>
 <td align="center">0.42 (0.33–0.50)</td>
-<td align="center">0.0928 (SE 0.0741)</td>
+<td align="center">0.09 (SE 0.07)</td>
 </tr>
 </tbody>
 </table></div>
-<p>Our NIMBLE fit recovers the main biological signals reported for the Audouin’s gulls analysis. Survival shows the expected ordering – adult females ≥ adult males – with broadly overlapping intervals and means that are close to the published model. In our run, the female–male gap is a bit smaller (≈0.90 vs 0.89), but the direction matches the paper’s message (higher female survival).</p>
-<p>We used a single, constant detection probability and obtained <span class="math inline">\(p≈0.65\)</span>, which sits near the middle of the year‐specific values reported in the paper.</p>
+<p>Our NIMBLE fit recovers the main biological signals reported for the Audouin’s gulls analysis. Survival shows the expected ordering – adult females ≥ adult males – with broadly overlapping intervals and means that are close to the published model. In our run, the female–male gap is a bit smaller (0.90 vs 0.89), but the direction matches the paper’s message (higher female survival).</p>
+<p>We used a single, constant detection probability and obtained <span class="math inline">\(p \approx 0.65\)</span>, which sits near the middle of the year‐specific values obtained by the authors (not shown in the paper).</p>
 <p>The estimated probabilities of which clue is used align closely with the published analysis for the three ‘behavioural’ criteria: <span class="math inline">\(m_1 \approx 0.29\)</span> (copulation), <span class="math inline">\(m_2 \approx 0.60\)</span> (begging), <span class="math inline">\(m_3 \approx 0.11\)</span> (courtship feeding). The paper lets body size use vary over time; our constant estimate (<span class="math inline">\(m_4 \approx 0.17\)</span>) should be read as a pooled average across years—consistent with their finding of a low but increasing use of this criterion.</p>
-<p>The main tension with lies in the error rates by criterion. The published analysis finds low misclassification (roughly 5–10% for most criteria, with a very imprecise estimate for courtship feeding). Our fit suggests substantially higher error across criteria. That discrepancy is where we expect sensitivity when there are no known‐sex anchors (and some components are simplified). Without anchors, the model can admit dual solutions (swapping sex labels and flipping error probabilities) that fit nearly equally well; small modelling choices or initial values can tip the chain toward one mode, see <span class="citation">Pradel et al. (<a href="references.html#ref-pradel2008sex">2008</a>)</span>.</p>
+<p>The main discrepancy lies in the error rates by criterion. The published analysis finds low misclassification (roughly 5–10% for most criteria, with a very imprecise estimate for courtship feeding). Our fit suggests substantially higher error across criteria. That discrepancy is where we expect sensitivity when there are no known‐sex anchors (and some components are simplified). Without anchors, the model can admit dual solutions (swapping sex labels and flipping error probabilities) that fit nearly equally well; small modelling choices or initial values can tip the chain toward one mode, see <span class="citation">Pradel et al. (<a href="references.html#ref-pradel2008sex">2008</a>)</span>.</p>
 <p>Our estimate of the proportion of males at first encounter (<span class="math inline">\(\mu \approx 0.52\)</span>) agrees closely with the published result, reinforcing that the state mix is well constrained by the data even when sex is uncertain.</p>
-<p>To conclude, the sex‐uncertainty HMM retrieves the core demographic pattern (female ≥ male survival) and matches the paper on overall detectability and the use of criteria. To mirror the published results more closely, one could add a small anchor set of genetically sexed individuals (an information used in <span class="citation">Pradel et al. (<a href="references.html#ref-pradel2008sex">2008</a>)</span> but that I did not have).</p>
+<p>To conclude, the sex‐uncertainty HMM retrieves the core demographic pattern (female ≥ male survival) and matches the paper on overall detectability and the use of criteria. To mirror the published results more closely, one could add a small anchor set of genetically sexed individuals <span class="citation">(an information used in <a href="references.html#ref-pradel2008sex">Pradel et al. 2008</a> but that I did not have)</span>.</p>
 <!-- ## Covariate selection with reversible jump MCMC -->
 <!-- RJMCMC in @gimenez2009fitness on Common blackbirds or @gimenez2009winbugs on White stork. -->
 <!-- As an illustration, we use data on the white stork *Ciconia ciconia* population in Baden Wurttemberg (Germany), consisting of 321 capture histories of individuals ringed as chicks between 1956 and 1971. From the 60's to the 90's, all Western European stork populations were declining @bair91. This trend was likely the result of reduced food availability @schau05 caused by severe droughts observed in the wintering ground of storks in the Sahel region. This hypothesis has been examined in several studies (@kanya90 and @barb99).  -->
