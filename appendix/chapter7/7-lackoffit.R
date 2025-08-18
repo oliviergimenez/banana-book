@@ -1,0 +1,1076 @@
+library(nimble)
+library(tidyverse)
+theme_set(theme_light(base_size = 14))
+
+# Addressing model lack of fit {#lackoffit}
+
+## Introduction
+
+Capture-recapture models rely on assumptions that must hold for inference to be reliable. In Section \@ref(gof), we saw what can go wrong and how to diagnose those issues. In this chapter, we turn to remedies and show how to fix them by building models that explicitly accommodate lack of fit. We focus on three topics: trap-dependence (detection today affects detection tomorrow), memory in the state process (the Markov assumption is too short -- transitions depend on more than the current state), and individual heterogeneity (persistent differences among animals). 
+
+## Accounting for trap-dependence {#trapdep}
+
+### Motivation
+
+Capture-recapture inference can go sideways when detection depends on past capture. If animals become trap‐shy (avoid traps) or trap‐happy (seek them) after being caught, the independence assumption breaks, and survival or detection can be biased if we ignore it. Tests for this trap‐dependence exist, see Section \@ref(gof), and surveys show it's common across taxa -- roughly 70% of reviewed studies reported evidence for it [@pradeltrapdep2012].
+
+The fix is to encode the behavioural response. Following @pradeltrapdep2012, we treat trap‐awareness as a (possibly temporary) state: right after a capture, individuals move to a 'trap‐aware' state with its own detection probability, so that detection at time $t+1$ can differ for animals caught vs. not caught at $t$. This HMM formulation avoids awkward data splitting, and plays nicely with age or covariates. Importantly, in the authors' example, ignoring trap‐dependence underestimated survival, illustrating why modelling trap-dependence matters.
+
+Here, I adopt that logic in NIMBLE: define a trap‐aware state, let detection depend on it, and keep the rest of the HMM machinery unchanged. 
+
+### Model and NIMBLE implementation
+
+For our example, we'll work with data from 519 encounter histories of Cory's shearwaters (*Calonectris diomedea*) marked as adults between 2001 and 2008 at Pantaleu Islet (Balearic Archipelago, Spain). These data were kindly provided by Ana Sanz-Aguilar. If you perform goodness-of-fit tests on this dataset, as in Section \@ref(gof), you will end up with a significant trap-dependence effect (as well as a transience effect). To build up our model and explicitly account for this lack of fit, we first define the states and observations:
+
+- States  
+      - A for 'trap-aware', the original state of an individual when it is first released  
+      - U for 'trap-unaware', which follows any occasion where it is not captured   
+      - D for dead
+
+- Observations  
+      - not detected (1)   
+      - detected (2)
+
+Now we turn to writing our model. We start with the vector of initial states. Individuals enter as trap-aware with probability 1: 
+$$\begin{matrix}
+& \\
+\mathbf{\delta} =
+\left ( \vphantom{ \begin{matrix} 12 \end{matrix} } \right .
+\end{matrix}
+\hspace{-1.2em}
+\begin{matrix}
+z_t=A & z_t=U & z_t=D \\ \hdashline
+1 & 0 & 0\\
+\end{matrix}
+\hspace{-0.2em}
+\begin{matrix}
+& \\
+\left . \vphantom{ \begin{matrix} 12 \end{matrix} } \right )
+\begin{matrix}
+\end{matrix}
+\end{matrix}$$
+
+We proceed with the transition matrix: 
+$$\begin{matrix}
+& \\
+\mathbf{\Gamma} =
+\left ( \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \end{matrix} } \right .
+\end{matrix}
+\hspace{-1.2em}
+\begin{matrix}
+z_t=A & z_t=U & z_t=D \\ \hdashline
+\phi p' & \phi (1-p') & 1 - \phi\\
+\phi p & \phi (1-p) & 1 - \phi\\
+0 & 0 & 1
+\end{matrix}
+\hspace{-0.2em}
+\begin{matrix}
+& \\
+\left . \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \end{matrix} } \right )
+\begin{matrix}
+z_{t-1}=A \\ z_{t-1}=U \\ z_{t-1}=D
+\end{matrix}
+\end{matrix}$$
+
+You might have noticed something ususual in that $\mathbf{\Gamma}$ contains both the survival and detection probabilities. Why is that? We track three hidden states from the end of session $t$ to $t+1$: $A =$ trap-aware (the bird was just caught at $t$), $U =$ trap-unaware (not caught at $t$), and $D =$ dead. Between sessions, everyone either survives with probability $\phi$ or dies with $1 - \phi$ (which moves them to $D$, an absorbing state). If alive at $t+1$, the awareness flag for the next session is set by whether the bird gets caught at $t+1$: those caught will be $A$ next time, those not caught will be $U$. Because capture probabilities can differ by current awareness, we allow $p'$ for birds that were $A$ at $t$ and $p$ for birds that were $U$ at $t$. If $p'>p$ you have trap-happy behaviour (recently caught birds are easier to catch next time); if $p'<p$, it's trap-shy. This 'survive -> update awareness via capture' factorization is what the transition matrix formalizes.
+
+Following the paper, adult survival is age-specific to account for a transient effect, see Section \@ref(gof):
+```{r eval = FALSE}
+# Transition matrix
+  for (i in 1:N){
+    for (t in first[i]:(K-1)){
+      phi[i,t] <- beta[age[i,t]] # beta1 = phi1, beta2 = phi2+
+      gamma[1,1,i,t] <- phi[i,t] * pprime
+      gamma[1,2,i,t] <- phi[i,t] * (1 - pprime)
+      gamma[1,3,i,t] <- 1 - phi[i,t]
+      gamma[2,1,i,t] <- phi[i,t] * p
+      gamma[2,2,i,t] <- phi[i,t] * (1 - p)
+      gamma[2,3,i,t] <- 1 - phi[i,t] 
+      gamma[3,1,i,t] <- 0
+      gamma[3,2,i,t] <- 0 
+      gamma[3,3,i,t] <- 1
+    }
+  }
+```
+
+In the code above, age is passed in the data and created as follows:
+```{r eval = FALSE}
+# Age effect via an individual x time covariate and use of nested indexing 
+# to distinguish survival over the interval after first detection from survival afterwards: 
+age <- matrix(NA, nrow = nrow(y), ncol = ncol(y) - 1)
+for (i in 1:nrow(age)){
+  for (j in 1:ncol(age)){
+    if (j == first[i]) age[i,j] <- 1 # age = 1
+    if (j > first[i]) age[i,j] <- 2  # age > 1
+  }
+}
+```
+
+Last step is the observation matrix:
+$$\begin{matrix}
+& \\
+\mathbf{\Omega} =
+\left ( \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \end{matrix} } \right .
+\end{matrix}
+\hspace{-1.2em}
+\begin{matrix}
+y_t=1 & y_t=2 \\ \hdashline
+0 & 1 \\
+1 & 0 \\
+1 & 0 
+\end{matrix}
+\hspace{-0.2em}
+\begin{matrix}
+& \\
+\left . \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \end{matrix} } \right )
+\begin{matrix}
+z_{t}=A \\ z_{t}=U \\ z_{t}=D
+\end{matrix}
+\end{matrix}$$
+
+If an animal is trap-aware at $t$, that means that it has just been captured. If it is trap unaware or dead, it has not been captured during this session. In code, we write:
+```{r eval = FALSE}
+# Observation matrix
+  omega[1,1] <- 0
+  omega[1,2] <- 1
+  omega[2,1] <- 1
+  omega[2,2] <- 0
+  omega[3,1] <- 1
+  omega[3,2] <- 0
+```
+
+The likelihood and priors are handled as usual. 
+
+### Results and interpretation
+
+Here are the raw results with trap-dependence:
+```{r echo = FALSE}
+library(MCMCvis)
+load(here::here("dat","calonectris-w-trap-dep.RData"))
+MCMCsummary(out, round = 2)
+```
+
+The two detection probabilities, depending on whether a bird was previously caught or not, differ clearly, providing evidence of trap-happiness. Our survival estimates are very similar to those obtained by @pradeltrapdep2012 who found $\phi_1 = 0.77\; (0.70, 0.82)$ and $\phi_2 = 0.87\; (0.82,0.90)$ (check out their Table 1). Interestingly, when we fit the same model by ignoring trap-dependence, we get the following results: 
+```{r echo = FALSE}
+library(MCMCvis)
+load(here::here("dat","calonectris-wo-trap-dep.RData"))
+MCMCsummary(out, round = 2)
+```
+
+When compared the our previous estimates, we see that ignoring trap-dependence leads to an underestimation of survival, either $\phi_1$ the transient survival or $\phi_{2}$ the resident survival.
+
+The approach described here can be conveniently extended to several sites or states, see @pradeltrapdep2012.
+
+## Allowing your Markov models to remember {#memorymodel}
+
+### Motivation
+
+How do we make our models remember? So far, the dynamics of our states have been first-order Markov: the state an animal moves to next depends only on the state it occupies now. But if we think of states as sites, transitions are dispersal or migration, and many species show site fidelity or directional return that reflects where they were several steps back.
+
+To relax the first-order assumption, we move to a second-order Markov description, and what happens at $t+1$ depends on the site at $t$ and at $t−1$. This idea, often called a memory model, was introduced in multisite capture-recapture by @hestbeck1991estimates and @BrownieEtAl1993, then formulated cleanly within the HMM framework by @pradel_multievent_2005 and @rouan2009memory.
+
+To illustrate the memory model, we will use the geese data introduced in Chapter \@ref(dispersal). As we saw in Section \@ref(gofas), there is a strong positive association between the site where an animal was last seen and the site where it will next be seen. This suggests that a first-order model is too simple and that transitions at $t+1$ should not only depend on $t$ but also $t-1$. 
+
+### Model and NIMBLE implementation
+
+As a reminder, the two main ingredients for a HMM capturing dispersal between 2 sites are a transition matrix:
+$$\begin{matrix}
+& \\
+\mathbf{\Gamma} =
+\left ( \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \end{matrix} } \right .
+\end{matrix}
+\hspace{-1.2em}
+\begin{matrix}
+z_t=A & z_t=B & z_t=D \\ \hdashline
+\phi^A (1-\psi^{AB}) & \phi^A \psi^{AB} & 1 - \phi^A\\
+\phi^B \psi^{BA} & \phi^B (1-\psi^{BA}) & 1 - \phi^B\\
+0 & 0 & 1
+\end{matrix}
+\hspace{-0.2em}
+\begin{matrix}
+& \\
+\left . \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \end{matrix} } \right )
+\begin{matrix}
+z_{t-1}=A \\ z_{t-1}=B \\ z_{t-1}=D
+\end{matrix}
+\end{matrix}$$
+
+and an observation matrix:
+$$\begin{matrix}
+& \\
+\mathbf{\Omega} =
+\left ( \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \end{matrix} } \right .
+\end{matrix}
+\hspace{-1.2em}
+\begin{matrix}
+y_t=1 & y_t=2 & y_t=3 \\ \hdashline
+1 - p^A & p^A & 0\\
+1 - p^B & 0 & p^B\\
+1 & 0 & 0
+\end{matrix}
+\hspace{-0.2em}
+\begin{matrix}
+& \\
+\left . \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \end{matrix} } \right )
+\begin{matrix}
+z_{t}=A \\ z_{t}=B \\ z_{t}=D
+\end{matrix}
+\end{matrix}$$
+
+From here, how to come up with a HMM formulation of the memory model? We need to keep track of the sites previously visited, and to do so, the trick is to consider states as being pairs of sites occupied:
+
+- States  
+    - AA is for alive in site A at $t$ and alive in site A at $t-1$   
+    - AB is for alive in site A at $t$ and alive in site B at $t-1$  
+    - BA is for alive in site B at $t$ and alive in site A at $t-1$  
+    - BB is for alive in site B at $t$ and alive in site B at $t-1$  
+    - D is for dead  
+
+- Observations  
+    - 1 not captured  
+    - 2 captured at site A  
+    - 3 captured at site B  
+
+Now we turn to writing our model. We start with the vector of initial states. Individuals enter the study with probabilities: 
+$$\begin{matrix}
+& \\
+\mathbf{\delta} =
+\left ( \vphantom{ \begin{matrix} 12 \end{matrix} } \right .
+\end{matrix}
+\hspace{-1.2em}
+\begin{matrix}
+z_t=AA & z_t=AB & z_t=BA & z_t=BB &z_t=D \\ \hdashline
+\pi^{AA} & \pi^{AB} & \pi^{BA} & \pi^{BB} & 0\\
+\end{matrix}
+\hspace{-0.2em}
+\begin{matrix}
+& \\
+\left . \vphantom{ \begin{matrix} 12 \end{matrix} } \right )
+\begin{matrix}
+\end{matrix}
+\end{matrix}$$
+
+where $\pi^{ij}$ is the probability of being alive at site $j$ when first captured and site $i$ before, and $\pi^{BB} = 1 - (\pi^{AA} + \pi^{AB} + \pi^{BA})$.
+
+We proceed with the transition matrix that contains the survival and movement probabilities: 
+$$\begin{matrix}
+& \\
+\mathbf{\Gamma} =
+\left ( \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \\ 12 \\ 12\end{matrix} } \right .
+\end{matrix}
+\hspace{-1.2em}
+\begin{matrix}
+z_t=AA & z_t=AB & z_t=BA & z_t=BB & z_t=D \\ \hdashline
+\phi^{AAA} & \phi^{AAB} & 0 & 0 & 1 - \phi^{AAA} - \phi^{AAB}\\
+0 & 0 & \phi^{ABA} & \phi^{ABB} & 1 - \phi^{ABA} - \phi^{ABB}\\
+\phi^{BAA} & \phi^{BAB} & 0 & 0 & 1 - \phi^{BAA} - \phi^{BAB}\\
+0 & 0 & \phi^{BBA} & \phi^{BBB} & 1 - \phi^{BBA} - \phi^{BBB}\\
+0 & 0 & 0 & 0 & 1
+\end{matrix}
+\hspace{-0.2em}
+\begin{matrix}
+& \\
+\left . \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \\ 12 \\ 12\end{matrix} } \right )
+\begin{matrix}
+z_{t-1}=AA \\ z_{t-1}=AB \\ z_{t-1}=BA \\ z_{t-1}=BB \\ z_{t-1}=D 
+\end{matrix}
+\end{matrix}$$
+
+where $\phi^{ijk}$ is the probability to be in site $k$ at time $t + 1$ for an individual
+present in site $j$ at $t$ and in site $i$ at $t - 1$. 
+
+An alternate parameterization for $\mathbf{\Gamma}$ is: 
+$$\begin{matrix}
+& \\
+\mathbf{\Gamma} =
+\left ( \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \\ 12 \\ 12\end{matrix} } \right .
+\end{matrix}
+\hspace{-1.2em}
+\begin{matrix}
+z_t=AA & z_t=AB & z_t=BA & z_t=BB & z_t=D \\ \hdashline
+\phi \psi^{AAA} & \phi (1 - \psi^{AAA}) & 0 & 0 & 1 - \phi\\
+0 & 0 & \phi (1 - \psi^{ABB}) & \phi \psi^{ABB} & 1 - \phi\\
+\phi \psi^{BAA} & \phi (1 - \psi^{BAA}) & 0 & 0 & 1 - \phi\\
+0 & 0 & \phi (1-\psi^{BBB}) & \phi \psi^{BBB} & 1 - \phi\\
+0 & 0 & 0 & 0 & 1
+\end{matrix}
+\hspace{-0.2em}
+\begin{matrix}
+& \\
+\left . \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \\ 12 \\ 12\end{matrix} } \right )
+\begin{matrix}
+z_{t-1}=AA \\ z_{t-1}=AB \\ z_{t-1}=BA \\ z_{t-1}=BB \\ z_{t-1}=D
+\end{matrix}
+\end{matrix}$$
+
+in which $\phi$ is the probability of surviving from one occasion to the next, and $\psi_{ijj}$ is the probability an animal stays at the same site $j$ given that it was at site $i$ on the previous occasion.
+
+Last step is the observation matrix, which we write as follows:
+$$\begin{matrix}
+& \\
+\mathbf{\Omega} =
+\left ( \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \\ 12 \\ 12\end{matrix} } \right .
+\end{matrix}
+\hspace{-1.2em}
+\begin{matrix}
+y_t=1 & y_t=2 & y_t=3 \\ \hdashline
+1 - p^A & p^A & 0\\
+1 - p^B & 0 & p^B\\
+1 - p^A & p^A & 0\\
+1 - p^B & 0 & p^B\\
+1 & 0 & 0
+\end{matrix}
+\hspace{-0.2em}
+\begin{matrix}
+& \\
+\left . \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \\ 12 \\ 12\end{matrix} } \right )
+\begin{matrix}
+z_t=AA \\ z_t=AB \\ z_t=BA \\ z_t=BB \\ z_t=D
+\end{matrix}
+\end{matrix}$$
+
+To implement this model in NIMBLE, we're going to use `nimbleEcology`, which makes our life much easier as we do not have to initialize the latent states $z$ -- remember the likelihood is marginalized, see Sections \@ref(marginalization) and \@ref(nimbleecologyintro). Specifically, we use the function `dHMM()` that implements the distribution of a HMM with constant parameters. We also use a Dirichlet prior to ensure that the initial state probabilities and the survival-movement probabilities sum up to 1 and lie between 0 and 1, see Section \@ref(dirichletprior). The code is as follows: 
+```{r eval = FALSE}
+multisite.marginalized <- nimbleCode({
+  
+  # -------------------------------------------------
+  # Parameters:
+  # phi111: survival-mov probability from state 11 to state 11
+  # phi112: survival-mov probability from state 11 to state 12
+  # phi121: survival-mov probability from state 12 to state 21
+  # phi122: survival-mov probability from state 12 to state 22
+  # phi211: survival-mov probability from state 21 to state 11
+  # phi212: survival-mov probability from state 21 to state 12
+  # phi221: survival-mov probability from state 22 to state 21
+  # phi222: survival-mov probability from state 22 to state 22
+  # det1: detection probability site 1
+  # det2: detection probability site 2
+  # pi11: init stat prob 11
+  # pi12: init stat prob 12
+  # pi21: init stat prob 21
+  # pi22: init stat prob 22
+  # -------------------------------------------------
+  # States (S):
+  # 1 alive 11
+  # 2 alive 12
+  # 3 alive 21
+  # 4 alive 22
+  # 5 dead
+  # Observations (O):  
+  # 1 not seen
+  # 2 seen at site 1 
+  # 3 seen at site 2
+  # -------------------------------------------------
+  
+  # priors
+  det1 ~ dunif(0, 1)
+  det2 ~ dunif(0, 1)
+  phi11[1:3] ~ ddirch(alpha[1:3]) # phi111, phi112, 1-sum
+  phi12[1:3] ~ ddirch(alpha[1:3]) # phi121, phi122, 1-sum
+  phi21[1:3] ~ ddirch(alpha[1:3]) # phi211, phi212, 1-sum
+  phi22[1:3] ~ ddirch(alpha[1:3]) # phi221, phi222, 1-sum
+  
+  # probabilities of state z(t+1) given z(t)
+  gamma[1,1] <- phi11[1]
+  gamma[1,2] <- phi11[2]
+  gamma[1,3] <- 0
+  gamma[1,4] <- 0
+  gamma[1,5] <- phi11[3]
+  gamma[2,1] <- 0
+  gamma[2,2] <- 0
+  gamma[2,3] <- phi12[1]
+  gamma[2,4] <- phi12[2]
+  gamma[2,5] <- phi12[3]
+  gamma[3,1] <- phi21[1]
+  gamma[3,2] <- phi21[2]
+  gamma[3,3] <- 0
+  gamma[3,4] <- 0
+  gamma[3,5] <- phi21[3]
+  gamma[4,1] <- 0
+  gamma[4,2] <- 0
+  gamma[4,3] <- phi22[1]
+  gamma[4,4] <- phi22[2]
+  gamma[4,5] <- phi22[3]
+  gamma[5,1] <- 0
+  gamma[5,2] <- 0
+  gamma[5,3] <- 0
+  gamma[5,4] <- 0
+  gamma[5,5] <- 1
+  
+  # probabilities of y(t) given z(t)
+  omega[1,1] <- 1 - det1
+  omega[1,2] <- det1
+  omega[1,3] <- 0
+  omega[2,1] <- 1 - det2
+  omega[2,2] <- 0
+  omega[2,3] <- det2
+  omega[3,1] <- 1 - det1
+  omega[3,2] <- det1
+  omega[3,3] <- 0
+  omega[4,1] <- 1 - det2
+  omega[4,2] <- 0
+  omega[4,3] <- det2
+  omega[5,1] <- 1
+  omega[5,2] <- 0
+  omega[5,3] <- 0
+  
+  # initial state probs
+  for(i in 1:N) {
+    init[i, 1:5] <- gamma[ y[i, first[i] ] - 1, 1:5 ] # first state propagation
+  }
+  
+  # likelihood 
+  for (i in 1:N){
+    y[i,(first[i]+1):K] ~ dHMM(init = init[i,1:5],           # count data from first[i] + 1
+                               probObs = omega[1:5,1:3],     # observation matrix
+                               probTrans = gamma[1:5,1:5],   # transition matrix
+                               len = K - first[i],           # nb of occasions
+                               checkRowSums = 0)             # do not check whether elements in a row sum tp 1
+  }
+})
+```
+
+### Results and interpretation
+
+The raw results are: 
+```{r echo = FALSE}
+library(MCMCvis)
+load(here::here("dat","memory.RData"))
+MCMCsummary(out, round = 2)
+```
+
+which we can reaarange as in Table \@ref(tab:memoryres) to the results obtained by @pradel_multievent_2005 in his Table 1: 
+```{r memoryres, results='asis', echo=FALSE, message=FALSE}
+library(dplyr)
+library(tibble)
+library(knitr)
+
+pradel_avg <- tribble(
+  ~Transition, ~Condition,              ~Pradel_avg,
+  "MM",        "Equal to t-1",           0.57,
+  "MM",        "Not equal to t-1",       0.33,
+  "MC",        "Equal to t-1",           0.27,
+  "MC",        "Not equal to t-1",       0.09,
+  "CM",        "Equal to t-1",           0.21,
+  "CM",        "Not equal to t-1",       0.05,
+  "CC",        "Equal to t-1",           0.63,
+  "CC",        "Not equal to t-1",       0.48
+)
+
+# --- Your NIMBLE results (means and 95% CrIs) ---
+ours <- tribble(
+  ~Transition, ~Condition,              ~mean, ~lo,  ~hi,
+  "MM",        "Equal to t-1",           0.50, 0.49, 0.52,  # phi11[1]
+  "MM",        "Not equal to t-1",       0.36, 0.31, 0.42,  # phi21[1]
+  "MC",        "Equal to t-1",           0.33, 0.27, 0.38,  # phi21[2]
+  "MC",        "Not equal to t-1",       0.16, 0.15, 0.17,  # phi11[2]
+  "CM",        "Equal to t-1",           0.10, 0.09, 0.11,  # phi12[1]
+  "CM",        "Not equal to t-1",       0.06, 0.05, 0.07,  # phi22[1]
+  "CC",        "Equal to t-1",           0.63, 0.61, 0.64,  # phi22[2]
+  "CC",        "Not equal to t-1",       0.57, 0.55, 0.59   # phi12[2]
+) |>
+  mutate(NIMBLE = sprintf("%.2f (%.2f–%.2f)", mean, lo, hi)) |>
+  select(Transition, Condition, NIMBLE)
+
+tab <- pradel_avg |>
+  mutate(`Pradel (avg 1985–88)` = sprintf("%.2f", Pradel_avg)) |>
+  select(-Pradel_avg) |>
+  inner_join(ours, by = c("Transition","Condition")) |>
+  arrange(factor(Transition, levels = c("MM","MC","CM","CC")),
+          factor(Condition, levels = c("Equal to t-1","Not equal to t-1")))
+
+kable(
+  tab,
+  align = c("l","l","c","c"),
+  caption = "Second-order (memory) estimates of transition probabilities. The first column gives the Transition made in $t$ to $t+1$ where M is for mid--Atlantic and C for Chesapeake. The second column gives the Condition that is whether the location at $t+1$ is Equal or Not equal to the location at $t-1$. The Pradel (2005) time-averaged estimates are given in the third column. Our NIMBLE estimates (mean and 95% credible interval) are given in the fourth column. "
+)
+```
+
+In both analyses, memory is real: for each transition, the probability is higher when the destination at $t+1$ matches where the bird was at $t−1$ ('Equal to $t-1$' rows) than when it doesn't ('Not equal to $t-1$' rows). That's site fidelity or directional return. Our fit mirrors Pradel's fit especially well for staying in Chesapeake (CC, equal: 0.63 in both) and still shows a clear memory signal for staying in mid-Atlantic (MM, 0.50 vs 0.57 when equal). Moves also carry memory: MC is more likely when the bird was in C two steps back (0.33 vs 0.16), and CM shows a weaker but similar pattern (0.10 vs 0.06).
+
+Where we differ is in the directional balance. Relative to Pradel's averages, our model leans more toward Chesapeake: we estimate higher MC probabilities (both equal and not equal; e.g., 0.33 vs 0.27 and 0.16 vs 0.09) and lower CM (equal) (0.10 vs 0.21). We also find a higher chance of staying in C (CC, not equal: 0.57 vs 0.48). Several of these differences are well outside our 95% credible intervals (e.g., CM equal 0.09-0.11 vs 0.21, MC not equal 0.15-0.17 vs 0.09). These discrepancies are likely explained by the difference in model structures: ours assumes constant parameters, whereas Pradel’s allows them to vary over time. The big picture remains the same, though: movements are second--order and that memory is asymmetric, being strongest for persistence in Chesapeake and for moves toward it.
+
+## Accomodating individual heterogeneity {#indhet}
+
+### Motivation
+
+I've worked with large carnivores for almost two decades, and they're what pulled me into HMMs -- especially gray wolves. Wolves are social, live in hierarchical packs, and that structure shows up in demography. It also shows up in how we detect them: dominant individuals use trails and roads more often, and that's pretty much where we search for scats for DNA-based identification. The result is individual heterogeneity in detection, with some wolves being more detectable (via DNA) than others.
+
+Shirley Pledger in a series of papers developed so--called mixture models in which individuals are assigned in two or more classes with class-specific survival/detection probabilities. If we ignore that variation, estimates can be biased and lack-of-fit tests light up. In @cubaynes_importance_2010, we used an HMM formulation to capture heterogeneity in detection linked to social status [see also @pradel2009].
+
+In what follows, I'll show how to build and fit these finite--mixture HMMs using simulated data so we control the truth. This gives a practical template for dealing with heterogeneity whenever behavior or status makes some individuals easier (or more difficult) to find than others.
+
+<!-- ```{r pixwolf, echo=FALSE, fig.cap="Dominance in wolves.", fig.align='center'} -->
+<!-- knitr::include_graphics("images/wolfdominance.jpg") -->
+<!-- ``` -->
+
+### Model and NIMBLE implementation
+
+To build up our model, we first define the states and observations:
+
+- States
+     - alive in class 1 (A1)
+     - alive in class 2 (A2)
+     - dead (D)
+
+- Observations
+     - not captured (1)
+     - captured (2)
+
+Now we turn to writing our model. We start with the vector of initial states. Individuals enter as a mixture of A1/A2: 
+$$\begin{matrix}
+& \\
+\mathbf{\delta} =
+  \left ( \vphantom{ \begin{matrix} 12 \end{matrix} } \right .
+          \end{matrix}
+          \hspace{-1.2em}
+          \begin{matrix}
+          z_t=A1 & z_t=A2 & z_t=D \\ \hdashline
+          \pi & 1 - \pi & 0\\
+          \end{matrix}
+          \hspace{-0.2em}
+          \begin{matrix}
+          & \\
+          \left . \vphantom{ \begin{matrix} 12 \end{matrix} } \right )
+\begin{matrix}
+\end{matrix}
+\end{matrix}$$
+
+where $\pi$ is the probability of being alive in A1, and $1 - \pi$ is the probability of being in A2.
+
+We proceed with the transition matrix that contains the survival probabilities:
+$$\begin{matrix}
+& \\
+\mathbf{\Gamma} =
+  \left ( \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \end{matrix} } \right .
+          \end{matrix}
+          \hspace{-1.2em}
+          \begin{matrix}
+          z_t=A1 & z_t=A2 & z_t=D \\ \hdashline
+          \phi  & 0 & 1 - \phi\\
+          0 & \phi & 1 - \phi\\
+          0 & 0 & 1
+          \end{matrix}
+          \hspace{-0.2em}
+          \begin{matrix}
+          & \\
+          \left . \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \end{matrix} } \right )
+\begin{matrix}
+z_{t-1}=A1 \\ z_{t-1}=A2 \\ z_{t-1}=D
+\end{matrix}
+\end{matrix}$$
+  
+where $\phi$ is the survival probability. In NIMBLE, we write:
+```{r eval = FALSE}
+# Transition matrix
+gamma[1,1] <- phi      # A1(t)->A1(t+1)
+gamma[1,2] <- 0        # A1(t)->A2(t+1)
+gamma[1,3] <- 1 - phi  # A1(t)->D(t+1)
+gamma[2,1] <- 0        # A2(t)->A1(t+1)
+gamma[2,2] <- phi      # A2(t)->A2(t+1)
+gamma[2,3] <- 1 - phi  # A2(t)->D(t+1)
+gamma[3,1] <- 0        # D(t)->A1(t+1)
+gamma[3,2] <- 0        # D(t)->A2(t+1)
+gamma[3,3] <- 1        # D(t)->D(t+1)
+```
+
+Survival could be made heterogeneous; to do so, we'd need to amend the transition matrix as follows:
+$$\begin{matrix}
+& \\
+\mathbf{\Gamma} =
+  \left ( \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \end{matrix} } \right .
+          \end{matrix}
+          \hspace{-1.2em}
+          \begin{matrix}
+          z_t=A1 & z_t=A2 & z_t=D \\ \hdashline
+          \phi (1-\psi^{12}) & \phi \psi^{12} & 1 - \phi\\
+          \phi \psi^{21} & \phi (1-\psi^{21}) & 1 - \phi\\
+          0 & 0 & 1
+          \end{matrix}
+          \hspace{-0.2em}
+          \begin{matrix}
+          & \\
+          \left . \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \end{matrix} } \right )
+\begin{matrix}
+z_{t-1}=A1 \\ z_{t-1}=A2 \\ z_{t-1}=D
+\end{matrix}
+\end{matrix}$$
+  
+where the $psi$'s are the probabilities for an individual to change class of heterogeneity, with $\psi^{12}$ from A1 to A2, and $\psi^{21}$ from A2 to A1.
+
+Last step is the observation matrix, which we write as follows:
+$$\begin{matrix}
+& \\
+\mathbf{\Omega} =
+  \left ( \vphantom{ \begin{matrix} 12 \\ 12 \\ 12\end{matrix} } \right .
+          \end{matrix}
+          \hspace{-1.2em}
+          \begin{matrix}
+          y_t=1 & y_t=2\\ \hdashline
+          1 - p^1 & p^1\\
+          1 - p^2 & p^2\\
+          1 & 0
+          \end{matrix}
+          \hspace{-0.2em}
+          \begin{matrix}
+          & \\
+          \left . \vphantom{ \begin{matrix} 12 \\ 12 \\ 12\end{matrix} } \right )
+\begin{matrix}
+z_{t}=A1 \\ z_{t}=A2 \\ z_{t}=D
+\end{matrix}
+\end{matrix}$$
+  
+where $p^1$ is detection for individuals in A1, and $p^2$ that of individuals in A2. In NIMBLE, this translates into:
+```{r eval = FALSE}
+# Observation matrix
+omega[1,1] <- 1 - p1   # A1(t)->0(t)
+omega[1,2] <- p1       # A1(t)->1(t)
+omega[2,1] <- 1 - p2   # A2(t)->0(t)
+omega[2,2] <- p2       # A2(t)->1(t)
+omega[3,1] <- 1         # D(t)->0(t)
+omega[3,2] <- 0         # D(t)->1(t)
+```
+
+At first detection, the observation 'not detected' is impossible by construction (we condition on the first detection). We therefore use an initial observation matrix $\mathbf{\Omega}_{\text{init}}$ with $p_1 = p_2$ set to 1 (not shown). 
+
+Instead of real data, we will use simulated data, which is useful to identify problems in our analysis as we will illustrate below. We simulate a finite--mixture scenario where individuals differ in detection but share the same survival. Each animal is assigned to one of two latent classes: a small, highly detectable group (class A1; proportion $\pi = 0.2$, $p_1=0.8$) and a larger, less detectable group (class A2; proportion $1-\pi = 0.8$, $p_2=0.3$). Everyone starts captured at the first occasion (this mimics the CJS conditioning on first capture), then the latent alive state $z_{i,t}$ evolves with constant survival $\phi = 0.7$. If an individual $i$ is alive at time $t$, it's observed with its own detection probability $p_i$ (either $p_1$ or $p_2$ depending on class). The result is a matrix of 0/1 encounter histories $y$ with built-in individual heterogeneity in detection, plus bookkeeping objects: `which_mixture` (true class), `detection` (each animal's $p_i$), and `z` (true alive states). We simulate the fate of 400 animals over 10 years. 
+
+```{r}
+# Simulate encounter histories with individual heterogeneity (finite mixture)
+
+set.seed(1234)           # for reproducibility
+
+# --- Parameters
+phi <- 0.7               # apparent survival (same for all)
+prop_class1 <- 0.2       # mixture proportion pi: Pr(class 1)
+p_class1 <- 0.8          # detection if in class 1 (high detectability)
+p_class2 <- 0.3          # detection if in class 2 (low detectability)
+
+nind <- 400              # number of individuals
+nyear <- 10              # number of occasions
+
+# --- Storage
+z <- matrix(NA, nind, nyear)    # latent alive state
+x <- matrix(NA, nind, nyear)    # observed detections (0/1, with NAs before first)
+y <- matrix(NA, nind, nyear)    # final encounter histories (0/1)
+first <- rep(1, nind)           # first-capture occasion (here: all start at 1)
+detection <- rep(NA, nind)      # each individual’s p_i
+which_mixture <- rep(NA, nind)  # latent class: 1 or 0 (class 2)
+
+# --- Assign individuals to classes, then give them class-specific detection
+for (i in 1:nind) {
+  which_mixture[i] <- rbinom(1, 1, prop_class1) # 1 with prob pi, else 0
+  detection[i] <- if (which_mixture[i] == 1) p_class1 else p_class2
+}
+
+# --- Generate latent states and observations
+# Everyone is alive and detected at first capture (CJS conditioning)
+for (i in 1:nind) {
+  z[i, first[i]] <- 1
+  x[i, first[i]] <- 1
+
+  # From the second occasion on:
+  for (j in (first[i] + 1):nyear) {
+    # Alive state: survive from previous if alive; else remain 0
+    z[i, j] <- rbinom(1, 1, phi * z[i, j - 1])
+
+    # Observation: if alive, detect with p_i; if dead, 0
+    x[i, j] <- rbinom(1, 1, z[i, j] * detection[i])
+  }
+}
+
+# --- Final encounter histories: replace NAs (before first) with 0
+y <- x
+y[is.na(y)] <- 0
+```
+
+The simulated data look like:
+```{r}
+head(y)
+```
+
+Now when I fit the model above to these data, I get the following results:
+```{r echo = FALSE}
+library(MCMCvis)
+load(here::here("dat","individual-heterogeneity-wolf.RData"))
+MCMCsummary(mcmc.phipmix, round = 2)
+```
+
+These estimates diverge markedly from the values used to simulate the data, see Table \@ref(tab:simpar):
+```{r simpar, results='asis', echo=FALSE, message=FALSE}
+library(knitr)
+
+# ---- Posterior summaries ----
+post <- data.frame(
+  param = c("phi","pi","pp1","pp2"),
+  mean  = c(0.70, 0.70, 0.45, 0.49),
+  lcl   = c(0.67, 0.63, 0.40, 0.43),   # 2.5%
+  ucl   = c(0.73, 0.76, 0.49, 0.55)    # 97.5%
+)
+
+# ---- True values used in the simulation ----
+pi_truth <- 0.20
+truth <- c(
+  phi = 0.70,   # survival
+  pi  = pi_truth,  # mixture proportion (class 1)
+  pp1 = 0.80,   # detection in class 1 (high detectability)
+  pp2 = 0.30    # detection in class 2 (low detectability)
+)
+
+# ---- Build table ----
+tab <- merge(post, data.frame(param = names(truth), truth = as.numeric(truth)), by = "param")
+tab$`Posterior mean (95% CrI)` <- sprintf("%.2f (%.2f–%.2f)", tab$mean, tab$lcl, tab$ucl)
+tab$Bias <- round(tab$mean - tab$truth, 2)
+tab$`Abs % error` <- round(abs(tab$mean - tab$truth) / pmax(tab$truth, 1e-8) * 100, 1)
+
+out <- tab[, c("param", "truth", "Posterior mean (95% CrI)")]
+names(out) <- c("Parameter", "True value", "Posterior mean (95% credible interval)")
+
+kable(
+  out[match(c("phi","pi","pp1","pp2"), out$Parameter), ],
+  align = c("l","c","c","r","r"),
+  caption = "Comparison of posterior estimates from NIMBLE with the data-generating values for a finite--mixture HMM."
+)
+```
+
+Why is that? The first issue is that the classes were permuted. In our model, nothing tells NIMBLE that the highly detectable individuals must belong to class A1 and the less detectable ones to class A2. The labeling of the classes is arbitrary. The interpretation only comes afterwards, by inspecting the parameter estimates. Now if we re-calculate $\pi$ as the proportion of individuals in A1 as follows: 
+```{r}
+samples <- rbind(mcmc.phipmix[[1]], mcmc.phipmix[[2]])
+pi <- 1 - samples[,'pi']
+mean(pi)
+quantile(pi, probs = c(2.5, 97.5)/100)
+```
+
+we can get a sorted new Table \@ref(tab:simpar2):
+```{r simpar2, results='asis', echo=FALSE, message=FALSE}
+library(knitr)
+
+# ---- Posterior summaries ----
+post <- data.frame(
+  param = c("phi","pi","pp1","pp2"),
+  mean  = c(0.70, 0.30, 0.49, 0.45),
+  lcl   = c(0.67, 0.24, 0.43, 0.40),   # 2.5%
+  ucl   = c(0.73, 0.37, 0.55, 0.49)    # 97.5%
+)
+
+# ---- True values used in the simulation ----
+pi_truth <- 0.20
+truth <- c(
+  phi = 0.70,   # survival
+  pi  = pi_truth,  # mixture proportion (class 1)
+  pp1 = 0.80,   # detection in class 1 (high detectability)
+  pp2 = 0.30    # detection in class 2 (low detectability)
+)
+
+# ---- Build table ----
+tab <- merge(post, data.frame(param = names(truth), truth = as.numeric(truth)), by = "param")
+tab$`Posterior mean (95% CrI)` <- sprintf("%.2f (%.2f–%.2f)", tab$mean, tab$lcl, tab$ucl)
+tab$Bias <- round(tab$mean - tab$truth, 2)
+tab$`Abs % error` <- round(abs(tab$mean - tab$truth) / pmax(tab$truth, 1e-8) * 100, 1)
+
+out <- tab[, c("param", "truth", "Posterior mean (95% CrI)")]
+names(out) <- c("Parameter", "True value", "Posterior mean (95% credible interval)")
+
+kable(
+  out[match(c("phi","pi","pp1","pp2"), out$Parameter), ],
+  align = c("l","c","c","r","r"),
+  caption = "Comparison of posterior estimates from NIMBLE with the data-generating values for a finite--mixture HMM."
+)
+```
+
+Still, the detection estimates are off. There's a deeper issue here. The HMM formulation we used for capturing heterogeneity creates a limitation: individuals are not allowed to switch between classes over time (e.g., from A1 to A2), because the transition matrix does not permit it. In other words, any individual seen > 1 time (it's detected after the first observation occasion) can *never* change class assignments away from their initial value class assignment. Why this formulation fails? The problem is subtle but fundamental: in a HMM, transitions between states are governed by a Markov process. If the transition matrix says an individual in A1 must stay in A1 (or die), then the individual is permanently locked in that class. As a result, once an individual is assigned to a class through its initial latent state (e.g., A1), it can never change class during sampling. Even worse, any individual seen on multiple occasions (say, years 1 and 4) must stay alive during those years, the latent state cannot 'jump' between classes without violating the transition constraints, therefore, the initial class assignment is fixed forever, and the MCMC sampler cannot explore the alternative class, no matter how much data supports it.
+
+I must confess, I got stuck in that trap, and it was only because I used simulations that I could identify the problem. I then asked the NIMBLE team for help, and Daniel Turek came up with the explanation -- thanks, Daniel!
+
+Fortunately, there are several solutions to this problem:
+
++ Marginalize over the latent states: Instead of sampling the latent states $z$, you can marginalize them out, which avoids the class-switching problem entirely. This is the principle behind the `nimbleEcology` package, see Section \@ref(nimbleecologyintro). 
+
++ Use a class-level latent variable: Rather than coding classes as HMM states, define a latent class assignment (e.g., `g[i] ~ dcat(pi[1:2])`) for each individual. The HMM then conditions on that fixed class, allowing for proper inference and switching during MCMC.
+
++ Custom block sampler: Design a custom MCMC sampler that updates the entire latent history of an individual (`z[i, 1:K]`) at once. This allows for class-switching in a consistent way, though it's more advanced and computationally heavier.
+
+Here I will adopt the first solution and use some material we saw in Section \@ref(marginalization). In NIMBLE, we start by writing our own functions for the HMM likelihood, using the backward algorithm:
+```{r eval = FALSE}
+# Goal: integrate out latent states z using a custom density (forward algorithm),
+# and speed things up by pooling identical encounter histories with a pooled likelihood.
+
+# Get rid of individuals for which first==K
+mask <- which(first!=ncol(y)) # individuals that are not first encountered at last occasion
+y <- y[mask, ]                # keep only these
+first <- first[mask]
+# Rationale: if first == K (first seen at last occasion), there is no post-capture interval
+# to inform phi/p; removing them simplifies the forward recursion and avoids degenerate len=1 cases.
+
+# Pool encounter histories
+y_weighted <- y %>% 
+  as_tibble() %>% 
+  group_by_all() %>%                 # group by entire encounter history (all columns)
+  summarise(size = n()) %>%          # count how many individuals share that history
+  relocate(size) %>%                 # move the "size" column to the front
+  as.matrix()
+head(y_weighted)
+size <- y_weighted[,1] # nb of individuals w/ a particular encounter history
+y <- y_weighted[,-1]   # pooled data: one row per unique history
+
+# Assemble data and constants
+# +1 because the custom distribution expects categories 1/2 (not 0/1)
+my.data <- list(y = y + 1)
+my.constants <- list(N = nrow(y), 
+                     K = ncol(y), 
+                     first = first,
+                     size = size,
+                     one = 1)
+# "one" is a dummy constant used in a dconstraint (to prevent label switching).
+
+# NIMBLE functions
+# Custom HMM *density* for pooled histories via forward algorithm (alpha recursion)
+dwolfHMM <- nimbleFunction(
+  run = function(x = double(1), 
+                 probInit = double(1), # vector of initial states (delta)
+                 probObs = double(2),  # observation matrix (omega)
+                 probObse = double(2), # observation matrix used at first occasion (conditioning)
+                 probTrans = double(2),# transition matrix (gamma)
+                 size = double(0),     # multiplicity of this history
+                 len = double(0, default = 0), # number of sampling occasions
+                 log = integer(0, default = 0)) {
+    # Initial forward probs:
+    # multiply initial state probs by the observation prob at the first datum x[1]
+    # (probObs at t=first is effectively 1 due to CJS conditioning; handled via 'probObse').
+    alpha <- probInit[1:3] * probObse[1:3,x[1]]# * probObs[1:3,x[1]] == 1 due to conditioning on first detection
+    for (t in 2:len) {
+      # standard forward step: alpha_t = (alpha_{t-1} * Gamma) .* Omega(:, y_t)
+      alpha[1:3] <- (alpha[1:3] %*% probTrans[1:3,1:3]) * probObs[1:3,x[t]]
+    }
+    # Pooling: multiply the log-likelihood by 'size'
+    logL <- size * log(sum(alpha[1:3]))
+    returnType(double(0))
+    if (log) return(logL)
+    return(exp(logL))
+  }
+)
+
+# Matching *random generator* (required by NIMBLE for custom distributions)
+# Generates one synthetic history consistent with the HMM; not used in MCMC, but needed to register the dist.
+rwolfHMM <- nimbleFunction(
+  run = function(n = integer(),
+                 probInit = double(1),
+                 probObs = double(2),
+                 probObse = double(2),
+                 probTrans = double(2),
+                 size = double(0),
+                 len = double(0, default = 0)) {
+    returnType(double(1))
+    z <- numeric(len) # latent states
+    z[1] <- rcat(n = 1, prob = probInit[1:3]) # all individuals alive at t = 0 (by construction)
+    y <- z
+    y[1] <- 2 # all individuals are detected at t = 0 (CJS conditioning)
+    for (t in 2:len){
+      # state at t given state at t-1
+      z[t] <- rcat(n = 1, prob = probTrans[z[t-1],1:3]) 
+      # observation at t given state at t
+      y[t] <- rcat(n = 1, prob = probObs[z[t],1:2]) 
+    }
+    return(y)
+  })
+
+# Register the custom density/generator in the global environment
+assign('dwolfHMM', dwolfHMM, .GlobalEnv)
+assign('rwolfHMM', rwolfHMM, .GlobalEnv)
+```
+
+Now the NIMBLE code for the model, at last:
+```{r eval = FALSE}
+# Model code
+hmm.phipmix <- nimbleCode({
+  
+  # -------------------------------------------------
+  # Parameters:
+  # pi: initial state probability A1   (mixture weight for class 1)
+  # phi: survival probability          (shared across classes)
+  # pp1: recapture probability A1      (detection for class 1)
+  # pp2: recapture probability A2      (detection for class 2)
+  # -------------------------------------------------
+  # States (S):
+  # 1 alive (A1)  -> class 1
+  # 2 alive (A2)  -> class 2
+  # 3 dead (D)
+  # Observations (O):
+  # 1 neither seen nor recovered (0)
+  # 2 seen alive (1)
+  # -------------------------------------------------
+  
+  # priors
+  phi ~ dunif(0, 1) # prior survival
+  one ~ dconstraint(pp1 < pp2) # to avoid label switching (enforces an ordering)
+  pp1 ~ dunif(0, 1) # prior detection (class 1)
+  pp2 ~ dunif(0, 1) # prior detection (class 2)
+  pi ~ dunif(0, 1)  # prob init state 1 (mixture proportion for class 1)
+  
+  # transition matrix (classes are persistent; no switching between A1 and A2)
+  gamma[1,1] <- phi      # A1(t)->A1(t+1)
+  gamma[1,2] <- 0        # A1(t)->A2(t+1)
+  gamma[1,3] <- 1 - phi  # A1(t)->D(t+1)
+  gamma[2,1] <- 0        # A2(t)->A1(t+1)
+  gamma[2,2] <- phi      # A2(t)->A2(t+1)
+  gamma[2,3] <- 1 - phi  # A2(t)->D(t+1)
+  gamma[3,1] <- 0        # D(t)->A1(t+1)
+  gamma[3,2] <- 0        # D(t)->A2(t+1)
+  gamma[3,3] <- 1        # D(t)->D(t+1)
+  
+  # vector of initial state probs (mixture at first capture)
+  delta[1] <- pi         # A1(first)
+  delta[2] <- 1 - pi     # A2(first)
+  delta[3] <- 0          # D(first)
+  
+  # observation matrix (detection differs by class; dead are never seen)
+  omega[1,1] <- 1 - pp1   # A1(t)->0(t)
+  omega[1,2] <- pp1       # A1(t)->1(t)
+  omega[2,1] <- 1 - pp2   # A2(t)->0(t)
+  omega[2,2] <- pp2       # A2(t)->1(t)
+  omega[3,1] <- 1         # D(t)->0(t)
+  omega[3,2] <- 0         # D(t)->1(t)
+  
+  # 'omegae' is used only at the first datum inside the custom density
+  # to implement CJS conditioning (everyone is detected at first capture)
+  omegae[1,1] <- 0        # A1(t)->0(t)
+  omegae[1,2] <- 1        # A1(t)->1(t)
+  omegae[2,1] <- 0        # A2(t)->0(t)
+  omegae[2,2] <- 1        # A2(t)->1(t)
+  omegae[3,1] <- 1        # D(t)->0(t)
+  omegae[3,2] <- 0        # D(t)->1(t)
+  
+  # likelihood
+  for(i in 1:N) {
+    # One weighted likelihood contribution per *unique* encounter history,
+    # using the forward algorithm implemented in dwolfHMM.
+    y[i,first[i]:K] ~ dwolfHMM(probInit = delta[1:3],      # initial state probs
+                               probObs = omega[1:3,1:2],   # observation matrix
+                               probObse = omegae[1:3,1:2], # obs matrix for first occasion (conditioning)
+                               probTrans = gamma[1:3,1:3], # transition matrix
+                               size = size[i],             # weight: how many individuals share this history
+                               len = K - first[i] + 1)     # number of occasions for this history
+  }
+})
+
+# Initial values (cool thing, we do not need inits for the latent states anymore!!)
+initial.values <- function() list(phi = runif(1,0,1),
+                                  pp1 = 0.3,
+                                  pp2 = 0.8,
+                                  pi = runif(1,0,1))
+# Note: 'one' is provided in constants; no init needed. The pp1<pp2 constraint
+# prevents label switching by fixing the class ordering.
+
+# Parameters to be monitored
+parameters.to.save <- c("phi", "pp1", "pp2", "pi")
+
+# Run NIMBLE
+out <- nimbleMCMC(code = hmm.phipmix, 
+                  constants = my.constants,
+                  data = my.data,              
+                  inits = initial.values,
+                  monitors = parameters.to.save,
+                  niter = n.iter,
+                  nburnin = n.burnin, 
+                  nchains = n.chains)
+```
+
+### Results and interpretation
+
+The results in Table \@ref(tab:okidh) look fine now: 
+```{r okidh, results='asis', echo=FALSE, message=FALSE}
+library(knitr)
+
+# Posterior summaries
+load(here::here("dat","individual-heterogeneity-wolf.RData"))
+
+post <- data.frame(
+    param = c("phi","pi","pp1","pp2"),
+    mean  = c(0.72, 0.28, 0.79, 0.27),
+    lcl   = c(0.69, 0.10, 0.65, 0.18),
+    ucl   = c(0.75, 0.46, 0.92, 0.35)
+  )
+
+#samples <- rbind(mcmc.phipmix.marginalized[[1]], mcmc.phipmix.marginalized[[2]])
+#pi <- 1 - samples[,'pi']
+#mean(pi)
+#quantile(pi, probs = c(2/5, 97.5)/100)
+
+# Data-generating values, remapped to the model's ordering constraint (pp1 < pp2)
+truth <- c(phi = 0.70, pi = 0.20, pp1 = 0.80, pp2 = 0.30)
+
+# Build table
+tab <- merge(post, data.frame(param = names(truth), truth = as.numeric(truth)), by = "param")
+tab$`Posterior mean (95% CrI)` <- sprintf("%.2f (%.2f–%.2f)", tab$mean, tab$lcl, tab$ucl)
+tab$Bias <- round(tab$mean - tab$truth, 2)
+tab$`Abs % error` <- round(100 * abs(tab$mean - tab$truth) / pmax(tab$truth, 1e-8), 1)
+
+out <- tab[, c("param","truth","Posterior mean (95% CrI)")]
+names(out) <- c("Parameter","True value","Posterior mean (95% credible interval)")
+
+kable(
+  out[match(c("phi","pi","pp1","pp2"), out$Parameter), ],
+  align = c("l","c","c","r","r"),
+  caption = "Posterior estimates vs. data-generating values for a finite--mixture HMM, when a marginalized likelihood is used."
+)
+```
+
+In summary, when modeling unobservable individual heterogeneity (e.g., detection classes) in an HMM, avoid encoding class identity as a dynamic state. Instead, treat it as a fixed latent variable, or marginalize it out. Otherwise, the model is unable to explore the full posterior and will yield biased or unreliable estimates.
+
+A question that remains is the number of classes we should use. In other words, why 2 classes and not 3 or 4? One option is to fit models with more classes and select among them [e.g., @cubaynes2012]. Alternatively, you can take a non-parametric route and let the data decide how many classes are needed; this is relatively easy in NIMBLE [see @turek_bayesian_2021]. 
+
+For broader context on individual heterogeneity, see @gimenez2018ih. Finally, remember that these hidden classes were introduced by Pledger and colleagues primarily to correct bias in survival or abundance when heterogeneity is ignored; interpreting the classes biologically after fitting should be done with caution.
+
+<!-- I'm not an expert on the BNP facilities offered in NIMBLE, but I think I can comment: the stick-breaking representation (as you're using), and the CRP distribution, are modelling the same Dirichlet process.  They differ in the MCMC sampling algorithms which are applied to each, automatically, by NIMBLE's MCMC.  Translating your code between these two (mathematically identical) representations is a relatively small and straight-forward exercise.  The relative performance of the different sampling algorithms, as applied to each representation, could differ, would depend on the model and the data, and is generally difficult to predict. -->
+
+<!-- Changing between the stick-breaking representation and the CRP representation, the categorical distribution would persist in your model.  And Perry's comments are correct, that (in particular for a large number of categories, e.g. large values of H or HH in your code) the categorical sampler (which is applied to the categorical distribution) would become arbitrarily inefficient, in that it evaluates the posterior density for every category value (H or HH times), then samples directly from that posterior distribution.  And that you could hopefully reduce this inefficiency by writing a customized sampling strategy (a custom-written MCMC sampler), to update your categorical distributions, in a more efficient (less wasteful) manner. -->
+
+<!-- ## Temporary emigration -->
+
+<!-- Multistate treatment as in @schaub2004te. See example in @bancila2018te. -->
+
+<!-- Transition matrix: -->
+
+<!-- $$\begin{matrix} -->
+<!-- & \\ -->
+<!-- \mathbf{\Gamma} = -->
+<!--   \left ( \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \end{matrix} } \right . -->
+<!--           \end{matrix} -->
+<!--           \hspace{-1.2em} -->
+<!--           \begin{matrix} -->
+<!--           z_t=\text{in} & z_t=\text{out} & z_t=\text{D} \\ \hdashline -->
+<!--           \phi (1-\psi^{\text{in} \rightarrow \text{out}}) & \phi \psi^{\text{in} \rightarrow \text{out}} & 1 - \phi\\ -->
+<!--           \phi \psi^{\text{out} \rightarrow \text{in}} & \phi (1-\psi^{\text{out} \rightarrow \text{in}}) & 1 - \phi\\ -->
+<!--           0 & 0 & 1 -->
+<!--           \end{matrix} -->
+<!--           \hspace{-0.2em} -->
+<!--           \begin{matrix} -->
+<!--           & \\ -->
+<!--           \left . \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \end{matrix} } \right ) -->
+<!-- \begin{matrix} -->
+<!-- z_{t-1}=\text{in} \\ z_{t-1}=\text{out} \\ z_{t-1}=\text{D} -->
+<!-- \end{matrix} -->
+<!-- \end{matrix}$$ -->
+
+<!-- Observation matrix: -->
+
+<!-- $$\begin{matrix} -->
+<!-- & \\ -->
+<!-- \mathbf{\Omega} = -->
+<!--   \left ( \vphantom{ \begin{matrix} 12 \\ 12 \end{matrix} } \right . -->
+<!--           \end{matrix} -->
+<!--           \hspace{-1.2em} -->
+<!--           \begin{matrix} -->
+<!--           y_t=1 & y_t=2 \\ \hdashline -->
+<!--           1 - p & p\\ -->
+<!--           1 & 0\\ -->
+<!--           1 & 0 -->
+<!--           \end{matrix} -->
+<!--           \hspace{-0.2em} -->
+<!--           \begin{matrix} -->
+<!--           & \\ -->
+<!--           \left . \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \end{matrix} } \right ) -->
+<!-- \begin{matrix} -->
+<!-- z_{t}=\text{in} \\ z_{t}=\text{out} \\ z_{t}=\text{D} -->
+<!-- \end{matrix} -->
+<!-- \end{matrix}$$ -->
