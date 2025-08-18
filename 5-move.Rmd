@@ -156,10 +156,16 @@ In total, 21277 geese were captured, marked with coded neck bands and recaptured
 
 You may see the data below: 
 
-```{r echo = TRUE}
+```{r echo = TRUE, eval = FALSE}
+y <- read_csv("geese.csv") %>% as.matrix()
+head(y)
+```
+
+```{r echo = FALSE}
 y <- read_csv("dat/geese.csv") %>% as.matrix()
 head(y)
 ```
+
 
 The six columns are years in which the geese were captured, banded and recapture. A 0 stands for a non-detection, and detections were coded in the 3 wintering sites 1, 2 and 3 for mid--Atlantic, Chesapeake and Carolinas respectively. This is only a subsample of 500 individuals of the whole dataset that I will use for illustration here. 
 
@@ -169,6 +175,9 @@ To write the NIMBLE code corresponding to the AS model, we will make our life ea
 
 ```{r}
 y[y==3] <- 0
+# remove rows with 0's
+mask <- apply(y, 1, sum)
+y <- y[mask!=0,]
 ```
 
 Also we consider parameters constant over time.
@@ -309,7 +318,7 @@ initial.values <- function(){list(phi1 = runif(1, 0, 1),
 # parameters to monitor
 parameters.to.save <- c("phi1", "phi2","psi12", "psi21", "p1", "p2", "pi1")
 # MCMC details
-n.iter <- 5000
+n.iter <- 20000
 n.burnin <- 1000
 n.chains <- 2
 ```
@@ -471,14 +480,29 @@ load(here::here("dat","twositemarginalized.Rdata"))
 MCMCsummary(mcmc.multisite.marginalized, round = 2)
 ```
 
-There are slight differences in these parameters estimates compared to those we obtained earlier. This is probably due to the effective sample sizes being much bigger here (by a factor 3) with the marginalized likelihood for the same number of MCMC iterations. 
+There are no differences whatsoever in these parameters estimates compared to those we obtained earlier. 
 
 ### Goodness of fit {#gofas}
 
 Like for the CJS model, we need to ensure that the AS model provides a good fit to the data. With regard to classical tests, the goodness-of-fit testing procedures we covered in Section \@ref(gof) for the CJS model have been extended to the AS model. These procedure are also available in the package `R2ucare`. While the transience and trap-dependence tests can be used on each site, it is worth mentionning a test that is specific to the AS model with several sites. The "where before where after" (WBWA) tests for memory, in other words it's a test for the Markovian property of the HMM in the particular context of capture-recapture. WBWA quantifies whether there is a relationship between where an animal has last been seen and where it will next be seen again. If a relationship exists, positive or negative, this suggests memory in the movements, and the probability for an animal of moving to a site at $t$, given it is present in a site at $t-1$ should be made dependent of where it was at $t-2$. This is called a second-order Markov process. 
 
 Going back to the geese data, the WBWA test is implemented as follows on the whole dataset:
-```{r eval = TRUE}
+```{r echo = TRUE, eval = FALSE}
+# To install the R2ucare package:
+# if(!require(devtools)) install.packages("devtools")
+# devtools::install_github("oliviergimenez/R2ucare")
+library(R2ucare)
+geese <- read_csv2("allgeese.csv") %>% as.matrix()
+y <- geese[,1:6]
+size <- geese[,7]
+wbwa <- test3Gwbwa(y, size)
+wbwa$test3Gwbwa
+```
+
+```{r echo = FALSE}
+# To install the R2ucare package:
+# if(!require(devtools)) install.packages("devtools")
+# devtools::install_github("oliviergimenez/R2ucare")
 library(R2ucare)
 geese <- read_csv2("dat/allgeese.csv") %>% as.matrix()
 y <- geese[,1:6]
@@ -773,8 +797,8 @@ knitr::include_graphics("images/titi.jpg")
 
 You may see the data below: 
 
-```{r echo = TRUE}
-titis <- read_csv2("dat/titis.csv", 
+```{r echo = TRUE, eval = FALSE}
+titis <- read_csv2("titis.csv", 
                    col_names = FALSE)
 titis %>%
   rename(year_1942 = X1,
@@ -786,9 +810,18 @@ titis %>%
          year_1956 = X7)
 ```
 
-<!-- ```{r echo = FALSE} -->
-<!-- knitr::include_graphics("images/sooty.jpg") -->
-<!-- ``` -->
+```{r echo = FALSE}
+titis <- read_csv2("dat/titis.csv", 
+                   col_names = FALSE)
+titis %>%
+  rename(year_1942 = X1,
+         year_1943 = X2,
+         year_1944 = X3,
+         year_1949 = X4,
+         year_1952 = X5,
+         year_1953 = X6,
+         year_1956 = X7)
+```
 
 In total, 1013 titis were captured, marked and recaptured on a small colony on Whero Island in southern New Zealand. These data were previously analyzed by Richard Scofield who kindly provided us with the data. 
 
@@ -1598,10 +1631,10 @@ Using the code we developped for the titis example, we get the following results
 
 ```{r echo = FALSE}
 load(here::here("dat","disease.RData"))
-MCMCsummary(out, round = 2)
+MCMCsummary(samples2, round = 2)
 ```
 
-Healthy individuals are correctly assigned ($\beta^H$ is almost 1), while infected individuals are difficult to ascertain ($\beta^I$ is around 0.05). Unexpectedly, ill birds have a better survival than healthy individuals (compare $\phi^I$ and $\phi^H$). Infection rate ($\psi^{HI}$) is 22%, recovery rate is 46% ($\psi^{IH}$).
+Healthy individuals are correctly assigned ($\beta^H$ is almost 1), while infected individuals are difficult to ascertain ($\beta^I$ is around 0.05). Unexpectedly, ill birds have a better survival than healthy individuals (compare $\phi^I$ and $\phi^H$). Infection rate ($\psi^{HI}$) is 75%, recovery rate is 20% ($\psi^{IH}$).
 
 <!-- ```{r, echo = FALSE} -->
 <!-- load(here::here("dat","disease.RData")) -->

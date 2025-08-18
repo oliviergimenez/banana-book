@@ -170,7 +170,7 @@ z_{t-1}=A \\ z_{t-1}=U \\ z_{t-1}=D
 \end{matrix}\]</span></p>
 <p>You might have noticed something ususual in that <span class="math inline">\(\mathbf{\Gamma}\)</span> contains both the survival and detection probabilities. Why is that? We track three hidden states from the end of session <span class="math inline">\(t\)</span> to <span class="math inline">\(t+1\)</span>: <span class="math inline">\(A =\)</span> trap-aware (the bird was just caught at <span class="math inline">\(t\)</span>), <span class="math inline">\(U =\)</span> trap-unaware (not caught at <span class="math inline">\(t\)</span>), and <span class="math inline">\(D =\)</span> dead. Between sessions, everyone either survives with probability <span class="math inline">\(\phi\)</span> or dies with <span class="math inline">\(1 - \phi\)</span> (which moves them to <span class="math inline">\(D\)</span>, an absorbing state). If alive at <span class="math inline">\(t+1\)</span>, the awareness flag for the next session is set by whether the bird gets caught at <span class="math inline">\(t+1\)</span>: those caught will be <span class="math inline">\(A\)</span> next time, those not caught will be <span class="math inline">\(U\)</span>. Because capture probabilities can differ by current awareness, we allow <span class="math inline">\(p'\)</span> for birds that were <span class="math inline">\(A\)</span> at <span class="math inline">\(t\)</span> and <span class="math inline">\(p\)</span> for birds that were <span class="math inline">\(U\)</span> at <span class="math inline">\(t\)</span>. If <span class="math inline">\(p'&gt;p\)</span> you have trap-happy behaviour (recently caught birds are easier to catch next time); if <span class="math inline">\(p'&lt;p\)</span>, it’s trap-shy. This ‘survive -&gt; update awareness via capture’ factorization is what the transition matrix formalizes.</p>
 <p>Following the paper, adult survival is age-specific to account for a transient effect, see Section <a href="survival.html#gof">4.7</a>:</p>
-<div class="sourceCode" id="cb336"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb340"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Transition matrix</span></span>
 <span>  <span class="kw">for</span> <span class="op">(</span><span class="va">i</span> <span class="kw">in</span> <span class="fl">1</span><span class="op">:</span><span class="va">N</span><span class="op">)</span><span class="op">{</span></span>
 <span>    <span class="kw">for</span> <span class="op">(</span><span class="va">t</span> <span class="kw">in</span> <span class="va">first</span><span class="op">[</span><span class="va">i</span><span class="op">]</span><span class="op">:</span><span class="op">(</span><span class="va">K</span><span class="op">-</span><span class="fl">1</span><span class="op">)</span><span class="op">)</span><span class="op">{</span></span>
@@ -187,7 +187,7 @@ z_{t-1}=A \\ z_{t-1}=U \\ z_{t-1}=D
 <span>    <span class="op">}</span></span>
 <span>  <span class="op">}</span></span></code></pre></div>
 <p>In the code above, age is passed in the data and created as follows:</p>
-<div class="sourceCode" id="cb337"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb341"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Age effect via an individual x time covariate and use of nested indexing </span></span>
 <span><span class="co"># to distinguish survival over the interval after first detection from survival afterwards: </span></span>
 <span><span class="va">age</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html">matrix</a></span><span class="op">(</span><span class="cn">NA</span>, nrow <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html">nrow</a></span><span class="op">(</span><span class="va">y</span><span class="op">)</span>, ncol <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html">ncol</a></span><span class="op">(</span><span class="va">y</span><span class="op">)</span> <span class="op">-</span> <span class="fl">1</span><span class="op">)</span></span>
@@ -219,7 +219,7 @@ z_{t}=A \\ z_{t}=U \\ z_{t}=D
 \end{matrix}
 \end{matrix}\]</span></p>
 <p>If an animal is trap-aware at <span class="math inline">\(t\)</span>, that means that it has just been captured. If it is trap unaware or dead, it has not been captured during this session. In code, we write:</p>
-<div class="sourceCode" id="cb338"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb342"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Observation matrix</span></span>
 <span>  <span class="va">omega</span><span class="op">[</span><span class="fl">1</span>,<span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0</span></span>
 <span>  <span class="va">omega</span><span class="op">[</span><span class="fl">1</span>,<span class="fl">2</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span></span>
@@ -235,10 +235,10 @@ z_{t}=A \\ z_{t}=U \\ z_{t}=D
 </h3>
 <p>Here are the raw results with trap-dependence:</p>
 <pre><code>##        mean   sd 2.5%  50% 97.5% Rhat n.eff
-## p      0.45 0.06 0.34 0.45  0.56 1.00   126
-## phi1   0.76 0.02 0.71 0.76  0.80 1.00   395
-## phi2   0.87 0.02 0.84 0.87  0.91 1.01   173
-## pprime 0.79 0.02 0.75 0.79  0.82 1.00   183</code></pre>
+## p      0.46 0.06 0.34 0.46  0.56 1.10   580
+## phi1   0.76 0.02 0.71 0.76  0.80 1.03  1892
+## phi2   0.87 0.02 0.84 0.87  0.90 1.08   940
+## pprime 0.79 0.02 0.75 0.79  0.82 1.06  1154</code></pre>
 <p>The two detection probabilities, depending on whether a bird was previously caught or not, differ clearly, providing evidence of trap-happiness. Our survival estimates are very similar to those obtained by <span class="citation">Pradel and Sanz-Aguilar (<a href="references.html#ref-pradeltrapdep2012">2012</a>)</span> who found <span class="math inline">\(\phi_1 = 0.77\; (0.70, 0.82)\)</span> and <span class="math inline">\(\phi_2 = 0.87\; (0.82,0.90)\)</span> (check out their Table 1). Interestingly, when we fit the same model by ignoring trap-dependence, we get the following results:</p>
 <pre><code>##      mean   sd 2.5%  50% 97.5% Rhat n.eff
 ## p    0.78 0.02 0.75 0.78  0.81 1.00   489
@@ -423,7 +423,7 @@ z_t=AA \\ z_t=AB \\ z_t=BA \\ z_t=BB \\ z_t=D
 \end{matrix}
 \end{matrix}\]</span></p>
 <p>To implement this model in NIMBLE, we’re going to use <code>nimbleEcology</code>, which makes our life much easier as we do not have to initialize the latent states <span class="math inline">\(z\)</span> – remember the likelihood is marginalized, see Sections <a href="hmmcapturerecapture.html#marginalization">3.8</a> and <a href="hmmcapturerecapture.html#nimbleecologyintro">3.8.3.2</a>. Specifically, we use the function <code><a href="https://rdrr.io/pkg/nimbleEcology/man/dHMM.html">dHMM()</a></code> that implements the distribution of a HMM with constant parameters. We also use a Dirichlet prior to ensure that the initial state probabilities and the survival-movement probabilities sum up to 1 and lie between 0 and 1, see Section <a href="dispersal.html#dirichletprior">5.4.1</a>. The code is as follows:</p>
-<div class="sourceCode" id="cb341"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb345"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">multisite.marginalized</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimbleCode.html">nimbleCode</a></span><span class="op">(</span><span class="op">{</span></span>
 <span>  </span>
 <span>  <span class="co"># -------------------------------------------------</span></span>
@@ -528,20 +528,20 @@ z_t=AA \\ z_t=AB \\ z_t=BA \\ z_t=BB \\ z_t=D
 </h3>
 <p>The raw results are:</p>
 <pre><code>##          mean   sd 2.5%  50% 97.5% Rhat n.eff
-## det1     0.45 0.01 0.43 0.45  0.47 1.01   296
-## det2     0.41 0.01 0.39 0.41  0.42 1.05   244
-## phi11[1] 0.50 0.01 0.49 0.50  0.52 1.00   478
-## phi11[2] 0.16 0.01 0.15 0.16  0.17 1.01   834
-## phi11[3] 0.34 0.01 0.32 0.34  0.35 1.00   565
-## phi12[1] 0.10 0.00 0.09 0.10  0.11 1.00   496
-## phi12[2] 0.57 0.01 0.55 0.57  0.59 1.02   382
-## phi12[3] 0.33 0.01 0.32 0.34  0.35 1.02   421
-## phi21[1] 0.36 0.03 0.31 0.36  0.42 1.00   900
-## phi21[2] 0.33 0.03 0.27 0.33  0.38 1.01  1149
-## phi21[3] 0.31 0.03 0.24 0.31  0.37 1.01   932
-## phi22[1] 0.06 0.00 0.05 0.06  0.07 1.00   676
-## phi22[2] 0.63 0.01 0.61 0.63  0.64 1.01  1140
-## phi22[3] 0.31 0.01 0.30 0.31  0.33 1.00   965</code></pre>
+## det1     0.45 0.01 0.43 0.45  0.47 1.01   597
+## det2     0.41 0.01 0.39 0.41  0.42 1.02   613
+## phi11[1] 0.50 0.01 0.49 0.50  0.52 1.01   889
+## phi11[2] 0.16 0.01 0.15 0.16  0.17 1.01  1103
+## phi11[3] 0.34 0.01 0.32 0.34  0.35 1.00  1206
+## phi12[1] 0.10 0.00 0.09 0.10  0.11 1.01   931
+## phi12[2] 0.57 0.01 0.55 0.57  0.59 1.02   838
+## phi12[3] 0.34 0.01 0.32 0.34  0.35 1.01  1007
+## phi21[1] 0.37 0.03 0.31 0.36  0.42 1.00  1784
+## phi21[2] 0.32 0.03 0.27 0.32  0.38 1.00  2196
+## phi21[3] 0.31 0.03 0.25 0.31  0.38 1.00  1634
+## phi22[1] 0.06 0.00 0.05 0.06  0.07 1.00  1424
+## phi22[2] 0.63 0.01 0.61 0.63  0.64 1.00  2356
+## phi22[3] 0.31 0.01 0.30 0.31  0.33 1.00  2067</code></pre>
 <p>which we can reaarange as in Table <a href="lackoffit.html#tab:memoryres">7.1</a> to the results obtained by <span class="citation">Pradel (<a href="references.html#ref-pradel_multievent_2005">2005</a>)</span> in his Table 1:</p>
 <div class="inline-table"><table class="table table-sm">
 <caption>
@@ -689,7 +689,7 @@ z_{t-1}=A1 \\ z_{t-1}=A2 \\ z_{t-1}=D
 \end{matrix}
 \end{matrix}\]</span></p>
 <p>where <span class="math inline">\(\phi\)</span> is the survival probability. In NIMBLE, we write:</p>
-<div class="sourceCode" id="cb343"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb347"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Transition matrix</span></span>
 <span><span class="va">gamma</span><span class="op">[</span><span class="fl">1</span>,<span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="va">phi</span>      <span class="co"># A1(t)-&gt;A1(t+1)</span></span>
 <span><span class="va">gamma</span><span class="op">[</span><span class="fl">1</span>,<span class="fl">2</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0</span>        <span class="co"># A1(t)-&gt;A2(t+1)</span></span>
@@ -744,7 +744,7 @@ z_{t}=A1 \\ z_{t}=A2 \\ z_{t}=D
 \end{matrix}
 \end{matrix}\]</span></p>
 <p>where <span class="math inline">\(p^1\)</span> is detection for individuals in A1, and <span class="math inline">\(p^2\)</span> that of individuals in A2. In NIMBLE, this translates into:</p>
-<div class="sourceCode" id="cb344"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb348"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Observation matrix</span></span>
 <span><span class="va">omega</span><span class="op">[</span><span class="fl">1</span>,<span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span> <span class="op">-</span> <span class="va">p1</span>   <span class="co"># A1(t)-&gt;0(t)</span></span>
 <span><span class="va">omega</span><span class="op">[</span><span class="fl">1</span>,<span class="fl">2</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="va">p1</span>       <span class="co"># A1(t)-&gt;1(t)</span></span>
@@ -754,7 +754,7 @@ z_{t}=A1 \\ z_{t}=A2 \\ z_{t}=D
 <span><span class="va">omega</span><span class="op">[</span><span class="fl">3</span>,<span class="fl">2</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0</span>         <span class="co"># D(t)-&gt;1(t)</span></span></code></pre></div>
 <p>At first detection, the observation ‘not detected’ is impossible by construction (we condition on the first detection). We therefore use an initial observation matrix <span class="math inline">\(\mathbf{\Omega}_{\text{init}}\)</span> with <span class="math inline">\(p_1 = p_2\)</span> set to 1 (not shown).</p>
 <p>Instead of real data, we will use simulated data, which is useful to identify problems in our analysis as we will illustrate below. We simulate a finite–mixture scenario where individuals differ in detection but share the same survival. Each animal is assigned to one of two latent classes: a small, highly detectable group (class A1; proportion <span class="math inline">\(\pi = 0.2\)</span>, <span class="math inline">\(p_1=0.8\)</span>) and a larger, less detectable group (class A2; proportion <span class="math inline">\(1-\pi = 0.8\)</span>, <span class="math inline">\(p_2=0.3\)</span>). Everyone starts captured at the first occasion (this mimics the CJS conditioning on first capture), then the latent alive state <span class="math inline">\(z_{i,t}\)</span> evolves with constant survival <span class="math inline">\(\phi = 0.7\)</span>. If an individual <span class="math inline">\(i\)</span> is alive at time <span class="math inline">\(t\)</span>, it’s observed with its own detection probability <span class="math inline">\(p_i\)</span> (either <span class="math inline">\(p_1\)</span> or <span class="math inline">\(p_2\)</span> depending on class). The result is a matrix of 0/1 encounter histories <span class="math inline">\(y\)</span> with built-in individual heterogeneity in detection, plus bookkeeping objects: <code>which_mixture</code> (true class), <code>detection</code> (each animal’s <span class="math inline">\(p_i\)</span>), and <code>z</code> (true alive states). We simulate the fate of 400 animals over 10 years.</p>
-<div class="sourceCode" id="cb345"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb349"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Simulate encounter histories with individual heterogeneity (finite mixture)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/Random.html">set.seed</a></span><span class="op">(</span><span class="fl">1234</span><span class="op">)</span>           <span class="co"># for reproducibility</span></span>
@@ -802,7 +802,7 @@ z_{t}=A1 \\ z_{t}=A2 \\ z_{t}=D
 <span><span class="va">y</span> <span class="op">&lt;-</span> <span class="va">x</span></span>
 <span><span class="va">y</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/NA.html">is.na</a></span><span class="op">(</span><span class="va">y</span><span class="op">)</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0</span></span></code></pre></div>
 <p>The simulated data look like:</p>
-<div class="sourceCode" id="cb346"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb350"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/head.html">head</a></span><span class="op">(</span><span class="va">y</span><span class="op">)</span></span>
 <span><span class="co">##      [,1] [,2] [,3] [,4] [,5] [,6] [,7] [,8] [,9] [,10]</span></span>
 <span><span class="co">## [1,]    1    0    0    0    0    0    0    0    0     0</span></span>
@@ -813,10 +813,10 @@ z_{t}=A1 \\ z_{t}=A2 \\ z_{t}=D
 <span><span class="co">## [6,]    1    1    0    0    0    0    0    0    0     0</span></span></code></pre></div>
 <p>Now when I fit the model above to these data, I get the following results:</p>
 <pre><code>##     mean   sd 2.5%  50% 97.5% Rhat n.eff
-## phi 0.70 0.01 0.67 0.70  0.73 1.00  1074
-## pi  0.70 0.03 0.63 0.70  0.76 1.01   722
-## pp1 0.45 0.02 0.40 0.45  0.49 1.00   492
-## pp2 0.49 0.03 0.43 0.48  0.55 1.01   632</code></pre>
+## phi 0.70 0.01 0.67 0.70  0.72 1.01  1003
+## pi  0.70 0.03 0.63 0.70  0.76 1.01   631
+## pp1 0.45 0.02 0.40 0.45  0.50 1.02   431
+## pp2 0.48 0.03 0.43 0.48  0.55 1.01   638</code></pre>
 <p>These estimates diverge markedly from the values used to simulate the data, see Table <a href="lackoffit.html#tab:simpar">7.2</a>:</p>
 <div class="inline-table"><table class="table table-sm">
 <caption>
@@ -850,14 +850,14 @@ z_{t}=A1 \\ z_{t}=A2 \\ z_{t}=D
 </tbody>
 </table></div>
 <p>Why is that? The first issue is that the classes were permuted. In our model, nothing tells NIMBLE that the highly detectable individuals must belong to class A1 and the less detectable ones to class A2. The labeling of the classes is arbitrary. The interpretation only comes afterwards, by inspecting the parameter estimates. Now if we re-calculate <span class="math inline">\(\pi\)</span> as the proportion of individuals in A1 as follows:</p>
-<div class="sourceCode" id="cb348"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb352"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">samples</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/cbind.html">rbind</a></span><span class="op">(</span><span class="va">mcmc.phipmix</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span>, <span class="va">mcmc.phipmix</span><span class="op">[[</span><span class="fl">2</span><span class="op">]</span><span class="op">]</span><span class="op">)</span></span>
 <span><span class="va">pi</span> <span class="op">&lt;-</span> <span class="fl">1</span> <span class="op">-</span> <span class="va">samples</span><span class="op">[</span>,<span class="st">'pi'</span><span class="op">]</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/mean.html">mean</a></span><span class="op">(</span><span class="va">pi</span><span class="op">)</span></span>
-<span><span class="co">## [1] 0.305</span></span>
+<span><span class="co">## [1] 0.3041</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/stats/quantile.html">quantile</a></span><span class="op">(</span><span class="va">pi</span>, probs <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="fl">2.5</span>, <span class="fl">97.5</span><span class="op">)</span><span class="op">/</span><span class="fl">100</span><span class="op">)</span></span>
 <span><span class="co">##   2.5%  97.5% </span></span>
-<span><span class="co">## 0.2418 0.3715</span></span></code></pre></div>
+<span><span class="co">## 0.2417 0.3727</span></span></code></pre></div>
 <p>we can get a sorted new Table <a href="lackoffit.html#tab:simpar2">7.3</a>:</p>
 <div class="inline-table"><table class="table table-sm">
 <caption>
@@ -899,7 +899,7 @@ z_{t}=A1 \\ z_{t}=A2 \\ z_{t}=D
 <li><p>Custom block sampler: Design a custom MCMC sampler that updates the entire latent history of an individual (<code>z[i, 1:K]</code>) at once. This allows for class-switching in a consistent way, though it’s more advanced and computationally heavier.</p></li>
 </ul>
 <p>Here I will adopt the first solution and use some material we saw in Section <a href="hmmcapturerecapture.html#marginalization">3.8</a>. In NIMBLE, we start by writing our own functions for the HMM likelihood, using the backward algorithm:</p>
-<div class="sourceCode" id="cb349"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb353"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Goal: integrate out latent states z using a custom density (forward algorithm),</span></span>
 <span><span class="co"># and speed things up by pooling identical encounter histories with a pooled likelihood.</span></span>
 <span></span>
@@ -986,7 +986,7 @@ z_{t}=A1 \\ z_{t}=A2 \\ z_{t}=D
 <span><span class="fu"><a href="https://rdrr.io/r/base/assign.html">assign</a></span><span class="op">(</span><span class="st">'dwolfHMM'</span>, <span class="va">dwolfHMM</span>, <span class="va">.GlobalEnv</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/assign.html">assign</a></span><span class="op">(</span><span class="st">'rwolfHMM'</span>, <span class="va">rwolfHMM</span>, <span class="va">.GlobalEnv</span><span class="op">)</span></span></code></pre></div>
 <p>Now the NIMBLE code for the model, at last:</p>
-<div class="sourceCode" id="cb350"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb354"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Model code</span></span>
 <span><span class="va">hmm.phipmix</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimbleCode.html">nimbleCode</a></span><span class="op">(</span><span class="op">{</span></span>
 <span>  </span>
@@ -1102,17 +1102,17 @@ z_{t}=A1 \\ z_{t}=A2 \\ z_{t}=D
 <tr class="even">
 <td align="left">pi</td>
 <td align="center">0.2</td>
-<td align="center">0.28 (0.10–0.46)</td>
+<td align="center">0.27 (0.10–0.46)</td>
 </tr>
 <tr class="odd">
 <td align="left">pp1</td>
 <td align="center">0.8</td>
-<td align="center">0.79 (0.65–0.92)</td>
+<td align="center">0.79 (0.65–0.93)</td>
 </tr>
 <tr class="even">
 <td align="left">pp2</td>
 <td align="center">0.3</td>
-<td align="center">0.27 (0.18–0.35)</td>
+<td align="center">0.27 (0.17–0.35)</td>
 </tr>
 </tbody>
 </table></div>
