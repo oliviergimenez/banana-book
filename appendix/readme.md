@@ -21,6 +21,5 @@ In short: you can safely ignore this warning. If it bothers you, simply add
 
 at the start of your code.
 
-Olivier, August 22, 2025
 
 
