@@ -148,7 +148,7 @@ Let’s spend some time going through each quantity in this formula.</p>
 <span class="header-section-number">1.4</span> Approximating posteriors via numerical integration<a class="anchor" aria-label="anchor" href="#numerical-approx"><i class="fas fa-link"></i></a>
 </h2>
 <p>Let’s take an example to illustrate Bayes’ theorem. Say we capture, mark and release <span class="math inline">\(n = 57\)</span> animals at the beginning of a winter, out of which we recapture <span class="math inline">\(y = 19\)</span> animals alive <span class="citation">(we used a similar example in <a href="references.html#ref-king_bayesian_2009">King et al. 2009</a>)</span>. We’d like to estimate winter survival <span class="math inline">\(\theta\)</span>. The data are:</p>
-<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">y</span> <span class="op">&lt;-</span> <span class="fl">19</span> <span class="co"># nb of success</span></span>
 <span><span class="va">n</span> <span class="op">&lt;-</span> <span class="fl">57</span> <span class="co"># nb of attempts</span></span></code></pre></div>
 <p>We build our model first. Assuming all animals are independent of each other and have the same survival probability, then <span class="math inline">\(y\)</span> the number of alive animals at the end of the winter is a binomial distribution with <span class="math inline">\(n\)</span> trials and <span class="math inline">\(\theta\)</span> the probability of success:</p>
@@ -156,7 +156,7 @@ Let’s spend some time going through each quantity in this formula.</p>
 y &amp;\sim \text{Binomial}(n, \theta) &amp;\text{[likelihood]}
 \end{align*}\]</span></p>
 <p>Note that I follow <span class="citation">McElreath (<a href="references.html#ref-mcelreathbook">2020</a>)</span> and use labels on the right to help remember what each line is about. This likelihood can be visualised in <code>R</code>:</p>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">grid</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html">seq</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1</span>, <span class="fl">0.01</span><span class="op">)</span> <span class="co"># grid of values for survival</span></span>
 <span><span class="va">likelihood</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/Binomial.html">dbinom</a></span><span class="op">(</span><span class="va">y</span>, <span class="va">n</span>, <span class="va">grid</span><span class="op">)</span> <span class="co"># compute binomial likelihood</span></span>
 <span><span class="va">df</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html">data.frame</a></span><span class="op">(</span>survival <span class="op">=</span> <span class="va">grid</span>, likelihood <span class="op">=</span> <span class="va">likelihood</span><span class="op">)</span> </span>
@@ -171,14 +171,14 @@ y &amp;\sim \text{Binomial}(n, \theta) &amp;\text{[likelihood]}
 \theta &amp;\sim \text{Uniform}(0, 1) &amp;\text{[prior for }\theta \text{]}
 \end{align*}\]</span></p>
 <p>Now we apply Bayes’ theorem. We write a <code>R</code> function that computes the product of the likelihood times the prior, or the numerator in Bayes’ theorem: <span class="math inline">\(\Pr(\text{data} \mid \theta) \times \Pr(\theta)\)</span></p>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">numerator</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">theta</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/stats/Binomial.html">dbinom</a></span><span class="op">(</span><span class="va">y</span>, <span class="va">n</span>, <span class="va">theta</span><span class="op">)</span> <span class="op">*</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html">dunif</a></span><span class="op">(</span><span class="va">theta</span>, <span class="fl">0</span>, <span class="fl">1</span><span class="op">)</span></span></code></pre></div>
 <p>We write another function that calculates the denominator, the average likelihood: <span class="math inline">\(\Pr(\text{data}) = \int{\Pr(\text{data} \mid \theta) \Pr(\theta) d\theta}\)</span></p>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">denominator</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/integrate.html">integrate</a></span><span class="op">(</span><span class="va">numerator</span>,<span class="fl">0</span>,<span class="fl">1</span><span class="op">)</span><span class="op">$</span><span class="va">value</span></span></code></pre></div>
 <p>We use the <code>R</code> function <code>integrate</code> to calculate the integral in the denominator, which implements quadrature techniques to divide in little squares the area underneath the curve delimited by the function to integrate (here the numerator), and count them.</p>
 <p>Then we get a numerical approximation of the posterior of winter survival by applying Bayes’ theorem:</p>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">grid</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html">seq</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1</span>, <span class="fl">0.01</span><span class="op">)</span> <span class="co"># grid of values for theta</span></span>
 <span><span class="va">numerical_posterior</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html">data.frame</a></span><span class="op">(</span>survival <span class="op">=</span> <span class="va">grid</span>, </span>
 <span>                                  posterior <span class="op">=</span> <span class="fu">numerator</span><span class="op">(</span><span class="va">grid</span><span class="op">)</span><span class="op">/</span><span class="va">denominator</span><span class="op">)</span> <span class="co"># Bayes' theorem</span></span>
@@ -196,7 +196,7 @@ Figure 1.2: The distribution beta(<span class="math inline">\(a\)</span>,<span c
 </p>
 </div>
 <p>If the likelihood of the data <span class="math inline">\(y\)</span> is binomial with <span class="math inline">\(n\)</span> trials and probability of success <span class="math inline">\(\theta\)</span>, and the prior is a beta distribution with parameters <span class="math inline">\(a\)</span> and <span class="math inline">\(b\)</span>, then the posterior is a beta distribution with parameters <span class="math inline">\(a + y\)</span> and <span class="math inline">\(b + n - y\)</span>. In our example, we have <span class="math inline">\(n = 57\)</span> trials and <span class="math inline">\(y = 19\)</span> animals that survived and a uniform prior between 0 and 1 or a beta distribution with parameters <span class="math inline">\(a = b = 1\)</span>, therefore survival has a beta posterior distribution with parameters 20 and 39. Let’s superimpose the exact posterior and the numerical approximation:</p>
-<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">explicit_posterior</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/Beta.html">dbeta</a></span><span class="op">(</span><span class="va">grid</span>, <span class="va">y</span> <span class="op">+</span> <span class="va">a</span>, <span class="va">n</span> <span class="op">-</span> <span class="va">y</span> <span class="op">+</span> <span class="va">b</span><span class="op">)</span></span>
 <span><span class="va">dfexpposterior</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html">data.frame</a></span><span class="op">(</span>survival <span class="op">=</span> <span class="va">grid</span>, explicit_posterior <span class="op">=</span> <span class="va">explicit_posterior</span><span class="op">)</span></span>
 <span><span class="fu">ggplot</span><span class="op">(</span><span class="op">)</span> <span class="op">+</span> </span>
@@ -251,19 +251,19 @@ Figure 1.3: MCMC article cover. Source: The Journal of Chemical Physics – <a h
 <span class="header-section-number">1.5.1</span> Monte Carlo integration<a class="anchor" aria-label="anchor" href="#monte-carlo-integration"><i class="fas fa-link"></i></a>
 </h3>
 <p>What does Monte Carlo stand for? Monte Carlo integration is a simulation technique to calculate integrals of any function <span class="math inline">\(f\)</span> of random variable <span class="math inline">\(X\)</span> with distribution <span class="math inline">\(\Pr(X)\)</span> say <span class="math inline">\(\int f(X) \Pr(X)dX\)</span>. You draw values <span class="math inline">\(X_1,\ldots,X_k\)</span> from <span class="math inline">\(\Pr(X)\)</span> the distribution of <span class="math inline">\(X\)</span>, apply function <span class="math inline">\(f\)</span> to these values, then calculate the mean of these new values <span class="math inline">\(\displaystyle{\frac{1}{k}}\sum_{i=1}^k{f(X_i)}\)</span> to approximate the integral. How is Monte Carlo integration used in a Bayesian context? The posterior distribution contains all the information we need about the parameter to be estimated. When dealing with many parameters however, you may want to summarise posterior results by calculating numerical summaries. The simplest numerical summary is the mean of the posterior distribution, <span class="math inline">\(E(\theta) = \int \theta \Pr(\theta|\text{data})\)</span>, where <span class="math inline">\(X\)</span> is <span class="math inline">\(\theta\)</span> now and <span class="math inline">\(f\)</span> is the identity function. Posterior mean can be calculated with Monte Carlo integration:</p>
-<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">sample_from_posterior</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/Beta.html">rbeta</a></span><span class="op">(</span><span class="fl">1000</span>, <span class="fl">20</span>, <span class="fl">39</span><span class="op">)</span> <span class="co"># draw 1000 values from posterior survival beta(20,39)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/mean.html">mean</a></span><span class="op">(</span><span class="va">sample_from_posterior</span><span class="op">)</span> <span class="co"># compute mean with Monte Carlo integration</span></span>
-<span><span class="co">## [1] 0.3384</span></span></code></pre></div>
+<span><span class="co">## [1] 0.3387</span></span></code></pre></div>
 <p>You may check that the mean we have just calculated matches closely the expectation of a beta distribution:</p>
-<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fl">20</span><span class="op">/</span><span class="op">(</span><span class="fl">20</span><span class="op">+</span><span class="fl">39</span><span class="op">)</span> <span class="co"># expectation of beta(20,39)</span></span>
 <span><span class="co">## [1] 0.339</span></span></code></pre></div>
 <p>Another useful numerical summary is the credible interval within which our parameter falls with some probability, usually 0.95 hence a 95<span class="math inline">\(\%\)</span> credible interval. Finding the bounds of a credible interval requires calculating quantiles, which in turn involves integrals and the use of Monte Carlo integration. A 95<span class="math inline">\(\%\)</span> credible interval for winter survival can be obtained in <code>R</code> with:</p>
-<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/stats/quantile.html">quantile</a></span><span class="op">(</span><span class="va">sample_from_posterior</span>, probs <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="fl">2.5</span><span class="op">/</span><span class="fl">100</span>, <span class="fl">97.5</span><span class="op">/</span><span class="fl">100</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">##   2.5%  97.5% </span></span>
-<span><span class="co">## 0.2195 0.4689</span></span></code></pre></div>
+<span><span class="co">## 0.2256 0.4655</span></span></code></pre></div>
 </div>
 <div id="markovmodelmcmc" class="section level3" number="1.5.2">
 <h3>
@@ -292,7 +292,7 @@ Figure 1.3: MCMC article cover. Source: The Journal of Chemical Physics – <a h
 \end{matrix}
 \]</span>
 In rows the weather today, and in columns the weather tomorrow. The cells give the probability of a sunny or rainy day tomorrow, given the day is sunny or rainy today. Under certain conditions, a Markov chain will converge to a unique stationary distribution. In our weather example, let’s run the Markov chain for 20 steps:</p>
-<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">weather</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html">matrix</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="fl">0.8</span>, <span class="fl">0.2</span>, <span class="fl">0.9</span>, <span class="fl">0.1</span><span class="op">)</span>, nrow <span class="op">=</span> <span class="fl">2</span>, byrow <span class="op">=</span> <span class="cn">T</span><span class="op">)</span> <span class="co"># transition matrix</span></span>
 <span><span class="va">steps</span> <span class="op">&lt;-</span> <span class="fl">20</span></span>
 <span><span class="kw">for</span> <span class="op">(</span><span class="va">i</span> <span class="kw">in</span> <span class="fl">1</span><span class="op">:</span><span class="va">steps</span><span class="op">)</span><span class="op">{</span></span>
@@ -314,7 +314,7 @@ In rows the weather today, and in columns the weather tomorrow. The cells give t
 </h3>
 <p>There are several ways of constructing Markov chains for Bayesian inference. You might have heard about the Metropolis-Hastings or the Gibbs sampler. Have a look to <a href="https://chi-feng.github.io/mcmc-demo/" class="uri">https://chi-feng.github.io/mcmc-demo/</a> for an interactive gallery of MCMC algorithms. Here I illustrate the Metropolis algorithm and how to implement it in practice.</p>
 <p>Let’s go back to our example on animal survival estimation. We illustrate sampling from survival posterior distribution. We write functions for likelihood, prior and posterior:</p>
-<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># 19 animals recaptured alive out of 57 captured, marked and released</span></span>
 <span><span class="va">survived</span> <span class="op">&lt;-</span> <span class="fl">19</span></span>
 <span><span class="va">released</span> <span class="op">&lt;-</span> <span class="fl">57</span></span>
@@ -344,18 +344,18 @@ In rows the weather today, and in columns the weather tomorrow. The cells give t
 <li><p>We repeat 2-4 a number of times – or <em>steps</em>.</p></li>
 </ol>
 <p>Enough of the theory, let’s implement the Metropolis algorithm in <code>R</code>. Let’s start by setting the scene:</p>
-<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">steps</span> <span class="op">&lt;-</span> <span class="fl">100</span> <span class="co"># number of steps</span></span>
 <span><span class="va">theta.post</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html">rep</a></span><span class="op">(</span><span class="cn">NA</span>, <span class="va">steps</span><span class="op">)</span> <span class="co"># vector to store samples</span></span>
 <span><span class="va">accept</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html">rep</a></span><span class="op">(</span><span class="cn">NA</span>, <span class="va">steps</span><span class="op">)</span> <span class="co"># keep track of accept/reject</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/Random.html">set.seed</a></span><span class="op">(</span><span class="fl">1234</span><span class="op">)</span> <span class="co"># for reproducibility</span></span></code></pre></div>
 <p>Now follow the 5 steps we’ve just described. First, we pick a starting value, and store it (step 1):</p>
-<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">inits</span> <span class="op">&lt;-</span> <span class="fl">0.5</span></span>
 <span><span class="va">theta.post</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="va">inits</span></span>
 <span><span class="va">accept</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span></span></code></pre></div>
 <p>Then, we need a function to propose a candidate value:</p>
-<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">move</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">x</span>, <span class="va">away</span> <span class="op">=</span> <span class="fl">1</span><span class="op">)</span><span class="op">{</span> <span class="co"># by default, standard deviation of the proposal distribution is 1</span></span>
 <span>  <span class="va">logitx</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Log.html">log</a></span><span class="op">(</span><span class="va">x</span> <span class="op">/</span> <span class="op">(</span><span class="fl">1</span> <span class="op">-</span> <span class="va">x</span><span class="op">)</span><span class="op">)</span> <span class="co"># apply logit transform (-infinity,+infinity)</span></span>
 <span>  <span class="va">logit_candidate</span> <span class="op">&lt;-</span> <span class="va">logitx</span> <span class="op">+</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html">rnorm</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">0</span>, <span class="va">away</span><span class="op">)</span> <span class="co"># add a value taken from N(0,sd=away) to current value</span></span>
@@ -364,7 +364,7 @@ In rows the weather today, and in columns the weather tomorrow. The cells give t
 <span><span class="op">}</span></span></code></pre></div>
 <p>We add a value taken from a normal distribution with mean zero and standard deviation we call <em>away</em>. We work on the logit scale to make sure the candidate value for survival lies between 0 and 1.</p>
 <p>Now we’re ready for steps 2, 3 and 4. We write a loop to take care of step 5. We start at initial value 0.5 and run the algorithm for 100 steps or iterations:</p>
-<div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw">for</span> <span class="op">(</span><span class="va">t</span> <span class="kw">in</span> <span class="fl">2</span><span class="op">:</span><span class="va">steps</span><span class="op">)</span><span class="op">{</span> <span class="co"># repeat steps 2-4 (step 5)</span></span>
 <span>  </span>
 <span>  <span class="co"># propose candidate value for survival (step 2)</span></span>
@@ -388,13 +388,13 @@ In rows the weather today, and in columns the weather tomorrow. The cells give t
 <span>  <span class="op">}</span></span>
 <span><span class="op">}</span></span></code></pre></div>
 <p>We get the following values:</p>
-<div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/head.html">head</a></span><span class="op">(</span><span class="va">theta.post</span><span class="op">)</span> <span class="co"># first values</span></span>
 <span><span class="co">## [1] 0.5000 0.2302 0.2906 0.2906 0.2980 0.2980</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/head.html">tail</a></span><span class="op">(</span><span class="va">theta.post</span><span class="op">)</span> <span class="co"># last values</span></span>
 <span><span class="co">## [1] 0.2622 0.2622 0.2622 0.3727 0.3232 0.3862</span></span></code></pre></div>
 <p>Visually, you may look at the chain:</p>
-<div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">df</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html">data.frame</a></span><span class="op">(</span>x <span class="op">=</span> <span class="fl">1</span><span class="op">:</span><span class="va">steps</span>, y <span class="op">=</span> <span class="va">theta.post</span><span class="op">)</span></span>
 <span><span class="va">df</span> <span class="op">%&gt;%</span></span>
 <span>  <span class="fu">ggplot</span><span class="op">(</span><span class="op">)</span> <span class="op">+</span></span>
@@ -405,7 +405,7 @@ In rows the weather today, and in columns the weather tomorrow. The cells give t
 <p>In this visualisation, remember that our Markov chain starts at value 0.5. The steps or iterations are on the x-axis, and samples on the y-axis. This graphical representation is called a trace plot.</p>
 <p>The acceptance probability is the average number of times we accepted a candidate value, which is 0.44 and almost satisfying.</p>
 <p>To make our life easier and avoid repeating the same lines of code again and again, let’s make a function out of the code we have written so far:</p>
-<div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">metropolis</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">steps</span> <span class="op">=</span> <span class="fl">100</span>, <span class="va">inits</span> <span class="op">=</span> <span class="fl">0.5</span>, <span class="va">away</span> <span class="op">=</span> <span class="fl">1</span><span class="op">)</span><span class="op">{</span></span>
 <span>  </span>
 <span>  <span class="co"># pre-alloc memory</span></span>
@@ -437,7 +437,7 @@ In rows the weather today, and in columns the weather tomorrow. The cells give t
 <span>  <span class="va">theta.post</span></span>
 <span><span class="op">}</span></span></code></pre></div>
 <p>Can we run another chain and start at initial value 0.2 this time? Yes, just go through the same algorithm again, and visualise the results with trace plot of survival for two chains starting at 0.2 (yellow) and 0.5 (blue) run for 100 steps:</p>
-<div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">theta.post2</span> <span class="op">&lt;-</span> <span class="fu">metropolis</span><span class="op">(</span>steps <span class="op">=</span> <span class="fl">100</span>, inits <span class="op">=</span> <span class="fl">0.2</span><span class="op">)</span></span>
 <span><span class="va">df2</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html">data.frame</a></span><span class="op">(</span>x <span class="op">=</span> <span class="fl">1</span><span class="op">:</span><span class="va">steps</span>, y <span class="op">=</span> <span class="va">theta.post2</span><span class="op">)</span></span>
 <span><span class="fu">ggplot</span><span class="op">(</span><span class="op">)</span> <span class="op">+</span></span>
@@ -447,7 +447,7 @@ In rows the weather today, and in columns the weather tomorrow. The cells give t
 <span>  <span class="fu">ylim</span><span class="op">(</span><span class="fl">0.1</span>, <span class="fl">0.6</span><span class="op">)</span></span></code></pre></div>
 <div class="inline-figure"><img src="banana-book_files/figure-html/twochains-1.png" width="672"></div>
 <p>Notice that we do not get the exact same results because the algorithm is stochastic. The question is to know whether we have reached the stationary distribution. Let’s increase the number of steps, start at 0.5 and run a chain with 5000 iterations:</p>
-<div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">steps</span> <span class="op">&lt;-</span> <span class="fl">5000</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/Random.html">set.seed</a></span><span class="op">(</span><span class="fl">1234</span><span class="op">)</span></span>
 <span><span class="va">theta.post</span> <span class="op">&lt;-</span> <span class="fu">metropolis</span><span class="op">(</span>steps <span class="op">=</span> <span class="va">steps</span>, inits <span class="op">=</span> <span class="fl">0.5</span><span class="op">)</span></span>
@@ -522,7 +522,7 @@ In rows the weather today, and in columns the weather tomorrow. The cells give t
 </h3>
 <p>In practice, we discard observations from the start of the Markov chain and just use observations from the chain once it has converged. The initial observations that we discard are usually referred to as the <em>burn-in</em>.</p>
 <p>The simplest method to determine the length of the burn-in period is to look at trace plots. Going back to our example, let’s have a look to a trace plot of a chain that starts at value 0.99.</p>
-<div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb23"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># set up the scene</span></span>
 <span><span class="va">steps</span> <span class="op">&lt;-</span> <span class="fl">1000</span></span>
 <span><span class="va">theta.post</span> <span class="op">&lt;-</span> <span class="fu">metropolis</span><span class="op">(</span>steps <span class="op">=</span> <span class="va">steps</span>, inits <span class="op">=</span> <span class="fl">0.99</span><span class="op">)</span></span>
@@ -553,7 +553,7 @@ In rows the weather today, and in columns the weather tomorrow. The cells give t
 <span class="header-section-number">1.6.2</span> Chain length<a class="anchor" aria-label="anchor" href="#chain-length"><i class="fas fa-link"></i></a>
 </h3>
 <p>How long of a chain is needed to produce reliable parameter estimates? To answer this question, you need to keep in mind that successive steps in a Markov chain are not independent – this is usually referred to as <em>autocorrelation</em>. Ideally, we would like to keep autocorrelation as low as possible. Here again, trace plots are useful to diagnose issues with autocorrelation. Let’s get back to our survival example. The figure below shows trace plots for different values of the standard deviation (parameter <em>away</em>) of the normal proposal distribution we use to propose a candidate value (Section <a href="crashcourse.html#metropolis-algorithm">1.5.3</a>):</p>
-<div class="sourceCode" id="cb23"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb24"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># inspired from https://bookdown.org/content/3686/markov-chain-monte-carlo.html</span></span>
 <span></span>
 <span><span class="va">n_steps</span> <span class="op">&lt;-</span> <span class="fl">10000</span></span>
@@ -583,7 +583,7 @@ In rows the weather today, and in columns the weather tomorrow. The cells give t
 <div class="inline-figure"><img src="banana-book_files/figure-html/unnamed-chunk-30-1.png" width="672"></div>
 <p>Small and big moves in the left and right panels provide high correlations between successive observations of the Markov chain, whereas a standard deviation of 1 in the center panel allows efficient exploration of the parameter space. The movement around the parameter space is referred to as <em>mixing</em>. Mixing is bad when the chain makes small and big moves, and good otherwise.</p>
 <p>In addition to trace plots, autocorrelation function (ACF) plots are a convenient way of displaying the strength of autocorrelation in a given sample values. ACF plots provide the autocorrelation between successively sampled values separated by an increasing number of iterations, or <em>lag</em>. We obtain the autocorrelation function plots for different values of the standard deviation of the proposal distribution with the R <code><a href="https://pkg.robjhyndman.com/forecast/reference/autoplot.acf.html">forecast::ggAcf()</a></code> function:</p>
-<div class="sourceCode" id="cb24"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb25"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="va"><a href="https://pkg.robjhyndman.com/forecast/">forecast</a></span><span class="op">)</span></span>
 <span><span class="va">plot1</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://pkg.robjhyndman.com/forecast/reference/autoplot.acf.html">ggAcf</a></span><span class="op">(</span>x <span class="op">=</span> <span class="va">d</span><span class="op">$</span><span class="va">accepted_traj</span><span class="op">[</span><span class="va">d</span><span class="op">$</span><span class="va">proposal_sd</span><span class="op">==</span><span class="st">"Proposal SD = 0.1"</span><span class="op">]</span><span class="op">)</span> <span class="op">+</span> <span class="fu">ggtitle</span><span class="op">(</span><span class="st">"Proposal SD = 0.1"</span><span class="op">)</span></span>
 <span><span class="va">plot2</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://pkg.robjhyndman.com/forecast/reference/autoplot.acf.html">ggAcf</a></span><span class="op">(</span>x <span class="op">=</span> <span class="va">d</span><span class="op">$</span><span class="va">accepted_traj</span><span class="op">[</span><span class="va">d</span><span class="op">$</span><span class="va">proposal_sd</span><span class="op">==</span><span class="st">"Proposal SD = 1"</span><span class="op">]</span><span class="op">)</span> <span class="op">+</span> <span class="fu">ggtitle</span><span class="op">(</span><span class="st">"Proposal SD = 1"</span><span class="op">)</span></span>
@@ -594,7 +594,7 @@ In rows the weather today, and in columns the weather tomorrow. The cells give t
 <div class="inline-figure"><img src="banana-book_files/figure-html/unnamed-chunk-31-1.png" width="672"></div>
 <p>In the left and right panels, autocorrelation is strong, decreases slowly with increasing lag and mixing is bad. In the center panel, autocorrelation is weak, decreases rapidly with increasing lag and mixing is good.</p>
 <p>Autocorrelation is not necessarily a big issue. Strongly correlated observations just require large sample sizes and therefore longer simulations. But how many iterations exactly? The effective sample size (<code>n.eff</code>) measures chain length while taking into account chain autocorrelation. You should check the <code>n.eff</code> of every parameter of interest, and of any interesting parameter combinations. In general, we need <span class="math inline">\(\text{n.eff} \geq 400\)</span> independent steps to get reasonable Monte Carlo estimates of model parameters. In the animal survival example, <code>n.eff</code> can be calculated with the R <code><a href="https://rdrr.io/pkg/coda/man/effectiveSize.html">coda::effectiveSize()</a></code> function:</p>
-<div class="sourceCode" id="cb25"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb26"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">neff1</span> <span class="op">&lt;-</span> <span class="fu">coda</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/coda/man/effectiveSize.html">effectiveSize</a></span><span class="op">(</span><span class="va">d</span><span class="op">$</span><span class="va">accepted_traj</span><span class="op">[</span><span class="va">d</span><span class="op">$</span><span class="va">proposal_sd</span><span class="op">==</span><span class="st">"Proposal SD = 0.1"</span><span class="op">]</span><span class="op">)</span></span>
 <span><span class="va">neff2</span> <span class="op">&lt;-</span> <span class="fu">coda</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/coda/man/effectiveSize.html">effectiveSize</a></span><span class="op">(</span><span class="va">d</span><span class="op">$</span><span class="va">accepted_traj</span><span class="op">[</span><span class="va">d</span><span class="op">$</span><span class="va">proposal_sd</span><span class="op">==</span><span class="st">"Proposal SD = 1"</span><span class="op">]</span><span class="op">)</span></span>
 <span><span class="va">neff3</span> <span class="op">&lt;-</span> <span class="fu">coda</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/coda/man/effectiveSize.html">effectiveSize</a></span><span class="op">(</span><span class="va">d</span><span class="op">$</span><span class="va">accepted_traj</span><span class="op">[</span><span class="va">d</span><span class="op">$</span><span class="va">proposal_sd</span><span class="op">==</span><span class="st">"Proposal SD = 10"</span><span class="op">]</span><span class="op">)</span></span>
@@ -687,7 +687,7 @@ In rows the weather today, and in columns the weather tomorrow. The cells give t
 <footer class="bg-primary text-light mt-5"><div class="container"><div class="row">
 
   <div class="col-12 col-md-6 mt-3">
-    <p>"<strong>Bayesian analysis of capture-recapture data with hidden Markov models</strong>: Theory and case studies in R and NIMBLE" was written by Olivier Gimenez. It was last built on 2025-08-18.</p>
+    <p>"<strong>Bayesian analysis of capture-recapture data with hidden Markov models</strong>: Theory and case studies in R and NIMBLE" was written by Olivier Gimenez. It was last built on 2025-09-07.</p>
   </div>
 
   <div class="col-12 col-md-6 mt-3">

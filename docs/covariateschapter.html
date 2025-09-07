@@ -138,7 +138,7 @@ Let’s look at a real-world example with the white stork (<em>Ciconia ciconia</
 <span class="header-section-number">6.2.2</span> Model and NIMBLE implementation<a class="anchor" aria-label="anchor" href="#model-and-nimble-implementation"><i class="fas fa-link"></i></a>
 </h3>
 <p>For our example, we’ll work with data from 321 encounter histories of white storks ringed as chicks between 1956 and 1970. These data were kindly provided by Jean-Dominique Lebreton. We’ll fit a Cormack–Jolly–Seber (CJS) model with time-dependent survival and constant detection probability, as described in Section <a href="survival.html#cjsderivatives">4.5</a>. We model the survival probability <code>phi</code> as a linear function of our covariates stored in <code>x</code>. To handle model selection inside the RJMCMC, we use a trick: for each covariate, we introduce an indicator variable <code>ksi</code> that can take the value 1 (covariate is included in the model) or 0 (covariate is excluded). We then combine the regression coefficients <code>beta</code> with these indicators into a single vector <code>betaksi</code>. This means that if <code>ksi[j] = 0</code>, the effect of covariate <code>j</code> is zero, effectively removing it from the model. Here’s how it works in the NIMBLE code:</p>
-<div class="sourceCode" id="cb324"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb325"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw">for</span> <span class="op">(</span><span class="va">t</span> <span class="kw">in</span> <span class="fl">1</span><span class="op">:</span><span class="op">(</span><span class="cn">T</span><span class="op">-</span><span class="fl">1</span><span class="op">)</span><span class="op">)</span><span class="op">{</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/pkg/gtools/man/logit.html">logit</a></span><span class="op">(</span><span class="va">phi</span><span class="op">[</span><span class="va">t</span><span class="op">]</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="va">intercept</span> <span class="op">+</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimble-math.html">inprod</a></span><span class="op">(</span><span class="va">betaksi</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">10</span><span class="op">]</span>, <span class="va">x</span><span class="op">[</span><span class="va">t</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">10</span><span class="op">]</span><span class="op">)</span></span>
 <span>  <span class="va">gamma</span><span class="op">[</span><span class="fl">1</span>,<span class="fl">1</span>,<span class="va">t</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="va">phi</span><span class="op">[</span><span class="va">t</span><span class="op">]</span>      <span class="co"># Pr(alive t -&gt; alive t+1)</span></span>
@@ -147,7 +147,7 @@ Let’s look at a real-world example with the white stork (<em>Ciconia ciconia</
 <span>  <span class="va">gamma</span><span class="op">[</span><span class="fl">2</span>,<span class="fl">2</span>,<span class="va">t</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span>           <span class="co"># Pr(dead t -&gt; dead t+1)</span></span>
 <span><span class="op">}</span></span></code></pre></div>
 <p>For the indicators and regression coefficients:</p>
-<div class="sourceCode" id="cb325"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb326"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw">for</span> <span class="op">(</span><span class="va">j</span> <span class="kw">in</span> <span class="fl">1</span><span class="op">:</span><span class="fl">10</span><span class="op">)</span><span class="op">{</span></span>
 <span>  <span class="va">betaksi</span><span class="op">[</span><span class="va">j</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="va">beta</span><span class="op">[</span><span class="va">j</span><span class="op">]</span> <span class="op">*</span> <span class="va">ksi</span><span class="op">[</span><span class="va">j</span><span class="op">]</span></span>
 <span>  <span class="va">ksi</span><span class="op">[</span><span class="va">j</span><span class="op">]</span> <span class="op">~</span> <span class="fu">dbern</span><span class="op">(</span><span class="va">psi</span><span class="op">)</span> <span class="co"># indicator variable associated with betaj</span></span>
@@ -163,7 +163,7 @@ Let’s look at a real-world example with the white stork (<em>Ciconia ciconia</
 - <code>indicatorNodes</code>: The indicator variables paired with the target nodes (e.g. <code>ksi</code>);<br>
 - <code>control</code>: A list for fine-tuning the proposal with <code>mean</code> the mean of the proposal distribution (default is 0), <code>scale</code> the standard deviation of the proposal (default is 1) and <code>fixedValue</code> the value a variable takes when excluded (default is 0).</p>
 <p>Here’s how we apply it to our white stork example:</p>
-<div class="sourceCode" id="cb326"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb327"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co">## Build the model and configure default MCMC</span></span>
 <span><span class="va">RJsurvival</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimbleModel.html">nimbleModel</a></span><span class="op">(</span>code <span class="op">=</span> <span class="va">hmm.phirjmcmcp</span>, </span>
 <span>                          constants <span class="op">=</span> <span class="va">my.constants</span>,</span>
@@ -181,7 +181,7 @@ Let’s look at a real-world example with the white stork (<em>Ciconia ciconia</
 <span>            indicatorNodes <span class="op">=</span> <span class="st">'ksi'</span>,</span>
 <span>            control <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>mean <span class="op">=</span> <span class="fl">0</span>, scale <span class="op">=</span> <span class="fl">2</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <p>We then build, compile, and run the RJMCMC:</p>
-<div class="sourceCode" id="cb327"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb328"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">survivalMCMC</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/buildMCMC.html">buildMCMC</a></span><span class="op">(</span><span class="va">RJsurvivalConf</span><span class="op">)</span></span>
 <span><span class="va">CsurvivalMCMC</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/compileNimble.html">compileNimble</a></span><span class="op">(</span><span class="va">survivalMCMC</span>, project <span class="op">=</span> <span class="va">RJsurvival</span><span class="op">)</span></span>
 <span><span class="va">samples</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/runMCMC.html">runMCMC</a></span><span class="op">(</span>mcmc <span class="op">=</span> <span class="va">CsurvivalMCMC</span>, </span>
@@ -195,11 +195,11 @@ Let’s look at a real-world example with the white stork (<em>Ciconia ciconia</
 <span class="header-section-number">6.2.3</span> Results and interpretation<a class="anchor" aria-label="anchor" href="#results-and-interpretation"><i class="fas fa-link"></i></a>
 </h3>
 <p>The RJMCMC run gives us the posterior probabilities of different models where each model corresponds to a specific combination of covariates. To get these probabilities, we first combine the MCMC samples from our two chains:</p>
-<div class="sourceCode" id="cb328"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb329"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Gather two chains</span></span>
 <span><span class="va">out</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/cbind.html">rbind</a></span><span class="op">(</span><span class="va">samples</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span>, <span class="va">samples</span><span class="op">[[</span><span class="fl">2</span><span class="op">]</span><span class="op">]</span><span class="op">)</span></span></code></pre></div>
 <p>Next, we look at the inclusion indicators <code>ksi</code>, which take value 1 if a covariate is in the model and 0 if not. The posterior mean of each <code>ksi[j]</code> is simply the estimated probability that covariate j is included:</p>
-<div class="sourceCode" id="cb329"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb330"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Number of covariates</span></span>
 <span><span class="va">K</span> <span class="op">&lt;-</span> <span class="fl">10</span></span>
 <span></span>
@@ -215,7 +215,7 @@ Let’s look at a real-world example with the white stork (<em>Ciconia ciconia</
 <span><span class="co">## 0.03360 0.02630 0.02965</span></span></code></pre></div>
 <p>The posterior inclusion probabilities tell us how likely each covariate is to appear in the ‘true’ model given the data and priors. Here, <code>ksi[4]</code> stands out, with an inclusion probability around 0.96. This corresponds to the the Kita station.</p>
 <p>We can also identify the most probable models visited by the RJMCMC. Each MCMC draw corresponds to a model, which we encode as a binary string (e.g., “0101001001”):</p>
-<div class="sourceCode" id="cb330"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb331"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Encode each model draw as a string of 0s and 1s</span></span>
 <span><span class="va">model_id</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/apply.html">apply</a></span><span class="op">(</span><span class="va">ksi</span>, <span class="fl">1</span>, <span class="va">paste0</span>, collapse <span class="op">=</span> <span class="st">""</span><span class="op">)</span></span>
 <span></span>
@@ -239,7 +239,7 @@ Let’s look at a real-world example with the white stork (<em>Ciconia ciconia</
 <p>The posterior model probabilities rank the different combinations of covariates, and in our case, the model containing only the rainfall at Kita is clearly dominant.</p>
 <p>In conclusion, a very high inclusion probability for Kita (covariate #4) and a dominant model containing only Kita indicate that this station’s rainfall is strongly linked to survival, while others are not.</p>
 <p>Now turning to inference, we’d like to get model-averaged parameters. Each covariate’s effect is ‘on’ only when its indicator (<code>ksi</code>) is 1. Multiplying <code>beta</code> by <code>ksi</code> zeros out the effect when that covariate is excluded. Summarising <code>betaksi</code> across draws gives the model-averaged effect on the logit scale:</p>
-<div class="sourceCode" id="cb331"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb332"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Pull posterior draws</span></span>
 <span><span class="va">beta</span>  <span class="op">&lt;-</span> <span class="va">out</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/paste.html">paste0</a></span><span class="op">(</span><span class="st">"beta["</span>, <span class="fl">1</span><span class="op">:</span><span class="va">K</span>, <span class="st">"]"</span><span class="op">)</span><span class="op">]</span></span>
 <span></span>
@@ -267,7 +267,7 @@ Let’s look at a real-world example with the white stork (<em>Ciconia ciconia</
 <span><span class="co">## beta[10] -0.003 -0.020 0.000 0.003</span></span></code></pre></div>
 <p>A large <code>P_gt0</code> (e.g., &gt; 0.95) suggests strong evidence that the covariate increases survival (on the logit scale).</p>
 <p>Now let’s get model-averaged survival estimates over time. For each MCMC draw, we build the linear predictor with all covariates using <code>beta * ksi</code>, add the intercept, then inverse-logit to get survival <code>phi</code>:</p>
-<div class="sourceCode" id="cb332"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb333"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">invlogit</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">x</span><span class="op">)</span> <span class="fl">1</span> <span class="op">/</span> <span class="op">(</span><span class="fl">1</span> <span class="op">+</span> <span class="fu"><a href="https://rdrr.io/r/base/Log.html">exp</a></span><span class="op">(</span><span class="op">-</span><span class="va">x</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Table of covariate values</span></span>
@@ -358,7 +358,7 @@ Let’s look at a real-world example with the white stork (<em>Ciconia ciconia</
 \end{matrix}
 \end{matrix}\]</span></p>
 <p>where <span class="math inline">\(\pi\)</span> is the probability of being alive as a cub, and <span class="math inline">\(1 - \pi\)</span> is the probability of being alive as an adult. For bears with known age at first detection, we fix the initial state accordingly. In NIMBLE we implement this with an individual-specific <span class="math inline">\(\delta_i\)</span> using <code>equals()</code> to pin known ages:</p>
-<div class="sourceCode" id="cb333"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb334"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Initial state</span></span>
 <span><span class="co"># age[i] == 0: unknown -&gt; use delta: pi, 1 - pi</span></span>
 <span><span class="co"># age[i] == 1: known cub -&gt; force delta to [1, 0, 0]</span></span>
@@ -390,7 +390,7 @@ z_{t-1}=C \\ z_{t-1}=A \\ z_{t-1}=D
 \end{matrix}
 \end{matrix}\]</span></p>
 <p>Following the paper, adult survival is sex-specific; cub survival is common to both sexes:</p>
-<div class="sourceCode" id="cb334"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb335"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Transition matrix</span></span>
 <span><span class="kw">for</span> <span class="op">(</span><span class="va">i</span> <span class="kw">in</span> <span class="fl">1</span><span class="op">:</span><span class="va">N</span><span class="op">)</span><span class="op">{</span></span>
 <span>  <span class="va">gamma</span><span class="op">[</span><span class="fl">1</span>,<span class="fl">1</span>,<span class="va">i</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0</span></span>
@@ -468,7 +468,7 @@ z_{t}=C \\ z_{t}=A \\ z_{t}=D
     \end{matrix}
 \end{matrix}\]</span></p>
 <p>In code, we write <span class="math inline">\(\mathbf{\Omega_1} \mathbf{\Omega_2}\)</span> directly, as this is faster than doing the matrix multiplication at each MCMC iteration. For simplicity we use a single detection probability <span class="math inline">\(p\)</span> for both ages, but you can let <span class="math inline">\(p\)</span> vary by age/sex/year or sampling method, as in the paper:</p>
-<div class="sourceCode" id="cb335"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb336"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Observation matrix</span></span>
 <span><span class="va">omega</span><span class="op">[</span><span class="fl">1</span>,<span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span> <span class="op">-</span> <span class="va">p</span></span>
 <span><span class="va">omega</span><span class="op">[</span><span class="fl">1</span>,<span class="fl">2</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="va">p</span> <span class="op">*</span> <span class="va">betaCCC</span></span>
@@ -663,7 +663,7 @@ z_{t-1}=M \\ z_{t-1}=F \\ z_{t-1}=D
 \end{matrix}
 \end{matrix}\]</span></p>
 <p>The vector of initial states and the matrix of transition probabilities are written as usual in NIMBLE:</p>
-<div class="sourceCode" id="cb337"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb338"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span>  <span class="va">delta</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="va">pi</span></span>
 <span>  <span class="va">delta</span><span class="op">[</span><span class="fl">2</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span> <span class="op">-</span> <span class="va">pi</span></span>
 <span>  <span class="va">delta</span><span class="op">[</span><span class="fl">3</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0</span></span>
@@ -708,7 +708,7 @@ y_{t}=1 \\ y_{t}=2 \\ y_{t}=3 \\ y_{t}=4 \\ y_{t}=5 \\ y_{t}=6 \\ y_{t}=7 \\ y_{
 <p>This matrix is a bit more complex than what we have encountered before, and needs some explanations. When an individual is encountered (with probability <span class="math inline">\(p\)</span>), there is some chance that it will be sexed (<span class="math inline">\(e\)</span>) based on its general appearance (body size: probability <span class="math inline">\(m_4\)</span>) or its behaviour (probability <span class="math inline">\(1 - m_4\)</span>). When behaviour is used, there are three different criteria (copulation, begging for food and courtship feeding), which occur with probabilities <span class="math inline">\(m_1\)</span>, <span class="math inline">\(m_2\)</span>, and <span class="math inline">\(m_3\)</span>, respectively. Finally, each criterion has its own reliability (probabilities <span class="math inline">\(x_1\)</span>, <span class="math inline">\(x_2\)</span>, <span class="math inline">\(x_3\)</span>, <span class="math inline">\(x_4\)</span>, where <span class="math inline">\(x_4\)</span> is the reliability of the body-size criterion).</p>
 <p>I admit that this matrix representation can be difficult to grasp at once. It can be easier to split the observation matrix in several steps, like encountering, sexing, body size sexing, sex determination and correctness, then to sketch a decision tree as in Figure 2 of <span class="citation">Genovart, Pradel, and Oro (<a href="references.html#ref-genovart_exploiting_2012">2012</a>)</span> (see also appendix S1 in that same paper).</p>
 <p>In code, this gives:</p>
-<div class="sourceCode" id="cb338"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb339"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">omega</span><span class="op">[</span><span class="fl">1</span>,<span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span> <span class="op">-</span> <span class="va">p</span>                                  </span>
 <span><span class="va">omega</span><span class="op">[</span><span class="fl">1</span>,<span class="fl">2</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="va">p</span> <span class="op">*</span> <span class="va">e</span> <span class="op">*</span> <span class="op">(</span><span class="fl">1</span> <span class="op">-</span> <span class="va">m</span><span class="op">[</span><span class="fl">4</span><span class="op">]</span><span class="op">)</span> <span class="op">*</span> <span class="va">m</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span> <span class="op">*</span> <span class="va">x</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span>      </span>
 <span><span class="va">omega</span><span class="op">[</span><span class="fl">1</span>,<span class="fl">3</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="va">p</span> <span class="op">*</span> <span class="va">e</span> <span class="op">*</span> <span class="op">(</span><span class="fl">1</span> <span class="op">-</span> <span class="va">m</span><span class="op">[</span><span class="fl">4</span><span class="op">]</span><span class="op">)</span> <span class="op">*</span> <span class="va">m</span><span class="op">[</span><span class="fl">2</span><span class="op">]</span> <span class="op">*</span> <span class="va">x</span><span class="op">[</span><span class="fl">2</span><span class="op">]</span>      </span>
@@ -961,7 +961,7 @@ y_{t}=1 \\ y_{t}=2 \\ y_{t}=3 \\ y_{t}=4 \\ y_{t}=5 \\ y_{t}=6 \\ y_{t}=7 \\ y_{
 <footer class="bg-primary text-light mt-5"><div class="container"><div class="row">
 
   <div class="col-12 col-md-6 mt-3">
-    <p>"<strong>Bayesian analysis of capture-recapture data with hidden Markov models</strong>: Theory and case studies in R and NIMBLE" was written by Olivier Gimenez. It was last built on 2025-08-18.</p>
+    <p>"<strong>Bayesian analysis of capture-recapture data with hidden Markov models</strong>: Theory and case studies in R and NIMBLE" was written by Olivier Gimenez. It was last built on 2025-09-07.</p>
   </div>
 
   <div class="col-12 col-md-6 mt-3">
