@@ -402,6 +402,7 @@ MCMCsummary(out, round = 2)
 ```
 
 which we can arrange as in Table \@ref(tab:ageuncertaintycompare) to compare them with the results obtained by @Gervasi2017:
+
 ```{r ageuncertaintycompare, results='asis', message=FALSE, echo=FALSE}
 library(MCMCvis)
 library(knitr)
@@ -448,10 +449,10 @@ labels <- c(
   "phiA[2]"    = "$\\phi_{A,m}$ (adult male)",
   "p"          = "$p$ (detection)",
   "pi"         = "$\\pi$ (cub at first detection)",
-  "betaCCC"    = "$C_{c,cc}$ (cub by both | cub)",
-  "betaCCA"    = "$C_{c,ca}$ (cub by P1 only | cub)",
-  "betaACC"    = "$C_{a,cc}$ (cub by both | adult)",
-  "betaACA"    = "$C_{a,ca}$ (cub by P1 only | adult)"
+  "betaCCC"    = "$C_{c,cc}$ (cub by both given cub)",
+  "betaCCA"    = "$C_{c,ca}$ (cub by P1 only given cub)",
+  "betaACC"    = "$C_{a,cc}$ (cub by both given adult)",
+  "betaACA"    = "$C_{a,ca}$ (cub by P1 only given adult)"
 )
 
 tab <- data.frame(
@@ -461,13 +462,28 @@ tab <- data.frame(
   check.names = FALSE
 )
 
-kable(
+library(kableExtra)
+
+kableExtra::kable(
   tab,
   align = c("c","c","c"),
   escape = FALSE,
-  caption = "Comparison of parameter estimates for the same HMM to account for age uncertainty: our NIMBLE fit vs. Gervasi et al. (2017, Table 3). Intervals are 95% credible intervals for NIMBLE and confidence intervals for Gervasi et al.. Detection in Gervasi et al. varies by design/year; I report their overall average."
-)
+  booktabs = TRUE,
+  caption = "Comparison of parameter estimates for the same HMM to account for age uncertainty: our NIMBLE fit vs. Gervasi et al. (2017, Table 3)."#,
+#  format = "latex",
+#  longtable = TRUE
+) %>%
+  kableExtra::kable_styling(
+    latex_options = c("repeat_header", "striped"), 
+    position = "center", 
+    full_width = FALSE,
+    latex_table_env = "longtable") 
+#  kableExtra::footnote(general = "Intervals are 95% credible intervals for NIMBLE and confidence intervals for Gervasi et al.. Detection in #Gervasi et al. varies by design and year; I report their overall average.")
 ```
+
+\justifying
+
+Intervals in Table \@ref(tab:ageuncertaintycompare) are 95% credible intervals for NIMBLE and confidence intervals for @Gervasi2017. Detection in @Gervasi2017 varies by design and year; I report their overall average.
 
 Our NIMBLE fit reproduces the main biological signals reported for the Apennine brown bear. Survival shows the expected ordering, that cubs << adults, and adult females > adult males -- with estimates that closely match the published analysis. The credible/confidence intervals overlap broadly, indicating good agreement.
 
@@ -759,7 +775,7 @@ pr_m <- c(
   "m[1]" = sprintf("%s", round2(pr_m_vals[1])),
   "m[2]" = sprintf("%s", round2(pr_m_vals[2])),
   "m[3]" = sprintf("%s", round2(pr_m_vals[3])),
-  "m[4]" = "time-varying (see caption)"
+  "m[4]" = "time-varying"
 )
 
 # Error rates (mean with SE) — rounded
@@ -801,6 +817,8 @@ tab <- data.frame(
   row.names = NULL
 )
 
+library(kableExtra)
+
 # ---- Build caption with explicit m4(t) values ----
 a <- -7.3979
 b <-  0.6258
@@ -808,18 +826,24 @@ T <- 10                       # years reported for p(t) in RUN 6
 t <- 1:T
 m4_pred <- plogis(a + b * t)  # predicted m4(t)
 m4_str  <- paste(sprintf("%.3f", m4_pred), collapse = ", ")
-cap <- paste0(
-  "Comparison of parameter estimates for the same HMM to account for sex uncertainty: our NIMBLE fit vs. Pradel et al. (2008, Table 5, model B no genetically sexed anchors). Intervals are 95% credible intervals for NIMBLE and confidence intervals for Pradel et al.. Our error rates are 1 − x[i]. Pradel's m's were provided by the main author of the paper himself. Note that m4 is time-varying; the estimates were for t=1,...,", T, ": ",
-  m4_str, "."
-)
 
-kable(
+kableExtra::kable(
   tab,
   align = c("l","c","c"),
   escape = FALSE,
-  caption = cap
-)
+  booktabs = TRUE,
+  caption = "Comparison of parameter estimates for the same HMM to account for sex uncertainty: our NIMBLE fit vs. Pradel et al. (2008, Table 5, model B no genetically sexed anchors)."#,
+#  format = "latex",
+#  longtable = TRUE
+) %>%
+ kableExtra::kable_styling(latex_options = c("repeat_header", "striped"), 
+                position = "center", 
+                full_width = FALSE)
 ```
+
+\justifying
+
+Intervals in Table \@ref(tab:sexuncertainty) are 95% credible intervals for NIMBLE and confidence intervals for @pradel2008sex. Our error rates are `1 − x[i]`. Pradel's $m$'s were provided by the main author of the paper himself. Note that `m4` was time-varying; the estimates were for $t=1,\ldots,10$: 0.001, 0.002, 0.004, 0.007, 0.014, 0.026, 0.047, 0.084, 0.146, 0.242.
 
 Our NIMBLE fit recovers the main biological signals reported for the Audouin's gulls analysis. Survival shows the expected ordering -- adult females ≥ adult males -- with broadly overlapping intervals and means that are close to the published model. In our run, the female--male gap is a bit smaller (0.90 vs 0.89), but the direction matches the paper's message (higher female survival).
 

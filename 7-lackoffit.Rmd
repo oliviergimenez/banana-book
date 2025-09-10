@@ -475,12 +475,25 @@ tab <- pradel_avg |>
   arrange(factor(Transition, levels = c("MM","MC","CM","CC")),
           factor(Condition, levels = c("Equal to t-1","Not equal to t-1")))
 
-kable(
+library(kableExtra)
+
+kableExtra::kable(
   tab,
   align = c("l","l","c","c"),
-  caption = "Second-order (memory) estimates of transition probabilities. The first column gives the Transition made in $t$ to $t+1$ where M is for mid--Atlantic and C for Chesapeake. The second column gives the Condition that is whether the location at $t+1$ is Equal or Not equal to the location at $t-1$. The Pradel (2005) time-averaged estimates are given in the third column. Our NIMBLE estimates (mean and 95% credible interval) are given in the fourth column. "
-)
+  escape = FALSE,
+  booktabs = TRUE,
+  caption = "Second-order (memory) estimates of transition probabilities."#,
+#  format = "latex",
+#  longtable = TRUE
+) %>%
+  kableExtra::kable_styling(latex_options = c("repeat_header", "striped"), 
+                position = "center", 
+                full_width = FALSE)
 ```
+
+\justifying
+
+In Table \@ref(tab:memoryres), the first column gives the Transition made in $t$ to $t+1$ where M is for mid--Atlantic and C for Chesapeake. The second column gives the Condition that is whether the location at $t+1$ is Equal or Not equal to the location at $t-1$. The @pradel_multievent_2005 time-averaged estimates are given in the third column. Our NIMBLE estimates (mean and 95% credible interval) are given in the fourth column.
 
 In both analyses, memory is real: for each transition, the probability is higher when the destination at $t+1$ matches where the bird was at $t−1$ ('Equal to $t-1$' rows) than when it doesn't ('Not equal to $t-1$' rows). That's site fidelity or directional return. Our fit mirrors Pradel's fit especially well for staying in Chesapeake (CC, equal: 0.63 in both) and still shows a clear memory signal for staying in mid-Atlantic (MM, 0.50 vs 0.57 when equal). Moves also carry memory: MC is more likely when the bird was in C two steps back (0.33 vs 0.16), and CM shows a weaker but similar pattern (0.10 vs 0.06).
 
@@ -722,12 +735,21 @@ tab$`Abs % error` <- round(abs(tab$mean - tab$truth) / pmax(tab$truth, 1e-8) * 1
 out <- tab[, c("param", "truth", "Posterior mean (95% CrI)")]
 names(out) <- c("Parameter", "True value", "Posterior mean (95% credible interval)")
 
+library(kableExtra)
+
 kable(
   out[match(c("phi","pi","pp1","pp2"), out$Parameter), ],
   align = c("l","c","c","r","r"),
+  booktabs= TRUE,
   caption = "Comparison of posterior estimates from NIMBLE with the data-generating values for a finite--mixture HMM."
-)
+) %>%
+  kable_styling(latex_options = c("repeat_header", "striped"), 
+                position = "center", 
+                full_width = FALSE, 
+                latex_table_env = "longtable")
 ```
+
+\justifying
 
 Why is that? The first issue is that the classes were permuted. In our model, nothing tells NIMBLE that the highly detectable individuals must belong to class A1 and the less detectable ones to class A2. The labeling of the classes is arbitrary. The interpretation only comes afterwards, by inspecting the parameter estimates. Now if we re-calculate $\pi$ as the proportion of individuals in A1 as follows: 
 ```{r}
@@ -767,12 +789,21 @@ tab$`Abs % error` <- round(abs(tab$mean - tab$truth) / pmax(tab$truth, 1e-8) * 1
 out <- tab[, c("param", "truth", "Posterior mean (95% CrI)")]
 names(out) <- c("Parameter", "True value", "Posterior mean (95% credible interval)")
 
+library(kableExtra)
+
 kable(
   out[match(c("phi","pi","pp1","pp2"), out$Parameter), ],
   align = c("l","c","c","r","r"),
+  booktabs = TRUE,
   caption = "Comparison of posterior estimates from NIMBLE with the data-generating values for a finite--mixture HMM."
-)
+) %>%
+  kable_styling(latex_options = c("repeat_header", "striped"), 
+                position = "center", 
+                full_width = FALSE, 
+                latex_table_env = "longtable")
 ```
+
+\justifying
 
 Still, the detection estimates are off. There's a deeper issue here. The HMM formulation we used for capturing heterogeneity creates a limitation: individuals are not allowed to switch between classes over time (e.g., from A1 to A2), because the transition matrix does not permit it. In other words, any individual seen > 1 time (it's detected after the first observation occasion) can *never* change class assignments away from their initial value class assignment. Why this formulation fails? The problem is subtle but fundamental: in a HMM, transitions between states are governed by a Markov process. If the transition matrix says an individual in A1 must stay in A1 (or die), then the individual is permanently locked in that class. As a result, once an individual is assigned to a class through its initial latent state (e.g., A1), it can never change class during sampling. Even worse, any individual seen on multiple occasions (say, years 1 and 4) must stay alive during those years, the latent state cannot 'jump' between classes without violating the transition constraints, therefore, the initial class assignment is fixed forever, and the MCMC sampler cannot explore the alternative class, no matter how much data supports it.
 
@@ -1004,12 +1035,21 @@ tab$`Abs % error` <- round(100 * abs(tab$mean - tab$truth) / pmax(tab$truth, 1e-
 out <- tab[, c("param","truth","Posterior mean (95% CrI)")]
 names(out) <- c("Parameter","True value","Posterior mean (95% credible interval)")
 
+library(kableExtra)
+
 kable(
   out[match(c("phi","pi","pp1","pp2"), out$Parameter), ],
   align = c("l","c","c","r","r"),
+  booktabs = TRUE,
   caption = "Posterior estimates vs. data-generating values for a finite--mixture HMM, when a marginalized likelihood is used."
-)
+) %>%
+  kable_styling(latex_options = c("repeat_header", "striped"), 
+                position = "center", 
+                full_width = FALSE, 
+                latex_table_env = "longtable")
 ```
+
+\justifying
 
 In summary, when modeling unobservable individual heterogeneity (e.g., detection classes) in an HMM, avoid encoding class identity as a dynamic state. Instead, treat it as a fixed latent variable, or marginalize it out. Otherwise, the model is unable to explore the full posterior and will yield biased or unreliable estimates.
 
