@@ -38,14 +38,16 @@ To build up our model, we first define the states and observations:
       - 3 for killed by human activities and reported      
 
 Now we turn to writing our model. We start with the vector of initial states. Individuals enter alive the study with probability 1: 
+
+
 $$\begin{matrix}
 & \\
-\mathbf{\delta} =
+\delta =
 \left ( \vphantom{ \begin{matrix} 12 \end{matrix} } \right .
 \end{matrix}
 \hspace{-1.2em}
 \begin{matrix}
-z_t=A & z_t=H & z_t=NH & z_t=D \\ \hdashline
+z_t=A & z_t=H & z_t=NH & z_t=D \\[0.3em] \hdashline
 1 & 0 & 0 & 0\\
 \end{matrix}
 \hspace{-0.2em}
@@ -57,14 +59,16 @@ z_t=A & z_t=H & z_t=NH & z_t=D \\ \hdashline
 \end{matrix}$$
 
 We proceed with the transition matrix: 
+
+
 $$\begin{matrix}
 & \\
-\mathbf{\Gamma} =
+\Gamma =
 \left ( \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \\ 12 \end{matrix} } \right .
 \end{matrix}
 \hspace{-1.2em}
 \begin{matrix}
-z_t=A & z_t=H & z_t=NH & z_t=D \\ \hdashline
+z_t=A & z_t=H & z_t=NH & z_t=D \\[0.3em] \hdashline
 1 - \mu_H - \mu_{NH}  & \mu_H & \mu_{NH} & 0\\
 0 & 0 & 0 &  1\\
 0 & 0 & 0 &  1\\
@@ -87,9 +91,10 @@ Following the paper, adult survival is age-specific: $\mu_H$ is different for in
 # Age effects
 etaH[i,t] <- (alpha_H_01 * age_lt1[i,t] + alpha_H_ge1 * age_ge1[i,t])
 
-etaNH[i,t] <- (alpha_NH_01 * age_lt1[i,t] +                               # if age is [0,1[
-                 alpha_NH_12 * age_1to2[i,t] +                            # if age is [1,2[
-                 (beta0_NH + beta1_NH * age_std_mu2[i,t]) * age_ge2[i,t]) # linear trend if age >= 2
+etaNH[i,t] <- (alpha_NH_01 * age_lt1[i,t] + # if age is [0,1[
+              alpha_NH_12 * age_1to2[i,t] + # if age is [1,2[
+              # linear trend if age >= 2
+              (beta0_NH+beta1_NH*age_std_mu2[i,t])*age_ge2[i,t]) 
 
 # Transitions from A
 den[i,t] <- 1 + exp(etaH[i,t]) + exp(etaNH[i,t])  # denominator
@@ -99,9 +104,18 @@ gamma[i,t,1,3] <- exp(etaNH[i,t]) / den[i,t]      # muNH
 gamma[i,t,1,4] <- 0                               # always 0
 
 # From H, NH, D (always go to D)
-gamma[i,t,2,1] <- 0; gamma[i,t,2,2] <- 0; gamma[i,t,2,3] <- 0; gamma[i,t,2,4] <- 1
-gamma[i,t,3,1] <- 0; gamma[i,t,3,2] <- 0; gamma[i,t,3,3] <- 0; gamma[i,t,3,4] <- 1
-gamma[i,t,4,1] <- 0; gamma[i,t,4,2] <- 0; gamma[i,t,4,3] <- 0; gamma[i,t,4,4] <- 1
+gamma[i,t,2,1] <- 0
+gamma[i,t,2,2] <- 0
+gamma[i,t,2,3] <- 0
+gamma[i,t,2,4] <- 1
+gamma[i,t,3,1] <- 0
+gamma[i,t,3,2] <- 0
+gamma[i,t,3,3] <- 0
+gamma[i,t,3,4] <- 1
+gamma[i,t,4,1] <- 0
+gamma[i,t,4,2] <- 0
+gamma[i,t,4,3] <- 0
+gamma[i,t,4,4] <- 1
 ```
 
 In the code above, age is passed in the data and created as follows:
@@ -130,21 +144,23 @@ for (i in 1:nrow(obs_matrix)) {
 for (i in 1:nrow(obs_matrix)) {
   for (t in first[i]:K) {
     age_val <- age[i, t]
-    age_ge2[i, t] <- as.integer(age_val > 1)   # age > 1 or 2 onwards
+    age_ge2[i, t] <- as.integer(age_val > 1) # age > 1 or 2 onwards
     age_1to2[i, t] <- as.integer(age_val == 1) # age in [1,2[
   }
 }
 ```
 
 Last step is the observation matrix:
+
+
 $$\begin{matrix}
 & \\
-\mathbf{\Omega} =
+\Omega =
 \left ( \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \\ 12 \end{matrix} } \right .
 \end{matrix}
 \hspace{-1.2em}
 \begin{matrix}
-y_t=1 & y_t=2 & y_t=3\\ \hdashline
+y_t=1 & y_t=2 & y_t=3 \\[0.3em] \hdashline
 1 - p & p & 0 \\
 1 - \lambda & 0 & \lambda\\
 1 & 0 & 0\\
@@ -300,6 +316,8 @@ To build up our model, we first define the states and observations:
       - 4 for seen with a calf (1 to 3 years old)   
 
 Now we turn to writing our model. We start with the vector of initial states:
+
+
 $$
 \begin{matrix}
 & \\
@@ -308,7 +326,7 @@ $$
 \end{matrix}
 \hspace{-1.2em}
 \begin{matrix}
-\text{NB} & \text{Byoy} & \text{Bc1} & \text{Bc2} & \text{Bc3} & \text{D} \\ \hdashline
+\text{NB} & \text{Byoy} & \text{Bc1} & \text{Bc2} & \text{Bc3} & \text{D} \\[0.3em] \hdashline
 \pi_1 & \pi_2 & \pi_3 & \pi_4 & \pi_5 & 0
 \end{matrix}
 \hspace{-0.2em}
@@ -378,15 +396,17 @@ where $\displaystyle \pi_5 = 1 - \sum_{j=1}^4\pi_j$.
 <!-- ``` -->
 
 We proceed with the transition matrix given by @couet2019: 
+
+
 $$
 \begin{matrix}
 & \\
-\mathbf{\Gamma} =
+\Gamma =
 \left ( \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \\ 12 \\ 12 \\ 12 \end{matrix} } \right .
 \end{matrix}
 \hspace{-1.2em}
 \begin{matrix}
-z_t=NB & z_t = Byoy & z_t = Bc1 & z_t = Bc2 & z_t = Bc3 & z_t = D \\ \hdashline
+z_t=NB & z_t = Byoy & z_t = Bc1 & z_t = Bc2 & z_t = Bc3 & z_t = D \\[0.3em] \hdashline
 \phi_A (1 - \beta_1) & \phi_A \beta_1 & 0 & 0 & 0 & 1 - \phi_A \\
 0 & 0 & \phi_A \phi_Y & \phi_A (1-\phi_Y) & 0 & 1-\phi_A \\
 \phi_A (1 - \beta_1) & \phi_A \beta_1 & 0 & 0 & 0 & 1-\phi_A \\
@@ -409,7 +429,7 @@ z_{t-1} = D
 \end{matrix}
 $$
 
-Rather than attempting to explain the full complexity of this matrix at once, I will follow the authors' suggestion and break it down into four steps, each corresponding to a biological event in the life cycle of female bottlenose dolphins: (1) female survival $\mathbf{\Phi_A}$, (2) young survival $\mathbf{\Phi_Y}$, (3) young aging $\mathbf{AGING}$, and (4) breeding $\mathbf{BREED}$, each step being conditional on the previous ones. To do so, we introduce some intermediate states: 
+Rather than attempting to explain the full complexity of this matrix at once, I will follow the authors' suggestion and break it down into four steps, each corresponding to a biological event in the life cycle of female bottlenose dolphins: (1) female survival $\Phi_A$, (2) young survival $\Phi_Y$, (3) young aging $AGING$, and (4) breeding $BREED$, each step being conditional on the previous ones. To do so, we introduce some intermediate states: 
 
 - Intermediate states   
        - Byoy‐D for a breeding adult female that had lost her young of the year   
@@ -418,15 +438,17 @@ Rather than attempting to explain the full complexity of this matrix at once, I 
        - Bc3‐leave Breeding adult female that raised her calf to the age of 3   
 
 The four corresponding matrices are given below, starting with the female survival matrix: 
+
+
 $$
 \begin{matrix}
 & \\
-\mathbf{\Phi_A} =
+\Phi_A =
 \left ( \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \\ 12 \\ 12 \\ 12 \end{matrix} } \right .
 \end{matrix}
 \hspace{-1.2em}
 \begin{matrix}
-\text{NB} & \text{Byoy} & \text{Bc1} & \text{Bc2} & \text{Bc3} & \text{D} \\ \hdashline
+\text{NB} & \text{Byoy} & \text{Bc1} & \text{Bc2} & \text{Bc3} & \text{D} \\[0.3em] \hdashline
 \phi_A & 0      & 0      & 0      & 0      & 1 - \phi_A \\
 0      & \phi_A & 0      & 0      & 0      & 1 - \phi_A \\
 0      & 0      & \phi_A & 0      & 0      & 1 - \phi_A \\
@@ -450,15 +472,17 @@ $$
 $$
 
 An adult female survives from $t$ to $t+1$ with probability $\phi_A$ or dies with $1−\phi_A$. We go on with the young survival matrix:
+
+
 $$
 \begin{matrix}
 & \\
-\mathbf{\Phi_Y} =
+\Phi_Y =
 \left ( \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \\ 12 \\ 12 \\ 12 \end{matrix} } \right .
 \end{matrix}
 \hspace{-1.2em}
 \begin{matrix}
-\text{NB} & \text{Byoy} & \text{Byoy-D} & \text{Bc1} & \text{Bc1-D} & \text{Bc2} & \text{Bc2-D} & \text{Bc3-leave} & \text{D} \\ \hdashline
+\text{NB} & \text{Byoy} & \text{Byoy-D} & \text{Bc1} & \text{Bc1-D} & \text{Bc2} & \text{Bc2-D} & \text{Bc3-leave} & \text{D} \\[0.3em] \hdashline
 1 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 \\
 0 & \phi_{Y} & 1 - \phi_{Y} & 0 & 0 & 0 & 0 & 0 & 0 \\
 0 & 0 & 0 & \phi_{Y} & 1 - \phi_{Y} & 0 & 0 & 0 & 0 \\
@@ -483,15 +507,17 @@ $$
 
 
 Offspring survive with probability $\phi_Y$ or die with $1-\phi_Y$. If the calf survives, the female remains in the same breeding state. If it dies, she moves to an intermediate 'dead-offspring' state (BYOY-D, Bc1-D, or Bc2-D) so that later steps can condition on that loss. For 3-year-old calves, mortality cannot be distinguished from emancipation (leaving the mother), so we add an intermediate Bc3-leave state and fix survival to 1 there (this parameter is otherwise unidentifiable). As in the paper, I distinguish young‐of‐the‐year and 1‐year‐old calf survival from 2‐year‐old calf survival. We go on with the young aging matrix:
+
+
 $$
 \begin{matrix}
 & \\
-\mathbf{AGING} =
+AGING =
 \left ( \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \\ 12 \\ 12 \\ 12 \\ 12 \\ 12 \\ 12 \end{matrix} } \right .
 \end{matrix}
 \hspace{-1.2em}
 \begin{matrix}
-\text{NB} & \text{Byoy} & \text{Byoy-D} & \text{Bc1} & \text{Bc1-D} & \text{Bc2} & \text{Bc2-D} & \text{Bc3-leave} & \text{D} \\ \hdashline
+\text{NB} & \text{Byoy} & \text{Byoy-D} & \text{Bc1} & \text{Bc1-D} & \text{Bc2} & \text{Bc2-D} & \text{Bc3-leave} & \text{D} \\[0.3em] \hdashline
 1 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 \\
 0 & 1 & 0 & 0 & 0 & 0 & 0 & 0 & 0 \\
 0 & 0 & 1 & 0 & 0 & 0 & 0 & 0 & 0 \\
@@ -520,15 +546,17 @@ $$
 \end{matrix}
 $$
 The progression of calf age classes between $t$ and $t+1$ is deterministic, all relevant age-advancing transitions are set to 1, and there are no parameters estimated in this matrix. Last, here is the breeding matrix: 
+
+
 $$
 \begin{matrix}
 & \\
-\mathbf{BREED} =
+BREED =
 \left ( \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \\ 12 \\ 12 \\ 12 \\ 12 \\ 12 \\ 12 \end{matrix} } \right .
 \end{matrix}
 \hspace{-1.2em}
 \begin{matrix}
-\text{NB} & \text{Byoy} & \text{Bc1} & \text{Bc2} & \text{Bc3} & \text{D} \\ \hdashline
+\text{NB} & \text{Byoy} & \text{Bc1} & \text{Bc2} & \text{Bc3} & \text{D} \\[0.3em] \hdashline
 1 - \beta_1 & \beta_1 & 0 & 0 & 0 & 0 \\
 0 & 0 & 1 & 0 & 0 & 0 \\
 0 & 0 & 0 & 1 & 0 & 0 \\
@@ -574,14 +602,14 @@ PHIA[6, 6] <- 1
 # Row 1: NB stays NB
 PHIY[1, 1] <- 1
 # Row 2: Byoy
-PHIY[2, 2] <- youngsurvival[1]        # YOY survives → becomes Bc1
-PHIY[2, 3] <- 1 - youngsurvival[1]    # YOY dies     → becomes Byoy-D
+PHIY[2, 2] <- youngsurvival[1] # YOY survives → becomes Bc1
+PHIY[2, 3] <- 1 - youngsurvival[1] # YOY dies → becomes Byoy-D
 # Row 3: Bc1
-PHIY[3, 4] <- youngsurvival[1]        # 1-year-old survives → Bc2
-PHIY[3, 5] <- 1 - youngsurvival[1]    # dies → Bc1-D
+PHIY[3, 4] <- youngsurvival[1] # 1-year-old survives → Bc2
+PHIY[3, 5] <- 1 - youngsurvival[1] # dies → Bc1-D
 # Row 4: Bc2
-PHIY[4, 6] <- youngsurvival[2]        # 2-year-old survives → Bc3-L (emancipation)
-PHIY[4, 7] <- 1 - youngsurvival[2]    # dies → Bc2-D
+PHIY[4, 6] <- youngsurvival[2] # 2-year-old survives → Bc3-L
+PHIY[4, 7] <- 1 - youngsurvival[2] # dies → Bc2-D
 # Row 5: Bc3 always emancipates
 PHIY[5, 8] <- 1
 # Row 6: dead female stays dead
@@ -623,28 +651,30 @@ BREED[8, 1] <- 1 - beta[2]
 # Row 9: D → D
 BREED[9, 6] <- 1
 
-gamma[1:6,1:6] <- PHIA[1:6,1:6] %*% PHIY[1:6,1:9] %*% AGING[1:9,1:9] %*% BREED[1:9,1:6]
+gamma[1:6,1:6] <- PHIA[1:6,1:6] %*% PHIY[1:6,1:9] %*% 
+  AGING[1:9,1:9] %*% BREED[1:9,1:6]
 ```
 
-Last step is the observation matrix that we can also split in two steps, given these intermediate observations:
-
+Last step is the observation matrix that we can also split in two steps, given these intermediate observations:    
 - ND: for not detected     
-- DNB: for a non-breeding female detected at time $t$     
-- DByoy: for a breeding female with a young of the year detected at time $t$     
-- DBc: for a breeding female with a 1-year-old calf detected at time $t$     
-- DBc2: for a breeding female with a 2-year-old calf detected at time $t$     
-- DBc3: for a breeding female with a 3-year-old calf detected at time $t$     
+- DNB: for a non-breeding female detected at time $t$    
+- DByoy: for a breeding female with a young of the year detected at time $t$    
+- DBc: for a breeding female with a 1-year-old calf detected at time $t$    
+- DBc2: for a breeding female with a 2-year-old calf detected at time $t$    
+- DBc3: for a breeding female with a 3-year-old calf detected at time $t$    
 
 First, the detection step: 
+
+
 $$
 \begin{matrix}
 & \\
-\mathbf{DETECTION} =
+DETECTION =
 \left ( \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \\ 12 \\ 12 \\ 12 \end{matrix} } \right .
 \end{matrix}
 \hspace{-1.2em}
 \begin{matrix}
-\text{ND} & \text{DNB} & \text{DByoy} & \text{DBc} & \text{DBc2} & \text{DBc3} \\ \hdashline
+\text{ND} & \text{DNB} & \text{DByoy} & \text{DBc} & \text{DBc2} & \text{DBc3} \\[0.3em] \hdashline
 1 - p_1 & p_1 & 0 & 0 & 0 & 0 \\
 1 - p_2 & 0 & p_2 & 0 & 0 & 0 \\
 1 - p_2 & 0 & 0 & p_2 & 0 & 0 \\
@@ -668,15 +698,17 @@ $$
 $$
 
 which contains the probability $p$ of detecting the female given her latent state at $t$: $p_2$ is for females with a young of the year or a 1‐year‐old calf and $p_1$ for non-breeding females or those with an older calf. Then the observation matrix: 
+
+
 $$
 \begin{matrix}
 & \\
-\mathbf{OBS} =
+OBS =
 \left ( \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \\ 12 \\ 12 \\ 12 \end{matrix} } \right .
 \end{matrix}
 \hspace{-1.2em}
 \begin{matrix}
-1 & 2 & 3 & 4 \\ \hdashline
+1 & 2 & 3 & 4 \\[0.3em] \hdashline
 1 & 0 & 0 & 0 \\
 0 & 1 & 0 & 0 \\
 0 & 1 - q_1 & q_1 & 0 \\
@@ -873,6 +905,8 @@ To build up our model, we first define the states and observations:
       - 2 for captured      
       
 Now we turn to writing our model. We start with the vector of initial states. At the start of the study, everyone is in $NYA$, so the initial state vector is: 
+
+
 $$
 \begin{matrix}
 & \\
@@ -881,7 +915,7 @@ $$
 \end{matrix}
 \hspace{-1.2em}
 \begin{matrix}
-\text{NYA} & \text{ARR} & \text{DEP} \\ \hdashline
+\text{NYA} & \text{ARR} & \text{DEP} \\[0.3em] \hdashline
 1 & 0 & 0
 \end{matrix}
 \hspace{-0.2em}
@@ -892,14 +926,16 @@ $$
 $$
 
 We proceed with the transition matrix, which is governed by two processes: recruitment $r$ is the probability that an individual in $NYA$ enters the pond and staying $s$ is the probability that an individual in $ARR$ remains in the pond. State $DEP$ is absorbing. We have: 
+
+
 $$\begin{matrix}
 & \\
-\mathbf{\Gamma} =
+\Gamma =
 \left ( \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \end{matrix} } \right .
 \end{matrix}
 \hspace{-1.2em}
 \begin{matrix}
-z_t=NYA & z_t=ARR & z_t=DEP \\ \hdashline
+z_t=NYA & z_t=ARR & z_t=DEP \\[0.3em] \hdashline
 1 - r & r & 0 \\
 0 & s & 1 - s \\
 0 & 0 & 1
@@ -916,10 +952,14 @@ z_{t-1}=NYA \\ z_{t-1}=ARR \\ z_{t-1}=DEP
 We make both parameters $r$ and $s$ sex and time-dependent, which we code in NIMBLE:
 ```{r eval = FALSE}
 for (j in 1:(K-1)){
-  logit(r[1,j]) <- beta[1,1] + beta[1,2] * (j-4.5)/2.45 # prior probability of arriving in the pond / 1 = female
-  logit(r[2,j]) <- beta[2,1] + beta[2,2] * (j-4.5)/2.45 # prior probability of arriving in the pond / 2 = male
-  s[1,j] ~ dunif(0, 1) # prior retention probability (staying) / 1 = female
-  s[2,j] ~ dunif(0, 1) # prior retention probability (staying) / 2 = male
+  # prior probability of arriving in the pond / 1 = female
+  logit(r[1,j]) <- beta[1,1] + beta[1,2] * (j-4.5)/2.45 
+  # prior probability of arriving in the pond / 2 = male
+  logit(r[2,j]) <- beta[2,1] + beta[2,2] * (j-4.5)/2.45 
+  # prior retention probability (staying) / 1 = female
+  s[1,j] ~ dunif(0, 1) 
+  # prior retention probability (staying) / 2 = male
+  s[2,j] ~ dunif(0, 1) 
 }
 for (i in 1:N){
   for (j in 1:(K-1)){
@@ -954,14 +994,16 @@ Graphically, this corresponds to:
 ```
 
 Last step is the observation matrix:
+
+
 $$\begin{matrix}
 & \\
-\mathbf{\Omega} =
+\Omega =
 \left ( \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \end{matrix} } \right .
 \end{matrix}
 \hspace{-1.2em}
 \begin{matrix}
-y_t=1 & y_t=2 \\ \hdashline
+y_t=1 & y_t=2 \\[0.3em] \hdashline
 1 & 0 \\
 1-p & p \\
 1 & 0
@@ -997,6 +1039,7 @@ Pr(D > k \mid \text{arrive at } \tau) \;=\; \prod_{j=0}^{k-1} s_{\tau + j}.
 \]
 
 Therefore, the expected number of occasions present (counting the arrival occasion) is the sum of those tail probabilities:
+
 \[
 \mathbb{E}[D \mid \text{arrive at } \tau]
 \;=\;
@@ -1012,7 +1055,7 @@ library(MCMCvis)
 load(here::here("dat","stopover.RData"))
 ```
 
-Our NIMBLE estimates match pretty closely those obtained by @guerin_advances_2017, check out their Figure 2.  
+Our NIMBLE estimates match pretty closely those obtained by @guerin_advances_2017, compare our Figure \@ref(fig:fig-arrival-prob) with the authors' Figure 2.  
 
 ```{r echo = FALSE}
 samps <- rbind(out[[1]], out[[2]])

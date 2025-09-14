@@ -111,10 +111,10 @@ Here the animal remains alive over the first two time intervals $(z_{i,1} = z_{i
 
 You might have figured it out already (if not, not a problem), the core of our Markov process is made of transition probabilities between states alive and dead. For example, the probability of transitioning from state alive at $t-1$ to state alive at $t$ is $\Pr(z_{i,t} = 1 | z_{i,t-1} = 1) = \gamma_{1,1}$. It is the survival probability $\phi$. The probability of dying over the interval $(t-1, t)$ is $\Pr(z_{i,t} = 2 | z_{i,t-1} = 1) = \gamma_{1,2} = 1 - \phi$. Now if an animal is dead at $t-1$, then $\Pr(z_t = 1 | z_{t-1} = 2) = 0$ and $\Pr(z_{i,t} = 2 | z_{i,t-1} = 2) = 1$. 
 
-We can gather these probabilities of transition between states from one occasion to the next in a matrix, say $\mathbf{\Gamma}$, which we will call the transition matrix:
+We can gather these probabilities of transition between states from one occasion to the next in a matrix, say $\Gamma$, which we will call the transition matrix:
 
 \begin{align*}
-\mathbf{\Gamma} =
+\Gamma =
 \left(\begin{array}{cc}
 \gamma_{1,1} & \gamma_{1,2}\\
 \gamma_{2,1} & \gamma_{2,2}
@@ -127,16 +127,14 @@ We can gather these probabilities of transition between states from one occasion
 
 To try and remember that the states at $t-1$ are in rows, and the states at $t$ are in columns, I will often write:
 
-
-
 $$\begin{matrix}
 & \\
-\mathbf{\Gamma} =
+\Gamma =
     \left ( \vphantom{ \begin{matrix} 12 \\ 12 \end{matrix} } \right .
 \end{matrix}
 \hspace{-1.2em}
 \begin{matrix}
-    z_t=1 & z_t=2 \\ \hdashline
+    z_t=1 & z_t=2 \\[0.3em] \hdashline
 \phi & 1-\phi \\
 0 & 1
 \end{matrix}
@@ -155,23 +153,23 @@ Take the time you need to navigate through this matrix, and get familiar with it
 
 ### Initial states
 
-A Markov process has to start somewhere. We need the probabilities of initial states, i.e. the states of an individual at $t = 1$. We will gather the probability of being in each state (alive or 1 and dead or 2) in the first winter in a vector. We will use $\mathbf{\delta} = \left(\Pr(z_{i,1} = 1), \Pr(z_{i,1} = 2)\right)$. For simplicity, we will assume that all individuals are marked and released in the first winter, hence alive when first captured, which means that they are all in state alive or 1 for sure. Therefore we have $\mathbf{\delta} = \left(1, 0\right)$.
+A Markov process has to start somewhere. We need the probabilities of initial states, i.e. the states of an individual at $t = 1$. We will gather the probability of being in each state (alive or 1 and dead or 2) in the first winter in a vector. We will use $\delta = \left(\Pr(z_{i,1} = 1), \Pr(z_{i,1} = 2)\right)$. For simplicity, we will assume that all individuals are marked and released in the first winter, hence alive when first captured, which means that they are all in state alive or 1 for sure. Therefore we have $\delta = \left(1, 0\right)$.
 
 ### Likelihood
 
-Now that we have built a Markov model, we need its likelihood to apply the Bayes theorem. The likelihood is the probability of the data, given the model. Here the data are the $z$, therefore we need $\Pr(\mathbf{z}) = \Pr(z_1, z_2, \ldots, z_{T-2}, z_{T-1}, z_T)$.
+Now that we have built a Markov model, we need its likelihood to apply the Bayes theorem. The likelihood is the probability of the data, given the model. Here the data are the $z$, therefore we need $\Pr(z) = \Pr(z_1, z_2, \ldots, z_{T-2}, z_{T-1}, z_T)$.
 
 We're gonna work backward, starting from the last sampling occasion. Using conditional probabilities, the likelihood can be written as the product of the probability of $z_T$ i.e. you're alive or not on the last occasion given your past history, that is the states at previous occasions, times the probability of your past history:
 
 \begin{align*}
-\Pr(\mathbf{z}) &= \Pr(z_T, z_{T-1}, z_{T-2}, \ldots, z_1) \color{white}{\Pr(z_{T-1}, z_{T-2},\ldots, z_1) \Pr(z_{T-2}, \ldots, z_1)}\\
+\Pr(z) &= \Pr(z_T, z_{T-1}, z_{T-2}, \ldots, z_1) \color{white}{\Pr(z_{T-1}, z_{T-2},\ldots, z_1) \Pr(z_{T-2}, \ldots, z_1)}\\
                 &= \color{blue}{\Pr(z_T | z_{T-1}, z_{T-2},\ldots, z_1) \Pr(z_{T-1}, z_{T-2},\ldots, z_1)} \\
 \end{align*}
 
 Then because we have a Markov model, we're memory less, that is the probabilty of next state, here $z_T$, depends only on the current state, that is $z_{T-1}$, and not the previous states:
 
 \begin{align*}
-\Pr(\mathbf{z}) &= \Pr(z_T, z_{T-1}, z_{T-2}, \ldots, z_1) \color{white}{\Pr(z_{T-1}, z_{T-2},\ldots, z_1) \Pr(z_{T-2}, \ldots, z_1)}\\
+\Pr(z) &= \Pr(z_T, z_{T-1}, z_{T-2}, \ldots, z_1) \color{white}{\Pr(z_{T-1}, z_{T-2},\ldots, z_1) \Pr(z_{T-2}, \ldots, z_1)}\\
                 &= \Pr(z_T | z_{T-1}, z_{T-2},\ldots, z_1) \Pr(z_{T-1}, z_{T-2},\ldots, z_1) \\
                 &= \color{blue}{\Pr(z_T | z_{T-1})} \Pr(z_{T-1}, z_{T-2},\ldots, z_1) \\
 \end{align*}
@@ -179,7 +177,7 @@ Then because we have a Markov model, we're memory less, that is the probabilty o
 You can apply the same reasoning to $T-1$. First use conditional probabilities: 
 
 \begin{align*}
-\Pr(\mathbf{z}) &= \Pr(z_T, z_{T-1}, z_{T-2}, \ldots, z_1) \color{white}{\Pr(z_{T-1}, z_{T-2},\ldots, z_1) \Pr(z_{T-2}, \ldots, z_1)}\\
+\Pr(z) &= \Pr(z_T, z_{T-1}, z_{T-2}, \ldots, z_1) \color{white}{\Pr(z_{T-1}, z_{T-2},\ldots, z_1) \Pr(z_{T-2}, \ldots, z_1)}\\
                 &= \Pr(z_T | z_{T-1}, z_{T-2},\ldots, z_1) \Pr(z_{T-1}, z_{T-2},\ldots, z_1) \\
                 &= \Pr(z_T | z_{T-1}) \Pr(z_{T-1}, z_{T-2},\ldots, z_1) \\
                 &= \Pr(z_T | z_{T-1}) \color{blue}{\Pr(z_{T-1} | z_{T-2}, \ldots, z_1) \Pr(z_{T-2}, \ldots, z_1)}\\
@@ -188,7 +186,7 @@ You can apply the same reasoning to $T-1$. First use conditional probabilities:
 Then apply the Markovian property:
 
 \begin{align*}
-\Pr(\mathbf{z}) &= \Pr(z_T, z_{T-1}, z_{T-2}, \ldots, z_1) \color{white}{\Pr(z_{T-1}, z_{T-2},\ldots, z_1) \Pr(z_{T-2}, \ldots, z_1)}\\
+\Pr(z) &= \Pr(z_T, z_{T-1}, z_{T-2}, \ldots, z_1) \color{white}{\Pr(z_{T-1}, z_{T-2},\ldots, z_1) \Pr(z_{T-2}, \ldots, z_1)}\\
                 &= \Pr(z_T | z_{T-1}, z_{T-2},\ldots, z_1) \Pr(z_{T-1}, z_{T-2},\ldots, z_1) \\
                 &= \Pr(z_T | z_{T-1}) \Pr(z_{T-1}, z_{T-2},\ldots, z_1) \\
                 &= \Pr(z_T | z_{T-1}) \Pr(z_{T-1} | z_{T-2}, \ldots, z_1) \Pr(z_{T-2}, \ldots, z_1)\\
@@ -198,7 +196,7 @@ Then apply the Markovian property:
 And so on up to $z_2$. You end up with this expression for the likelihood:
 
 \begin{align*}
-\Pr(\mathbf{z}) &= \Pr(z_T, z_{T-1}, z_{T-2}, \ldots, z_1) \color{white}{\Pr(z_{T-1}, z_{T-2},\ldots, z_1) \Pr(z_{T-2}, \ldots, z_1)}\\
+\Pr(z) &= \Pr(z_T, z_{T-1}, z_{T-2}, \ldots, z_1) \color{white}{\Pr(z_{T-1}, z_{T-2},\ldots, z_1) \Pr(z_{T-2}, \ldots, z_1)}\\
                 &= \Pr(z_T | z_{T-1}, z_{T-2},\ldots, z_1) \Pr(z_{T-1}, z_{T-2},\ldots, z_1) \\
                 &= \Pr(z_T | z_{T-1}) \Pr(z_{T-1}, z_{T-2},\ldots, z_1) \\
                 &= \Pr(z_T | z_{T-1}) \Pr(z_{T-1} | z_{T-2}, \ldots, z_1) \Pr(z_{T-2}, \ldots, z_1)\\
@@ -210,7 +208,7 @@ And so on up to $z_2$. You end up with this expression for the likelihood:
 This is a product of conditional probabilities of states given previous states, and the probability of initial states $\Pr(z_1)$. Using a more compact notation for the product of conditional probabilities, we get:
 
 \begin{align*}
-\Pr(\mathbf{z}) &= \Pr(z_T, z_{T-1}, z_{T-2}, \ldots, z_1) \color{white}{\Pr(z_{T-1}, z_{T-2},\ldots, z_1) \Pr(z_{T-2}, \ldots, z_1)}\\
+\Pr(z) &= \Pr(z_T, z_{T-1}, z_{T-2}, \ldots, z_1) \color{white}{\Pr(z_{T-1}, z_{T-2},\ldots, z_1) \Pr(z_{T-2}, \ldots, z_1)}\\
                 &= \Pr(z_T | z_{T-1}, z_{T-2},\ldots, z_1) \Pr(z_{T-1}, z_{T-2},\ldots, z_1) \\
                 &= \Pr(z_T | z_{T-1}) \Pr(z_{T-1}, z_{T-2},\ldots, z_1) \\
                 &= \Pr(z_T | z_{T-1}) \Pr(z_{T-1} | z_{T-2}, \ldots, z_1) \Pr(z_{T-2}, \ldots, z_1)\\
@@ -223,7 +221,7 @@ This is a product of conditional probabilities of states given previous states, 
 In the product, you can recognize the transition parameters $\gamma$ we defined above, so that the likelihood of a Markov model can be written as:
 
 \begin{align*}
-\Pr(\mathbf{z}) &= \Pr(z_T, z_{T-1}, z_{T-2}, \ldots, z_1) \color{white}{\Pr(z_{T-1}, z_{T-2},\ldots, z_1) \Pr(z_{T-2}, \ldots, z_1)}\\
+\Pr(z) &= \Pr(z_T, z_{T-1}, z_{T-2}, \ldots, z_1) \color{white}{\Pr(z_{T-1}, z_{T-2},\ldots, z_1) \Pr(z_{T-2}, \ldots, z_1)}\\
                 &= \Pr(z_{1}) \prod_{t=2}^T{\gamma_{z_{t-1},z_{t}}}\\
 \end{align*}
 
@@ -238,10 +236,10 @@ In the product, you can recognize the transition parameters $\gamma$ we defined 
 
 ### Example
 
-I realise these calculations are a bit difficult to follow. Let's take an example to fix ideas. Let's assume an animal is alive, alive at time 2 then dies at time 3. We have $\mathbf{z} = (1, 1, 2)$. What is the contribution of this animal to the likelihood? Let's apply the formula we just derived:
+I realise these calculations are a bit difficult to follow. Let's take an example to fix ideas. Let's assume an animal is alive, alive at time 2 then dies at time 3. We have $z = (1, 1, 2)$. What is the contribution of this animal to the likelihood? Let's apply the formula we just derived:
 
 \begin{align*}
-\Pr(\mathbf{z} = (1, 1, 2)) &= \Pr(z_1 = 1) \; \gamma_{z_{1} = 1, z_{2} = 1} \; \gamma_{z_{2} = 1, z_{3} = 2}\\
+\Pr(z = (1, 1, 2)) &= \Pr(z_1 = 1) \; \gamma_{z_{1} = 1, z_{2} = 1} \; \gamma_{z_{2} = 1, z_{3} = 2}\\
                             &= 1 \; \phi \; (1 - \phi).
 \end{align*}
 
@@ -267,17 +265,17 @@ Initial state is a categorical random variable with probability $\delta$. That i
    z_1 &\sim \text{Categorical}(\delta) &\text{[likelihood, }t = 1 \text{]}\\
 \end{align*}
 
-Now the main part is the dynamic of the states. The state $z_t$ at $t$ depends only on the known state $z_{t-1}$ at $t-1$, and is a categorical random variable which probabilities are given by row $z_{t-1}$ of the transition matrix $\mathbf{\Gamma} = \gamma_{z_{t-1},z_{t}}$:
+Now the main part is the dynamic of the states. The state $z_t$ at $t$ depends only on the known state $z_{t-1}$ at $t-1$, and is a categorical random variable which probabilities are given by row $z_{t-1}$ of the transition matrix $\Gamma = \gamma_{z_{t-1},z_{t}}$:
 
 \begin{align*}
    z_1 &\sim \text{Categorical}(\delta) &\text{[likelihood, }t = 1 \text{]}\\
    z_t | z_{t-1} &\sim \text{Categorical}(\gamma_{z_{t-1},z_{t}}) &\text{[likelihood, }t > 1 \text{]}\\
 \end{align*}
 
-For example, if individual $i$ is alive over $(t-1,t)$ i.e. $z_{t-1} = 1$, we need the first row in $\mathbf{\Gamma}$, 
+For example, if individual $i$ is alive over $(t-1,t)$ i.e. $z_{t-1} = 1$, we need the first row in $\Gamma$, 
 
 \begin{align*}
-\mathbf{\Gamma} =
+\Gamma =
 \left(\begin{array}{cc}
 \color{blue}{\phi} & \color{blue}{1 - \phi}\\
 0 & 1
@@ -286,10 +284,10 @@ For example, if individual $i$ is alive over $(t-1,t)$ i.e. $z_{t-1} = 1$, we ne
 
 that is $\color{blue}{\gamma_{z_{t-1} = 1,z_{t}} = (\phi, 1-\phi)}$ and $z_t | z_{t-1} = 1 \sim \text{Categorical}((\phi, 1-\phi))$. 
 
-Otherwise, if individual $i$ dies over $(t-1,t)$ i.e. $z_{t-1} = 2$, we need the second row in $\mathbf{\Gamma}$:
+Otherwise, if individual $i$ dies over $(t-1,t)$ i.e. $z_{t-1} = 2$, we need the second row in $\Gamma$:
 
 \begin{align*}
-\mathbf{\Gamma} =
+\Gamma =
 \left(\begin{array}{cc}
 \phi & 1 - \phi\\
 \color{blue}{0} & \color{blue}{1}
@@ -325,9 +323,12 @@ markov.survival <- nimbleCode({
 Alternatively, you can define vectors and matrices in NIMBLE like you would do it in R. You can write:
 ```{r eval = FALSE}
 markov.survival <- nimbleCode({
-  phi ~ dunif(0, 1) # prior
-  delta[1:2] <- c(1, 0) # vector of initial state probabilities
-  gamma[1:2,1:2] <- matrix( c(phi, 0, 1 - phi, 1), nrow = 2) # transition matrix
+  # prior
+  phi ~ dunif(0, 1) 
+  # vector of initial state probabilities
+  delta[1:2] <- c(1, 0) 
+  # transition matrix
+  gamma[1:2,1:2] <- matrix( c(phi, 0, 1 - phi, 1), nrow = 2) 
 ...
 ```
 
@@ -534,10 +535,10 @@ Compare with the previous $z$ table. Some 1's for alive have become 0's for non-
 
 The novelty in HMMs is the link between observations and states. This link is made through observation probabilities. For example, the probability of detecting an animal $i$ at $t$ given it is alive at $t$ is $\Pr(y_{i,t}=2|z_{i,t}=1)=\omega_{1,2}$. It is the detection probability $p$. If individual $i$ is dead at $t$, then it is missed for sure, and  $\Pr(y_{i,t}=1|z_{i,t}=2)=\omega_{2,1}=1$. 
 
-We can gather these observation probabilities into an observation matrix $\mathbf{\Omega}$. In rows we have the states alive $z = 1$ and dead $z = 2$, while in columns we have the observations non-detected $y = 1$ and detected $y = 2$ (previously coded 0 and 1 respectively):
+We can gather these observation probabilities into an observation matrix $\Omega$. In rows we have the states alive $z = 1$ and dead $z = 2$, while in columns we have the observations non-detected $y = 1$ and detected $y = 2$ (previously coded 0 and 1 respectively):
 
 \begin{align*}
-\mathbf{\Omega} =
+\Omega =
 \left(\begin{array}{cc}
 \omega_{1,1} & \omega_{1,2}\\
 \omega_{2,1} & \omega_{2,2}
@@ -554,12 +555,12 @@ The observation matrix is:
 
 $$\begin{matrix}
 & \\
-\mathbf{\Omega} =
+\Omega =
     \left ( \vphantom{ \begin{matrix} 12 \\ 12 \end{matrix} } \right .
 \end{matrix}
 \hspace{-1.2em}
 \begin{matrix}
-    y_t=1 \mbox{ (non-detected)} & y_t=2 \mbox{ (detected)} \\ \hdashline
+    y_t=1 \mbox{ (non-detected)} & y_t=2 \mbox{ (detected)} \\[0.3em] \hdashline
 1 - p & p\\
 1 & 0\\
 \end{matrix}
@@ -643,20 +644,20 @@ Have a look to the example below, in which an individual is detected at first sa
 In the Bayesian framework, we usually work with the so-called complete likelihood, that is the probability of the observed data $y$ and the latent states $z$ given the parameters of our model, here the survival and detection probabilities $\phi$ and $p$. The complete likelihood for individual $i$ is:
 
 \begin{align*}
-\Pr(\mathbf{y}_i, \mathbf{z}_i) &= \Pr(y_{i,1}, y_{i,2}, \ldots, y_{i,T}, z_{i,1}, z_{i,2}, \ldots, z_{i,T})\\
+\Pr({y}_i, {z}_i) &= \Pr(y_{i,1}, y_{i,2}, \ldots, y_{i,T}, z_{i,1}, z_{i,2}, \ldots, z_{i,T})\\
 \end{align*}
 
 Using the definition of a conditional probability, we have:
 
 \begin{align*}
-\Pr(\mathbf{y}_i, \mathbf{z}_i) &= \Pr(y_{i,1}, y_{i,2}, \ldots, y_{i,T}, z_{i,1}, z_{i,2}, \ldots, z_{i,T})\\
+\Pr({y}_i, {z}_i) &= \Pr(y_{i,1}, y_{i,2}, \ldots, y_{i,T}, z_{i,1}, z_{i,2}, \ldots, z_{i,T})\\
                   &= \color{blue}{\Pr(y_{i,1}, y_{i,2}, \ldots, y_{i,T} | z_{i,1}, z_{i,2}, \ldots, z_{i,T}) \Pr(z_{i,1}, z_{i,2}, \ldots, z_{i,T})}\\
 \end{align*}
 
 Then by using the independence of the $y$ conditional on the $z$, and the likelihood of a Markov chain, we get that:
 
 \begin{align*}
-\Pr(\mathbf{y}_i, \mathbf{z}_i) &= \Pr(y_{i,1}, y_{i,2}, \ldots, y_{i,T}, z_{i,1}, z_{i,2}, \ldots, z_{i,T})\\
+\Pr({y}_i, {z}_i) &= \Pr(y_{i,1}, y_{i,2}, \ldots, y_{i,T}, z_{i,1}, z_{i,2}, \ldots, z_{i,T})\\
                   &= \Pr(y_{i,1}, y_{i,2}, \ldots, y_{i,T} | z_{i,1}, z_{i,2}, \ldots, z_{i,T}) \Pr(z_{i,1}, z_{i,2}, \ldots, z_{i,T})\\
                 &= \color{blue}{\left(\prod_{t=1}^T{\Pr{(y_{i,t} | z_{i,t})}}\right) \left(\Pr(z_{i,1}) \prod_{t=2}^T{\Pr{(z_{i,t} | z_{i,t-1})}}\right)}\\
 \end{align*}
@@ -664,13 +665,13 @@ Then by using the independence of the $y$ conditional on the $z$, and the likeli
 Finally, by recognizing the observation and transition probabilities, we have that the complete likelihood for individual $i$ is:
 
 \begin{align*}
-\Pr(\mathbf{y}_i, \mathbf{z}_i) &= \Pr(y_{i,1}, y_{i,2}, \ldots, y_{i,T}, z_{i,1}, z_{i,2}, \ldots, z_{i,T})\\
+\Pr({y}_i, {z}_i) &= \Pr(y_{i,1}, y_{i,2}, \ldots, y_{i,T}, z_{i,1}, z_{i,2}, \ldots, z_{i,T})\\
                   &= \Pr(y_{i,1}, y_{i,2}, \ldots, y_{i,T} | z_{i,1}, z_{i,2}, \ldots, z_{i,T}) \Pr(z_{i,1}, z_{i,2}, \ldots, z_{i,T})\\
                 &= \color{blue}{\left(\prod_{t=1}^T{\omega_{z_{i,t}, y_{i,t}}}\right) \left(\Pr(z_{i,1}) \prod_{t=2}^T{\gamma_{z_{i,t-1},z_{i,t}}}\right)}\\
 \end{align*}
 
 
-To obtain the complete likelihood of the whole dataset, we need to multiply this individual likelihood for each animal $\displaystyle{\prod_{i=1}^N{\Pr(\mathbf{y}_i,\mathbf{z}_i)}}$. When several individuals have the same contribution, calculating their individual contribution only once can greatly reduce the computational burden, as illustrated in Section \@ref(pooled-likelihood).
+To obtain the complete likelihood of the whole dataset, we need to multiply this individual likelihood for each animal $\displaystyle{\prod_{i=1}^N{\Pr({y}_i,{z}_i)}}$. When several individuals have the same contribution, calculating their individual contribution only once can greatly reduce the computational burden, as illustrated in Section \@ref(pooled-likelihood).
 
 The Bayesian approach with MCMC methods allows treating the latent states $z_{i,t}$ as if they were parameters, and to be estimated as such. However, the likelihood is rather complex with a large number of latent states $z_{i,t}$, which comes with computational costs and slow mixing. There are situations where the latent states are the focus of ecological inference and need to be estimated (see Suggested reading below). However, if not needed, you might want to get rid of the latent states and rely on the so-called marginal likelihood. By doing so, you can avoid sampling the latent states, focus on the ecological parameters, and often speeds up computations and improves mixing as shown in Section \@ref(marginalization). Actually, you can even estimate the latent states afterwards, as illustrated in Section \@ref(decoding).
 
@@ -851,7 +852,8 @@ Omega[2,2] <- 0          # Pr(dead t -> detected t)
 # Matrix of states
 z <- matrix(NA, nrow = nind, ncol = nocc)
 y <- z
-y[,1] <- 2 # all individuals are detected in first winter, as we condition on first detection
+y[,1] <- 2 # all individuals are detected in first winter, 
+           # as we condition on first detection
 for (i in 1:nind){
   z[i,1] <- rcat(n = 1, prob = delta) # 1 for sure
   for (t in 2:nocc){
@@ -942,15 +944,15 @@ In some situations, you will not be interested in inferring the hidden states $z
 Using the formula of total probability, you get the marginal likelihood by summing over all possible states in the complete likelihood:
 
 \begin{align*}
-\Pr(\mathbf{y}_i) &= \Pr(y_{i,1}, y_{i,2}, \ldots, y_{i,T})\\
-                &= \sum_{\mathbf{z}_i} \Pr(\mathbf{y}_i, \mathbf{z}_i)\\
+\Pr({y}_i) &= \Pr(y_{i,1}, y_{i,2}, \ldots, y_{i,T})\\
+                &= \sum_{{z}_i} \Pr({y}_i, {z}_i)\\
                 &= \sum_{z_{i,1}} \cdots \sum_{z_{i,T}} \Pr(y_{i,1}, y_{i,2}, \ldots, y_{i,T}, z_{i,1}, z_{i,2}, \ldots, z_{i,T})\\
 \end{align*}
 
 Going through the same steps as for deriving the complete likelihood, we obtain the marginal likelihood:
 
 \begin{align*}
-\Pr(\mathbf{y}_i) &= \sum_{z_{i,1}} \cdots \sum_{z_{i,T}} \left(\prod_{t=1}^T{\omega_{z_{i,t}, y_{i,t}}}\right) \left(\Pr(z_{i,1}) \prod_{t=2}^T{\gamma_{z_{i,t-1},z_{i,t}}}\right)\\
+\Pr({y}_i) &= \sum_{z_{i,1}} \cdots \sum_{z_{i,T}} \left(\prod_{t=1}^T{\omega_{z_{i,t}, y_{i,t}}}\right) \left(\Pr(z_{i,1}) \prod_{t=2}^T{\gamma_{z_{i,t-1},z_{i,t}}}\right)\\
 \end{align*}
 
 
@@ -958,8 +960,10 @@ Let's go through an example. Let's imagine we have $T = 3$ winters, and we'd lik
 
 \begin{align*}
 \begin{split}
-\Pr(y_1 = 2, y_2 = 2, y_3 = 1) &= \sum_{i=1}^{2} \sum_{j=1}^{2} \sum_{k=1}^{2} \Pr(y_1 = 2 | z_1 = i) \Pr(y_2 = 2 | z_2 = j) \Pr(y_3 = 1 | z_3 = k) \\ 
-& \qquad \Pr(z_1=i) \Pr(z_2 = j | z_1 = i) \Pr(z_3 = k | z_2 = j)\\
+\Pr(y_1 = 2, y_2 = 2, y_3 = 1) &= \sum_{i=1}^{2} \sum_{j=1}^{2} \sum_{k=1}^{2} \Pr(y_1 = 2 | z_1 = i) \\
+& \qquad \Pr(y_2 = 2 | z_2 = j) \Pr(y_3 = 1 | z_3 = k) \\ 
+& \qquad \Pr(z_1=i) \Pr(z_2 = j | z_1 = i) \\
+& \qquad \Pr(z_3 = k | z_2 = j)
 \end{split}
 \end{align*}
 
@@ -1015,7 +1019,7 @@ In the brute-force approach, some products are computed several times to calcula
 
 We introduce $\alpha_t(j)$ the probability for the latent state $z$ of being in state $j$ at $t$  after seeing the first $j$ observations $y_1, \ldots, y_t$, that is $\alpha_t(j) = \Pr(y_1, \ldots, y_t, z_t = j)$. 
 
-Using the law of total probability, we can write the marginal likelihood as a function of $\alpha_T(j)$, namely we have $\Pr(\mathbf{y}) = \displaystyle{\sum_{j=1}^N\Pr(y_1, \ldots, y_t, z_t = j)} = \displaystyle{\sum_{j=1}^N\alpha_T(j)}$. 
+Using the law of total probability, we can write the marginal likelihood as a function of $\alpha_T(j)$, namely we have $\Pr({y}) = \displaystyle{\sum_{j=1}^N\Pr(y_1, \ldots, y_t, z_t = j)} = \displaystyle{\sum_{j=1}^N\alpha_T(j)}$. 
 
 How to calculate the the $\alpha_T(j)$s? This is where the magic of the forward algorithm happens. We use a recurrence relationship that saves us many computations.
 
@@ -1048,7 +1052,7 @@ which, using conditional independence, simplifies into:
 
 Recognizing that $\Pr(y_{t}|z_{t}=j)=\omega_{j,y_t}$, $\Pr(z_{t} = j | z_{t-1} = i) = \gamma_{i,j}$ and $\Pr(z_{t-1} = i, y_1, \ldots, y_t) = \alpha_{t-1}(i)$, we obtain the recurrence. 
 
-In practice, the forward algorithm works as follows. First you initialize the procedure by calculating for the states $j=1,\ldots,N$ the quantities $\alpha_1(j) = Pr(z_1 = j) \omega_{j,y_1}$. Then you compute for the states $j=1,\ldots,N$ the relationship $\alpha_t(j) = \displaystyle{\sum_{i=1}^N \alpha_{t-1}(i) \gamma_{i,j} \omega_{j,y_t}}$ for $t = 2, \ldots, T$. Finally, you compute the marginal likelihood as $\Pr(\mathbf{y}) = \displaystyle{\sum_{j=1}^N\alpha_T(j)}$. At each time $t$, we need to calculate $N$ values of $\alpha_t(j)$, and each $\alpha_t(j)$ is a sum of $N$ products of $\alpha_{t-1}$, $\gamma_{i,j}$ and $\omega_{j,y_t}$, hence $TN^2$ computations in total, which is much less than the $2TN^T$ calculations in the brute-force approach.
+In practice, the forward algorithm works as follows. First you initialize the procedure by calculating for the states $j=1,\ldots,N$ the quantities $\alpha_1(j) = Pr(z_1 = j) \omega_{j,y_1}$. Then you compute for the states $j=1,\ldots,N$ the relationship $\alpha_t(j) = \displaystyle{\sum_{i=1}^N \alpha_{t-1}(i) \gamma_{i,j} \omega_{j,y_t}}$ for $t = 2, \ldots, T$. Finally, you compute the marginal likelihood as $\Pr({y}) = \displaystyle{\sum_{j=1}^N\alpha_T(j)}$. At each time $t$, we need to calculate $N$ values of $\alpha_t(j)$, and each $\alpha_t(j)$ is a sum of $N$ products of $\alpha_{t-1}$, $\gamma_{i,j}$ and $\omega_{j,y_t}$, hence $TN^2$ computations in total, which is much less than the $2TN^T$ calculations in the brute-force approach.
 
 Going back to our example, we wish to calculate $\Pr(y_1 = 2, y_2 = 2, y_3 = 1)$. First we initialize and compute $\alpha_1(1)$ and $\alpha_1(2)$. We have:
 
@@ -1117,11 +1121,12 @@ dHMMhomemade <- nimbleFunction(
                  probInit = double(1), # vector of initial states
                  probObs = double(2), # observation matrix
                  probTrans = double(2), # transition matrix
-                 len = double(0, default = 0), # number of sampling occasions
+                 len = double(0, default = 0), # nb sampling occ
                  log = integer(0, default = 0)) {
-    alpha <- probInit[1:2] # * probObs[1:2,x[1]] == 1 due to conditioning on first detection
+    alpha <- probInit[1:2] # * probObs[1:2,x[1]] == 1 due to 
+                           # conditioning on first detection
     for (t in 2:len) {
-      alpha[1:2] <- (alpha[1:2] %*% probTrans[1:2,1:2]) * probObs[1:2,x[t]]
+    alpha[1:2]<-(alpha[1:2]%*%probTrans[1:2,1:2])*probObs[1:2,x[t]]
     }
     logL <- log(sum(alpha[1:2]))
     returnType(double(0))
@@ -1141,7 +1146,8 @@ rHMMhomemade <- nimbleFunction(
                  len = double(0, default = 0)) {
     returnType(double(1))
     z <- numeric(len)
-    z[1] <- rcat(n = 1, prob = probInit[1:2]) # all individuals alive at t = 0
+    # all individuals alive at t = 0
+    z[1] <- rcat(n = 1, prob = probInit[1:2]) 
     y <- z
     y[1] <- 2 # all individuals are detected at t = 0
     for (t in 2:len){
@@ -1226,8 +1232,8 @@ hmm.survival <- nimbleCode({
   omega[2,2] <- 0        # Pr(dead t -> detected t)
   for (i in 1:N){
     y[i,1:T] ~ dHMMhomemade(probInit = delta[1:2], 
-                            probObs = omega[1:2,1:2], # observation matrix
-                            probTrans = gamma[1:2,1:2], # transition matrix
+                            probObs = omega[1:2,1:2], # observation
+                            probTrans = gamma[1:2,1:2], # transition
                             len = T) # nb of sampling occasions
   }
 })
@@ -1301,9 +1307,9 @@ hmm.survival <- nimbleCode({
     omega[2,2,t] <- 0        # Pr(dead t -> detected t)
   }
   for (i in 1:N){
-    y[i,1:5] ~ dHMMo(init = delta[1:2], # vector of initial state probabilities
-                     probObs = omega[1:2,1:2,1:5], # observation matrix
-                     probTrans = gamma[1:2,1:2], # transition matrix
+    y[i,1:5] ~ dHMMo(init = delta[1:2], # initial state probs
+                     probObs = omega[1:2,1:2,1:5], # obs matrix
+                     probTrans = gamma[1:2,1:2], # trans matrix
                      len = 5, # nb of sampling occasions
                      checkRowSums = 0) # skip validity checks
   }
@@ -1371,7 +1377,7 @@ dHMMpooled <- nimbleFunction(
                  log = integer(0, default = 0)) {
     alpha <- probInit[1:2]
     for (t in 2:len) {
-      alpha[1:2] <- (alpha[1:2] %*% probTrans[1:2,1:2]) * probObs[1:2,x[t]]
+    alpha[1:2]<-(alpha[1:2]%*%probTrans[1:2,1:2])*probObs[1:2,x[t]]
     }
     logL <- log(sum(alpha[1:2])) * size
     returnType(double(0))
@@ -1392,7 +1398,8 @@ rHMMpooled <- nimbleFunction(
                  size = double(0)) {
     returnType(double(1))
     z <- numeric(len)
-    z[1] <- rcat(n = 1, prob = probInit[1:2]) # all individuals alive at t = 0
+    # all individuals alive at t = 0
+    z[1] <- rcat(n = 1, prob = probInit[1:2]) 
     y <- z
     y[1] <- 2 # all individuals are detected at t = 0
     for (t in 2:len){
@@ -1429,10 +1436,11 @@ hmm.survival <- nimbleCode({
   omega[2,2] <- 0        # Pr(dead t -> detected t)
   for (i in 1:N){
     y[i,1:T] ~ dHMMpooled(probInit = delta[1:2], 
-                          probObs = omega[1:2,1:2], # observation matrix
-                          probTrans = gamma[1:2,1:2], # transition matrix
+                          probObs = omega[1:2,1:2], # obs matrix
+                          probTrans = gamma[1:2,1:2], # trans matrix
                           len = T, # nb of sampling occasions
-                          size = size[i]) # number of individuals with encounter history i
+                          size = size[i]) # number of individuals 
+                                          # with encounter history i
   }
 })
 ```
@@ -1453,7 +1461,9 @@ For example, we have `r y_pooled[1,1]` individuals with encounter history (`r y_
 
 Now you can resume the NIMBLE workflow:
 ```{r}
-my.constants <- list(N = nrow(y_pooled), T = 5, size = y_pooled[,'size'])
+my.constants <- list(N = nrow(y_pooled), 
+                     T = 5, 
+                     size = y_pooled[,'size'])
 my.data <- list(y = y_pooled[,-1] + 1) # delete size from dataset
 initial.values <- function() list(phi = runif(1,0,1),
                                   p = runif(1,0,1))
@@ -1742,11 +1752,11 @@ This is where the Viterbi algorithm comes in. The idea is to decompose this over
 
 For first winter, the probability of being alive and detected is 1, while the probability of being dead and detected is 0. Now what is the probability of being alive in the second winter and non-detected? If the animal was alive in the first winter, it remains alive and is missed with probability $1 \times \phi (1-p) = 0.32$. If it was dead in the first winter, then this probability is 0. The maximum probability is 0.32 obviously so the most probable scenario to being alive in the second winter is being alive in the first winter. What about being dead in the second winter? If the animal was alive in first winter, then the probability is $1 \times (1-\phi) \times 1 = 0.2$. If dead, then this probability is $0 \times 0 \times (1-p) = 0$. The maximum probability is 0.2 obviously so the most probable scenario to being dead in the second winter is being alive in the first winter. Doing these calculations for third, fourth and fifth winters, we get the probabilities:
 
-|             | winter 1 |       winter2       |         winter 3        |           winter 4          |             winter 5            |
-|:-----------:|:--------:|:-------------------:|:-----------------------:|:---------------------------:|:-------------------------------:|
+|  winter         |     1    |         2           |             3           |             4               |               5                 |
+|:---------------:|:--------:|:-------------------:|:-----------------------:|:---------------------------:|:-------------------------------:|
 | **state alive** |     1    | 0.32 = max(0, 0.32) | 0.2304 = max(0, 0.2304) | 0.110592 = max(0, 0.110592) | 0.053084416 = max(0, 0.05308416 |
-|  **state dead** |     0    |  1 = max(1, 0.2)  |    1 = max(0.096, 1)    |     1 = max(0.04608, 1)     |      1 = max(0.0221184, 1)      |
-| **observation** | detected |        missed       |          missed         |            missed           |              missed             |
+|  **state dead** |     0    |  1 = max(1, 0.2)    |    1 = max(0.096, 1)    |     1 = max(0.04608, 1)     |      1 = max(0.0221184, 1)      |
+| **obs.** | det. |        missed       |          missed         |            missed           |              missed             |
 
 
 Finally, to get (or decode) the optimal path, you work backwards and trace back the previous value that yielded the maximum probability. The most probable state in the last winter is dead (1 > 0.05308416), dead again in the fourth winter (1 > 0.110592), dead in the third winter (1 > 0.2304), alive in the second winter (1 > 0.48) and alive in the firt winter (1 > 0). According to the Viterbi algorithm, the sequence of states that most likelily generated the sequence of observations (`r y[15,] + 1`) is alive then dead, dead, dead and dead or (1 2 2 2 2). This differs slightly from the actual sequence of states (`r z[15,]`) in that the state in second winter is decoded dead while animal #15 only dies in third winter.
@@ -1763,7 +1773,8 @@ knitr::include_graphics("images/treillis-viterbi.png")
 
 Let's write a R function to implement the Viterbi algorithm. As parameters, our function will take the transition and observation matrices, the vector of initial state probabilities and the observed sequence of detections and non-detections for which you aim to compute the sequence of states from which it was most likely generated:
 ```{r}
-# getViterbi() returns sequence of states that most likely generated sequence of observations
+# getViterbi() returns sequence of states that most 
+# likely generated sequence of observations
 # adapted from https://github.com/vbehnam/viterbi
 getViterbi <- function(Omega, Gamma, delta, y) {
 # Omega: transition matrix
@@ -1790,7 +1801,8 @@ zz[,1] <- 1 # alive at first occasion
 for (i in 2:T) {
     for (j in 1:N) {
       obs <- y[i]
-      # initialize to -1, then overwritten by for loop coz all possible values are >= 0
+      # initialize to -1, then overwritten by 
+      # for loop coz all possible values are >= 0
       nu[j,i] <- -1
       # loop to find max and argmax for k
       for (k in 1:N) {
@@ -1882,7 +1894,10 @@ for (i in 1:nrow(y)){
     emission[1,2] <- p[j]          # Pr(alive t -> detected t)
     emission[2,1] <- 1          # Pr(dead t -> non-detected t)
     emission[2,2] <- 0          # Pr(dead t -> detected t)
-    res_mcmc[j,1:T] <- getViterbi(emission, transition, delta, y[i,] + 1)
+    res_mcmc[j,1:T] <- getViterbi(Omega = emission, 
+                                  Gamma = transition, 
+                                  delta = delta, 
+                                  y = y[i,] + 1)
   }
   res[i, 1:length(y[1,])] <- apply(res_mcmc, 2, median)
 }
@@ -1930,7 +1945,10 @@ emission[2,1] <- 1                # Pr(dead t -> non-detected t)
 emission[2,2] <- 0                # Pr(dead t -> detected t)
 res <- matrix(NA, nrow = nrow(y), ncol = T)
 for (i in 1:nrow(y)){
-  res[i, 1:length(y[1,]) ] <- getViterbi(emission, transition, delta, y[i,] + 1)
+  res[i, 1:length(y[1,]) ] <- getViterbi(Omega = emission, 
+                                         Gamma = transition, 
+                                         delta = delta, 
+                                         y = y[i,] + 1)
 }
 ```
 

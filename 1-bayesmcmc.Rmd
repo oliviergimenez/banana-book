@@ -18,6 +18,8 @@ Bayes' theorem gives you $\Pr(A \mid B)$ using marginal probabilities $\Pr(A)$ a
 
 $$\Pr(A \mid B) = \displaystyle{\frac{ \Pr(B \mid A) \; \Pr(A)}{\Pr(B)}}.$$
 
+We talk about a marginal probability when we are interested in the probability of an event "on its own", without any particular condition. For example, $\Pr(A)$ or $\Pr(B)$ are the overall chances of $A$ or $B$, without taking anything else into account. It is called marginal because, if you built a table with all possible combinations (for instance, dice outcomes classified as even/odd and as "six/not six"), then $\Pr(A)$ and $\Pr(B)$ are obtained by adding up the entries of a row or a column, that is, what you read in the margins of the table.
+
 Originally, Bayes' theorem was seen as a way to infer an unkown cause A of a particular effect B, knowing the probability of effect B given cause A. Think for example of a situation where a medical diagnosis is needed, with A an unknown disease and B symptoms, the doctor knows Pr(symptoms|disease) and wants to derive Pr(disease|symptoms). This way of reversing $\Pr(B \mid A)$ into $\Pr(A \mid B)$ explains why Bayesian thinking used to be referred to as 'inverse probability'. 
 
 
@@ -25,12 +27,12 @@ Originally, Bayes' theorem was seen as a way to infer an unkown cause A of a par
 <!-- knitr::include_graphics("images/bayes_neon.jpeg") -->
 <!-- ``` -->
 
-I don't know about you, but I need to think twice for not messing the letters around. I find it easier to remember Bayes' theorem written like this:
-
-$$\Pr(\text{hypothesis} \mid \text{data}) = \frac{ \Pr(\text{data} \mid \text{hypothesis}) \; \Pr(\text{hypothesis})}{\Pr(\text{data})}$$
-
+I don't know about you, but I need to think twice for not messing the letters around. 
 
 :::: {.blackbox data-latex=""}
+I find it easier to remember Bayes' theorem written like this:
+
+$$\Pr(\text{hypothesis} \mid \text{data}) = \frac{ \Pr(\text{data} \mid \text{hypothesis}) \; \Pr(\text{hypothesis})}{\Pr(\text{data})}$$
 The *hypothesis* is a working assumption about which you want to learn using *data*. In capture--recapture analyses, the hypothesis might be a parameter like detection probability, or regression parameters in a relationship between survival probability and a covariate (see Chapter \@ref(survival)). Bayes' theorem tells us how to obtain the probability of a hypothesis given the data we have. 
 ::::
 
@@ -117,7 +119,7 @@ Then we get a numerical approximation of the posterior of winter survival by app
 ```{r}
 grid <- seq(0, 1, 0.01) # grid of values for theta
 numerical_posterior <- data.frame(survival = grid, 
-                                  posterior = numerator(grid)/denominator) # Bayes' theorem
+  posterior = numerator(grid)/denominator) # Bayes' theorem
 numerical_posterior %>%
   ggplot() +
   aes(x = survival, y = posterior) + 
@@ -141,7 +143,7 @@ plot(x,dbeta(x, 0.8, 0.8),type='l',xlab='',ylab='',main='beta(0.8,0.8)',lwd=3,co
 ```
 
 If the likelihood of the data $y$ is binomial with $n$ trials and probability of success $\theta$, and the prior is a beta distribution with parameters $a$ and $b$, then the posterior is a beta distribution with parameters $a + y$ and $b + n - y$. In our example, we have $n = 57$ trials and $y = 19$ animals that survived and a uniform prior between 0 and 1 or a beta distribution with parameters $a = b = 1$, therefore survival has a beta posterior distribution with parameters 20 and 39. Let's superimpose the exact posterior and the numerical approximation:
-```{r}
+```{r echo = FALSE}
 explicit_posterior <- dbeta(grid, y + a, n - y + b)
 dfexpposterior <- data.frame(survival = grid, explicit_posterior = explicit_posterior)
 ggplot() + 
@@ -157,7 +159,7 @@ ggplot() +
             linetype = "dashed")
 ```
 
-Clearly, the exact (dashed line) vs. numerical approximation (continuous line) of winter survival posterior distribution are indistinguishable, suggesting that the numerical approximation is more than fine. 
+Clearly, the exact (brick-red) vs. numerical approximation (cream) of winter survival posterior distribution are indistinguishable, suggesting that the numerical approximation is more than fine. 
 
 <!-- To finish up, let's add the prior.  -->
 <!-- ```{r, echo = FALSE} -->
@@ -197,8 +199,10 @@ These simulation algorithms are called Markov chain Monte Carlo (MCMC), and they
 
 What does Monte Carlo stand for? Monte Carlo integration is a simulation technique to calculate integrals of any function $f$ of random variable $X$ with distribution $\Pr(X)$ say $\int f(X) \Pr(X)dX$. You draw values $X_1,\ldots,X_k$ from $\Pr(X)$ the distribution of $X$, apply function $f$ to these values, then calculate the mean of these new values $\displaystyle{\frac{1}{k}}\sum_{i=1}^k{f(X_i)}$ to approximate the integral. How is Monte Carlo integration used in a Bayesian context? The posterior distribution contains all the information we need about the parameter to be estimated. When dealing with many parameters however, you may want to summarise posterior results by calculating numerical summaries. The simplest numerical summary is the mean of the posterior distribution, $E(\theta) = \int \theta \Pr(\theta|\text{data})$, where $X$ is $\theta$ now and $f$ is the identity function. Posterior mean can be calculated with Monte Carlo integration:
 ```{r}
-sample_from_posterior <- rbeta(1000, 20, 39) # draw 1000 values from posterior survival beta(20,39)
-mean(sample_from_posterior) # compute mean with Monte Carlo integration
+# draw 1000 values from posterior survival beta(20,39)
+sample_from_posterior <- rbeta(1000, 20, 39) 
+# compute mean with Monte Carlo integration
+mean(sample_from_posterior) 
 ```
 
 You may check that the mean we have just calculated matches closely the expectation of a beta distribution:
@@ -213,31 +217,34 @@ quantile(sample_from_posterior, probs = c(2.5/100, 97.5/100))
 
 ### Markov chains {#markovmodelmcmc}
 
-What is a Markov chain? A Markov chain is a random sequence of numbers, in which each number depends only on the previous number. An example is the weather in my home town in Southern France, Montpellier, in which a sunny day is most likely to be followed by another sunny day, say with probability 0.8, and a rainy day is rarely followed by another rainy day, say with probability 0.1. The dynamic of this Markov chain is captured by the transition matrix $\mathbf{\Gamma}$:
+What is a Markov chain? A Markov chain is a random sequence of numbers, in which each number depends only on the previous number. An example is the weather in my home town in Southern France, Montpellier, in which a sunny day is most likely to be followed by another sunny day, say with probability 0.8, and a rainy day is rarely followed by another rainy day, say with probability 0.1. The dynamic of this Markov chain is captured by the transition matrix $\Gamma$:
+\vspace{0.9em}
 $$
 \begin{matrix}
 & \\
-\mathbf{\Gamma} = 
+\Gamma = 
     \left ( \vphantom{ \begin{matrix} 12 \\ 12 \end{matrix} } \right .
 \end{matrix}
 \hspace{-1.2em}
 \begin{matrix}
-    \text{sunny tomorrow} & \text{rainy tomorrow} \\ 
+    \text{sunny tomorrow} & \text{rainy tomorrow} \\[0.3em]
 0.8 & 0.2 \\ 
 0.9 & 0.1 \\ 
 \end{matrix}
 \hspace{-0.2em}
 \begin{matrix}
 & \\
-\left . \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \end{matrix} } \right )
+\left . \vphantom{ \begin{matrix} 12 \\ 12 \end{matrix} } \right )
     \begin{matrix}
     \text{sunny today} \\ \text{rainy today}
     \end{matrix}
 \end{matrix}
 $$
+
 In rows the weather today, and in columns the weather tomorrow. The cells give the probability of a sunny or rainy day tomorrow, given the day is sunny or rainy today. Under certain conditions, a Markov chain will converge to a unique stationary distribution. In our weather example, let's run the Markov chain for 20 steps:
 ```{r}
-weather <- matrix(c(0.8, 0.2, 0.9, 0.1), nrow = 2, byrow = T) # transition matrix
+# transition matrix
+weather <- matrix(c(0.8, 0.2, 0.9, 0.1), nrow = 2, byrow = T) 
 steps <- 20
 for (i in 1:steps){
   weather <- weather %*% weather # matrix multiplication
@@ -260,7 +267,7 @@ There are several ways of constructing Markov chains for Bayesian inference. You
 Let's go back to our example on animal survival estimation. We illustrate sampling from survival posterior distribution. We write functions for likelihood, prior and posterior:
 
 ```{r}
-# 19 animals recaptured alive out of 57 captured, marked and released
+# 19 recaptured alive out of 57 captured, marked and released
 survived <- 19
 released <- 57
 
@@ -311,10 +318,14 @@ accept[1] <- 1
 
 Then, we need a function to propose a candidate value: 
 ```{r}
-move <- function(x, away = 1){ # by default, standard deviation of the proposal distribution is 1
-  logitx <- log(x / (1 - x)) # apply logit transform (-infinity,+infinity)
-  logit_candidate <- logitx + rnorm(1, 0, away) # add a value taken from N(0,sd=away) to current value
-  candidate <- plogis(logit_candidate) # back-transform (0,1)
+# by default, standard deviation of the proposal distribution is 1
+move <- function(x, away = 1){
+  # apply logit transform (-infinity,+infinity)
+  logitx <- log(x / (1 - x)) 
+  # add a value taken from N(0,sd=away) to current value
+  logit_candidate <- logitx + rnorm(1, 0, away)
+  # back-transform (0,1)
+  candidate <- plogis(logit_candidate) 
   return(candidate)
 }
 ```
@@ -358,7 +369,9 @@ Visually, you may look at the chain:
 df <- data.frame(x = 1:steps, y = theta.post)
 df %>%
   ggplot() +
-  geom_line(aes(x = x, y = y), size = 1.5, color = wesanderson::wes_palettes$Zissou1[1]) + 
+  geom_line(aes(x = x, y = y), 
+            size = 1.5, 
+            color = wesanderson::wes_palettes$Zissou1[1]) + 
   labs(x = "iterations", y = "samples") + 
   ylim(0.1, 0.6)
 ```
@@ -431,8 +444,14 @@ Can we run another chain and start at initial value 0.2 this time? Yes, just go 
 theta.post2 <- metropolis(steps = 100, inits = 0.2)
 df2 <- data.frame(x = 1:steps, y = theta.post2)
 ggplot() +
-  geom_line(data = df, aes(x = x, y = y), size = 1.5, color = wesanderson::wes_palettes$Zissou1[1]) + 
-  geom_line(data = df2, aes(x = x, y = y), size = 1.5, color = wesanderson::wes_palettes$Zissou1[3]) + 
+  geom_line(data = df,
+            aes(x = x, y = y), 
+            size = 1.5, 
+            color = wesanderson::wes_palettes$Zissou1[1]) + 
+  geom_line(data = df2, 
+            aes(x = x, y = y), 
+            size = 1.5, 
+            color = wesanderson::wes_palettes$Zissou1[3]) + 
   labs(x = "iterations", y = "values from posterior distribution") + 
   ylim(0.1, 0.6)
 ```
@@ -445,10 +464,13 @@ theta.post <- metropolis(steps = steps, inits = 0.5)
 df <- data.frame(x = 1:steps, y = theta.post)
 df %>%
   ggplot() +
-  geom_line(aes(x = x, y = y), size = 1, color = wesanderson::wes_palettes$Zissou1[1]) + 
+  geom_line(aes(x = x, y = y), 
+            size = 1, 
+            color = wesanderson::wes_palettes$Zissou1[1]) + 
   labs(x = "iterations", y = "values from posterior distribution") + 
   ylim(0.1, 0.6) + 
-  geom_hline(aes(yintercept = mean(theta.post), linetype = "posterior mean")) + 
+  geom_hline(aes(yintercept = mean(theta.post), 
+                 linetype = "posterior mean")) + 
   scale_linetype_manual(name = "", values = c(2,2)) 
 ```
 
@@ -530,7 +552,9 @@ theta.post <- metropolis(steps = steps, inits = 0.99)
 df <- data.frame(x = 1:steps, y = theta.post)
 df %>%
   ggplot() +
-  geom_line(aes(x = x, y = y), size = 1.2, color = wesanderson::wes_palettes$Zissou1[1]) + 
+  geom_line(aes(x = x, y = y), 
+            size = 1.2, 
+            color = wesanderson::wes_palettes$Zissou1[1]) + 
   labs(x = "iterations", y = "survival") + 
   theme_light(base_size = 14) + 
   annotate("rect", 
@@ -603,13 +627,17 @@ It is important to bear in mind that a value near 1 for the BGR statistic is onl
 How long of a chain is needed to produce reliable parameter estimates? To answer this question, you need to keep in mind that successive steps in a Markov chain are not independent -- this is usually referred to as *autocorrelation*. Ideally, we would like to keep autocorrelation as low as possible. Here again, trace plots are useful to diagnose issues with autocorrelation. Let's get back to our survival example. The figure below shows trace plots for different values of the standard deviation (parameter *away*) of the normal proposal distribution we use to propose a candidate value (Section \@ref(metropolis-algorithm)): 
 
 ```{r, echo = TRUE}
-# inspired from https://bookdown.org/content/3686/markov-chain-monte-carlo.html
+# inspired from 
+# https://bookdown.org/content/3686/markov-chain-monte-carlo.html
 
 n_steps <- 10000
 
 d <-
   tibble(away = c(0.1, 1, 10)) %>% 
-  mutate(accepted_traj = map(away, metropolis, steps = n_steps, inits = 0.1)) %>% 
+  mutate(accepted_traj = map(away, 
+                             metropolis, 
+                             steps = n_steps, 
+                             inits = 0.1)) %>% 
   unnest(accepted_traj)
 
 d <-
@@ -621,10 +649,14 @@ trace <- d %>%
   ggplot(aes(y = accepted_traj, x = iter)) +
   geom_path(size = 1/4, color = "steelblue") +
   geom_point(size = 1/2, alpha = 1/2, color = "steelblue") +
-  scale_y_continuous("survival", breaks = 0:5 * 0.1, limits = c(0.15, 0.5)) +
+  scale_y_continuous("survival", 
+                     breaks = 0:5 * 0.1, 
+                     limits = c(0.15, 0.5)) +
   scale_x_continuous("iterations", 
-                     breaks = seq(n_steps-n_steps*10/100,n_steps,by = 600), 
-                     limits = c(n_steps-n_steps*10/100, n_steps)) +
+                     breaks = seq(n_steps-n_steps*10/100,
+                                  n_steps,
+                                  by = 600), 
+                     limits = c(n_steps-n_steps*10/100,n_steps)) +
   facet_wrap(~proposal_sd, ncol = 3) +
   theme_light(base_size = 14)
 
@@ -637,9 +669,12 @@ In addition to trace plots, autocorrelation function (ACF) plots are a convenien
 
 ```{r}
 library(forecast)
-plot1 <- ggAcf(x = d$accepted_traj[d$proposal_sd=="Proposal SD = 0.1"]) + ggtitle("Proposal SD = 0.1")
-plot2 <- ggAcf(x = d$accepted_traj[d$proposal_sd=="Proposal SD = 1"]) + ggtitle("Proposal SD = 1")
-plot3 <- ggAcf(x = d$accepted_traj[d$proposal_sd=="Proposal SD = 10"]) + ggtitle("Proposal SD = 10")
+mask <- d$proposal_sd=="Proposal SD = 0.1"
+plot1 <- ggAcf(x = d$accepted_traj[mask]) + ggtitle("SD = 0.1")
+mask <- d$proposal_sd=="Proposal SD = 1"
+plot2 <- ggAcf(x = d$accepted_traj[mask]) + ggtitle("SD = 1")
+mask <- d$proposal_sd=="Proposal SD = 10"
+plot3 <- ggAcf(x = d$accepted_traj[mask]) + ggtitle("SD = 10")
 
 library(patchwork)
 (plot1 + plot2 + plot3)
@@ -649,9 +684,12 @@ In the left and right panels, autocorrelation is strong, decreases slowly with i
 
 Autocorrelation is not necessarily a big issue. Strongly correlated observations just require large sample sizes and therefore longer simulations. But how many iterations exactly? The effective sample size (`n.eff`) measures chain length while taking into account chain autocorrelation. You should check the `n.eff` of every parameter of interest, and of any interesting parameter combinations. In general, we need $\text{n.eff} \geq 400$ independent steps to get reasonable Monte Carlo estimates of model parameters. In the animal survival example, `n.eff` can be calculated with the R `coda::effectiveSize()` function:
 ```{r neff, echo = TRUE}
-neff1 <- coda::effectiveSize(d$accepted_traj[d$proposal_sd=="Proposal SD = 0.1"])
-neff2 <- coda::effectiveSize(d$accepted_traj[d$proposal_sd=="Proposal SD = 1"])
-neff3 <- coda::effectiveSize(d$accepted_traj[d$proposal_sd=="Proposal SD = 10"])
+mask <- d$proposal_sd=="Proposal SD = 0.1"
+neff1 <- coda::effectiveSize(d$accepted_traj[mask])
+mask <- d$proposal_sd=="Proposal SD = 1"
+neff2 <- coda::effectiveSize(d$accepted_traj[mask])
+mask <- d$proposal_sd=="Proposal SD = 10"
+neff3 <- coda::effectiveSize(d$accepted_traj[mask])
 df <- tibble("Proposal SD" = c(0.1, 1, 10),
              "n.eff" = round(c(neff1, neff2, neff3)))
 df

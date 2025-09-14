@@ -136,15 +136,15 @@
 - 2 for captured for the first time or recaptured<br>
 - 3 for killed by human activities and reported</p></li>
 </ul>
-<p>Now we turn to writing our model. We start with the vector of initial states. Individuals enter alive the study with probability 1:
-<span class="math display">\[\begin{matrix}
+<p>Now we turn to writing our model. We start with the vector of initial states. Individuals enter alive the study with probability 1:</p>
+<p><span class="math display">\[\begin{matrix}
 &amp; \\
-\mathbf{\delta} =
+\delta =
 \left ( \vphantom{ \begin{matrix} 12 \end{matrix} } \right .
 \end{matrix}
 \hspace{-1.2em}
 \begin{matrix}
-z_t=A &amp; z_t=H &amp; z_t=NH &amp; z_t=D \\ \hdashline
+z_t=A &amp; z_t=H &amp; z_t=NH &amp; z_t=D \\[0.3em] \hdashline
 1 &amp; 0 &amp; 0 &amp; 0\\
 \end{matrix}
 \hspace{-0.2em}
@@ -154,15 +154,15 @@ z_t=A &amp; z_t=H &amp; z_t=NH &amp; z_t=D \\ \hdashline
 \begin{matrix}
 \end{matrix}
 \end{matrix}\]</span></p>
-<p>We proceed with the transition matrix:
-<span class="math display">\[\begin{matrix}
+<p>We proceed with the transition matrix:</p>
+<p><span class="math display">\[\begin{matrix}
 &amp; \\
-\mathbf{\Gamma} =
+\Gamma =
 \left ( \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \\ 12 \end{matrix} } \right .
 \end{matrix}
 \hspace{-1.2em}
 \begin{matrix}
-z_t=A &amp; z_t=H &amp; z_t=NH &amp; z_t=D \\ \hdashline
+z_t=A &amp; z_t=H &amp; z_t=NH &amp; z_t=D \\[0.3em] \hdashline
 1 - \mu_H - \mu_{NH}  &amp; \mu_H &amp; \mu_{NH} &amp; 0\\
 0 &amp; 0 &amp; 0 &amp;  1\\
 0 &amp; 0 &amp; 0 &amp;  1\\
@@ -178,14 +178,15 @@ z_{t-1}=A \\ z_{t-1}=H \\ z_{t-1}=NH \\ z_{t-1}=D
 \end{matrix}\]</span></p>
 <p>where the transition probability from <span class="math inline">\(A\)</span> at <span class="math inline">\(t\)</span> to <span class="math inline">\(H\)</span> at <span class="math inline">\(t + 1\)</span> is the human-related mortality probability <span class="math inline">\(\mu_H\)</span> and the transition probability from <span class="math inline">\(A\)</span> at <span class="math inline">\(t\)</span> to <span class="math inline">\(NH\)</span> at <span class="math inline">\(t + 1\)</span> is the natural mortality probability <span class="math inline">\(\mu_{NH}\)</span>. Because an individual could not return to state <span class="math inline">\(A\)</span> once dead, we fix these transitions to 0.</p>
 <p>Following the paper, adult survival is age-specific: <span class="math inline">\(\mu_H\)</span> is different for individuals in their first year of life after birth ([0,1[) vs. age 1 onwards, while <span class="math inline">\(\mu_{NH}\)</span> has two different parameters for ages [0,1[ and [1,2[ then a linear trend with age from age 2 onward. We use a multinomial logit link function to ensure that mortality probabilities are estimated between 0 and 1 and sum up to 1, see Section <a href="dispersal.html#multinomiallogit">5.4.2</a>. In NIMBLE, we code:</p>
-<div class="sourceCode" id="cb356"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb353"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Transition matrix</span></span>
 <span><span class="co"># Age effects</span></span>
 <span><span class="va">etaH</span><span class="op">[</span><span class="va">i</span>,<span class="va">t</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="op">(</span><span class="va">alpha_H_01</span> <span class="op">*</span> <span class="va">age_lt1</span><span class="op">[</span><span class="va">i</span>,<span class="va">t</span><span class="op">]</span> <span class="op">+</span> <span class="va">alpha_H_ge1</span> <span class="op">*</span> <span class="va">age_ge1</span><span class="op">[</span><span class="va">i</span>,<span class="va">t</span><span class="op">]</span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">etaNH</span><span class="op">[</span><span class="va">i</span>,<span class="va">t</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="op">(</span><span class="va">alpha_NH_01</span> <span class="op">*</span> <span class="va">age_lt1</span><span class="op">[</span><span class="va">i</span>,<span class="va">t</span><span class="op">]</span> <span class="op">+</span>                               <span class="co"># if age is [0,1[</span></span>
-<span>                 <span class="va">alpha_NH_12</span> <span class="op">*</span> <span class="va">age_1to2</span><span class="op">[</span><span class="va">i</span>,<span class="va">t</span><span class="op">]</span> <span class="op">+</span>                            <span class="co"># if age is [1,2[</span></span>
-<span>                 <span class="op">(</span><span class="va">beta0_NH</span> <span class="op">+</span> <span class="va">beta1_NH</span> <span class="op">*</span> <span class="va">age_std_mu2</span><span class="op">[</span><span class="va">i</span>,<span class="va">t</span><span class="op">]</span><span class="op">)</span> <span class="op">*</span> <span class="va">age_ge2</span><span class="op">[</span><span class="va">i</span>,<span class="va">t</span><span class="op">]</span><span class="op">)</span> <span class="co"># linear trend if age &gt;= 2</span></span>
+<span><span class="va">etaNH</span><span class="op">[</span><span class="va">i</span>,<span class="va">t</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="op">(</span><span class="va">alpha_NH_01</span> <span class="op">*</span> <span class="va">age_lt1</span><span class="op">[</span><span class="va">i</span>,<span class="va">t</span><span class="op">]</span> <span class="op">+</span> <span class="co"># if age is [0,1[</span></span>
+<span>              <span class="va">alpha_NH_12</span> <span class="op">*</span> <span class="va">age_1to2</span><span class="op">[</span><span class="va">i</span>,<span class="va">t</span><span class="op">]</span> <span class="op">+</span> <span class="co"># if age is [1,2[</span></span>
+<span>              <span class="co"># linear trend if age &gt;= 2</span></span>
+<span>              <span class="op">(</span><span class="va">beta0_NH</span><span class="op">+</span><span class="va">beta1_NH</span><span class="op">*</span><span class="va">age_std_mu2</span><span class="op">[</span><span class="va">i</span>,<span class="va">t</span><span class="op">]</span><span class="op">)</span><span class="op">*</span><span class="va">age_ge2</span><span class="op">[</span><span class="va">i</span>,<span class="va">t</span><span class="op">]</span><span class="op">)</span> </span>
 <span></span>
 <span><span class="co"># Transitions from A</span></span>
 <span><span class="va">den</span><span class="op">[</span><span class="va">i</span>,<span class="va">t</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span> <span class="op">+</span> <span class="fu"><a href="https://rdrr.io/r/base/Log.html">exp</a></span><span class="op">(</span><span class="va">etaH</span><span class="op">[</span><span class="va">i</span>,<span class="va">t</span><span class="op">]</span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="https://rdrr.io/r/base/Log.html">exp</a></span><span class="op">(</span><span class="va">etaNH</span><span class="op">[</span><span class="va">i</span>,<span class="va">t</span><span class="op">]</span><span class="op">)</span>  <span class="co"># denominator</span></span>
@@ -195,11 +196,20 @@ z_{t-1}=A \\ z_{t-1}=H \\ z_{t-1}=NH \\ z_{t-1}=D
 <span><span class="va">gamma</span><span class="op">[</span><span class="va">i</span>,<span class="va">t</span>,<span class="fl">1</span>,<span class="fl">4</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0</span>                               <span class="co"># always 0</span></span>
 <span></span>
 <span><span class="co"># From H, NH, D (always go to D)</span></span>
-<span><span class="va">gamma</span><span class="op">[</span><span class="va">i</span>,<span class="va">t</span>,<span class="fl">2</span>,<span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0</span>; <span class="va">gamma</span><span class="op">[</span><span class="va">i</span>,<span class="va">t</span>,<span class="fl">2</span>,<span class="fl">2</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0</span>; <span class="va">gamma</span><span class="op">[</span><span class="va">i</span>,<span class="va">t</span>,<span class="fl">2</span>,<span class="fl">3</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0</span>; <span class="va">gamma</span><span class="op">[</span><span class="va">i</span>,<span class="va">t</span>,<span class="fl">2</span>,<span class="fl">4</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span></span>
-<span><span class="va">gamma</span><span class="op">[</span><span class="va">i</span>,<span class="va">t</span>,<span class="fl">3</span>,<span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0</span>; <span class="va">gamma</span><span class="op">[</span><span class="va">i</span>,<span class="va">t</span>,<span class="fl">3</span>,<span class="fl">2</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0</span>; <span class="va">gamma</span><span class="op">[</span><span class="va">i</span>,<span class="va">t</span>,<span class="fl">3</span>,<span class="fl">3</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0</span>; <span class="va">gamma</span><span class="op">[</span><span class="va">i</span>,<span class="va">t</span>,<span class="fl">3</span>,<span class="fl">4</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span></span>
-<span><span class="va">gamma</span><span class="op">[</span><span class="va">i</span>,<span class="va">t</span>,<span class="fl">4</span>,<span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0</span>; <span class="va">gamma</span><span class="op">[</span><span class="va">i</span>,<span class="va">t</span>,<span class="fl">4</span>,<span class="fl">2</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0</span>; <span class="va">gamma</span><span class="op">[</span><span class="va">i</span>,<span class="va">t</span>,<span class="fl">4</span>,<span class="fl">3</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0</span>; <span class="va">gamma</span><span class="op">[</span><span class="va">i</span>,<span class="va">t</span>,<span class="fl">4</span>,<span class="fl">4</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span></span></code></pre></div>
+<span><span class="va">gamma</span><span class="op">[</span><span class="va">i</span>,<span class="va">t</span>,<span class="fl">2</span>,<span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0</span></span>
+<span><span class="va">gamma</span><span class="op">[</span><span class="va">i</span>,<span class="va">t</span>,<span class="fl">2</span>,<span class="fl">2</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0</span></span>
+<span><span class="va">gamma</span><span class="op">[</span><span class="va">i</span>,<span class="va">t</span>,<span class="fl">2</span>,<span class="fl">3</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0</span></span>
+<span><span class="va">gamma</span><span class="op">[</span><span class="va">i</span>,<span class="va">t</span>,<span class="fl">2</span>,<span class="fl">4</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span></span>
+<span><span class="va">gamma</span><span class="op">[</span><span class="va">i</span>,<span class="va">t</span>,<span class="fl">3</span>,<span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0</span></span>
+<span><span class="va">gamma</span><span class="op">[</span><span class="va">i</span>,<span class="va">t</span>,<span class="fl">3</span>,<span class="fl">2</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0</span></span>
+<span><span class="va">gamma</span><span class="op">[</span><span class="va">i</span>,<span class="va">t</span>,<span class="fl">3</span>,<span class="fl">3</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0</span></span>
+<span><span class="va">gamma</span><span class="op">[</span><span class="va">i</span>,<span class="va">t</span>,<span class="fl">3</span>,<span class="fl">4</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span></span>
+<span><span class="va">gamma</span><span class="op">[</span><span class="va">i</span>,<span class="va">t</span>,<span class="fl">4</span>,<span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0</span></span>
+<span><span class="va">gamma</span><span class="op">[</span><span class="va">i</span>,<span class="va">t</span>,<span class="fl">4</span>,<span class="fl">2</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0</span></span>
+<span><span class="va">gamma</span><span class="op">[</span><span class="va">i</span>,<span class="va">t</span>,<span class="fl">4</span>,<span class="fl">3</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0</span></span>
+<span><span class="va">gamma</span><span class="op">[</span><span class="va">i</span>,<span class="va">t</span>,<span class="fl">4</span>,<span class="fl">4</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span></span></code></pre></div>
 <p>In the code above, age is passed in the data and created as follows:</p>
-<div class="sourceCode" id="cb357"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb354"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Build an N x K age matrix</span></span>
 <span><span class="va">age</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html">matrix</a></span><span class="op">(</span><span class="fl">0</span>, nrow <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html">nrow</a></span><span class="op">(</span><span class="va">obs_matrix</span><span class="op">)</span>, ncol <span class="op">=</span> <span class="va">K</span><span class="op">)</span></span>
 <span><span class="kw">for</span> <span class="op">(</span><span class="va">i</span> <span class="kw">in</span> <span class="fl">1</span><span class="op">:</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html">nrow</a></span><span class="op">(</span><span class="va">obs_matrix</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
@@ -224,19 +234,19 @@ z_{t-1}=A \\ z_{t-1}=H \\ z_{t-1}=NH \\ z_{t-1}=D
 <span><span class="kw">for</span> <span class="op">(</span><span class="va">i</span> <span class="kw">in</span> <span class="fl">1</span><span class="op">:</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html">nrow</a></span><span class="op">(</span><span class="va">obs_matrix</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
 <span>  <span class="kw">for</span> <span class="op">(</span><span class="va">t</span> <span class="kw">in</span> <span class="va">first</span><span class="op">[</span><span class="va">i</span><span class="op">]</span><span class="op">:</span><span class="va">K</span><span class="op">)</span> <span class="op">{</span></span>
 <span>    <span class="va">age_val</span> <span class="op">&lt;-</span> <span class="va">age</span><span class="op">[</span><span class="va">i</span>, <span class="va">t</span><span class="op">]</span></span>
-<span>    <span class="va">age_ge2</span><span class="op">[</span><span class="va">i</span>, <span class="va">t</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/integer.html">as.integer</a></span><span class="op">(</span><span class="va">age_val</span> <span class="op">&gt;</span> <span class="fl">1</span><span class="op">)</span>   <span class="co"># age &gt; 1 or 2 onwards</span></span>
+<span>    <span class="va">age_ge2</span><span class="op">[</span><span class="va">i</span>, <span class="va">t</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/integer.html">as.integer</a></span><span class="op">(</span><span class="va">age_val</span> <span class="op">&gt;</span> <span class="fl">1</span><span class="op">)</span> <span class="co"># age &gt; 1 or 2 onwards</span></span>
 <span>    <span class="va">age_1to2</span><span class="op">[</span><span class="va">i</span>, <span class="va">t</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/integer.html">as.integer</a></span><span class="op">(</span><span class="va">age_val</span> <span class="op">==</span> <span class="fl">1</span><span class="op">)</span> <span class="co"># age in [1,2[</span></span>
 <span>  <span class="op">}</span></span>
 <span><span class="op">}</span></span></code></pre></div>
-<p>Last step is the observation matrix:
-<span class="math display">\[\begin{matrix}
+<p>Last step is the observation matrix:</p>
+<p><span class="math display">\[\begin{matrix}
 &amp; \\
-\mathbf{\Omega} =
+\Omega =
 \left ( \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \\ 12 \end{matrix} } \right .
 \end{matrix}
 \hspace{-1.2em}
 \begin{matrix}
-y_t=1 &amp; y_t=2 &amp; y_t=3\\ \hdashline
+y_t=1 &amp; y_t=2 &amp; y_t=3 \\[0.3em] \hdashline
 1 - p &amp; p &amp; 0 \\
 1 - \lambda &amp; 0 &amp; \lambda\\
 1 &amp; 0 &amp; 0\\
@@ -251,7 +261,7 @@ z_{t}=A \\ z_{t}=H \\ z_{t}=NH \\ z_{t}=D
 \end{matrix}
 \end{matrix}\]</span></p>
 <p>where a live individual can be detected with probability <span class="math inline">\(p\)</span>, or not with probability <span class="math inline">\(1−p\)</span>. We include time-dependence and age on <span class="math inline">\(p\)</span>, with a different parameter for 1 year-old individuals vs. individuals older than 1 year of age. In NIMBLE, we write:</p>
-<div class="sourceCode" id="cb358"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb355"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">pA</span><span class="op">[</span><span class="va">i</span>,<span class="va">t</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="va">p_ageLE1</span><span class="op">[</span><span class="va">t</span><span class="op">]</span> <span class="op">*</span> <span class="va">age_lt1</span><span class="op">[</span><span class="va">i</span>,<span class="va">t</span><span class="op">]</span> <span class="op">+</span> <span class="va">p_ageGT1</span><span class="op">[</span><span class="va">t</span><span class="op">]</span> <span class="op">*</span> <span class="va">age_ge1</span><span class="op">[</span><span class="va">i</span>,<span class="va">t</span><span class="op">]</span></span></code></pre></div>
 <p>An individual that just died from human causes can be recovered and reported with probability <span class="math inline">\(\lambda\)</span>, or not with probability <span class="math inline">\(1-\lambda\)</span>. Because tag recovery protocols were constant over the course of the study, the authors considered that parameter to be constant over time and across age classes.</p>
 </div>
@@ -300,8 +310,8 @@ Figure 8.1: Age‐specific mortality probabilities for human‐related (solid li
 - 3 for seen with a young of the year<br>
 - 4 for seen with a calf (1 to 3 years old)</p></li>
 </ul>
-<p>Now we turn to writing our model. We start with the vector of initial states:
-<span class="math display">\[
+<p>Now we turn to writing our model. We start with the vector of initial states:</p>
+<p><span class="math display">\[
 \begin{matrix}
 &amp; \\
 \boldsymbol{\delta} =
@@ -309,7 +319,7 @@ Figure 8.1: Age‐specific mortality probabilities for human‐related (solid li
 \end{matrix}
 \hspace{-1.2em}
 \begin{matrix}
-\text{NB} &amp; \text{Byoy} &amp; \text{Bc1} &amp; \text{Bc2} &amp; \text{Bc3} &amp; \text{D} \\ \hdashline
+\text{NB} &amp; \text{Byoy} &amp; \text{Bc1} &amp; \text{Bc2} &amp; \text{Bc3} &amp; \text{D} \\[0.3em] \hdashline
 \pi_1 &amp; \pi_2 &amp; \pi_3 &amp; \pi_4 &amp; \pi_5 &amp; 0
 \end{matrix}
 \hspace{-0.2em}
@@ -366,16 +376,16 @@ where <span class="math inline">\(\displaystyle \pi_5 = 1 - \sum_{j=1}^4\pi_j\)<
 <!--   node[pos=0.5, above] {$1$} (NB); -->
 <!-- \end{tikzpicture} -->
 <!-- ``` -->
-<p>We proceed with the transition matrix given by <span class="citation">Couet et al. (<a href="references.html#ref-couet2019">2019</a>)</span>:
-<span class="math display">\[
+<p>We proceed with the transition matrix given by <span class="citation">Couet et al. (<a href="references.html#ref-couet2019">2019</a>)</span>:</p>
+<p><span class="math display">\[
 \begin{matrix}
 &amp; \\
-\mathbf{\Gamma} =
+\Gamma =
 \left ( \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \\ 12 \\ 12 \\ 12 \end{matrix} } \right .
 \end{matrix}
 \hspace{-1.2em}
 \begin{matrix}
-z_t=NB &amp; z_t = Byoy &amp; z_t = Bc1 &amp; z_t = Bc2 &amp; z_t = Bc3 &amp; z_t = D \\ \hdashline
+z_t=NB &amp; z_t = Byoy &amp; z_t = Bc1 &amp; z_t = Bc2 &amp; z_t = Bc3 &amp; z_t = D \\[0.3em] \hdashline
 \phi_A (1 - \beta_1) &amp; \phi_A \beta_1 &amp; 0 &amp; 0 &amp; 0 &amp; 1 - \phi_A \\
 0 &amp; 0 &amp; \phi_A \phi_Y &amp; \phi_A (1-\phi_Y) &amp; 0 &amp; 1-\phi_A \\
 \phi_A (1 - \beta_1) &amp; \phi_A \beta_1 &amp; 0 &amp; 0 &amp; 0 &amp; 1-\phi_A \\
@@ -397,7 +407,7 @@ z_{t-1} = D
 \end{matrix}
 \end{matrix}
 \]</span></p>
-<p>Rather than attempting to explain the full complexity of this matrix at once, I will follow the authors’ suggestion and break it down into four steps, each corresponding to a biological event in the life cycle of female bottlenose dolphins: (1) female survival <span class="math inline">\(\mathbf{\Phi_A}\)</span>, (2) young survival <span class="math inline">\(\mathbf{\Phi_Y}\)</span>, (3) young aging <span class="math inline">\(\mathbf{AGING}\)</span>, and (4) breeding <span class="math inline">\(\mathbf{BREED}\)</span>, each step being conditional on the previous ones. To do so, we introduce some intermediate states:</p>
+<p>Rather than attempting to explain the full complexity of this matrix at once, I will follow the authors’ suggestion and break it down into four steps, each corresponding to a biological event in the life cycle of female bottlenose dolphins: (1) female survival <span class="math inline">\(\Phi_A\)</span>, (2) young survival <span class="math inline">\(\Phi_Y\)</span>, (3) young aging <span class="math inline">\(AGING\)</span>, and (4) breeding <span class="math inline">\(BREED\)</span>, each step being conditional on the previous ones. To do so, we introduce some intermediate states:</p>
 <ul>
 <li>Intermediate states<br>
 - Byoy‐D for a breeding adult female that had lost her young of the year<br>
@@ -405,16 +415,16 @@ z_{t-1} = D
 - Bc2‐D for a breeding adult female that had lost her 2‐year‐old calf<br>
 - Bc3‐leave Breeding adult female that raised her calf to the age of 3</li>
 </ul>
-<p>The four corresponding matrices are given below, starting with the female survival matrix:
-<span class="math display">\[
+<p>The four corresponding matrices are given below, starting with the female survival matrix:</p>
+<p><span class="math display">\[
 \begin{matrix}
 &amp; \\
-\mathbf{\Phi_A} =
+\Phi_A =
 \left ( \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \\ 12 \\ 12 \\ 12 \end{matrix} } \right .
 \end{matrix}
 \hspace{-1.2em}
 \begin{matrix}
-\text{NB} &amp; \text{Byoy} &amp; \text{Bc1} &amp; \text{Bc2} &amp; \text{Bc3} &amp; \text{D} \\ \hdashline
+\text{NB} &amp; \text{Byoy} &amp; \text{Bc1} &amp; \text{Bc2} &amp; \text{Bc3} &amp; \text{D} \\[0.3em] \hdashline
 \phi_A &amp; 0      &amp; 0      &amp; 0      &amp; 0      &amp; 1 - \phi_A \\
 0      &amp; \phi_A &amp; 0      &amp; 0      &amp; 0      &amp; 1 - \phi_A \\
 0      &amp; 0      &amp; \phi_A &amp; 0      &amp; 0      &amp; 1 - \phi_A \\
@@ -436,16 +446,16 @@ z_{t-1} = D
 \end{matrix}
 \end{matrix}
 \]</span></p>
-<p>An adult female survives from <span class="math inline">\(t\)</span> to <span class="math inline">\(t+1\)</span> with probability <span class="math inline">\(\phi_A\)</span> or dies with <span class="math inline">\(1−\phi_A\)</span>. We go on with the young survival matrix:
-<span class="math display">\[
+<p>An adult female survives from <span class="math inline">\(t\)</span> to <span class="math inline">\(t+1\)</span> with probability <span class="math inline">\(\phi_A\)</span> or dies with <span class="math inline">\(1−\phi_A\)</span>. We go on with the young survival matrix:</p>
+<p><span class="math display">\[
 \begin{matrix}
 &amp; \\
-\mathbf{\Phi_Y} =
+\Phi_Y =
 \left ( \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \\ 12 \\ 12 \\ 12 \end{matrix} } \right .
 \end{matrix}
 \hspace{-1.2em}
 \begin{matrix}
-\text{NB} &amp; \text{Byoy} &amp; \text{Byoy-D} &amp; \text{Bc1} &amp; \text{Bc1-D} &amp; \text{Bc2} &amp; \text{Bc2-D} &amp; \text{Bc3-leave} &amp; \text{D} \\ \hdashline
+\text{NB} &amp; \text{Byoy} &amp; \text{Byoy-D} &amp; \text{Bc1} &amp; \text{Bc1-D} &amp; \text{Bc2} &amp; \text{Bc2-D} &amp; \text{Bc3-leave} &amp; \text{D} \\[0.3em] \hdashline
 1 &amp; 0 &amp; 0 &amp; 0 &amp; 0 &amp; 0 &amp; 0 &amp; 0 &amp; 0 \\
 0 &amp; \phi_{Y} &amp; 1 - \phi_{Y} &amp; 0 &amp; 0 &amp; 0 &amp; 0 &amp; 0 &amp; 0 \\
 0 &amp; 0 &amp; 0 &amp; \phi_{Y} &amp; 1 - \phi_{Y} &amp; 0 &amp; 0 &amp; 0 &amp; 0 \\
@@ -467,16 +477,16 @@ z_{t-1} = D
 \end{matrix}
 \end{matrix}
 \]</span></p>
-<p>Offspring survive with probability <span class="math inline">\(\phi_Y\)</span> or die with <span class="math inline">\(1-\phi_Y\)</span>. If the calf survives, the female remains in the same breeding state. If it dies, she moves to an intermediate ‘dead-offspring’ state (BYOY-D, Bc1-D, or Bc2-D) so that later steps can condition on that loss. For 3-year-old calves, mortality cannot be distinguished from emancipation (leaving the mother), so we add an intermediate Bc3-leave state and fix survival to 1 there (this parameter is otherwise unidentifiable). As in the paper, I distinguish young‐of‐the‐year and 1‐year‐old calf survival from 2‐year‐old calf survival. We go on with the young aging matrix:
-<span class="math display">\[
+<p>Offspring survive with probability <span class="math inline">\(\phi_Y\)</span> or die with <span class="math inline">\(1-\phi_Y\)</span>. If the calf survives, the female remains in the same breeding state. If it dies, she moves to an intermediate ‘dead-offspring’ state (BYOY-D, Bc1-D, or Bc2-D) so that later steps can condition on that loss. For 3-year-old calves, mortality cannot be distinguished from emancipation (leaving the mother), so we add an intermediate Bc3-leave state and fix survival to 1 there (this parameter is otherwise unidentifiable). As in the paper, I distinguish young‐of‐the‐year and 1‐year‐old calf survival from 2‐year‐old calf survival. We go on with the young aging matrix:</p>
+<p><span class="math display">\[
 \begin{matrix}
 &amp; \\
-\mathbf{AGING} =
+AGING =
 \left ( \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \\ 12 \\ 12 \\ 12 \\ 12 \\ 12 \\ 12 \end{matrix} } \right .
 \end{matrix}
 \hspace{-1.2em}
 \begin{matrix}
-\text{NB} &amp; \text{Byoy} &amp; \text{Byoy-D} &amp; \text{Bc1} &amp; \text{Bc1-D} &amp; \text{Bc2} &amp; \text{Bc2-D} &amp; \text{Bc3-leave} &amp; \text{D} \\ \hdashline
+\text{NB} &amp; \text{Byoy} &amp; \text{Byoy-D} &amp; \text{Bc1} &amp; \text{Bc1-D} &amp; \text{Bc2} &amp; \text{Bc2-D} &amp; \text{Bc3-leave} &amp; \text{D} \\[0.3em] \hdashline
 1 &amp; 0 &amp; 0 &amp; 0 &amp; 0 &amp; 0 &amp; 0 &amp; 0 &amp; 0 \\
 0 &amp; 1 &amp; 0 &amp; 0 &amp; 0 &amp; 0 &amp; 0 &amp; 0 &amp; 0 \\
 0 &amp; 0 &amp; 1 &amp; 0 &amp; 0 &amp; 0 &amp; 0 &amp; 0 &amp; 0 \\
@@ -504,16 +514,16 @@ z_{t-1} = D
 \end{matrix}
 \end{matrix}
 \]</span>
-The progression of calf age classes between <span class="math inline">\(t\)</span> and <span class="math inline">\(t+1\)</span> is deterministic, all relevant age-advancing transitions are set to 1, and there are no parameters estimated in this matrix. Last, here is the breeding matrix:
-<span class="math display">\[
+The progression of calf age classes between <span class="math inline">\(t\)</span> and <span class="math inline">\(t+1\)</span> is deterministic, all relevant age-advancing transitions are set to 1, and there are no parameters estimated in this matrix. Last, here is the breeding matrix:</p>
+<p><span class="math display">\[
 \begin{matrix}
 &amp; \\
-\mathbf{BREED} =
+BREED =
 \left ( \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \\ 12 \\ 12 \\ 12 \\ 12 \\ 12 \\ 12 \end{matrix} } \right .
 \end{matrix}
 \hspace{-1.2em}
 \begin{matrix}
-\text{NB} &amp; \text{Byoy} &amp; \text{Bc1} &amp; \text{Bc2} &amp; \text{Bc3} &amp; \text{D} \\ \hdashline
+\text{NB} &amp; \text{Byoy} &amp; \text{Bc1} &amp; \text{Bc2} &amp; \text{Bc3} &amp; \text{D} \\[0.3em] \hdashline
 1 - \beta_1 &amp; \beta_1 &amp; 0 &amp; 0 &amp; 0 &amp; 0 \\
 0 &amp; 0 &amp; 1 &amp; 0 &amp; 0 &amp; 0 \\
 0 &amp; 0 &amp; 0 &amp; 1 &amp; 0 &amp; 0 \\
@@ -543,7 +553,7 @@ The progression of calf age classes between <span class="math inline">\(t\)</spa
 \]</span></p>
 <p>Breeding at <span class="math inline">\(t+1\)</span> occurs with probability <span class="math inline">\(\beta\)</span> (otherwise <span class="math inline">\(1−\beta\)</span>). Breeding can depend on the female’s state, namely non-breeding females and females that had just lost their young of the year or 1‐year‐old calf (<span class="math inline">\(\beta_1\)</span>) vs. females that had lost their 2‐year‐old calf or raised it until the age of 3 (<span class="math inline">\(\beta_2\)</span>).</p>
 <p>Overall, the transition matrix is the product of all four matrices. In NIMBLE, we could code directly the full matrix, but I take this opportunity to illustrate how to code the splitting in several ecological processes:</p>
-<div class="sourceCode" id="cb359"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb356"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Transition matrix</span></span>
 <span></span>
 <span><span class="co"># PHIA is 6x6</span></span>
@@ -557,14 +567,14 @@ The progression of calf age classes between <span class="math inline">\(t\)</spa
 <span><span class="co"># Row 1: NB stays NB</span></span>
 <span><span class="va">PHIY</span><span class="op">[</span><span class="fl">1</span>, <span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span></span>
 <span><span class="co"># Row 2: Byoy</span></span>
-<span><span class="va">PHIY</span><span class="op">[</span><span class="fl">2</span>, <span class="fl">2</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="va">youngsurvival</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span>        <span class="co"># YOY survives → becomes Bc1</span></span>
-<span><span class="va">PHIY</span><span class="op">[</span><span class="fl">2</span>, <span class="fl">3</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span> <span class="op">-</span> <span class="va">youngsurvival</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span>    <span class="co"># YOY dies     → becomes Byoy-D</span></span>
+<span><span class="va">PHIY</span><span class="op">[</span><span class="fl">2</span>, <span class="fl">2</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="va">youngsurvival</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span> <span class="co"># YOY survives → becomes Bc1</span></span>
+<span><span class="va">PHIY</span><span class="op">[</span><span class="fl">2</span>, <span class="fl">3</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span> <span class="op">-</span> <span class="va">youngsurvival</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span> <span class="co"># YOY dies → becomes Byoy-D</span></span>
 <span><span class="co"># Row 3: Bc1</span></span>
-<span><span class="va">PHIY</span><span class="op">[</span><span class="fl">3</span>, <span class="fl">4</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="va">youngsurvival</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span>        <span class="co"># 1-year-old survives → Bc2</span></span>
-<span><span class="va">PHIY</span><span class="op">[</span><span class="fl">3</span>, <span class="fl">5</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span> <span class="op">-</span> <span class="va">youngsurvival</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span>    <span class="co"># dies → Bc1-D</span></span>
+<span><span class="va">PHIY</span><span class="op">[</span><span class="fl">3</span>, <span class="fl">4</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="va">youngsurvival</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span> <span class="co"># 1-year-old survives → Bc2</span></span>
+<span><span class="va">PHIY</span><span class="op">[</span><span class="fl">3</span>, <span class="fl">5</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span> <span class="op">-</span> <span class="va">youngsurvival</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span> <span class="co"># dies → Bc1-D</span></span>
 <span><span class="co"># Row 4: Bc2</span></span>
-<span><span class="va">PHIY</span><span class="op">[</span><span class="fl">4</span>, <span class="fl">6</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="va">youngsurvival</span><span class="op">[</span><span class="fl">2</span><span class="op">]</span>        <span class="co"># 2-year-old survives → Bc3-L (emancipation)</span></span>
-<span><span class="va">PHIY</span><span class="op">[</span><span class="fl">4</span>, <span class="fl">7</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span> <span class="op">-</span> <span class="va">youngsurvival</span><span class="op">[</span><span class="fl">2</span><span class="op">]</span>    <span class="co"># dies → Bc2-D</span></span>
+<span><span class="va">PHIY</span><span class="op">[</span><span class="fl">4</span>, <span class="fl">6</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="va">youngsurvival</span><span class="op">[</span><span class="fl">2</span><span class="op">]</span> <span class="co"># 2-year-old survives → Bc3-L</span></span>
+<span><span class="va">PHIY</span><span class="op">[</span><span class="fl">4</span>, <span class="fl">7</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span> <span class="op">-</span> <span class="va">youngsurvival</span><span class="op">[</span><span class="fl">2</span><span class="op">]</span> <span class="co"># dies → Bc2-D</span></span>
 <span><span class="co"># Row 5: Bc3 always emancipates</span></span>
 <span><span class="va">PHIY</span><span class="op">[</span><span class="fl">5</span>, <span class="fl">8</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span></span>
 <span><span class="co"># Row 6: dead female stays dead</span></span>
@@ -606,32 +616,25 @@ The progression of calf age classes between <span class="math inline">\(t\)</spa
 <span><span class="co"># Row 9: D → D</span></span>
 <span><span class="va">BREED</span><span class="op">[</span><span class="fl">9</span>, <span class="fl">6</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span></span>
 <span></span>
-<span><span class="va">gamma</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">6</span>,<span class="fl">1</span><span class="op">:</span><span class="fl">6</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="va">PHIA</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">6</span>,<span class="fl">1</span><span class="op">:</span><span class="fl">6</span><span class="op">]</span> <span class="op"><a href="https://rdrr.io/r/base/matmult.html">%*%</a></span> <span class="va">PHIY</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">6</span>,<span class="fl">1</span><span class="op">:</span><span class="fl">9</span><span class="op">]</span> <span class="op"><a href="https://rdrr.io/r/base/matmult.html">%*%</a></span> <span class="va">AGING</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">9</span>,<span class="fl">1</span><span class="op">:</span><span class="fl">9</span><span class="op">]</span> <span class="op"><a href="https://rdrr.io/r/base/matmult.html">%*%</a></span> <span class="va">BREED</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">9</span>,<span class="fl">1</span><span class="op">:</span><span class="fl">6</span><span class="op">]</span></span></code></pre></div>
-<p>Last step is the observation matrix that we can also split in two steps, given these intermediate observations:</p>
-<ul>
-<li>ND: for not detected<br>
-</li>
-<li>DNB: for a non-breeding female detected at time <span class="math inline">\(t\)</span><br>
-</li>
-<li>DByoy: for a breeding female with a young of the year detected at time <span class="math inline">\(t\)</span><br>
-</li>
-<li>DBc: for a breeding female with a 1-year-old calf detected at time <span class="math inline">\(t\)</span><br>
-</li>
-<li>DBc2: for a breeding female with a 2-year-old calf detected at time <span class="math inline">\(t\)</span><br>
-</li>
-<li>DBc3: for a breeding female with a 3-year-old calf detected at time <span class="math inline">\(t\)</span>
-</li>
-</ul>
-<p>First, the detection step:
-<span class="math display">\[
+<span><span class="va">gamma</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">6</span>,<span class="fl">1</span><span class="op">:</span><span class="fl">6</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="va">PHIA</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">6</span>,<span class="fl">1</span><span class="op">:</span><span class="fl">6</span><span class="op">]</span> <span class="op"><a href="https://rdrr.io/r/base/matmult.html">%*%</a></span> <span class="va">PHIY</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">6</span>,<span class="fl">1</span><span class="op">:</span><span class="fl">9</span><span class="op">]</span> <span class="op"><a href="https://rdrr.io/r/base/matmult.html">%*%</a></span> </span>
+<span>  <span class="va">AGING</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">9</span>,<span class="fl">1</span><span class="op">:</span><span class="fl">9</span><span class="op">]</span> <span class="op"><a href="https://rdrr.io/r/base/matmult.html">%*%</a></span> <span class="va">BREED</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">9</span>,<span class="fl">1</span><span class="op">:</span><span class="fl">6</span><span class="op">]</span></span></code></pre></div>
+<p>Last step is the observation matrix that we can also split in two steps, given these intermediate observations:<br>
+- ND: for not detected<br>
+- DNB: for a non-breeding female detected at time <span class="math inline">\(t\)</span><br>
+- DByoy: for a breeding female with a young of the year detected at time <span class="math inline">\(t\)</span><br>
+- DBc: for a breeding female with a 1-year-old calf detected at time <span class="math inline">\(t\)</span><br>
+- DBc2: for a breeding female with a 2-year-old calf detected at time <span class="math inline">\(t\)</span><br>
+- DBc3: for a breeding female with a 3-year-old calf detected at time <span class="math inline">\(t\)</span></p>
+<p>First, the detection step:</p>
+<p><span class="math display">\[
 \begin{matrix}
 &amp; \\
-\mathbf{DETECTION} =
+DETECTION =
 \left ( \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \\ 12 \\ 12 \\ 12 \end{matrix} } \right .
 \end{matrix}
 \hspace{-1.2em}
 \begin{matrix}
-\text{ND} &amp; \text{DNB} &amp; \text{DByoy} &amp; \text{DBc} &amp; \text{DBc2} &amp; \text{DBc3} \\ \hdashline
+\text{ND} &amp; \text{DNB} &amp; \text{DByoy} &amp; \text{DBc} &amp; \text{DBc2} &amp; \text{DBc3} \\[0.3em] \hdashline
 1 - p_1 &amp; p_1 &amp; 0 &amp; 0 &amp; 0 &amp; 0 \\
 1 - p_2 &amp; 0 &amp; p_2 &amp; 0 &amp; 0 &amp; 0 \\
 1 - p_2 &amp; 0 &amp; 0 &amp; p_2 &amp; 0 &amp; 0 \\
@@ -653,16 +656,16 @@ The progression of calf age classes between <span class="math inline">\(t\)</spa
 \end{matrix}
 \end{matrix}
 \]</span></p>
-<p>which contains the probability <span class="math inline">\(p\)</span> of detecting the female given her latent state at <span class="math inline">\(t\)</span>: <span class="math inline">\(p_2\)</span> is for females with a young of the year or a 1‐year‐old calf and <span class="math inline">\(p_1\)</span> for non-breeding females or those with an older calf. Then the observation matrix:
-<span class="math display">\[
+<p>which contains the probability <span class="math inline">\(p\)</span> of detecting the female given her latent state at <span class="math inline">\(t\)</span>: <span class="math inline">\(p_2\)</span> is for females with a young of the year or a 1‐year‐old calf and <span class="math inline">\(p_1\)</span> for non-breeding females or those with an older calf. Then the observation matrix:</p>
+<p><span class="math display">\[
 \begin{matrix}
 &amp; \\
-\mathbf{OBS} =
+OBS =
 \left ( \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \\ 12 \\ 12 \\ 12 \end{matrix} } \right .
 \end{matrix}
 \hspace{-1.2em}
 \begin{matrix}
-1 &amp; 2 &amp; 3 &amp; 4 \\ \hdashline
+1 &amp; 2 &amp; 3 &amp; 4 \\[0.3em] \hdashline
 1 &amp; 0 &amp; 0 &amp; 0 \\
 0 &amp; 1 &amp; 0 &amp; 0 \\
 0 &amp; 1 - q_1 &amp; q_1 &amp; 0 \\
@@ -685,7 +688,7 @@ The progression of calf age classes between <span class="math inline">\(t\)</spa
 \end{matrix}
 \]</span></p>
 <p>where, conditional on being in a breeding state, there is a probability <span class="math inline">\(q\)</span> that a calf is seen vs. not seen. Calf age is not identifiable from photographs, so observations are seen or not seen, but <span class="math inline">\(q\)</span> may still vary by calf age (here young of the year vs. older). This is coded in NIMBLE as follows:</p>
-<div class="sourceCode" id="cb360"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb357"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Observation matrix</span></span>
 <span></span>
 <span><span class="co"># Detection probabilities</span></span>
@@ -742,7 +745,7 @@ The progression of calf age classes between <span class="math inline">\(t\)</spa
 ## youngsurvival[1] 0.63 0.05 0.55 0.63  0.73 1.00   808
 ## youngsurvival[2] 0.69 0.08 0.53 0.69  0.83 1.00  1702</code></pre>
 which we can re-arrange as in Table <a href="tradeoffs.html#tab:dolphin">8.1</a> to compare them to the estimates obtained by <span class="citation">Couet et al. (<a href="references.html#ref-couet2019">2019</a>)</span>:
-<div class="inline-table"><table class="table" style="width: auto !important; margin-left: auto; margin-right: auto;">
+<div class="inline-table"><table class="table" style="color: black; width: auto !important; margin-left: auto; margin-right: auto;">
 <caption>
 <span id="tab:dolphin">Table 8.1: </span><span id="tab:dolphin">Table 8.2: </span>Age-specific estimates of breeding probabilities. Comparison of our NIMBLE estimates with Couet et al. (2019). ‘NR’ denotes quantities not reported in the paper. ‘NB’ is for non-breeding and ‘yoy’ for young-of-the-year. Adult female detection on the paper side is a rough time-average read by eye from the authors’ Figure 3 (2005–2016).
 </caption>
@@ -924,8 +927,8 @@ NR
 - 1 for not captured<br>
 - 2 for captured</p></li>
 </ul>
-<p>Now we turn to writing our model. We start with the vector of initial states. At the start of the study, everyone is in <span class="math inline">\(NYA\)</span>, so the initial state vector is:
-<span class="math display">\[
+<p>Now we turn to writing our model. We start with the vector of initial states. At the start of the study, everyone is in <span class="math inline">\(NYA\)</span>, so the initial state vector is:</p>
+<p><span class="math display">\[
 \begin{matrix}
 &amp; \\
 \boldsymbol{\delta} =
@@ -933,7 +936,7 @@ NR
 \end{matrix}
 \hspace{-1.2em}
 \begin{matrix}
-\text{NYA} &amp; \text{ARR} &amp; \text{DEP} \\ \hdashline
+\text{NYA} &amp; \text{ARR} &amp; \text{DEP} \\[0.3em] \hdashline
 1 &amp; 0 &amp; 0
 \end{matrix}
 \hspace{-0.2em}
@@ -942,15 +945,15 @@ NR
 \left . \vphantom{ \begin{matrix} 1 \end{matrix} } \right )
 \end{matrix}
 \]</span></p>
-<p>We proceed with the transition matrix, which is governed by two processes: recruitment <span class="math inline">\(r\)</span> is the probability that an individual in <span class="math inline">\(NYA\)</span> enters the pond and staying <span class="math inline">\(s\)</span> is the probability that an individual in <span class="math inline">\(ARR\)</span> remains in the pond. State <span class="math inline">\(DEP\)</span> is absorbing. We have:
-<span class="math display">\[\begin{matrix}
+<p>We proceed with the transition matrix, which is governed by two processes: recruitment <span class="math inline">\(r\)</span> is the probability that an individual in <span class="math inline">\(NYA\)</span> enters the pond and staying <span class="math inline">\(s\)</span> is the probability that an individual in <span class="math inline">\(ARR\)</span> remains in the pond. State <span class="math inline">\(DEP\)</span> is absorbing. We have:</p>
+<p><span class="math display">\[\begin{matrix}
 &amp; \\
-\mathbf{\Gamma} =
+\Gamma =
 \left ( \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \end{matrix} } \right .
 \end{matrix}
 \hspace{-1.2em}
 \begin{matrix}
-z_t=NYA &amp; z_t=ARR &amp; z_t=DEP \\ \hdashline
+z_t=NYA &amp; z_t=ARR &amp; z_t=DEP \\[0.3em] \hdashline
 1 - r &amp; r &amp; 0 \\
 0 &amp; s &amp; 1 - s \\
 0 &amp; 0 &amp; 1
@@ -964,12 +967,16 @@ z_{t-1}=NYA \\ z_{t-1}=ARR \\ z_{t-1}=DEP
 \end{matrix}
 \end{matrix}\]</span></p>
 <p>We make both parameters <span class="math inline">\(r\)</span> and <span class="math inline">\(s\)</span> sex and time-dependent, which we code in NIMBLE:</p>
-<div class="sourceCode" id="cb362"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb359"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw">for</span> <span class="op">(</span><span class="va">j</span> <span class="kw">in</span> <span class="fl">1</span><span class="op">:</span><span class="op">(</span><span class="va">K</span><span class="op">-</span><span class="fl">1</span><span class="op">)</span><span class="op">)</span><span class="op">{</span></span>
-<span>  <span class="fu"><a href="https://rdrr.io/pkg/gtools/man/logit.html">logit</a></span><span class="op">(</span><span class="va">r</span><span class="op">[</span><span class="fl">1</span>,<span class="va">j</span><span class="op">]</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="va">beta</span><span class="op">[</span><span class="fl">1</span>,<span class="fl">1</span><span class="op">]</span> <span class="op">+</span> <span class="va">beta</span><span class="op">[</span><span class="fl">1</span>,<span class="fl">2</span><span class="op">]</span> <span class="op">*</span> <span class="op">(</span><span class="va">j</span><span class="op">-</span><span class="fl">4.5</span><span class="op">)</span><span class="op">/</span><span class="fl">2.45</span> <span class="co"># prior probability of arriving in the pond / 1 = female</span></span>
-<span>  <span class="fu"><a href="https://rdrr.io/pkg/gtools/man/logit.html">logit</a></span><span class="op">(</span><span class="va">r</span><span class="op">[</span><span class="fl">2</span>,<span class="va">j</span><span class="op">]</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="va">beta</span><span class="op">[</span><span class="fl">2</span>,<span class="fl">1</span><span class="op">]</span> <span class="op">+</span> <span class="va">beta</span><span class="op">[</span><span class="fl">2</span>,<span class="fl">2</span><span class="op">]</span> <span class="op">*</span> <span class="op">(</span><span class="va">j</span><span class="op">-</span><span class="fl">4.5</span><span class="op">)</span><span class="op">/</span><span class="fl">2.45</span> <span class="co"># prior probability of arriving in the pond / 2 = male</span></span>
-<span>  <span class="va">s</span><span class="op">[</span><span class="fl">1</span>,<span class="va">j</span><span class="op">]</span> <span class="op">~</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html">dunif</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1</span><span class="op">)</span> <span class="co"># prior retention probability (staying) / 1 = female</span></span>
-<span>  <span class="va">s</span><span class="op">[</span><span class="fl">2</span>,<span class="va">j</span><span class="op">]</span> <span class="op">~</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html">dunif</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1</span><span class="op">)</span> <span class="co"># prior retention probability (staying) / 2 = male</span></span>
+<span>  <span class="co"># prior probability of arriving in the pond / 1 = female</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimble-math.html">logit</a></span><span class="op">(</span><span class="va">r</span><span class="op">[</span><span class="fl">1</span>,<span class="va">j</span><span class="op">]</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="va">beta</span><span class="op">[</span><span class="fl">1</span>,<span class="fl">1</span><span class="op">]</span> <span class="op">+</span> <span class="va">beta</span><span class="op">[</span><span class="fl">1</span>,<span class="fl">2</span><span class="op">]</span> <span class="op">*</span> <span class="op">(</span><span class="va">j</span><span class="op">-</span><span class="fl">4.5</span><span class="op">)</span><span class="op">/</span><span class="fl">2.45</span> </span>
+<span>  <span class="co"># prior probability of arriving in the pond / 2 = male</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/pkg/nimble/man/nimble-math.html">logit</a></span><span class="op">(</span><span class="va">r</span><span class="op">[</span><span class="fl">2</span>,<span class="va">j</span><span class="op">]</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="va">beta</span><span class="op">[</span><span class="fl">2</span>,<span class="fl">1</span><span class="op">]</span> <span class="op">+</span> <span class="va">beta</span><span class="op">[</span><span class="fl">2</span>,<span class="fl">2</span><span class="op">]</span> <span class="op">*</span> <span class="op">(</span><span class="va">j</span><span class="op">-</span><span class="fl">4.5</span><span class="op">)</span><span class="op">/</span><span class="fl">2.45</span> </span>
+<span>  <span class="co"># prior retention probability (staying) / 1 = female</span></span>
+<span>  <span class="va">s</span><span class="op">[</span><span class="fl">1</span>,<span class="va">j</span><span class="op">]</span> <span class="op">~</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html">dunif</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1</span><span class="op">)</span> </span>
+<span>  <span class="co"># prior retention probability (staying) / 2 = male</span></span>
+<span>  <span class="va">s</span><span class="op">[</span><span class="fl">2</span>,<span class="va">j</span><span class="op">]</span> <span class="op">~</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html">dunif</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1</span><span class="op">)</span> </span>
 <span><span class="op">}</span></span>
 <span><span class="kw">for</span> <span class="op">(</span><span class="va">i</span> <span class="kw">in</span> <span class="fl">1</span><span class="op">:</span><span class="va">N</span><span class="op">)</span><span class="op">{</span></span>
 <span>  <span class="kw">for</span> <span class="op">(</span><span class="va">j</span> <span class="kw">in</span> <span class="fl">1</span><span class="op">:</span><span class="op">(</span><span class="va">K</span><span class="op">-</span><span class="fl">1</span><span class="op">)</span><span class="op">)</span><span class="op">{</span></span>
@@ -986,15 +993,15 @@ z_{t-1}=NYA \\ z_{t-1}=ARR \\ z_{t-1}=DEP
 <span><span class="op">}</span></span></code></pre></div>
 <p>Graphically, this corresponds to:</p>
 <div class="inline-figure"><img src="banana-book_files/figure-html/diagram-stopover-1.png" width="672"></div>
-<p>Last step is the observation matrix:
-<span class="math display">\[\begin{matrix}
+<p>Last step is the observation matrix:</p>
+<p><span class="math display">\[\begin{matrix}
 &amp; \\
-\mathbf{\Omega} =
+\Omega =
 \left ( \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \end{matrix} } \right .
 \end{matrix}
 \hspace{-1.2em}
 \begin{matrix}
-y_t=1 &amp; y_t=2 \\ \hdashline
+y_t=1 &amp; y_t=2 \\[0.3em] \hdashline
 1 &amp; 0 \\
 1-p &amp; p \\
 1 &amp; 0
@@ -1021,8 +1028,8 @@ z_{t}=NYA \\ z_{t}=ARR \\ z_{t}=DEP
 <p><span class="math display">\[
 Pr(D &gt; k \mid \text{arrive at } \tau) \;=\; \prod_{j=0}^{k-1} s_{\tau + j}.
 \]</span></p>
-<p>Therefore, the expected number of occasions present (counting the arrival occasion) is the sum of those tail probabilities:
-<span class="math display">\[
+<p>Therefore, the expected number of occasions present (counting the arrival occasion) is the sum of those tail probabilities:</p>
+<p><span class="math display">\[
 \mathbb{E}[D \mid \text{arrive at } \tau]
 \;=\;
 \sum_{k=0}^{\infty} \prod_{j=0}^{k-1} s_{\tau + j}.
@@ -1033,7 +1040,7 @@ Pr(D &gt; k \mid \text{arrive at } \tau) \;=\; \prod_{j=0}^{k-1} s_{\tau + j}.
 <h3>
 <span class="header-section-number">8.4.3</span> Results and interpretation<a class="anchor" aria-label="anchor" href="#results-and-interpretation-8"><i class="fas fa-link"></i></a>
 </h3>
-<p>Our NIMBLE estimates match pretty closely those obtained by <span class="citation">Guérin et al. (<a href="references.html#ref-guerin_advances_2017">2017</a>)</span>, check out their Figure 2.</p>
+<p>Our NIMBLE estimates match pretty closely those obtained by <span class="citation">Guérin et al. (<a href="references.html#ref-guerin_advances_2017">2017</a>)</span>, compare our Figure <a href="tradeoffs.html#fig:fig-arrival-prob">8.2</a> with the authors’ Figure 2.</p>
 <p>Early in the season, females arrive first: during the first three capture occasions their arrival probability exceeds that of males (Figure <a href="tradeoffs.html#fig:fig-arrival-prob">8.2</a>). By occasion 7, essentially all individuals have entered the pond.</p>
 <div class="figure" style="text-align: center">
 <span style="display:block;" id="fig:fig-arrival-prob"></span>
@@ -1098,7 +1105,7 @@ Figure 8.3: Stopover duration by sex and arrival week. Means and 95% credible in
 <footer class="bg-primary text-light mt-5"><div class="container"><div class="row">
 
   <div class="col-12 col-md-6 mt-3">
-    <p>"<strong>Bayesian analysis of capture-recapture data with hidden Markov models</strong>: Theory and case studies in R and NIMBLE" was written by Olivier Gimenez. It was last built on 2025-09-10.</p>
+    <p>"<strong>Bayesian analysis of capture-recapture data with hidden Markov models</strong>: Theory and case studies in R and NIMBLE" was written by Olivier Gimenez. It was last built on 2025-09-14.</p>
   </div>
 
   <div class="col-12 col-md-6 mt-3">

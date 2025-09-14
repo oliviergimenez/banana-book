@@ -363,7 +363,8 @@ library(nimbleEcology)
 y <- dipper %>%
   select(year_1981:year_1987) %>%
   as.matrix()
-y <- y[ first != ncol(y), ] # get rid of individuals for which first detection = last capture
+y <- y[ first != ncol(y), ] # get rid of individuals for which 
+                            # first detection = last capture
 # NIMBLE code
 hmm.phip.nimbleecology <- nimbleCode({
   phi ~ dunif(0, 1) # survival prior
@@ -382,9 +383,9 @@ my.constants <- list(N = nrow(y),
                      T = ncol(y), 
                      first = first)
 # data
-my.data <- list(y = y) # format is 0 for non-detected and 1 for detected
-# initial values; we use the marginalized likelihood, so no latent states 
-# in it, therefore no need for initial values for the latent states
+my.data <- list(y = y) # 0 = non-detected, 1 = detected
+# initial values: marginalized likelihood, hence no latent states 
+# therefore no need for initial values for latent states
 initial.values <- function() list(phi = runif(1,0,1),
                                   p = runif(1,0,1))
 # parameters to monitor
@@ -464,7 +465,7 @@ How to assess the goodness of fit of the CJS model to capture-recapture data?
 
 ### Posterior predictive checks
 
-In the Bayesian framework, we use posterior predictive checks to assess absolute model fit. The basic idea is to compare the observed data with replicated data generated from the model. If the model is a good fit to the data, then the replicated data predicted from the model should look similar to the observed data. To make the comparison tractable, some summary statistics are generally used. For the CJS model, this is often done with the m-array, which records the number of individuals released in a given year and first recaptured in subsequent years. For examples, see @KerySchaub2011, @paganin2023computational, and the NIMBLE website https://r-nimble.org/nimbleExamples/posterior_predictive.html.
+In the Bayesian framework, we use posterior predictive checks to assess absolute model fit. The basic idea is to compare the observed data with replicated data generated from the model. If the model is a good fit to the data, then the replicated data predicted from the model should look similar to the observed data. To make the comparison tractable, some summary statistics are generally used. For the CJS model, this is often done with the m-array, which records the number of individuals released in a given year and first recaptured in subsequent years. For examples, see @KerySchaub2011, @paganin2023computational, and the NIMBLE website https://r-nimble.org/examples/posterior_predictive.html.
 
 Posterior predictive checks are powerful tools. However, there are long-established procedures for evaluating absolute fit and diagnosing violations of specific CJS model assumptions, and it would be a shame to ignore them. 
 
@@ -1069,14 +1070,14 @@ hmm.phisexwlp <- nimbleCode({
   omega[2,1] <- 1               # Pr(dead t -> non-detected t)
   omega[2,2] <- 0               # Pr(dead t -> detected t)
   for (i in 1:N){
-    logit(phi[i]) <- beta[1] + beta[2] * sex[i] + beta[3] * winglength[i]
+    logit(phi[i])<-beta[1]+beta[2]*sex[i]+beta[3]*winglength[i]
     gamma[1,1,i] <- phi[i]      # Pr(alive t -> alive t+1)
     gamma[1,2,i] <- 1 - phi[i]  # Pr(alive t -> dead t+1)
     gamma[2,1,i] <- 0           # Pr(dead t -> alive t+1)
     gamma[2,2,i] <- 1           # Pr(dead t -> dead t+1)
   }
   beta[1] ~ dnorm(mean = 0, sd = 1.5) # intercept male
-  beta[2] ~ dnorm(mean = 0, sd = 1.5) # difference bw male and female
+  beta[2] ~ dnorm(mean = 0, sd = 1.5) # diff bw male and female
   beta[3] ~ dnorm(mean = 0, sd = 1.5) # slope wing length
   delta[1] <- 1                 # Pr(alive t = 1) = 1
   delta[2] <- 0                 # Pr(dead t = 1) = 0
@@ -1161,16 +1162,16 @@ beta3 <- c(mcmc.phisexwlp$chain1[,'beta[3]'], # beta3 chain 1
 We get survival estimates for each MCMC iteration:
 ```{r}
 predicted_survivalM <- matrix(NA, nrow = length(beta1), 
-                              ncol = length(my.constants$winglength))
+                              ncol=length(my.constants$winglength))
 predicted_survivalF <- matrix(NA, nrow = length(beta1), 
-                              ncol = length(my.constants$winglength))
+                              ncol=length(my.constants$winglength))
 for (i in 1:length(beta1)){
   for (j in 1:length(my.constants$winglength)){
     predicted_survivalM[i,j] <- plogis(beta1[i] + 
-                                beta3[i] * my.constants$winglength[j]) 
+                                beta3[i]*my.constants$winglength[j]) 
     predicted_survivalF[i,j] <- plogis(beta1[i] + 
                                 beta2[i] + 
-                                beta3[i] * my.constants$winglength[j])
+                                beta3[i]*my.constants$winglength[j])
   }
 }
 ```
@@ -1202,7 +1203,9 @@ df %>%
   geom_line() + 
   geom_ribbon(aes(ymin = lci, ymax = uci, fill = sex), alpha = 0.5) + 
   ylim(0,1) + 
-  labs(x = "wing length", y = "estimated survival", color = "", fill = "")
+  labs(x = "wing length", 
+       y = "estimated survival", 
+       color = "", fill = "")
 ```
 
 Note that the two curves are not exactly parallel because we back-transformed the linear part of the relationship between survival and wing length. You may check that parallelism occurs on the logit scale:
@@ -1213,8 +1216,10 @@ predicted_lsurvivalF <- matrix(NA, nrow = length(beta1),
                               ncol = length(my.constants$winglength))
 for (i in 1:length(beta1)){
   for (j in 1:length(my.constants$winglength)){
-    predicted_lsurvivalM[i,j] <- beta1[i] + beta3[i] * my.constants$winglength[j] 
-    predicted_lsurvivalF[i,j] <- beta1[i] + beta2[i] + beta3[i] * my.constants$winglength[j]
+    predicted_lsurvivalM[i,j] <- beta1[i] + 
+      beta3[i] * my.constants$winglength[j] 
+    predicted_lsurvivalF[i,j] <- beta1[i] + beta2[i] + 
+      beta3[i] * my.constants$winglength[j]
   }
 }
 mean_lsurvivalM <- apply(predicted_lsurvivalM, 2, mean)
@@ -1323,7 +1328,7 @@ In the *centered parameterization* we've used so far, the random effect is expre
 ```{r eval = FALSE}
 ...
   for (i in 1:N){
-    logit(phi[i]) <- beta[1] + beta[2] * winglength[i] + sdeps * eps[i]
+    logit(phi[i])<-beta[1]+beta[2]*winglength[i] + sdeps * eps[i]
     eps[i] ~ dnorm(mean = 0, sd = 1)
 ...
 ```

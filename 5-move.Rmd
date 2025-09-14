@@ -78,12 +78,12 @@ We follow the presentation of HMM as in Chapter \@ref(hmmcapturerecapture). Let'
 
 $$\begin{matrix}
 & \\
-\mathbf{\delta} =
+\delta =
     \left ( \vphantom{ \begin{matrix} 12 \end{matrix} } \right .
 \end{matrix}
 \hspace{-1.2em}
 \begin{matrix}
-    z_t=1 & z_t=2 & z_t=3 \\ \hdashline
+    z_t=1 & z_t=2 & z_t=3 \\[0.3em] \hdashline
 \pi^1 & 1 - \pi^{1} & 0\\
 \end{matrix}
 \hspace{-0.2em}
@@ -98,12 +98,12 @@ We move on to the transition matrix which connects the states at $t-1$ in rows t
 
 $$\begin{matrix}
 & \\
-\mathbf{\Gamma} =
+\Gamma =
     \left ( \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \end{matrix} } \right .
 \end{matrix}
 \hspace{-1.2em}
 \begin{matrix}
-    z_{t}=1 & z_{t}=2 & z_{t}=3 \\ \hdashline
+    z_{t}=1 & z_{t}=2 & z_{t}=3 \\[0.3em] \hdashline
 \phi^1 (1-\psi^{12}) & \phi^1 \psi^{12} & 1 - \phi^1\\
 \phi^2 \psi^{21} & \phi^2 (1-\psi^{21}) & 1 - \phi^2\\
 0 & 0 & 1
@@ -121,12 +121,12 @@ Finally, the observation matrix relates the states an animal is in at $t$ in row
 
 $$\begin{matrix}
 & \\
-\mathbf{\Omega} =
+\Omega =
     \left ( \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \end{matrix} } \right .
 \end{matrix}
 \hspace{-1.2em}
 \begin{matrix}
-    y_t=1 & y_t=2 & y_t=3 \\ \hdashline
+    y_t=1 & y_t=2 & y_t=3 \\[0.3em] \hdashline
 1 - p^1 & p^1 & 0\\
 1 - p^2 & 0 & p^2\\
 1 & 0 & 0
@@ -305,8 +305,10 @@ my.constants <- list(first = first,
 # data
 my.data <- list(y = y + 1)
 # initial values 
-zinits <- y # say states are observations, detections in A or B are taken as alive in same sites 
-zinits[zinits==0] <- sample(c(1,2), sum(zinits==0), replace = TRUE) # non-detections become alive in site A or B
+zinits <- y # say states are observations, detections in A or B   
+            # are taken as alive in same sites 
+# non-detections become alive in site A or B
+zinits[zinits==0] <- sample(c(1,2), sum(zinits==0), replace = TRUE) 
 initial.values <- function(){list(phi1 = runif(1, 0, 1), 
                                   phi2 = runif(1, 0, 1), 
                                   psi12 = runif(1, 0, 1), 
@@ -316,7 +318,8 @@ initial.values <- function(){list(phi1 = runif(1, 0, 1),
                                   pi1 = runif(1, 0, 1),
                                   z = zinits)}
 # parameters to monitor
-parameters.to.save <- c("phi1", "phi2","psi12", "psi21", "p1", "p2", "pi1")
+parameters.to.save <- c("phi1", "phi2","psi12", "psi21", 
+                        "p1", "p2", "pi1")
 # MCMC details
 n.iter <- 20000
 n.burnin <- 1000
@@ -432,14 +435,18 @@ multisite.marginalized <- nimbleCode({
   # likelihood 
   # initial state probs
   for(i in 1:N) {
-    init[i, 1:3] <- gamma[ y[i, first[i] ] - 1, 1:3 ]        # first state propagation
+    # first state propagation
+    init[i, 1:3] <- gamma[ y[i, first[i] ] - 1, 1:3 ]        
   }
   for (i in 1:N){
-    y[i,(first[i]+1):K] ~ dHMM(init = init[i,1:3],           # count data from first[i] + 1
-                               probObs = omega[1:3,1:3],     # observation matrix
-                               probTrans = gamma[1:3,1:3],   # transition matrix
-                               len = K - first[i],           # nb of occasions
-                               checkRowSums = 0)             # do not check whether elements in a row sum up to 1
+    y[i,(first[i]+1):K] ~ dHMM(init = init[i,1:3],# data first[i]+1
+                               probObs = omega[1:3,1:3], # obs
+                               probTrans = gamma[1:3,1:3], # trans
+                               len = K - first[i], # nb of occasions
+                               checkRowSums = 0) # do not check 
+                                                 # whether elements 
+                                                 # in a row sum up 
+                                                 # to 1
   }
 })
 # constants
@@ -462,14 +469,15 @@ n.iter <- 5000
 n.burnin <- 1000
 n.chains <- 2
 # run NIMBLE
-mcmc.multisite.marginalized <- nimbleMCMC(code = multisite.marginalized, 
-                             constants = my.constants,
-                             data = my.data,              
-                             inits = initial.values,
-                             monitors = parameters.to.save,
-                             niter = n.iter,
-                             nburnin = n.burnin, 
-                             nchains = n.chains)
+mcmc.multisite.marginalized <- nimbleMCMC(
+  code = multisite.marginalized, 
+  constants = my.constants,
+  data = my.data,              
+  inits = initial.values,
+  monitors = parameters.to.save,
+  niter = n.iter,
+  nburnin = n.burnin, 
+  nchains = n.chains)
 ```
 
 We obtain:
@@ -529,7 +537,7 @@ The Dirichlet distribution extends the Beta distribution multivariate we have se
 
 (ref:captiondirichlet) The Dirichlet distribution as a prior for $(\psi^{11}, \psi^{12}, \psi^{13})$ with vector of parameters $\alpha$. Here all components of $\alpha$ are equal which makes the distribution symmetric, and its mean is $(1/3, 1/3, 1/3)$. When $\alpha = 1$, the prior for the $\psi$'s is uniform (middle panel), unimodal when $\alpha = 10$ (right panel) and concentrated in the corners (0 and 1) when $\alpha = 0.1$ (left panel).
 
-```{r dirichletdistribution, echo = TRUE, message=FALSE, warning=FALSE, fig.cap='(ref:captiondirichlet)'}
+```{r dirichletdistribution, echo = FALSE, message=FALSE, warning=FALSE, fig.cap='(ref:captiondirichlet)'}
 library(gtools) # to make the rdirichlet() function available
 library(ggtern) # to visually represent multidim prob distribution 
 set.seed(123) # for reproducibility
@@ -580,21 +588,21 @@ We start by setting the scene with comments:
 ...
   # -------------------------------------------------
   # Parameters:
-  # phi1: survival probability site 1
-  # phi2: survival probability site 2
-  # phi3: survival probability site 3
-  # psi11 = psi1[1]: movement probability from site 1 to site 1 (reference)
-  # psi12 = psi1[2]: movement probability from site 1 to site 2
-  # psi13 = psi1[3]: movement probability from site 1 to site 3 
-  # psi21 = psi2[1]: movement probability from site 2 to site 1
-  # psi22 = psi2[2]: movement probability from site 2 to site 2 (reference)
-  # psi23 = psi2[3]: movement probability from site 2 to site 3
-  # psi31 = psi3[1]: movement probability from site 3 to site 1
-  # psi32 = psi3[2]: movement probability from site 3 to site 2
-  # psi33 = psi3[3]: movement probability from site 3 to site 3 (reference)
-  # p1: recapture probability site 1
-  # p2: recapture probability site 2
-  # p3: recapture probability site 3
+  # phi1: survival prob site 1
+  # phi2: survival prob site 2
+  # phi3: survival prob site 3
+  # psi11 = psi1[1]: mov prob site 1 -> site 1 (reference)
+  # psi12 = psi1[2]: mov prob site 1 -> site 2
+  # psi13 = psi1[3]: mov prob site 1 -> site 3 
+  # psi21 = psi2[1]: mov prob site 2 -> site 1
+  # psi22 = psi2[2]: mov prob site 2 -> site 2 (reference)
+  # psi23 = psi2[3]: mov prob site 2 -> site 3
+  # psi31 = psi3[1]: mov prob site 3 -> site 1
+  # psi32 = psi3[2]: mov prob site 3 -> site 2
+  # psi33 = psi3[3]: mov prob site 3 -> site 3 (reference)
+  # p1: recapture prob site 1
+  # p2: recapture prob site 2
+  # p3: recapture prob site 3
   # -------------------------------------------------
   # States (z):
   # 1 alive at 1
@@ -685,11 +693,14 @@ If we have three independent random variables $Y_1, Y_2$ and $Y_3$ distributed a
 ...
 # transitions: Dirichlet priors with Gamma formulation
 for (s in 1:3){
-  lpsi1[s] ~ dgamma(alpha[s], 1) # Y1, Y2, Y3 for psi11, psi12, psi13
+  # Y1, Y2, Y3 for psi11, psi12, psi13
+  lpsi1[s] ~ dgamma(alpha[s], 1) 
   psi1[s] <- lpsi1[s]/V1 # psi11, psi12, psi13
-  lpsi2[s] ~ dgamma(alpha[s], 1) # Y'1, Y'2, Y'3 for psi21, psi22, psi23
+  # Y'1, Y'2, Y'3 for psi21, psi22, psi23
+  lpsi2[s] ~ dgamma(alpha[s], 1) 
   psi2[s] <- lpsi2[s]/V2 # psi21, psi22, psi23
-  lpsi3[s] ~ dgamma(alpha[s], 1) # Y''1, Y''2, Y''3 for psi31, psi32, psi33
+  # Y''1, Y''2, Y''3 for psi31, psi32, psi33
+  lpsi3[s] ~ dgamma(alpha[s], 1) 
   psi3[s] <- lpsi3[s]/V3 # psi31, psi32, psi33
 }
 V1 <- sum(lpsi1[1:3])
@@ -839,12 +850,12 @@ If we let $\phi^B$ and $\phi^{NB}$ be the survival probabilities of breeders and
 
 $$\begin{matrix}
 & \\
-\mathbf{\Gamma} =
+\Gamma =
     \left ( \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \end{matrix} } \right .
 \end{matrix}
 \hspace{-1.2em}
 \begin{matrix}
-    z_t=B & z_t=NB & z_t=D \\ \hdashline
+    z_t=B & z_t=NB & z_t=D \\[0.3em] \hdashline
 \phi^B (1-\psi^{BNB}) & \phi^B \psi^{BNB} & 1 - \phi^B\\
 \phi^{NB} \psi^{NBB} & \phi^{NB} (1-\psi^{NBB}) & 1 - \phi^{NB}\\
 0 & 0 & 1
@@ -864,12 +875,12 @@ The observation matrix is:
 
 $$\begin{matrix}
 & \\
-\mathbf{\Omega} =
+\Omega =
     \left ( \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \end{matrix} } \right .
 \end{matrix}
 \hspace{-1.2em}
 \begin{matrix}
-    y_t=1 & y_t=2 & y_t=3 \\ \hdashline
+    y_t=1 & y_t=2 & y_t=3 \\[0.3em] \hdashline
 1 - p^B & p^B & 0\\
 1 - p^{NB} & 0 & p^{NB}\\
 1 & 0 & 0
@@ -991,8 +1002,10 @@ MCMCsummary(mcmc.multistate, round = 2)
 Non-breeder individuals seem to have a survival higher than breeder individuals, suggesting a trade-off between reproduction and survival. Let's compare graphically the survival of breeder and non-breeder individuals. First we gather the values generated for $\phi^B$ and $\phi^{NB}$ for the two chains:
 
 ```{r}
-phiB <- c(mcmc.multistate$chain1[,"phiB"], mcmc.multistate$chain2[,"phiB"])
-phiNB <- c(mcmc.multistate$chain1[,"phiNB"], mcmc.multistate$chain2[,"phiNB"])
+phiB <- c(mcmc.multistate$chain1[,"phiB"], 
+          mcmc.multistate$chain2[,"phiB"])
+phiNB <- c(mcmc.multistate$chain1[,"phiNB"], 
+           mcmc.multistate$chain2[,"phiNB"])
 df <- data.frame(param = c(rep("phiB", length(phiB)), 
                            rep("phiNB", length(phiB))), 
                  value = c(phiB, phiNB))
@@ -1013,9 +1026,11 @@ There is little overlap between the two distributions, suggesting an actual trad
 What about a potential trade-off on reproduction?
 
 ```{r}
-psiBNB <- c(mcmc.multistate$chain1[,"psiBNB"], mcmc.multistate$chain2[,"psiBNB"])
+psiBNB <- c(mcmc.multistate$chain1[,"psiBNB"], 
+            mcmc.multistate$chain2[,"psiBNB"])
 psiBB <- 1 - psiBNB
-psiNBB <- c(mcmc.multistate$chain1[,"psiNBB"], mcmc.multistate$chain2[,"psiNBB"])
+psiNBB <- c(mcmc.multistate$chain1[,"psiNBB"], 
+            mcmc.multistate$chain2[,"psiNBB"])
 df <- data.frame(param = c(rep("psiBB", length(phiB)), 
                            rep("psiNBB", length(phiB))), 
                  value = c(psiBB, psiNBB))
@@ -1229,12 +1244,12 @@ Let's specify the model. First thing we need, and it's a big difference with the
 
 $$\begin{matrix}
 & \\
-\mathbf{\delta} =
+\delta =
     \left ( \vphantom{ \begin{matrix} 12 \end{matrix} } \right .
 \end{matrix}
 \hspace{-1.2em}
 \begin{matrix}
-    z_t=B & z_t=NB & z_t=D \\ \hdashline
+    z_t=B & z_t=NB & z_t=D \\[0.3em] \hdashline
 \pi^B & 1 - \pi^{B} & 0\\
 \end{matrix}
 \hspace{-0.2em}
@@ -1251,12 +1266,12 @@ Now the transition matrix, this is the easy part as it doesn't change. We have:
 
 $$\begin{matrix}
 & \\
-\mathbf{\Gamma} =
+\Gamma =
     \left ( \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \end{matrix} } \right .
 \end{matrix}
 \hspace{-1.2em}
 \begin{matrix}
-    z_t=B & z_t=NB & z_t=D \\ \hdashline
+    z_t=B & z_t=NB & z_t=D \\[0.3em] \hdashline
 \phi^B (1-\psi^{BNB}) & \phi^B \psi^{BNB} & 1 - \phi^B\\
 \phi^{NB} \psi^{NBB} & \phi^{NB} (1-\psi^{NBB}) & 1 - \phi^{NB}\\
 0 & 0 & 1
@@ -1276,12 +1291,12 @@ Last, the observation matrix. The main difference between multisite/multistate a
 
 $$\begin{matrix}
 & \\
-\mathbf{\Omega} =
+\Omega =
     \left ( \vphantom{ \begin{matrix} 12 \\ 12 \\ 12\end{matrix} } \right .
 \end{matrix}
 \hspace{-1.2em}
 \begin{matrix}
-    y_t=1 & y_t=2 & y_t=3 & y_t=4\\ \hdashline
+    y_t=1 & y_t=2 & y_t=3 & y_t=4 \\[0.3em] \hdashline
 1 - p^B & p^B \beta^B & 0 & p^B (1-\beta_ B) \\
 1-p^{NB} & 0 & p^{NB} \beta^{NB} & p^{NB} (1-\beta^{NB})\\
 1 & 0 & 0 & 0
@@ -1305,7 +1320,7 @@ $$\begin{matrix}
 \end{matrix}
 \hspace{-1.2em}
 \begin{matrix}
-    y_{t = \text{first}}=1 & y_{t = \text{first}}=2 & y_{t = \text{first}}=3 & y_{t = \text{first}}=4\\ \hdashline
+    y_{t = \text{first}}=1 & y_{t = \text{first}}=2 & y_{t = \text{first}}=3 & y_{t = \text{first}}=4 \\[0.3em] \hdashline
  0 & \beta^B & 0 & (1-\beta^B)\\
 0 & 0 & \beta^{NB} & (1-\beta^{NB})\\
 1 & 0 & 0 & 0
@@ -1332,8 +1347,8 @@ multievent <- nimbleCode({
   # pB: recapture probability B
   # pNB: recapture probability NB
   # piB prob. of being in initial state breeder
-  # betaNB prob to ascertain the breeding status of an individual encountered as non-breeder
-  # betaB prob to ascertain the breeding status of an individual encountered as breeder
+  # betaNB prob ascertain breeding status of ind encountered as NB
+  # betaB prob ascertain breeding status of ind encountered as B
   # -------------------------------------------------
   # States (z):
   # 1 alive B
@@ -1421,18 +1436,30 @@ The observation matrix at first encounter:
 multievent <- nimbleCode({
 ...
   # probabilities of y(first) given z(first)
-  omega.init[1,1] <- 0          # Pr(alive B t = first -> non-detected t = first)
-  omega.init[1,2] <- betaB      # Pr(alive B t = first -> detected B t = first)
-  omega.init[1,3] <- 0          # Pr(alive B t = first -> detected NB t = first)
-  omega.init[1,4] <- 1 - betaB  # Pr(alive B t = first -> detected U t = first)
-  omega.init[2,1] <- 0          # Pr(alive NB t = first -> non-detected t = first)
-  omega.init[2,2] <- 0          # Pr(alive NB t = first -> detected B t = first)
-  omega.init[2,3] <- betaNB     # Pr(alive NB t = first -> detected NB t = first)
-  omega.init[2,4] <- 1 - betaNB # Pr(alive NB t = first -> detected U t = first)
-  omega.init[3,1] <- 1          # Pr(dead t = first -> non-detected t = first)
-  omega.init[3,2] <- 0          # Pr(dead t = first -> detected N t = first)
-  omega.init[3,3] <- 0          # Pr(dead t = first -> detected NB t = first)
-  omega.init[3,4] <- 0          # Pr(dead t = first -> detected U t = first)
+  # Pr(alive B t = first -> non-detected t = first)
+  omega.init[1,1] <- 0          
+  # Pr(alive B t = first -> detected B t = first)
+  omega.init[1,2] <- betaB      
+  # Pr(alive B t = first -> detected NB t = first)
+  omega.init[1,3] <- 0          
+  # Pr(alive B t = first -> detected U t = first)
+  omega.init[1,4] <- 1 - betaB  
+  # Pr(alive NB t = first -> non-detected t = first)
+  omega.init[2,1] <- 0          
+  # Pr(alive NB t = first -> detected B t = first)
+  omega.init[2,2] <- 0          
+  # Pr(alive NB t = first -> detected NB t = first)
+  omega.init[2,3] <- betaNB     
+  # Pr(alive NB t = first -> detected U t = first)
+  omega.init[2,4] <- 1 - betaNB 
+  # Pr(dead t = first -> non-detected t = first)
+  omega.init[3,1] <- 1          
+  # Pr(dead t = first -> detected N t = first)
+  omega.init[3,2] <- 0          
+  # Pr(dead t = first -> detected NB t = first)
+  omega.init[3,3] <- 0          
+  # Pr(dead t = first -> detected U t = first)
+  omega.init[3,4] <- 0          
 ...
 ```
 
@@ -1444,7 +1471,8 @@ multievent <- nimbleCode({
   for (i in 1:N){
     # latent state at first capture
     z[i,first[i]] ~ dcat(delta[1:3])
-    y[i,first[i]] ~ dcat(omega.init[z[i,first[i]],1:4]) # obs at first encounter
+    # obs at first encounter
+    y[i,first[i]] ~ dcat(omega.init[z[i,first[i]],1:4]) 
     for (t in (first[i]+1):K){
       # z(t) given z(t-1)
       z[i,t] ~ dcat(gamma[z[i,t-1],1:3])
@@ -1514,8 +1542,8 @@ ggplot() +
   geom_text(aes(.5, 1, label = 'dead'), nudge_x = 0.1, size = 7) +
   xlim(0, 4.5) +
   ylim(0.5, 3) +
-  annotate('text', x = .5, y = 2.6, label = 'States', size = 10) +
-  annotate('text', x = 2.7, y = 2.6, label = 'Observations', size = 10) +
+  annotate('text', x = .5, y = 2.6, label = 'States', size = 8) +
+  annotate('text', x = 2.7, y = 2.6, label = 'Observations', size = 8) +
 
   geom_segment(aes(x = 1, y = 1, xend = 2, yend = 2), alpha = 0.7, arrow = arrow(length = unit(0.02, "npc"))) +
 
@@ -1536,12 +1564,12 @@ The vector of initial state probabilities is:
 
 $$\begin{matrix}
 & \\
-\mathbf{\delta} =
+\delta =
     \left ( \vphantom{ \begin{matrix} 12 \end{matrix} } \right .
 \end{matrix}
 \hspace{-1.2em}
 \begin{matrix}
-    z_t=H & z_t=I & z_t=D \\ \hdashline
+    z_t=H & z_t=I & z_t=D \\[0.3em] \hdashline
 \pi^H & 1 - \pi^{H} & 0\\
 \end{matrix}
 \hspace{-0.2em}
@@ -1558,12 +1586,12 @@ The transition matrix is:
 
 $$\begin{matrix}
 & \\
-\mathbf{\Gamma} =
+\Gamma =
     \left ( \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \end{matrix} } \right .
 \end{matrix}
 \hspace{-1.2em}
 \begin{matrix}
-    z_t=H & z_t=I & z_t=D \\ \hdashline
+    z_t=H & z_t=I & z_t=D \\[0.3em] \hdashline
 \phi^H (1-\psi^{HI}) & \phi^H \psi^{HI} & 1 - \phi^H\\
 \phi^{I} \psi^{IH} & \phi^{I} (1-\psi^{IH}) & 1 - \phi^{I}\\
 0 & 0 & 1
@@ -1583,12 +1611,12 @@ Image you'd like to model the dynamic of an incurable disease, the transition ma
 
 $$\begin{matrix}
 & \\
-\mathbf{\Gamma} =
+\Gamma =
     \left ( \vphantom{ \begin{matrix} 12 \\ 12 \\ 12 \end{matrix} } \right .
 \end{matrix}
 \hspace{-1.2em}
 \begin{matrix}
-    z_t=H & z_t=I & z_t=D \\ \hdashline
+    z_t=H & z_t=I & z_t=D \\[0.3em] \hdashline
 \phi^H (1-\psi^{HI}) & \phi^H \psi^{HI} & 1 - \phi^H\\
 0 & \phi^{I}  & 1 - \phi^{I}\\
 0 & 0 & 1
@@ -1606,12 +1634,12 @@ For analysing the house finch data, we allow recovering from the disease. The ob
 
 $$\begin{matrix}
 & \\
-\mathbf{\Omega} =
+\Omega =
     \left ( \vphantom{ \begin{matrix} 12 \\ 12 \\ 12\end{matrix} } \right .
 \end{matrix}
 \hspace{-1.2em}
 \begin{matrix}
-    y_t=0 & y_t=1 & y_t=2 & y_t=3\\ \hdashline
+    y_t=0 & y_t=1 & y_t=2 & y_t=3 \\[0.3em] \hdashline
 1-p^H & p^H \beta^H & 0 & p^H (1-\beta^H)\\
 1-p^I & 0 & p^{I} \beta^{I} & p^{I} (1-\beta^{I})\\
 1 & 0 & 0 & 0
