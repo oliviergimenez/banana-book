@@ -146,20 +146,36 @@ If the likelihood of the data $y$ is binomial with $n$ trials and probability of
 ```{r echo = FALSE}
 explicit_posterior <- dbeta(grid, y + a, n - y + b)
 dfexpposterior <- data.frame(survival = grid, explicit_posterior = explicit_posterior)
-ggplot() + 
-  geom_line(data = numerical_posterior, 
-            aes(x = survival, y = posterior), 
-            size = 1.5, 
-            col = wesanderson::wes_palettes$Royal1[2],
-            alpha = 0.5) + 
-  geom_line(data = dfexpposterior, 
-            aes(x = survival, y = explicit_posterior),
-            size = 1.5, 
-            col = wesanderson::wes_palettes$Royal1[3], 
-            linetype = "dashed")
+if (params$bw) {
+  # version noir et blanc
+  ggplot() + 
+    geom_line(data = numerical_posterior, 
+              aes(x = survival, y = posterior), 
+              linewidth = 1.5, 
+              col = 'grey',
+              alpha = 0.5) + 
+    geom_line(data = dfexpposterior, 
+              aes(x = survival, y = explicit_posterior),
+              linewidth = 1.5, 
+              col = 'black', 
+              linetype = "dashed")
+  } else {
+                # version couleur
+  ggplot() + 
+    geom_line(data = numerical_posterior, 
+              aes(x = survival, y = posterior), 
+              linewidth = 1.5, 
+              col = wesanderson::wes_palettes$Royal1[2],
+              alpha = 0.5) + 
+    geom_line(data = dfexpposterior, 
+              aes(x = survival, y = explicit_posterior),
+              linewidth = 1.5, 
+              col = wesanderson::wes_palettes$Royal1[3], 
+              linetype = "dashed")
+  }
 ```
 
-Clearly, the exact (brick-red) vs. numerical approximation (cream) of winter survival posterior distribution are indistinguishable, suggesting that the numerical approximation is more than fine. 
+Clearly, the exact (black or brick-red in the online version) vs. numerical approximation (grey or cream in the online version) of winter survival posterior distribution are indistinguishable, suggesting that the numerical approximation is more than fine. 
 
 <!-- To finish up, let's add the prior.  -->
 <!-- ```{r, echo = FALSE} -->
@@ -439,11 +455,26 @@ metropolis <- function(steps = 100, inits = 0.5, away = 1){
 }
 ```
 
-Can we run another chain and start at initial value 0.2 this time? Yes, just go through the same algorithm again, and visualise the results with trace plot of survival for two chains starting at 0.2 (yellow) and 0.5 (blue) run for 100 steps:
+Can we run another chain and start at initial value 0.2 this time? Yes, just go through the same algorithm again, and visualise the results with trace plot of survival for two chains starting at 0.2 (grey, or yellow in the online version) and 0.5 (black, or blue in the online version) run for 100 steps:
 ```{r twochains}
 theta.post2 <- metropolis(steps = 100, inits = 0.2)
 df2 <- data.frame(x = 1:steps, y = theta.post2)
-ggplot() +
+
+if (params$bw) {
+  ggplot() +
+  geom_line(data = df,
+            aes(x = x, y = y), 
+            size = 1.5, 
+            color = 'black') + 
+  geom_line(data = df2, 
+            aes(x = x, y = y), 
+            size = 1.5, 
+            color = 'grey') + 
+  labs(x = "iterations", y = "values from posterior distribution") + 
+  ylim(0.1, 0.6)
+
+} else {
+  ggplot() +
   geom_line(data = df,
             aes(x = x, y = y), 
             size = 1.5, 
@@ -454,6 +485,7 @@ ggplot() +
             color = wesanderson::wes_palettes$Zissou1[3]) + 
   labs(x = "iterations", y = "values from posterior distribution") + 
   ylim(0.1, 0.6)
+}
 ```
 
 Notice that we do not get the exact same results because the algorithm is stochastic. The question is to know whether we have reached the stationary distribution. Let's increase the number of steps, start at 0.5 and run a chain with 5000 iterations:

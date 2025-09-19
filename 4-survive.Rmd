@@ -1197,15 +1197,28 @@ df <- data.frame(wing_length = c(my.constants$winglength[ord],
 
 Now on a plot:
 ```{r}
-df %>%
-  ggplot() + 
-  aes(x = wing_length, y = survival, color = sex) + 
-  geom_line() + 
-  geom_ribbon(aes(ymin = lci, ymax = uci, fill = sex), alpha = 0.5) + 
-  ylim(0,1) + 
-  labs(x = "wing length", 
-       y = "estimated survival", 
-       color = "", fill = "")
+if (params$bw) {
+  df %>%
+    ggplot(aes(x = wing_length, y = survival, color = sex, fill = sex)) + 
+    geom_line() +
+    geom_ribbon(aes(ymin = lci, ymax = uci), alpha = 0.3) +
+    ylim(0, 1) +
+    labs(x = "wing length",
+         y = "estimated survival",
+         color = "", fill = "") +
+    scale_color_manual(values = c("black", "grey40")) +
+    scale_fill_manual(values  = c("grey70", "grey10"))
+} else {
+  df %>%
+    ggplot() + 
+    aes(x = wing_length, y = survival, color = sex) + 
+    geom_line() + 
+    geom_ribbon(aes(ymin = lci, ymax = uci, fill = sex), alpha = 0.5) + 
+    ylim(0,1) + 
+    labs(x = "wing length", 
+         y = "estimated survival", 
+         color = "", fill = "")
+}
 ```
 
 Note that the two curves are not exactly parallel because we back-transformed the linear part of the relationship between survival and wing length. You may check that parallelism occurs on the logit scale:
@@ -1231,14 +1244,27 @@ df <- data.frame(wing_length = c(my.constants$winglength[ord],
                               mean_lsurvivalF[ord]),
                  sex = c(rep("male", length(mean_lsurvivalM)), 
                          rep("female", length(mean_lsurvivalF))))
-df %>%
-  ggplot() + 
-  aes(x = wing_length, y = survival, color = sex) + 
-  geom_line() + 
-  ylim(-2,2) + 
-  labs(x = "wing length", 
-       y = "estimated survival (on the logit scale)", 
-       color = "")
+
+if (params$bw) {
+  df %>%
+    ggplot(aes(x = wing_length, y = survival, color = sex, linetype = sex)) +
+    geom_line(linewidth = 1) +
+    ylim(-2, 2) +
+    labs(x = "wing length",
+         y = "estimated survival (on the logit scale)",
+         color = "", linetype = "") +
+    scale_color_manual(values = c("black", "grey70")) +
+    scale_linetype_manual(values = c("solid", "solid"))
+} else {
+  df %>%
+    ggplot() + 
+    aes(x = wing_length, y = survival, color = sex) + 
+    geom_line() + 
+    ylim(-2,2) + 
+    labs(x = "wing length", 
+         y = "estimated survival (on the logit scale)", 
+         color = "")
+}
 ```
 
 ### Random effects {#randomeffects}
@@ -1579,15 +1605,29 @@ phiprior <- c(mcmc.phip$chain1[,"phi"], mcmc.phip$chain2[,"phi"])
 df <- data.frame(posterior = c(phinoprior, phiprior),
                  type = c(rep("w/ vague prior", length(phinoprior)),
                           rep("w/ informative prior", length(phiprior))))
-df %>%
-  ggplot() +
-  aes(x = posterior, fill = type) +
-  geom_density(aes(y = ..density..),
-               bins = 40,
-               color = "white",
-               alpha = 0.6) +
-  labs(x = "survival", fill = "") +
-  scale_fill_manual(values = wesanderson::wes_palette("Royal1")[2:1])
+
+if (params$bw) {
+  df %>%
+    ggplot(aes(x = posterior, fill = type, linetype = type)) +
+    geom_density(aes(y = ..density..),
+                 alpha = 0.4,
+                 color = "black") +
+    labs(x = "survival", fill = "", linetype = "") +
+    scale_fill_manual(values = c("grey80", "grey40")) +
+    scale_linetype_manual(values = c("solid", "solid"))
+} else {
+  df %>%
+    ggplot() +
+    aes(x = posterior, fill = type) +
+    geom_density(aes(y = ..density..),
+                 bins = 40,
+                 color = "white",
+                 alpha = 0.6) +
+    labs(x = "survival", fill = "") +
+    scale_fill_manual(values = wesanderson::wes_palette("Royal1")[2:1])
+}
+
+
 ```
 
 If the aim is to get an estimate of survival, Gilbert did not have to conduct further data collection after 3 years, and he could have reached the same precision as with 7 years of data by using prior information derived from body mass. In brief, the prior information was worth 4 years of field data. Of course, this is assuming that the ecological question remains the same whether you have 3 or 7 years of data, which is unlikely to be the case, as with long-term data, there is so much we can ask, more than "just" what annual survival probability is. 

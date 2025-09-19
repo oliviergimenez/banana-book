@@ -1014,11 +1014,20 @@ df <- data.frame(param = c(rep("phiB", length(phiB)),
 Then, we plot the two posterior distributions:
 
 ```{r}
-df %>%
-  ggplot(aes(x = value, fill = param)) +
-  geom_density(color = "white", alpha = 0.6, position = 'identity') +
-  scale_fill_manual(values = c("#69b3a2", "#404080")) +
-  labs(fill = "", x = "survival")
+if (params$bw) {
+  df %>%
+    ggplot(aes(x = value, fill = param)) +
+    geom_density(color = "white", alpha = 0.6, position = 'identity') +
+    scale_fill_manual(values = c("grey70", "black")) +
+    labs(fill = "", x = "survival")
+} else {
+  df %>%
+    ggplot(aes(x = value, fill = param)) +
+    geom_density(color = "white", alpha = 0.6, position = 'identity') +
+    scale_fill_manual(values = c("#69b3a2", "#404080")) +
+    labs(fill = "", x = "survival")
+}
+
 ```
 
 There is little overlap between the two distributions, suggesting an actual trade--off. A formal test of the trade-off would consist in fitting the model with survival irrespective of the state, and compare its WAIC value to the model we just fitted.
@@ -1034,11 +1043,20 @@ psiNBB <- c(mcmc.multistate$chain1[,"psiNBB"],
 df <- data.frame(param = c(rep("psiBB", length(phiB)), 
                            rep("psiNBB", length(phiB))), 
                  value = c(psiBB, psiNBB))
-df %>%
-  ggplot(aes(x = value, fill = param)) +
-  geom_density(color = "white", alpha = 0.6, position = 'identity') +
-  scale_fill_manual(values = c("#69b3a2", "#404080")) +
-  labs(fill = "", x = "breeding probabilities")
+
+if (params$bw) {
+  df %>%
+    ggplot(aes(x = value, fill = param)) +
+    geom_density(color = "white", alpha = 0.6, position = 'identity') +
+    scale_fill_manual(values = c("grey70", "black")) +
+    labs(fill = "", x = "breeding probabilities")
+} else {
+  df %>%
+    ggplot(aes(x = value, fill = param)) +
+    geom_density(color = "white", alpha = 0.6, position = 'identity') +
+    scale_fill_manual(values = c("#69b3a2", "#404080")) +
+    labs(fill = "", x = "breeding probabilities")
+}
 
 ```
 
@@ -1089,7 +1107,7 @@ dat <- matrix(c(2, 0, 2, 1, 2, 0, 2,
 
 In Figure \@ref(fig:inits), we provide an illustration of the influence of the choice of initial values when trying to maximize the likelihood, or rather to minimize the deviance (which is minus two times the log of the likelihood). The black curve is the what we called the profile deviance for $\psi^{21}$. Profiling the deviance consists in taking a slice of it in the direction of a parameter of interest and treating the other parameters as nuisance parameters. In our example, we set $\psi^{21}$ to a value (on the x-axis) an minimize the deviance (on the y-axis) with respect to the other parameters. There are two minima, but only the global minimum (corresponding to the lowest value of deviance) corresponding to $\psi^{21}$ around 0.8 is of interest to us. The thing is that if you start your optimization algorithm by picking value in the red area, then it will get stuck in the local minimum and will tell you the maximum likelihood estimate of $\psi^{21}$ is around 0.35, which is obviously far from the value we used to simulate the data. In contrast, if you pick initial values in the green area, then the algorithm will converge to the global minimum. 
 
-```{r inits, echo = FALSE, fig.cap = "Influence of the choice of initial values on the convergence to the global minimum of the deviance illustrated with simulated data. The black curve is the profile deviance of the probability to move from site 2 to 1. If an initial value is picked in the red area, we end up in the local minimum while if it is picked in the green area, then we get the global minimum which corresponds to the maximum lilkelihood estimate.", fig.show = "hold", out.width="100%"}
+```{r inits, echo = FALSE, fig.cap = "Influence of the choice of initial values on the convergence to the global minimum of the deviance illustrated with simulated data. The black curve is the profile deviance of the probability to move from site 2 to 1. If an initial value is picked in the red area (on the left), we end up in the local minimum while if it is picked in the green area (on the right), then we get the global minimum which corresponds to the maximum lilkelihood estimate.", fig.show = "hold", out.width="100%"}
 knitr::include_graphics("images/multistate_local_minimav2_Page_07.png")
 ```
 
