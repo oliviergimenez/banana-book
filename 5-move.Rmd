@@ -537,49 +537,81 @@ The Dirichlet distribution extends the Beta distribution multivariate we have se
 
 (ref:captiondirichlet) The Dirichlet distribution as a prior for $(\psi^{11}, \psi^{12}, \psi^{13})$ with vector of parameters $\alpha$. Here all components of $\alpha$ are equal which makes the distribution symmetric, and its mean is $(1/3, 1/3, 1/3)$. When $\alpha = 1$, the prior for the $\psi$'s is uniform (middle panel), unimodal when $\alpha = 10$ (right panel) and concentrated in the corners (0 and 1) when $\alpha = 0.1$ (left panel).
 
-```{r dirichletdistribution, echo = FALSE, message=FALSE, warning=FALSE, fig.cap='(ref:captiondirichlet)'}
-library(gtools) # to make the rdirichlet() function available
-library(ggtern) # to visually represent multidim prob distribution 
-set.seed(123) # for reproducibility
-n <- 1000 # number of values drawn from Dirichlet distribution
-alpha1 <- c(.1, .1, .1)
-p1 <- rdirichlet(n, alpha1)
-alpha2 <- c(1, 1, 1)
-p2 <- rdirichlet(n, alpha2)
-alpha3 <- c(10, 10, 10)
-p3 <- rdirichlet(n, alpha3)
-df <- cbind(rbind(p1, p2, p3), c(rep("alpha = c(0.1, 0.1, 0.1)", n),
-                                     rep("alpha = c(1, 1, 1)", n),
-                                     rep("alpha = c(10, 10, 10)", n))) %>%
-  as_tibble() %>%
-  mutate(x = as.numeric(V1),
-         y = as.numeric(V2),
-         z = as.numeric(V3),
-         alpha = V4)
 
-df %>%
-  ggtern(aes(x = x, y = y, z = z)) +
-  stat_density_tern(aes(fill=..level.., alpha=..level..),
-                    geom = 'polygon',
-                    bdl = 0.005) + # a 2D kernel density estimation of the distribution
-  scale_fill_viridis_b() +
-  geom_point(alpha = 0.3, pch = "+") +
-  theme_showarrows() +
-  scale_T_continuous(breaks = seq(0, 1, by = 0.2),
-                     labels = seq(0, 1, by = 0.2)) +
-  scale_L_continuous(breaks = seq(0, 1, by = 0.2),
-                     labels = seq(0, 1, by = 0.2)) +
-  scale_R_continuous(breaks = seq(0, 1, by = 0.2),
-                     labels = seq(0, 1, by = 0.2)) +
-  labs(x = "",
-       y = "",
-       z = "",
-       Tarrow = "psi11",
-       Larrow = "psi12",
-       Rarrow = "psi13") +
-  guides(color = "none", fill = "none", alpha = "none") +
-  facet_wrap(~alpha, ncol = 3)
+```{r dirichletdistribution, echo = FALSE, message=FALSE, warning=FALSE, fig.cap='(ref:captiondirichlet)'}
+# --- packages
+library(gtools)   # rdirichlet
+library(dplyr)
+library(tibble)
+library(ggplot2)
+
+# --- data (unchanged)
+set.seed(123)
+n <- 1000
+alpha1 <- c(.1, .1, .1)
+alpha2 <- c(1, 1, 1)
+alpha3 <- c(10, 10, 10)
+
+p1 <- rdirichlet(n, alpha1)
+p2 <- rdirichlet(n, alpha2)
+p3 <- rdirichlet(n, alpha3)
+
+df <- cbind(rbind(p1, p2, p3),
+            c(rep("alpha = c(0.1, 0.1, 0.1)", n),
+              rep("alpha = c(1, 1, 1)", n),
+              rep("alpha = c(10, 10, 10)", n))) |>
+  as_tibble() |>
+  mutate(
+    psi11 = as.numeric(V1),   # top
+    psi12 = as.numeric(V2),   # left
+    psi13 = as.numeric(V3),   # right
+    alpha = V4
+  )
+
+# --- barycentric (psi11, psi12, psi13) -> Cartesian (X,Y)
+# Vertices: Left=(0,0) [psi12], Right=(1,0) [psi13], Top=(0.5, sqrt(3)/2) [psi11]
+tri_h <- sqrt(3)/2
+df_xy <- df |>
+  mutate(
+    S  = psi11 + psi12 + psi13,         # should be 1, but keep for safety
+    X  = 0.5 * (2*psi13 + psi11) / S,
+    Y  = (tri_h * psi11) / S
+  )
+
+# --- triangle boundary for annotation
+triangle <- tibble(
+  X = c(0, 1, 0.5, 0),
+  Y = c(0, 0, tri_h, 0)
+)
+
+# --- plot: filled density (like stat_density_tern) + points + facets
+ggplot(df_xy, aes(X, Y)) +
+  # density "polygons" (2D KDE on projected plane)
+  stat_density_2d_filled(contour = TRUE, bins = 12, alpha = 0.9) +
+  # points overlay (light, like your pch = "+")
+  geom_point(alpha = 0.25, shape = 3, size = 0.6) +
+  # triangle outline
+  geom_path(data = triangle, aes(X, Y), inherit.aes = FALSE, linewidth = 0.6) +
+  # vertex labels
+  annotate("text", x = 0.5, y = tri_h + 0.04, label = "psi11", fontface = "bold") +
+  annotate("text", x = -0.04, y = -0.02,       label = "psi12", fontface = "bold", hjust = 1) +
+  annotate("text", x = 1.04, y = -0.02,        label = "psi13", fontface = "bold", hjust = 0) +
+  coord_equal(clip = "off") +
+  #scale_fill_viridis_d(name = NULL) +
+  scale_fill_viridis_d(option = "A", direction = -1) +
+  guides(fill = "none") +
+  labs(x = NULL, y = NULL) +
+  theme_void(base_size = 12) +
+  theme(
+    plot.margin = margin(10, 20, 10, 20),
+    strip.text = element_text(face = "bold"),
+    panel.background = element_rect(fill = "white", colour = NA)
+  ) +
+  facet_wrap(~ alpha, ncol = 3)
+
 ```
+
+
 
 Going back to our example, in NIMBLE, we consider a Dirichlet prior for each triplet of movement parameters, from site 1 ($\psi^{11}$, $\psi^{12}$ and $\psi^{13}$), from site 2 ($\psi^{21}$, $\psi^{22}$ and $\psi^{23}$) and from site 3 ($\psi^{31}$, $\psi^{32}$ and $\psi^{33}$). 
 
